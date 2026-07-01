@@ -1,0 +1,12 @@
+{
+ "run_id": "r_f0b17d823c",
+ "loop1": [
+  {
+   "card_id": 41,
+   "title": "Input vs Output Energy",
+   "answerability": "partial",
+   "note": "Showing total active power as a proxy for transformer input/output energy balance; per-phase or dedicated transformer loss columns are not available in the shared buffer."
+  }
+ ],
+ "loop2": null
+}

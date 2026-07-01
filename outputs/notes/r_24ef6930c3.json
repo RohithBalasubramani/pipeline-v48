@@ -1,0 +1,24 @@
+{
+ "run_id": "r_24ef6930c3",
+ "loop1": [
+  {
+   "card_id": 5,
+   "title": "Real Time Monitoring (Feeder Heatmap)",
+   "answerability": "partial",
+   "note": "Showing total active power (phase R) as a proxy for feeder distribution; per-phase breakdown is not available for this specific panel view."
+  },
+  {
+   "card_id": 10,
+   "title": "Consumption Trend / Supply Trend",
+   "answerability": "partial",
+   "note": "Showing total active power \u2014 per-phase power isn't measured for this asset."
+  },
+  {
+   "card_id": 11,
+   "title": "Quick Stats",
+   "answerability": "partial",
+   "note": "Showing Voltage and Power Factor from the shared buffer; Current Unbalance is estimated from available phase currents (current_r, current_y, current_b) as exact unbalance metrics are not directly measured for this asset."
+  }
+ ],
+ "loop2": null
+}

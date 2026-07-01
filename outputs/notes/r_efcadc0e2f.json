@@ -1,0 +1,12 @@
+{
+ "run_id": "r_efcadc0e2f",
+ "loop1": [
+  {
+   "card_id": 12,
+   "title": "Energy Input & Distribution",
+   "answerability": "partial",
+   "note": "Showing active energy import as the primary distribution input metric; instantaneous power and utilization are derived or approximated from cumulative energy data."
+  }
+ ],
+ "loop2": null
+}

@@ -1,0 +1,12 @@
+{
+ "run_id": "r_deeaabd7bd",
+ "loop1": [
+  {
+   "card_id": 47,
+   "title": "Power Quality",
+   "answerability": "partial",
+   "note": "Showing total harmonic distortion (THD) and compliance status; specific per-order harmonic values (H5, H7) and voltage quality metrics (Crest Factor, Flicker) are not directly measured for this asset and are approximated or omitted."
+  }
+ ],
+ "loop2": null
+}

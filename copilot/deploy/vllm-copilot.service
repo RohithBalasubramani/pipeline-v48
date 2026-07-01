@@ -1,0 +1,26 @@
+# EMS Query Copilot — dedicated 4B model endpoint (separate from the pipeline's 35B on :8200)
+# Install as a user unit:
+#   cp deploy/vllm-copilot.service ~/.config/systemd/user/
+#   systemctl --user daemon-reload && systemctl --user enable --now vllm-copilot
+[Unit]
+Description=vLLM EMS-Copilot model (Qwen3-4B-Instruct-2507-FP8) on port 8201
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+ExecStart=/home/rohith/.pyenv/versions/3.11.9/bin/vllm serve Qwen/Qwen3-4B-Instruct-2507-FP8 \
+    --port 8201 \
+    --gpu-memory-utilization 0.17 \
+    --max-model-len 32768 \
+    --served-model-name Qwen/Qwen3-4B-Instruct-2507-FP8 \
+    --speculative-config '{"method": "ngram", "num_speculative_tokens": 5, "prompt_lookup_max": 5, "prompt_lookup_min": 2}'
+Environment=HOME=/home/rohith
+Environment=PATH=/home/rohith/.pyenv/versions/3.11.9/bin:/usr/local/bin:/usr/bin:/bin
+Environment=HF_HOME=/home/rohith/.cache/huggingface
+Environment=CUDA_VISIBLE_DEVICES=0
+Restart=always
+RestartSec=10
+
+[Install]
+WantedBy=default.target

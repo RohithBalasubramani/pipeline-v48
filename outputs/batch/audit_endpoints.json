@@ -1,0 +1,15 @@
+{
+ "repoints": [],
+ "offer_list": {
+  "history_endpoints": [],
+  "history_by_domain": {},
+  "endpoint": {}
+ },
+ "summary": {
+  "live": 61,
+  "retired": 0,
+  "off_route": 6,
+  "no_endpoint": 78
+ },
+ "retired_on_routable": []
+}

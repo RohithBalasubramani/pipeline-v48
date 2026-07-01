@@ -1,0 +1,12 @@
+{
+ "run_id": "r_82c57c938b",
+ "loop1": [
+  {
+   "card_id": 41,
+   "title": "Input vs Output Energy",
+   "answerability": "partial",
+   "note": "Showing total active power as a proxy for both input and output energy; per-phase or separate input/output meters are not available for this asset, so the card displays the single available power metric."
+  }
+ ],
+ "loop2": null
+}

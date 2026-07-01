@@ -1,0 +1,18 @@
+{
+ "run_id": "r_8bb7ee3a30",
+ "loop1": [
+  {
+   "card_id": 47,
+   "title": "Power Quality",
+   "answerability": "partial",
+   "note": "Showing per-phase current THD and voltage THD; individual harmonic orders (H5, H7) and flicker data are not recorded for this meter."
+  },
+  {
+   "card_id": 48,
+   "title": "Distortion & Harmonic Profile",
+   "answerability": "partial",
+   "note": "Showing per-phase current and voltage THD trends. Specific harmonic orders (H5, H7) are not recorded for this asset and are omitted from the H5/H7 view."
+  }
+ ],
+ "loop2": null
+}

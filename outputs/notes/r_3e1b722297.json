@@ -1,0 +1,18 @@
+{
+ "run_id": "r_3e1b722297",
+ "loop1": [
+  {
+   "card_id": 40,
+   "title": "Power Energy Analysis",
+   "answerability": "partial",
+   "note": "Showing active power \u2014 reactive power isn't measured for this asset."
+  },
+  {
+   "card_id": 41,
+   "title": "Input vs Output Energy",
+   "answerability": "partial",
+   "note": "Showing total active power and energy metrics for the AHU. Per-phase HV/LV distinction is not available for this single-asset meter; the card displays total system input/output proxy values."
+  }
+ ],
+ "loop2": null
+}

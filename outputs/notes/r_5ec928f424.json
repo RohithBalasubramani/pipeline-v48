@@ -1,0 +1,12 @@
+{
+ "run_id": "r_5ec928f424",
+ "loop1": [
+  {
+   "card_id": 37,
+   "title": "Voltage Monitor (Real-Time)",
+   "answerability": "partial",
+   "note": "Showing voltage_avg as Max/Min proxy \u2014 per-phase min/max voltage is not measured for this asset."
+  }
+ ],
+ "loop2": null
+}

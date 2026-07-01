@@ -1,0 +1,18 @@
+{
+ "run_id": "r_a6cf0e0b73",
+ "loop1": [
+  {
+   "card_id": 47,
+   "title": "Power Quality",
+   "answerability": "partial",
+   "note": "Showing current THD (R phase) and voltage THD (R phase); specific harmonic orders (H5, H7) and flicker/crest data are not currently recorded for this asset."
+  },
+  {
+   "card_id": 48,
+   "title": "Distortion & Harmonic Profile",
+   "answerability": "partial",
+   "note": "Showing V-THD and I-THD trends \u2014 specific harmonic orders (H5/H7) are not currently recorded for this asset."
+  }
+ ],
+ "loop2": null
+}

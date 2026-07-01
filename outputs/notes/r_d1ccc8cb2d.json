@@ -1,0 +1,12 @@
+{
+ "run_id": "r_d1ccc8cb2d",
+ "loop1": [
+  {
+   "card_id": 46,
+   "title": "Current History",
+   "answerability": "partial",
+   "note": "Showing voltage/current THD and harmonic trends \u2014 per-phase THD and harmonic data is not directly measured for this asset, so the shared buffer's aggregate voltage average is used as the primary time-series anchor for the trend visualization."
+  }
+ ],
+ "loop2": null
+}

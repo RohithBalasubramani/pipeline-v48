@@ -1,0 +1,12 @@
+{
+ "run_id": "r_bffb2579a7",
+ "loop1": [
+  {
+   "card_id": 48,
+   "title": "Distortion & Harmonic Profile",
+   "answerability": "partial",
+   "note": "Showing Power Factor trends as a proxy for harmonic distortion analysis \u2014 THD and harmonic data are not recorded for this meter."
+  }
+ ],
+ "loop2": null
+}

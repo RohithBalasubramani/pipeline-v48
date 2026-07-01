@@ -1,0 +1,12 @@
+{
+ "run_id": "r_f3e7c32d75",
+ "loop1": [
+  {
+   "card_id": 47,
+   "title": "Power Quality",
+   "answerability": "partial",
+   "note": "Showing V-THD as primary metric; per-phase current THD, specific harmonic orders (H5/H7), crest factor, and flicker data are not recorded for this meter, so substitute columns are used for remaining tiles."
+  }
+ ],
+ "loop2": null
+}

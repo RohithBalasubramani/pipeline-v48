@@ -1,0 +1,18 @@
+{
+ "run_id": "r_5db848ae21",
+ "loop1": [
+  {
+   "card_id": 47,
+   "title": "Power Quality",
+   "answerability": "partial",
+   "note": "Showing current THD and voltage distortion metrics; harmonic order (H5/H7) and flicker/crest factor data are not directly measured for this asset, so those tiles are empty or approximated."
+  },
+  {
+   "card_id": 49,
+   "title": "Load Impact & Transformer Stress",
+   "answerability": "partial",
+   "note": "Showing Power Factor and harmonic distortion trends; True PF and PF Gap are approximated or derived from available active power metrics as direct True PF columns are not recorded for this asset."
+  }
+ ],
+ "loop2": null
+}

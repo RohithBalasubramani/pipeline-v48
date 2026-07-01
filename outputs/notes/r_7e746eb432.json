@@ -1,0 +1,12 @@
+{
+ "run_id": "r_7e746eb432",
+ "loop1": [
+  {
+   "card_id": 45,
+   "title": "Current Live Health",
+   "answerability": "partial",
+   "note": "Showing current harmonic distortion (H3, H5, H7, THD) and K-factor. Voltage phase balance data is not available in this card's metric set."
+  }
+ ],
+ "loop2": null
+}

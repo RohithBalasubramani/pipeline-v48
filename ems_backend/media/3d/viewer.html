@@ -1,0 +1,144 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>CMD · 3D Asset Viewer (Test)</title>
+<style>
+  html, body { margin: 0; height: 100%; background: #0f0f10; color: #ddd; font: 13px/1.4 system-ui, sans-serif; }
+  #app { position: fixed; inset: 0; }
+  #hud { position: fixed; top: 10px; left: 10px; background: rgba(0,0,0,.55); padding: 8px 12px; border-radius: 6px; max-width: 60ch; }
+  #hud b { color: #fff; }
+  #hud a { color: #8ad; }
+  #err { color: #f88; white-space: pre-wrap; }
+  #picker { margin-top: 6px; }
+  #picker input { background: #222; color: #ddd; border: 1px solid #444; padding: 3px 6px; width: 28ch; }
+  #picker button { background: #345; color: #fff; border: 0; padding: 4px 10px; margin-left: 4px; cursor: pointer; }
+</style>
+</head>
+<body>
+<div id="app"></div>
+<div id="hud">
+  <div><b>CMD 3D Viewer</b> — drag to orbit, scroll to zoom, right-drag to pan.</div>
+  <div id="info">loading…</div>
+  <div id="picker">
+    Slug: <input id="slug" value="pcc-panel-1a" /> <button onclick="loadSlug()">Load</button>
+    &nbsp;or paste GLB URL: <input id="url" placeholder="/media/3d/glb/PCC1A_v1.glb" /> <button onclick="loadUrl()">Load URL</button>
+  </div>
+  <div id="err"></div>
+</div>
+
+<script type="importmap">
+{
+  "imports": {
+    "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+    "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+  }
+}
+</script>
+
+<script type="module">
+import * as THREE from 'three';
+import { GLTFLoader }    from 'three/addons/loaders/GLTFLoader.js';
+import { DRACOLoader }   from 'three/addons/loaders/DRACOLoader.js';
+import { MeshoptDecoder } from 'three/addons/libs/meshopt_decoder.module.js';
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+
+const app = document.getElementById('app');
+const info = document.getElementById('info');
+const errBox = document.getElementById('err');
+
+const scene  = new THREE.Scene();
+scene.background = new THREE.Color(0x202024);
+const camera = new THREE.PerspectiveCamera(45, innerWidth/innerHeight, 0.1, 5000);
+camera.position.set(3, 2.5, 5);
+const renderer = new THREE.WebGLRenderer({ antialias: true });
+renderer.setPixelRatio(devicePixelRatio);
+renderer.setSize(innerWidth, innerHeight);
+renderer.outputColorSpace = THREE.SRGBColorSpace;
+app.appendChild(renderer.domElement);
+addEventListener('resize', () => {
+  camera.aspect = innerWidth/innerHeight; camera.updateProjectionMatrix();
+  renderer.setSize(innerWidth, innerHeight);
+});
+
+scene.add(new THREE.HemisphereLight(0xffffff, 0x222233, 1.0));
+const key = new THREE.DirectionalLight(0xffffff, 1.2); key.position.set(5, 8, 4); scene.add(key);
+scene.add(new THREE.GridHelper(20, 20, 0x444, 0x333));
+
+const controls = new OrbitControls(camera, renderer.domElement);
+controls.enableDamping = true;
+
+let current = null;
+function clearScene() {
+  if (!current) return;
+  scene.remove(current);
+  current.traverse(o => { if (o.geometry) o.geometry.dispose(); });
+  current = null;
+}
+
+function frameObject(obj) {
+  const box = new THREE.Box3().setFromObject(obj);
+  const size = box.getSize(new THREE.Vector3()).length() || 1;
+  const center = box.getCenter(new THREE.Vector3());
+  obj.position.sub(center);
+  camera.near = size / 100; camera.far = size * 100;
+  camera.position.copy(new THREE.Vector3(size, size*0.6, size).multiplyScalar(0.9));
+  camera.lookAt(0,0,0);
+  camera.updateProjectionMatrix();
+  controls.target.set(0, 0, 0);
+  controls.update();
+}
+
+const draco = new DRACOLoader();
+draco.setDecoderPath('https://unpkg.com/three@0.160.0/examples/jsm/libs/draco/');
+draco.setDecoderConfig({ type: 'js' });   // avoid WASM CORS surprises
+
+const loader = new GLTFLoader();
+loader.setDRACOLoader(draco);
+loader.setMeshoptDecoder(MeshoptDecoder);  // harmless if the GLB doesn't use Meshopt
+
+window.loadFromUrl = function (url, label) {
+  errBox.textContent = '';
+  info.innerHTML = `loading <b>${label || url}</b> …`;
+  loader.load(url, gltf => {
+    clearScene();
+    current = gltf.scene;
+    scene.add(current);
+    frameObject(current);
+    const triCount = (() => { let n=0; current.traverse(o=>{ if(o.isMesh && o.geometry?.index) n += o.geometry.index.count/3; else if(o.isMesh && o.geometry) n += o.geometry.attributes.position.count/3; }); return Math.round(n); })();
+    info.innerHTML = `<b>${label || url}</b> — ~${triCount.toLocaleString()} triangles · <a href="${url}" target="_blank">open GLB</a>`;
+  }, xhr => {
+    if (xhr.total) info.innerHTML = `loading <b>${label || url}</b> · ${Math.round(xhr.loaded/xhr.total*100)}%`;
+  }, e => {
+    errBox.textContent = `FAILED to load ${url}\n${e?.message || e}`;
+  });
+};
+
+window.loadSlug = async function () {
+  const slug = document.getElementById('slug').value.trim();
+  if (!slug) return;
+  errBox.textContent = '';
+  info.textContent = `GET /api/overview/${slug}/ …`;
+  try {
+    const r = await fetch(`/api/overview/${slug}/`);
+    if (!r.ok) throw new Error(`HTTP ${r.status}`);
+    const j = await r.json();
+    if (!j.asset_3d?.url) throw new Error('no asset_3d.url in response');
+    loadFromUrl(j.asset_3d.url, `${j.name} (${j.asset_3d.key})`);
+  } catch (e) {
+    errBox.textContent = `overview lookup failed: ${e.message}`;
+  }
+};
+
+window.loadUrl = function () {
+  const u = document.getElementById('url').value.trim();
+  if (u) loadFromUrl(u);
+};
+
+(function tick(){ controls.update(); renderer.render(scene, camera); requestAnimationFrame(tick); })();
+
+// auto-load
+loadSlug();
+</script>
+</body>
+</html>

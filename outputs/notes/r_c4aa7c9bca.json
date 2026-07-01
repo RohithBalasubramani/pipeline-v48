@@ -1,0 +1,12 @@
+{
+ "run_id": "r_c4aa7c9bca",
+ "loop1": [
+  {
+   "card_id": 43,
+   "title": "Voltage Live Health",
+   "answerability": "partial",
+   "note": "Showing voltage deviation and average voltage; unbalance metric is approximated using neutral-to-phase ratio as exact voltage unbalance is not directly measured."
+  }
+ ],
+ "loop2": null
+}

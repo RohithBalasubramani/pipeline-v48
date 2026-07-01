@@ -1,0 +1,6 @@
+"""each aggregate builder produces a valid DATA payload."""
+import pytest  # noqa
+
+
+def test_placeholder():
+    pytest.skip("TODO(v48): implement")

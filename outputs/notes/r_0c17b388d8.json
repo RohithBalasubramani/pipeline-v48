@@ -1,0 +1,12 @@
+{
+ "run_id": "r_0c17b388d8",
+ "loop1": [
+  {
+   "card_id": 27,
+   "title": "Signature",
+   "answerability": "partial",
+   "note": "Showing total harmonic distortion (I-THD, V-THD) and K-factor; specific harmonic order data (H3, H5, H7) is not available in the current meter schema, so I-THD is used as a proxy for the harmonic profile shape."
+  }
+ ],
+ "loop2": null
+}

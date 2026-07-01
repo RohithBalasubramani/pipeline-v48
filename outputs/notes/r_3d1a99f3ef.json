@@ -1,0 +1,18 @@
+{
+ "run_id": "r_3d1a99f3ef",
+ "loop1": [
+  {
+   "card_id": 5,
+   "title": "Real Time Monitoring (Feeder Heatmap)",
+   "answerability": "partial",
+   "note": "Showing active power (kW) as a proxy for current, voltage, and unbalance metrics \u2014 per-phase current and voltage aren't measured for this asset."
+  },
+  {
+   "card_id": 11,
+   "title": "Quick Stats",
+   "answerability": "partial",
+   "note": "Showing Voltage and Power Factor directly; Current Unbalance is derived from phase currents (neutral current calculation). Note: 'Electrical load' label is retained from default config but bound to Power Factor metric as per recipe."
+  }
+ ],
+ "loop2": null
+}

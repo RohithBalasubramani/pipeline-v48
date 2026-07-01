@@ -1,0 +1,21 @@
+# EMS Query Copilot — standalone suggestion API (port :8772). Independent of the pipeline.
+# Install as a user unit:
+#   cp deploy/ems-copilot.service ~/.config/systemd/user/
+#   systemctl --user daemon-reload && systemctl --user enable --now ems-copilot
+[Unit]
+Description=EMS Query Copilot API (typeahead, :8772)
+After=network-online.target vllm-copilot.service
+Wants=network-online.target
+
+[Service]
+Type=simple
+WorkingDirectory=/home/rohith/desktop/BFI/backend/layer2/pipeline_v48/copilot
+ExecStart=/usr/bin/python3 server.py
+Environment=COPILOT_LLM_URL=http://localhost:8201/v1
+Environment=COPILOT_LLM_MODEL=Qwen/Qwen3-4B-Instruct-2507-FP8
+Environment=COPILOT_PORT=8772
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=default.target

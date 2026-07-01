@@ -1,0 +1,12 @@
+{
+ "run_id": "r_ff394e84cb",
+ "loop1": [
+  {
+   "card_id": 43,
+   "title": "Voltage Live Health",
+   "answerability": "partial",
+   "note": "Showing voltage health metrics; unbalance is derived from current phase data as a proxy for load balance, as direct voltage unbalance calculation requires specific voltage unbalance columns not present in the basket."
+  }
+ ],
+ "loop2": null
+}

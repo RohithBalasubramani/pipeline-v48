@@ -1,0 +1,12 @@
+{
+ "run_id": "r_a01517fe21",
+ "loop1": [
+  {
+   "card_id": 43,
+   "title": "Voltage Live Health",
+   "answerability": "partial",
+   "note": "Showing voltage health; unbalance metric is derived from current phase data as a proxy for overall system balance."
+  }
+ ],
+ "loop2": null
+}

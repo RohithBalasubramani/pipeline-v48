@@ -1,0 +1,887 @@
+[
+ {
+  "id": 1,
+  "prompt": "real time monitoring for Transformer 1",
+  "asset": "Transformer 1",
+  "klass": "Transformer",
+  "intent": "realtime",
+  "page_hint": "panel-overview-shell/real-time-monitoring",
+  "metric_cols": [
+   "active_power_total_kw",
+   "current_avg",
+   "voltage_ln_avg",
+   "power_factor_total"
+  ]
+ },
+ {
+  "id": 2,
+  "prompt": "live status of Transformer 2 right now",
+  "asset": "Transformer 2",
+  "klass": "Transformer",
+  "intent": "realtime",
+  "page_hint": "panel-overview-shell/real-time-monitoring",
+  "metric_cols": [
+   "active_power_total_kw",
+   "current_avg",
+   "voltage_ln_avg",
+   "power_factor_total"
+  ]
+ },
+ {
+  "id": 3,
+  "prompt": "Transformer 3 real-time dashboard",
+  "asset": "Transformer 3",
+  "klass": "Transformer",
+  "intent": "realtime",
+  "page_hint": "panel-overview-shell/real-time-monitoring",
+  "metric_cols": [
+   "active_power_total_kw",
+   "current_avg",
+   "voltage_ln_avg",
+   "power_factor_total"
+  ]
+ },
+ {
+  "id": 4,
+  "prompt": "energy and power overview for Transformer 4",
+  "asset": "Transformer 4",
+  "klass": "Transformer",
+  "intent": "energy-power",
+  "page_hint": "panel-overview-shell/energy-power",
+  "metric_cols": [
+   "active_power_total_kw",
+   "reactive_power_total_kvar",
+   "apparent_power_total_kva",
+   "power_factor_total"
+  ]
+ },
+ {
+  "id": 5,
+  "prompt": "active power trend for Transformer 5",
+  "asset": "Transformer 5",
+  "klass": "Transformer",
+  "intent": "energy-power",
+  "page_hint": "panel-overview-shell/energy-power",
+  "metric_cols": [
+   "active_power_total_kw",
+   "reactive_power_total_kvar",
+   "apparent_power_total_kva",
+   "power_factor_total"
+  ]
+ },
+ {
+  "id": 6,
+  "prompt": "Transformer 6 power consumption",
+  "asset": "Transformer 6",
+  "klass": "Transformer",
+  "intent": "energy-power",
+  "page_hint": "panel-overview-shell/energy-power",
+  "metric_cols": [
+   "active_power_total_kw",
+   "reactive_power_total_kvar",
+   "apparent_power_total_kva",
+   "power_factor_total"
+  ]
+ },
+ {
+  "id": 7,
+  "prompt": "energy consumption in kWh for Transformer 7",
+  "asset": "Transformer 7",
+  "klass": "Transformer",
+  "intent": "energy-kwh",
+  "page_hint": "panel-overview-shell/energy-power",
+  "metric_cols": [
+   "active_energy_import_kwh",
+   "active_energy_export_kwh",
+   "reactive_energy_import_kvarh",
+   "reactive_energy_export_kvarh"
+  ]
+ },
+ {
+  "id": 8,
+  "prompt": "how much energy has Transformer 8 used",
+  "asset": "Transformer 8",
+  "klass": "Transformer",
+  "intent": "energy-kwh",
+  "page_hint": "panel-overview-shell/energy-power",
+  "metric_cols": [
+   "active_energy_import_kwh",
+   "active_energy_export_kwh",
+   "reactive_energy_import_kvarh",
+   "reactive_energy_export_kvarh"
+  ]
+ },
+ {
+  "id": 9,
+  "prompt": "HT Transformer 1 imported vs exported energy",
+  "asset": "HT Transformer 1",
+  "klass": "Transformer",
+  "intent": "energy-kwh",
+  "page_hint": "panel-overview-shell/energy-power",
+  "metric_cols": [
+   "active_energy_import_kwh",
+   "active_energy_export_kwh",
+   "reactive_energy_import_kvarh",
+   "reactive_energy_export_kvarh"
+  ]
+ },
+ {
+  "id": 10,
+  "prompt": "demand profile for PCC Panel 1 A over the last week",
+  "asset": "PCC Panel 1 A",
+  "klass": "LT Panel (PCC)",
+  "intent": "demand",
+  "page_hint": "demand-profile",
+  "metric_cols": [
+   "active_power_total_kw",
+   "apparent_power_total_kva"
+  ]
+ },
+ {
+  "id": 11,
+  "prompt": "PCC Panel 1 B load demand pattern",
+  "asset": "PCC Panel 1 B",
+  "klass": "LT Panel (PCC)",
+  "intent": "demand",
+  "page_hint": "demand-profile",
+  "metric_cols": [
+   "active_power_total_kw",
+   "apparent_power_total_kva"
+  ]
+ },
+ {
+  "id": 12,
+  "prompt": "peak demand history for PCC Panel 2 A",
+  "asset": "PCC Panel 2 A",
+  "klass": "LT Panel (PCC)",
+  "intent": "demand",
+  "page_hint": "demand-profile",
+  "metric_cols": [
+   "active_power_total_kw",
+   "apparent_power_total_kva"
+  ]
+ },
+ {
+  "id": 13,
+  "prompt": "energy distribution breakdown for PCC Panel 2 B",
+  "asset": "PCC Panel 2 B",
+  "klass": "LT Panel (PCC)",
+  "intent": "distribution",
+  "page_hint": "panel-overview-shell/energy-distribution",
+  "metric_cols": [
+   "active_power_total_kw",
+   "active_power_r_kw",
+   "active_power_y_kw",
+   "active_power_b_kw"
+  ]
+ },
+ {
+  "id": 14,
+  "prompt": "where does the power go in PCC Panel 3 A",
+  "asset": "PCC Panel 3 A",
+  "klass": "LT Panel (PCC)",
+  "intent": "distribution",
+  "page_hint": "panel-overview-shell/energy-distribution",
+  "metric_cols": [
+   "active_power_total_kw",
+   "active_power_r_kw",
+   "active_power_y_kw",
+   "active_power_b_kw"
+  ]
+ },
+ {
+  "id": 15,
+  "prompt": "PCC Panel 3 B feeder-level distribution",
+  "asset": "PCC Panel 3 B",
+  "klass": "LT Panel (PCC)",
+  "intent": "distribution",
+  "page_hint": "panel-overview-shell/energy-distribution",
+  "metric_cols": [
+   "active_power_total_kw",
+   "active_power_r_kw",
+   "active_power_y_kw",
+   "active_power_b_kw"
+  ]
+ },
+ {
+  "id": 16,
+  "prompt": "voltage and current for PCC Panel 4",
+  "asset": "PCC Panel 4",
+  "klass": "LT Panel (PCC)",
+  "intent": "voltage",
+  "page_hint": "panel-overview-shell/voltage-current",
+  "metric_cols": [
+   "voltage_r_n",
+   "voltage_y_n",
+   "voltage_b_n",
+   "voltage_ln_avg"
+  ]
+ },
+ {
+  "id": 17,
+  "prompt": "phase voltages on Diesel Generator-01",
+  "asset": "Diesel Generator-01",
+  "klass": "Diesel Generator",
+  "intent": "voltage",
+  "page_hint": "panel-overview-shell/voltage-current",
+  "metric_cols": [
+   "voltage_r_n",
+   "voltage_y_n",
+   "voltage_b_n",
+   "voltage_ln_avg"
+  ]
+ },
+ {
+  "id": 18,
+  "prompt": "Diesel Generator-02 line voltage trend",
+  "asset": "Diesel Generator-02",
+  "klass": "Diesel Generator",
+  "intent": "voltage",
+  "page_hint": "panel-overview-shell/voltage-current",
+  "metric_cols": [
+   "voltage_r_n",
+   "voltage_y_n",
+   "voltage_b_n",
+   "voltage_ln_avg"
+  ]
+ },
+ {
+  "id": 19,
+  "prompt": "line-to-line voltage for Diesel Generator-03",
+  "asset": "Diesel Generator-03",
+  "klass": "Diesel Generator",
+  "intent": "voltage-ll",
+  "page_hint": "panel-overview-shell/voltage-current",
+  "metric_cols": [
+   "voltage_ry",
+   "voltage_yb",
+   "voltage_br",
+   "voltage_ll_avg"
+  ]
+ },
+ {
+  "id": 20,
+  "prompt": "Diesel Generator-04 L-L voltage RY YB BR",
+  "asset": "Diesel Generator-04",
+  "klass": "Diesel Generator",
+  "intent": "voltage-ll",
+  "page_hint": "panel-overview-shell/voltage-current",
+  "metric_cols": [
+   "voltage_ry",
+   "voltage_yb",
+   "voltage_br",
+   "voltage_ll_avg"
+  ]
+ },
+ {
+  "id": 21,
+  "prompt": "phase-to-phase voltage on Diesel Generator-05",
+  "asset": "Diesel Generator-05",
+  "klass": "Diesel Generator",
+  "intent": "voltage-ll",
+  "page_hint": "panel-overview-shell/voltage-current",
+  "metric_cols": [
+   "voltage_ry",
+   "voltage_yb",
+   "voltage_br",
+   "voltage_ll_avg"
+  ]
+ },
+ {
+  "id": 22,
+  "prompt": "phase currents for Diesel Generator-06",
+  "asset": "Diesel Generator-06",
+  "klass": "Diesel Generator",
+  "intent": "current",
+  "page_hint": "panel-overview-shell/voltage-current",
+  "metric_cols": [
+   "current_r",
+   "current_y",
+   "current_b",
+   "current_avg"
+  ]
+ },
+ {
+  "id": 23,
+  "prompt": "current per phase on Diesel Generator-07",
+  "asset": "Diesel Generator-07",
+  "klass": "Diesel Generator",
+  "intent": "current",
+  "page_hint": "panel-overview-shell/voltage-current",
+  "metric_cols": [
+   "current_r",
+   "current_y",
+   "current_b",
+   "current_avg"
+  ]
+ },
+ {
+  "id": 24,
+  "prompt": "Diesel Generator-08 current loading R Y B",
+  "asset": "Diesel Generator-08",
+  "klass": "Diesel Generator",
+  "intent": "current",
+  "page_hint": "panel-overview-shell/voltage-current",
+  "metric_cols": [
+   "current_r",
+   "current_y",
+   "current_b",
+   "current_avg"
+  ]
+ },
+ {
+  "id": 25,
+  "prompt": "voltage history for APFC Panel-1 last 7 days",
+  "asset": "APFC Panel-1",
+  "klass": "APFC",
+  "intent": "voltage-hist",
+  "page_hint": "voltage-history",
+  "metric_cols": [
+   "voltage_ln_avg",
+   "voltage_r_n",
+   "voltage_y_n",
+   "voltage_b_n"
+  ]
+ },
+ {
+  "id": 26,
+  "prompt": "APFC Panel-2 voltage trend over the month",
+  "asset": "APFC Panel-2",
+  "klass": "APFC",
+  "intent": "voltage-hist",
+  "page_hint": "voltage-history",
+  "metric_cols": [
+   "voltage_ln_avg",
+   "voltage_r_n",
+   "voltage_y_n",
+   "voltage_b_n"
+  ]
+ },
+ {
+  "id": 27,
+  "prompt": "how has voltage on APFC Panel-3 changed",
+  "asset": "APFC Panel-3",
+  "klass": "APFC",
+  "intent": "voltage-hist",
+  "page_hint": "voltage-history",
+  "metric_cols": [
+   "voltage_ln_avg",
+   "voltage_r_n",
+   "voltage_y_n",
+   "voltage_b_n"
+  ]
+ },
+ {
+  "id": 28,
+  "prompt": "current history for APFC Panel-4 this month",
+  "asset": "APFC Panel-4",
+  "klass": "APFC",
+  "intent": "current-hist",
+  "page_hint": "current-history",
+  "metric_cols": [
+   "current_avg",
+   "current_r",
+   "current_y",
+   "current_b"
+  ]
+ },
+ {
+  "id": 29,
+  "prompt": "Main HT Panel current trend over time",
+  "asset": "Main HT Panel",
+  "klass": "HT Panel",
+  "intent": "current-hist",
+  "page_hint": "current-history",
+  "metric_cols": [
+   "current_avg",
+   "current_r",
+   "current_y",
+   "current_b"
+  ]
+ },
+ {
+  "id": 30,
+  "prompt": "current loading history of HT Panel M1",
+  "asset": "HT Panel M1",
+  "klass": "HT Panel",
+  "intent": "current-hist",
+  "page_hint": "current-history",
+  "metric_cols": [
+   "current_avg",
+   "current_r",
+   "current_y",
+   "current_b"
+  ]
+ },
+ {
+  "id": 31,
+  "prompt": "harmonic distortion THD for HT Panel M2",
+  "asset": "HT Panel M2",
+  "klass": "HT Panel",
+  "intent": "harmonics",
+  "page_hint": "panel-overview-shell/harmonics-pq",
+  "metric_cols": [
+   "thd_voltage_r_pct",
+   "thd_voltage_y_pct",
+   "thd_voltage_b_pct"
+  ]
+ },
+ {
+  "id": 32,
+  "prompt": "DG Sync Panel power quality and harmonics",
+  "asset": "DG Sync Panel",
+  "klass": "HT Panel",
+  "intent": "harmonics",
+  "page_hint": "panel-overview-shell/harmonics-pq",
+  "metric_cols": [
+   "thd_voltage_r_pct",
+   "thd_voltage_y_pct",
+   "thd_voltage_b_pct"
+  ]
+ },
+ {
+  "id": 33,
+  "prompt": "voltage THD on UPS 01",
+  "asset": "UPS 01",
+  "klass": "UPS",
+  "intent": "harmonics",
+  "page_hint": "panel-overview-shell/harmonics-pq",
+  "metric_cols": [
+   "thd_voltage_r_pct",
+   "thd_voltage_y_pct",
+   "thd_voltage_b_pct"
+  ]
+ },
+ {
+  "id": 34,
+  "prompt": "current THD for UPS 02",
+  "asset": "UPS 02",
+  "klass": "UPS",
+  "intent": "current-thd",
+  "page_hint": "panel-overview-shell/harmonics-pq",
+  "metric_cols": [
+   "thd_current_r_pct",
+   "thd_current_y_pct",
+   "thd_current_b_pct"
+  ]
+ },
+ {
+  "id": 35,
+  "prompt": "UPS 03 current harmonic distortion",
+  "asset": "UPS 03",
+  "klass": "UPS",
+  "intent": "current-thd",
+  "page_hint": "panel-overview-shell/harmonics-pq",
+  "metric_cols": [
+   "thd_current_r_pct",
+   "thd_current_y_pct",
+   "thd_current_b_pct"
+  ]
+ },
+ {
+  "id": 36,
+  "prompt": "TDD and current harmonics on UPS 04",
+  "asset": "UPS 04",
+  "klass": "UPS",
+  "intent": "current-thd",
+  "page_hint": "panel-overview-shell/harmonics-pq",
+  "metric_cols": [
+   "thd_current_r_pct",
+   "thd_current_y_pct",
+   "thd_current_b_pct"
+  ]
+ },
+ {
+  "id": 37,
+  "prompt": "power quality summary for UPS 05",
+  "asset": "UPS 05",
+  "klass": "UPS",
+  "intent": "pq-summary",
+  "page_hint": "power-quality",
+  "metric_cols": [
+   "thd_voltage_r_pct",
+   "thd_current_r_pct",
+   "power_factor_total",
+   "frequency_hz"
+  ]
+ },
+ {
+  "id": 38,
+  "prompt": "UPS 06 PQ compliance overview",
+  "asset": "UPS 06",
+  "klass": "UPS",
+  "intent": "pq-summary",
+  "page_hint": "power-quality",
+  "metric_cols": [
+   "thd_voltage_r_pct",
+   "thd_current_r_pct",
+   "power_factor_total",
+   "frequency_hz"
+  ]
+ },
+ {
+  "id": 39,
+  "prompt": "power quality assessment of MLDB",
+  "asset": "MLDB",
+  "klass": "LT Panel",
+  "intent": "pq-summary",
+  "page_hint": "power-quality",
+  "metric_cols": [
+   "thd_voltage_r_pct",
+   "thd_current_r_pct",
+   "power_factor_total",
+   "frequency_hz"
+  ]
+ },
+ {
+  "id": 40,
+  "prompt": "power factor for AHU-1",
+  "asset": "AHU-1",
+  "klass": "LT Panel",
+  "intent": "powerfactor",
+  "page_hint": "panel-overview-shell/energy-power",
+  "metric_cols": [
+   "power_factor_total",
+   "power_factor_r",
+   "power_factor_y",
+   "power_factor_b"
+  ]
+ },
+ {
+  "id": 41,
+  "prompt": "AHU-2 pf per phase",
+  "asset": "AHU-2",
+  "klass": "LT Panel",
+  "intent": "powerfactor",
+  "page_hint": "panel-overview-shell/energy-power",
+  "metric_cols": [
+   "power_factor_total",
+   "power_factor_r",
+   "power_factor_y",
+   "power_factor_b"
+  ]
+ },
+ {
+  "id": 42,
+  "prompt": "is AHU-10 running at good power factor",
+  "asset": "AHU-10",
+  "klass": "LT Panel",
+  "intent": "powerfactor",
+  "page_hint": "panel-overview-shell/energy-power",
+  "metric_cols": [
+   "power_factor_total",
+   "power_factor_r",
+   "power_factor_y",
+   "power_factor_b"
+  ]
+ },
+ {
+  "id": 43,
+  "prompt": "frequency reading for BusCoupler-12",
+  "asset": "BusCoupler-12",
+  "klass": "LT Panel",
+  "intent": "frequency",
+  "page_hint": "panel-overview-shell/real-time-monitoring",
+  "metric_cols": [
+   "frequency_hz"
+  ]
+ },
+ {
+  "id": 44,
+  "prompt": "Bus Coupler-19 grid frequency",
+  "asset": "Bus Coupler-19",
+  "klass": "LT Panel",
+  "intent": "frequency",
+  "page_hint": "panel-overview-shell/real-time-monitoring",
+  "metric_cols": [
+   "frequency_hz"
+  ]
+ },
+ {
+  "id": 45,
+  "prompt": "frequency stability on solar incomer 1",
+  "asset": "solar incomer 1",
+  "klass": "LT Panel",
+  "intent": "frequency",
+  "page_hint": "panel-overview-shell/real-time-monitoring",
+  "metric_cols": [
+   "frequency_hz"
+  ]
+ },
+ {
+  "id": 46,
+  "prompt": "reactive power for solar incomer 2",
+  "asset": "solar incomer 2",
+  "klass": "LT Panel",
+  "intent": "reactive",
+  "page_hint": "panel-overview-shell/energy-power",
+  "metric_cols": [
+   "reactive_power_total_kvar",
+   "reactive_power_r_kvar",
+   "reactive_power_y_kvar",
+   "reactive_power_b_kvar"
+  ]
+ },
+ {
+  "id": 47,
+  "prompt": "BPDB-01 For Lamination-01&02 kVAR demand",
+  "asset": "BPDB-01 For Lamination-01&02",
+  "klass": "LT Panel",
+  "intent": "reactive",
+  "page_hint": "panel-overview-shell/energy-power",
+  "metric_cols": [
+   "reactive_power_total_kvar",
+   "reactive_power_r_kvar",
+   "reactive_power_y_kvar",
+   "reactive_power_b_kvar"
+  ]
+ },
+ {
+  "id": 48,
+  "prompt": "reactive power per phase on HHF-01 (TYPE-01) 300A +600KVAR",
+  "asset": "HHF-01 (TYPE-01) 300A +600KVAR",
+  "klass": "LT Panel",
+  "intent": "reactive",
+  "page_hint": "panel-overview-shell/energy-power",
+  "metric_cols": [
+   "reactive_power_total_kvar",
+   "reactive_power_r_kvar",
+   "reactive_power_y_kvar",
+   "reactive_power_b_kvar"
+  ]
+ },
+ {
+  "id": 49,
+  "prompt": "apparent power for Transformer 1",
+  "asset": "Transformer 1",
+  "klass": "Transformer",
+  "intent": "apparent",
+  "page_hint": "panel-overview-shell/energy-power",
+  "metric_cols": [
+   "apparent_power_total_kva",
+   "apparent_power_r_kva",
+   "apparent_power_y_kva",
+   "apparent_power_b_kva"
+  ]
+ },
+ {
+  "id": 50,
+  "prompt": "Transformer 2 kVA loading",
+  "asset": "Transformer 2",
+  "klass": "Transformer",
+  "intent": "apparent",
+  "page_hint": "panel-overview-shell/energy-power",
+  "metric_cols": [
+   "apparent_power_total_kva",
+   "apparent_power_r_kva",
+   "apparent_power_y_kva",
+   "apparent_power_b_kva"
+  ]
+ },
+ {
+  "id": 51,
+  "prompt": "apparent power per phase on Transformer 3",
+  "asset": "Transformer 3",
+  "klass": "Transformer",
+  "intent": "apparent",
+  "page_hint": "panel-overview-shell/energy-power",
+  "metric_cols": [
+   "apparent_power_total_kva",
+   "apparent_power_r_kva",
+   "apparent_power_y_kva",
+   "apparent_power_b_kva"
+  ]
+ },
+ {
+  "id": 52,
+  "prompt": "per-phase active power for Transformer 4",
+  "asset": "Transformer 4",
+  "klass": "Transformer",
+  "intent": "perphase-pwr",
+  "page_hint": "panel-overview-shell/energy-power",
+  "metric_cols": [
+   "active_power_r_kw",
+   "active_power_y_kw",
+   "active_power_b_kw"
+  ]
+ },
+ {
+  "id": 53,
+  "prompt": "Transformer 5 R Y B phase power split",
+  "asset": "Transformer 5",
+  "klass": "Transformer",
+  "intent": "perphase-pwr",
+  "page_hint": "panel-overview-shell/energy-power",
+  "metric_cols": [
+   "active_power_r_kw",
+   "active_power_y_kw",
+   "active_power_b_kw"
+  ]
+ },
+ {
+  "id": 54,
+  "prompt": "phase-wise kW on Transformer 6",
+  "asset": "Transformer 6",
+  "klass": "Transformer",
+  "intent": "perphase-pwr",
+  "page_hint": "panel-overview-shell/energy-power",
+  "metric_cols": [
+   "active_power_r_kw",
+   "active_power_y_kw",
+   "active_power_b_kw"
+  ]
+ },
+ {
+  "id": 55,
+  "prompt": "voltage and current unbalance for Transformer 7",
+  "asset": "Transformer 7",
+  "klass": "Transformer",
+  "intent": "unbalance",
+  "page_hint": "panel-overview-shell/voltage-current",
+  "metric_cols": [
+   "voltage_unbalance_pct",
+   "current_unbalance_pct"
+  ]
+ },
+ {
+  "id": 56,
+  "prompt": "Transformer 8 phase unbalance",
+  "asset": "Transformer 8",
+  "klass": "Transformer",
+  "intent": "unbalance",
+  "page_hint": "panel-overview-shell/voltage-current",
+  "metric_cols": [
+   "voltage_unbalance_pct",
+   "current_unbalance_pct"
+  ]
+ },
+ {
+  "id": 57,
+  "prompt": "is HT Transformer 1 balanced across phases",
+  "asset": "HT Transformer 1",
+  "klass": "Transformer",
+  "intent": "unbalance",
+  "page_hint": "panel-overview-shell/voltage-current",
+  "metric_cols": [
+   "voltage_unbalance_pct",
+   "current_unbalance_pct"
+  ]
+ },
+ {
+  "id": 58,
+  "prompt": "load anomalies for PCC Panel 1 A",
+  "asset": "PCC Panel 1 A",
+  "klass": "LT Panel (PCC)",
+  "intent": "anomaly",
+  "page_hint": "load-anomalies",
+  "metric_cols": [
+   "active_power_total_kw",
+   "current_avg"
+  ]
+ },
+ {
+  "id": 59,
+  "prompt": "PCC Panel 1 B abnormal load events",
+  "asset": "PCC Panel 1 B",
+  "klass": "LT Panel (PCC)",
+  "intent": "anomaly",
+  "page_hint": "load-anomalies",
+  "metric_cols": [
+   "active_power_total_kw",
+   "current_avg"
+  ]
+ },
+ {
+  "id": 60,
+  "prompt": "any anomalies on PCC Panel 2 A recently",
+  "asset": "PCC Panel 2 A",
+  "klass": "LT Panel (PCC)",
+  "intent": "anomaly",
+  "page_hint": "load-anomalies",
+  "metric_cols": [
+   "active_power_total_kw",
+   "current_avg"
+  ]
+ },
+ {
+  "id": 61,
+  "prompt": "single line diagram for PCC Panel 2 B",
+  "asset": "PCC Panel 2 B",
+  "klass": "LT Panel (PCC)",
+  "intent": "overview-sld",
+  "page_hint": "panel-overview-shell/overview-sld-3d",
+  "metric_cols": [
+   "active_power_total_kw"
+  ]
+ },
+ {
+  "id": 62,
+  "prompt": "PCC Panel 3 A SLD overview",
+  "asset": "PCC Panel 3 A",
+  "klass": "LT Panel (PCC)",
+  "intent": "overview-sld",
+  "page_hint": "panel-overview-shell/overview-sld-3d",
+  "metric_cols": [
+   "active_power_total_kw"
+  ]
+ },
+ {
+  "id": 63,
+  "prompt": "topology and overview of PCC Panel 3 B",
+  "asset": "PCC Panel 3 B",
+  "klass": "LT Panel (PCC)",
+  "intent": "overview-sld",
+  "page_hint": "panel-overview-shell/overview-sld-3d",
+  "metric_cols": [
+   "active_power_total_kw"
+  ]
+ },
+ {
+  "id": 64,
+  "prompt": "compare power across PCC Panel 4 phases",
+  "asset": "PCC Panel 4",
+  "klass": "LT Panel (PCC)",
+  "intent": "compare",
+  "page_hint": "panel-overview-shell/energy-power",
+  "metric_cols": [
+   "active_power_r_kw",
+   "active_power_y_kw",
+   "active_power_b_kw",
+   "current_r",
+   "current_y",
+   "current_b"
+  ]
+ },
+ {
+  "id": 65,
+  "prompt": "Diesel Generator-01 phase comparison R vs Y vs B",
+  "asset": "Diesel Generator-01",
+  "klass": "Diesel Generator",
+  "intent": "compare",
+  "page_hint": "panel-overview-shell/energy-power",
+  "metric_cols": [
+   "active_power_r_kw",
+   "active_power_y_kw",
+   "active_power_b_kw",
+   "current_r",
+   "current_y",
+   "current_b"
+  ]
+ },
+ {
+  "id": 66,
+  "prompt": "how do the three phases of Diesel Generator-02 compare",
+  "asset": "Diesel Generator-02",
+  "klass": "Diesel Generator",
+  "intent": "compare",
+  "page_hint": "panel-overview-shell/energy-power",
+  "metric_cols": [
+   "active_power_r_kw",
+   "active_power_y_kw",
+   "active_power_b_kw",
+   "current_r",
+   "current_y",
+   "current_b"
+  ]
+ }
+]

@@ -1,0 +1,607 @@
+{
+ "coverage": {
+  "total": 66,
+  "ok": 66,
+  "failed": 0,
+  "classes": [
+   "APFC",
+   "Diesel Generator",
+   "HT Panel",
+   "LT Panel",
+   "LT Panel (PCC)",
+   "Transformer",
+   "UPS"
+  ],
+  "intents": [
+   "anomaly",
+   "apparent",
+   "compare",
+   "current",
+   "current-hist",
+   "current-thd",
+   "demand",
+   "distribution",
+   "energy-kwh",
+   "energy-power",
+   "frequency",
+   "harmonics",
+   "overview-sld",
+   "perphase-pwr",
+   "powerfactor",
+   "pq-summary",
+   "reactive",
+   "realtime",
+   "unbalance",
+   "voltage",
+   "voltage-hist",
+   "voltage-ll"
+  ],
+  "pages_routed": [
+   "individual-feeder-meter-shell/energy-power",
+   "individual-feeder-meter-shell/power-quality",
+   "individual-feeder-meter-shell/real-time-monitoring",
+   "individual-feeder-meter-shell/voltage-current",
+   "panel-overview-shell/energy-distribution",
+   "panel-overview-shell/energy-power",
+   "panel-overview-shell/harmonics-pq",
+   "panel-overview-shell/real-time-monitoring",
+   "panel-overview-shell/voltage-current"
+  ],
+  "assets_resolved": [
+   "AHU-1",
+   "AHU-10",
+   "AHU-2",
+   "APFC Panel-1",
+   "APFC Panel-2",
+   "APFC Panel-3",
+   "APFC Panel-4",
+   "BPDB-01 For Lamination-01&02",
+   "Bus Coupler-19",
+   "BusCoupler-12",
+   "DG Sync Panel",
+   "Diesel Generator-01",
+   "Diesel Generator-02",
+   "Diesel Generator-03",
+   "Diesel Generator-04",
+   "Diesel Generator-05",
+   "Diesel Generator-06",
+   "Diesel Generator-08",
+   "HHF-01 (TYPE-01) 300A +600KVAR",
+   "HT Panel M1",
+   "HT Panel M2",
+   "HT Transformer 1",
+   "MLDB",
+   "Main HT Panel",
+   "PCC Panel 1 A",
+   "PCC Panel 1 B",
+   "PCC Panel 2 A",
+   "PCC Panel 3 A",
+   "PCC Panel 3 B",
+   "PCC Panel 4",
+   "RTCC Panel",
+   "Transformer 1",
+   "Transformer 2",
+   "Transformer 3",
+   "Transformer 4",
+   "Transformer 5",
+   "Transformer 7",
+   "Transformer 8",
+   "UPS 01",
+   "UPS 02",
+   "UPS 03",
+   "UPS 04",
+   "UPS 05",
+   "UPS 06",
+   "solar incomer 1",
+   "solar incomer 2"
+  ],
+  "metric_cols_hit": [
+   "active_energy_export_kwh",
+   "active_energy_import_kwh",
+   "active_power_b_kw",
+   "active_power_r_kw",
+   "active_power_total_kw",
+   "active_power_y_kw",
+   "apparent_power_b_kva",
+   "apparent_power_r_kva",
+   "apparent_power_total_kva",
+   "apparent_power_y_kva",
+   "current_avg",
+   "current_b",
+   "current_r",
+   "current_unbalance_pct",
+   "current_y",
+   "frequency_hz",
+   "power_factor_b",
+   "power_factor_r",
+   "power_factor_total",
+   "power_factor_y",
+   "reactive_energy_export_kvarh",
+   "reactive_energy_import_kvarh",
+   "reactive_power_b_kvar",
+   "reactive_power_r_kvar",
+   "reactive_power_total_kvar",
+   "reactive_power_y_kvar",
+   "thd_current_b_pct",
+   "thd_current_r_pct",
+   "thd_current_y_pct",
+   "thd_voltage_b_pct",
+   "thd_voltage_r_pct",
+   "thd_voltage_y_pct",
+   "voltage_b_n",
+   "voltage_br",
+   "voltage_ll_avg",
+   "voltage_ln_avg",
+   "voltage_r_n",
+   "voltage_ry",
+   "voltage_unbalance_pct",
+   "voltage_y_n",
+   "voltage_yb"
+  ]
+ },
+ "anomalies": {
+  "conformance_fail": [
+   [
+    1,
+    "real time monitoring for Transformer 1",
+    "1/3 cards non-conforming"
+   ],
+   [
+    3,
+    "Transformer 3 real-time dashboard",
+    "1/3 cards non-conforming"
+   ],
+   [
+    4,
+    "energy and power overview for Transformer 4",
+    "1/4 cards non-conforming"
+   ],
+   [
+    7,
+    "energy consumption in kWh for Transformer 7",
+    "2/4 cards non-conforming"
+   ],
+   [
+    9,
+    "HT Transformer 1 imported vs exported energy",
+    "1/4 cards non-conforming"
+   ],
+   [
+    11,
+    "PCC Panel 1 B load demand pattern",
+    "2/4 cards non-conforming"
+   ],
+   [
+    13,
+    "energy distribution breakdown for PCC Panel 2 B",
+    "1/2 cards non-conforming"
+   ],
+   [
+    15,
+    "PCC Panel 3 B feeder-level distribution",
+    "2/2 cards non-conforming"
+   ],
+   [
+    18,
+    "Diesel Generator-02 line voltage trend",
+    "3/4 cards non-conforming"
+   ],
+   [
+    17,
+    "phase voltages on Diesel Generator-01",
+    "3/4 cards non-conforming"
+   ],
+   [
+    16,
+    "voltage and current for PCC Panel 4",
+    "1/5 cards non-conforming"
+   ],
+   [
+    19,
+    "line-to-line voltage for Diesel Generator-03",
+    "3/4 cards non-conforming"
+   ],
+   [
+    21,
+    "phase-to-phase voltage on Diesel Generator-05",
+    "3/4 cards non-conforming"
+   ],
+   [
+    20,
+    "Diesel Generator-04 L-L voltage RY YB BR",
+    "4/4 cards non-conforming"
+   ],
+   [
+    23,
+    "current per phase on Diesel Generator-07",
+    "1/4 cards non-conforming"
+   ],
+   [
+    24,
+    "Diesel Generator-08 current loading R Y B",
+    "2/4 cards non-conforming"
+   ],
+   [
+    22,
+    "phase currents for Diesel Generator-06",
+    "2/4 cards non-conforming"
+   ],
+   [
+    25,
+    "voltage history for APFC Panel-1 last 7 days",
+    "3/4 cards non-conforming"
+   ],
+   [
+    26,
+    "APFC Panel-2 voltage trend over the month",
+    "2/4 cards non-conforming"
+   ],
+   [
+    28,
+    "current history for APFC Panel-4 this month",
+    "3/4 cards non-conforming"
+   ],
+   [
+    29,
+    "Main HT Panel current trend over time",
+    "1/8 cards non-conforming"
+   ],
+   [
+    27,
+    "how has voltage on APFC Panel-3 changed",
+    "3/4 cards non-conforming"
+   ],
+   [
+    30,
+    "current loading history of HT Panel M1",
+    "3/4 cards non-conforming"
+   ],
+   [
+    40,
+    "power factor for AHU-1",
+    "1/3 cards non-conforming"
+   ],
+   [
+    41,
+    "AHU-2 pf per phase",
+    "1/3 cards non-conforming"
+   ],
+   [
+    42,
+    "is AHU-10 running at good power factor",
+    "1/3 cards non-conforming"
+   ],
+   [
+    46,
+    "reactive power for solar incomer 2",
+    "1/4 cards non-conforming"
+   ],
+   [
+    55,
+    "voltage and current unbalance for Transformer 7",
+    "2/4 cards non-conforming"
+   ],
+   [
+    56,
+    "Transformer 8 phase unbalance",
+    "2/4 cards non-conforming"
+   ],
+   [
+    57,
+    "is HT Transformer 1 balanced across phases",
+    "1/4 cards non-conforming"
+   ],
+   [
+    62,
+    "PCC Panel 3 A SLD overview",
+    "1/2 cards non-conforming"
+   ],
+   [
+    63,
+    "topology and overview of PCC Panel 3 B",
+    "1/2 cards non-conforming"
+   ],
+   [
+    64,
+    "compare power across PCC Panel 4 phases",
+    "2/4 cards non-conforming"
+   ],
+   [
+    66,
+    "how do the three phases of Diesel Generator-02 compare",
+    "2/4 cards non-conforming"
+   ]
+  ],
+  "frame_fail": [
+   [
+    5,
+    "active power trend for Transformer 5",
+    "frames not ok: ['energy-power-history']"
+   ],
+   [
+    14,
+    "where does the power go in PCC Panel 3 A",
+    "frames not ok: ['energy-distribution']"
+   ],
+   [
+    15,
+    "PCC Panel 3 B feeder-level distribution",
+    "frames not ok: ['energy-distribution']"
+   ],
+   [
+    18,
+    "Diesel Generator-02 line voltage trend",
+    "frames not ok: ['voltage-current', 'voltage-history', 'current-history']"
+   ],
+   [
+    17,
+    "phase voltages on Diesel Generator-01",
+    "frames not ok: ['voltage-current', 'voltage-history', 'power-quality-summary', 'power-quality-history']"
+   ],
+   [
+    19,
+    "line-to-line voltage for Diesel Generator-03",
+    "frames not ok: ['voltage-current', 'voltage-history', 'power-quality-summary', 'power-quality-history']"
+   ],
+   [
+    21,
+    "phase-to-phase voltage on Diesel Generator-05",
+    "frames not ok: ['voltage-current', 'voltage-history', 'power-quality-summary', 'power-quality-history']"
+   ],
+   [
+    20,
+    "Diesel Generator-04 L-L voltage RY YB BR",
+    "frames not ok: ['voltage-current', 'voltage-history', 'power-quality-summary', 'power-quality-history']"
+   ],
+   [
+    23,
+    "current per phase on Diesel Generator-07",
+    "frames not ok: ['voltage-current', 'distortion-harmonics', 'load-anomalies']"
+   ],
+   [
+    24,
+    "Diesel Generator-08 current loading R Y B",
+    "frames not ok: ['power-quality-history']"
+   ],
+   [
+    22,
+    "phase currents for Diesel Generator-06",
+    "frames not ok: ['voltage-current', 'distortion-harmonics']"
+   ],
+   [
+    25,
+    "voltage history for APFC Panel-1 last 7 days",
+    "frames not ok: ['power-quality-history']"
+   ],
+   [
+    26,
+    "APFC Panel-2 voltage trend over the month",
+    "frames not ok: ['power-quality-history']"
+   ],
+   [
+    27,
+    "how has voltage on APFC Panel-3 changed",
+    "frames not ok: ['power-quality-history']"
+   ],
+   [
+    32,
+    "DG Sync Panel power quality and harmonics",
+    "frames not ok: ['power-quality-history']"
+   ],
+   [
+    33,
+    "voltage THD on UPS 01",
+    "frames not ok: ['power-quality-history', 'distortion-harmonics']"
+   ],
+   [
+    34,
+    "current THD for UPS 02",
+    "frames not ok: ['power-quality-history']"
+   ],
+   [
+    35,
+    "UPS 03 current harmonic distortion",
+    "frames not ok: ['power-quality-history']"
+   ],
+   [
+    36,
+    "TDD and current harmonics on UPS 04",
+    "frames not ok: ['power-quality-history']"
+   ],
+   [
+    37,
+    "power quality summary for UPS 05",
+    "frames not ok: ['power-quality-history']"
+   ],
+   [
+    39,
+    "power quality assessment of MLDB",
+    "frames not ok: ['power-quality-history']"
+   ],
+   [
+    38,
+    "UPS 06 PQ compliance overview",
+    "frames not ok: ['power-quality-history']"
+   ],
+   [
+    40,
+    "power factor for AHU-1",
+    "frames not ok: ['power-quality-history']"
+   ],
+   [
+    41,
+    "AHU-2 pf per phase",
+    "frames not ok: ['power-quality-history']"
+   ],
+   [
+    42,
+    "is AHU-10 running at good power factor",
+    "frames not ok: ['power-quality-history']"
+   ],
+   [
+    56,
+    "Transformer 8 phase unbalance",
+    "frames not ok: ['power-quality-history']"
+   ],
+   [
+    57,
+    "is HT Transformer 1 balanced across phases",
+    "frames not ok: ['power-quality-history']"
+   ],
+   [
+    65,
+    "Diesel Generator-01 phase comparison R vs Y vs B",
+    "frames not ok: ['real-time-monitoring']"
+   ],
+   [
+    66,
+    "how do the three phases of Diesel Generator-02 compare",
+    "frames not ok: ['voltage-current', 'voltage-history', 'current-history']"
+   ]
+  ],
+  "asset_name_mismatch": [
+   [
+    6,
+    "Transformer 6 power consumption",
+    "want=Transformer 6 got=Transformer 7"
+   ],
+   [
+    12,
+    "peak demand history for PCC Panel 2 A",
+    "want=PCC Panel 2 A got=PCC Panel 1 B"
+   ],
+   [
+    13,
+    "energy distribution breakdown for PCC Panel 2 B",
+    "want=PCC Panel 2 B got=PCC Panel 1 B"
+   ],
+   [
+    14,
+    "where does the power go in PCC Panel 3 A",
+    "want=PCC Panel 3 A got=PCC Panel 2 A"
+   ],
+   [
+    23,
+    "current per phase on Diesel Generator-07",
+    "want=Diesel Generator-07 got=Diesel Generator-08"
+   ],
+   [
+    24,
+    "Diesel Generator-08 current loading R Y B",
+    "want=Diesel Generator-08 got=RTCC Panel"
+   ],
+   [
+    54,
+    "phase-wise kW on Transformer 6",
+    "want=Transformer 6 got=Transformer 7"
+   ],
+   [
+    56,
+    "Transformer 8 phase unbalance",
+    "want=Transformer 8 got=Transformer 7"
+   ],
+   [
+    60,
+    "any anomalies on PCC Panel 2 A recently",
+    "want=PCC Panel 2 A got=PCC Panel 1 B"
+   ],
+   [
+    61,
+    "single line diagram for PCC Panel 2 B",
+    "want=PCC Panel 2 B got=PCC Panel 1 B"
+   ],
+   [
+    63,
+    "topology and overview of PCC Panel 3 B",
+    "want=PCC Panel 3 B got=PCC Panel 1 B"
+   ]
+  ],
+  "off_domain_endpoint": [
+   [
+    29,
+    "Main HT Panel current trend over time",
+    "want~['current-history', 'voltage-current'] got=['real-time-monitoring']"
+   ],
+   [
+    31,
+    "harmonic distortion THD for HT Panel M2",
+    "want~['distortion-harmonics', 'harmonics-pq', 'power-quality', 'power-quality-history'] got=['current-history', 'power-quality-summary']"
+   ],
+   [
+    34,
+    "current THD for UPS 02",
+    "want~['distortion-harmonics', 'harmonics-pq', 'power-quality'] got=['power-quality-history', 'power-quality-summary']"
+   ],
+   [
+    35,
+    "UPS 03 current harmonic distortion",
+    "want~['distortion-harmonics', 'harmonics-pq', 'power-quality'] got=['power-quality-history', 'power-quality-summary']"
+   ],
+   [
+    36,
+    "TDD and current harmonics on UPS 04",
+    "want~['distortion-harmonics', 'harmonics-pq', 'power-quality'] got=['power-quality-history', 'power-quality-summary']"
+   ],
+   [
+    40,
+    "power factor for AHU-1",
+    "want~['energy-power', 'power-quality'] got=['power-quality-history', 'power-quality-summary']"
+   ],
+   [
+    41,
+    "AHU-2 pf per phase",
+    "want~['energy-power', 'power-quality'] got=['power-quality-history', 'power-quality-summary']"
+   ],
+   [
+    42,
+    "is AHU-10 running at good power factor",
+    "want~['energy-power', 'power-quality'] got=['power-quality-history', 'power-quality-summary']"
+   ],
+   [
+    48,
+    "reactive power per phase on HHF-01 (TYPE-01) 300A +600KVAR",
+    "want~['energy-power'] got=['real-time-monitoring']"
+   ],
+   [
+    51,
+    "apparent power per phase on Transformer 3",
+    "want~['energy-power'] got=['real-time-monitoring']"
+   ],
+   [
+    52,
+    "per-phase active power for Transformer 4",
+    "want~['energy-power'] got=['real-time-monitoring']"
+   ],
+   [
+    53,
+    "Transformer 5 R Y B phase power split",
+    "want~['energy-power'] got=['real-time-monitoring']"
+   ],
+   [
+    54,
+    "phase-wise kW on Transformer 6",
+    "want~['energy-power'] got=['real-time-monitoring']"
+   ],
+   [
+    61,
+    "single line diagram for PCC Panel 2 B",
+    "want~['energy-power', 'overview', 'real-time-monitoring'] got=['energy-distribution']"
+   ],
+   [
+    62,
+    "PCC Panel 3 A SLD overview",
+    "want~['energy-power', 'overview', 'real-time-monitoring'] got=['energy-distribution']"
+   ],
+   [
+    63,
+    "topology and overview of PCC Panel 3 B",
+    "want~['energy-power', 'overview', 'real-time-monitoring'] got=['energy-distribution']"
+   ],
+   [
+    65,
+    "Diesel Generator-01 phase comparison R vs Y vs B",
+    "want~['energy-power', 'voltage-current'] got=['real-time-monitoring']"
+   ]
+  ]
+ }
+}

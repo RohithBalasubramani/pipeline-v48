@@ -1,0 +1,502 @@
+{
+ "coverage": {
+  "total": 65,
+  "ok": 65,
+  "failed": 0,
+  "classes": [
+   "APFC",
+   "Diesel Generator",
+   "HT Panel",
+   "LT Panel",
+   "LT Panel (PCC)",
+   "Transformer",
+   "UPS"
+  ],
+  "intents": [
+   "anomaly",
+   "apparent",
+   "compare",
+   "current",
+   "current-hist",
+   "current-thd",
+   "demand",
+   "distribution",
+   "energy-kwh",
+   "energy-power",
+   "frequency",
+   "harmonics",
+   "overview-sld",
+   "perphase-pwr",
+   "powerfactor",
+   "pq-summary",
+   "reactive",
+   "realtime",
+   "unbalance",
+   "voltage",
+   "voltage-hist",
+   "voltage-ll"
+  ],
+  "pages_routed": [
+   "individual-feeder-meter-shell/energy-power",
+   "individual-feeder-meter-shell/power-quality",
+   "individual-feeder-meter-shell/real-time-monitoring",
+   "individual-feeder-meter-shell/voltage-current",
+   "panel-overview-shell/energy-distribution",
+   "panel-overview-shell/energy-power",
+   "panel-overview-shell/harmonics-pq",
+   "panel-overview-shell/real-time-monitoring",
+   "panel-overview-shell/voltage-current"
+  ],
+  "assets_resolved": [
+   "AHU-1",
+   "AHU-10",
+   "AHU-2",
+   "APFC Panel-1",
+   "APFC Panel-2",
+   "APFC Panel-3",
+   "APFC Panel-4",
+   "BPDB-01 For Lamination-01&02",
+   "Bus Coupler-19",
+   "BusCoupler-12",
+   "DG Sync Panel",
+   "Diesel Generator-01",
+   "Diesel Generator-02",
+   "Diesel Generator-03",
+   "Diesel Generator-04",
+   "Diesel Generator-05",
+   "Diesel Generator-06",
+   "Diesel Generator-07",
+   "Diesel Generator-08",
+   "HHF-01 (TYPE-01) 300A +600KVAR",
+   "HT Panel M1",
+   "HT Panel M2",
+   "HT Transformer 1",
+   "MLDB",
+   "Main HT Panel",
+   "PCC Panel 1 A",
+   "PCC Panel 1 B",
+   "PCC Panel 2 A",
+   "PCC Panel 2 B",
+   "PCC Panel 3 A",
+   "PCC Panel 3 B",
+   "PCC Panel 4",
+   "Transformer 1",
+   "Transformer 2",
+   "Transformer 3",
+   "Transformer 4",
+   "Transformer 5",
+   "Transformer 6",
+   "Transformer 7",
+   "Transformer 8",
+   "UPS 01",
+   "UPS 02",
+   "UPS 03",
+   "UPS 04",
+   "UPS 05",
+   "UPS 06",
+   "solar incomer 1",
+   "solar incomer 2"
+  ],
+  "metric_cols_hit": [
+   "active_energy_export_kwh",
+   "active_energy_import_kwh",
+   "active_power_b_kw",
+   "active_power_r_kw",
+   "active_power_total_kw",
+   "active_power_y_kw",
+   "apparent_power_b_kva",
+   "apparent_power_r_kva",
+   "apparent_power_total_kva",
+   "apparent_power_y_kva",
+   "current_avg",
+   "current_b",
+   "current_r",
+   "current_unbalance_pct",
+   "current_y",
+   "frequency_hz",
+   "power_factor_b",
+   "power_factor_r",
+   "power_factor_total",
+   "power_factor_y",
+   "reactive_energy_export_kvarh",
+   "reactive_energy_import_kvarh",
+   "reactive_power_b_kvar",
+   "reactive_power_r_kvar",
+   "reactive_power_total_kvar",
+   "reactive_power_y_kvar",
+   "thd_current_b_pct",
+   "thd_current_r_pct",
+   "thd_current_y_pct",
+   "thd_voltage_b_pct",
+   "thd_voltage_r_pct",
+   "thd_voltage_y_pct",
+   "voltage_b_n",
+   "voltage_br",
+   "voltage_ll_avg",
+   "voltage_ln_avg",
+   "voltage_r_n",
+   "voltage_ry",
+   "voltage_unbalance_pct",
+   "voltage_y_n",
+   "voltage_yb"
+  ]
+ },
+ "anomalies": {
+  "conformance_fail": [
+   [
+    4,
+    "active power trend for PCC Panel 1 B",
+    "1/4 cards non-conforming"
+   ],
+   [
+    5,
+    "PCC Panel 2 A power consumption",
+    "1/4 cards non-conforming"
+   ],
+   [
+    9,
+    "energy consumption in kWh for PCC Panel 4",
+    "1/4 cards non-conforming"
+   ],
+   [
+    12,
+    "demand profile for Diesel Generator-03 over the last week",
+    "1/4 cards non-conforming"
+   ],
+   [
+    13,
+    "where does the power go in Diesel Generator-04",
+    "2/2 cards non-conforming"
+   ],
+   [
+    14,
+    "Diesel Generator-05 feeder-level distribution",
+    "2/2 cards non-conforming"
+   ],
+   [
+    15,
+    "energy distribution breakdown for Diesel Generator-06",
+    "2/2 cards non-conforming"
+   ],
+   [
+    16,
+    "phase voltages on Diesel Generator-07",
+    "3/4 cards non-conforming"
+   ],
+   [
+    17,
+    "Diesel Generator-08 line voltage trend",
+    "3/4 cards non-conforming"
+   ],
+   [
+    18,
+    "voltage and current for APFC Panel-1",
+    "2/4 cards non-conforming"
+   ],
+   [
+    19,
+    "APFC Panel-2 L-L voltage RY YB BR",
+    "2/4 cards non-conforming"
+   ],
+   [
+    20,
+    "phase-to-phase voltage on APFC Panel-3",
+    "2/4 cards non-conforming"
+   ],
+   [
+    21,
+    "line-to-line voltage for APFC Panel-4",
+    "2/4 cards non-conforming"
+   ],
+   [
+    23,
+    "HT Panel M1 current loading R Y B",
+    "3/4 cards non-conforming"
+   ],
+   [
+    24,
+    "phase currents for HT Panel M2",
+    "2/4 cards non-conforming"
+   ],
+   [
+    25,
+    "DG Sync Panel voltage trend over the month",
+    "2/4 cards non-conforming"
+   ],
+   [
+    26,
+    "how has voltage on UPS 01 changed",
+    "2/4 cards non-conforming"
+   ],
+   [
+    27,
+    "voltage history for UPS 02 last 7 days",
+    "2/4 cards non-conforming"
+   ],
+   [
+    28,
+    "UPS 03 current trend over time",
+    "1/4 cards non-conforming"
+   ],
+   [
+    29,
+    "current loading history of UPS 04",
+    "2/4 cards non-conforming"
+   ],
+   [
+    30,
+    "current history for UPS 05 this month",
+    "2/4 cards non-conforming"
+   ],
+   [
+    35,
+    "TDD and current harmonics on AHU-10",
+    "1/3 cards non-conforming"
+   ],
+   [
+    36,
+    "current THD for BusCoupler-12",
+    "1/3 cards non-conforming"
+   ],
+   [
+    37,
+    "Bus Coupler-19 PQ compliance overview",
+    "1/3 cards non-conforming"
+   ],
+   [
+    40,
+    "BPDB-01 For Lamination-01&02 pf per phase",
+    "1/3 cards non-conforming"
+   ],
+   [
+    41,
+    "is HHF-01 (TYPE-01) 300A +600KVAR running at good power factor",
+    "1/4 cards non-conforming"
+   ],
+   [
+    47,
+    "reactive power per phase on Transformer 6",
+    "1/3 cards non-conforming"
+   ],
+   [
+    51,
+    "apparent power for PCC Panel 1 A",
+    "1/4 cards non-conforming"
+   ],
+   [
+    55,
+    "PCC Panel 3 A phase unbalance",
+    "2/4 cards non-conforming"
+   ],
+   [
+    56,
+    "is PCC Panel 3 B balanced across phases",
+    "3/4 cards non-conforming"
+   ],
+   [
+    57,
+    "voltage and current unbalance for PCC Panel 4",
+    "2/4 cards non-conforming"
+   ],
+   [
+    62,
+    "topology and overview of Diesel Generator-05",
+    "1/8 cards non-conforming"
+   ],
+   [
+    63,
+    "single line diagram for Diesel Generator-06",
+    "2/2 cards non-conforming"
+   ],
+   [
+    64,
+    "Diesel Generator-07 phase comparison R vs Y vs B",
+    "2/4 cards non-conforming"
+   ],
+   [
+    65,
+    "how do the three phases of Diesel Generator-08 compare",
+    "2/4 cards non-conforming"
+   ]
+  ],
+  "frame_fail": [
+   [
+    9,
+    "energy consumption in kWh for PCC Panel 4",
+    "frames not ok: ['energy-power', 'demand-profile']"
+   ],
+   [
+    10,
+    "Diesel Generator-01 load demand pattern",
+    "frames not ok: ['energy-power-history', 'load-anomalies']"
+   ],
+   [
+    11,
+    "peak demand history for Diesel Generator-02",
+    "frames not ok: ['energy-power-history', 'load-anomalies']"
+   ],
+   [
+    12,
+    "demand profile for Diesel Generator-03 over the last week",
+    "frames not ok: ['energy-power-history', 'energy-power', 'demand-profile']"
+   ],
+   [
+    13,
+    "where does the power go in Diesel Generator-04",
+    "frames not ok: ['energy-distribution']"
+   ],
+   [
+    14,
+    "Diesel Generator-05 feeder-level distribution",
+    "frames not ok: ['energy-distribution']"
+   ],
+   [
+    15,
+    "energy distribution breakdown for Diesel Generator-06",
+    "frames not ok: ['energy-distribution']"
+   ],
+   [
+    16,
+    "phase voltages on Diesel Generator-07",
+    "frames not ok: ['voltage-current', 'voltage-history', 'power-quality-summary']"
+   ],
+   [
+    17,
+    "Diesel Generator-08 line voltage trend",
+    "frames not ok: ['voltage-current', 'voltage-history', 'current-history']"
+   ],
+   [
+    27,
+    "voltage history for UPS 02 last 7 days",
+    "frames not ok: ['power-quality-history']"
+   ],
+   [
+    58,
+    "Diesel Generator-01 abnormal load events",
+    "frames not ok: ['energy-power-history', 'demand-profile', 'energy-power', 'load-anomalies']"
+   ],
+   [
+    59,
+    "any anomalies on Diesel Generator-02 recently",
+    "frames not ok: ['energy-power-history', 'demand-profile', 'energy-power', 'load-anomalies']"
+   ],
+   [
+    60,
+    "load anomalies for Diesel Generator-03",
+    "frames not ok: ['energy-power-history', 'energy-power', 'load-anomalies']"
+   ],
+   [
+    61,
+    "Diesel Generator-04 SLD overview",
+    "frames not ok: ['real-time-monitoring']"
+   ],
+   [
+    62,
+    "topology and overview of Diesel Generator-05",
+    "frames not ok: ['real-time-monitoring']"
+   ],
+   [
+    63,
+    "single line diagram for Diesel Generator-06",
+    "frames not ok: ['energy-distribution']"
+   ],
+   [
+    64,
+    "Diesel Generator-07 phase comparison R vs Y vs B",
+    "frames not ok: ['voltage-current', 'voltage-history', 'power-quality-summary']"
+   ],
+   [
+    65,
+    "how do the three phases of Diesel Generator-08 compare",
+    "frames not ok: ['voltage-current', 'voltage-history', 'current-history']"
+   ]
+  ],
+  "off_domain_endpoint": [
+   [
+    31,
+    "UPS 06 power quality and harmonics",
+    "want~['distortion-harmonics', 'harmonics-pq', 'power-quality', 'power-quality-history'] got=['power-quality-summary']"
+   ],
+   [
+    32,
+    "voltage THD on MLDB",
+    "want~['distortion-harmonics', 'harmonics-pq', 'power-quality', 'power-quality-history'] got=['power-quality-summary']"
+   ],
+   [
+    33,
+    "harmonic distortion THD for AHU-1",
+    "want~['distortion-harmonics', 'harmonics-pq', 'power-quality', 'power-quality-history'] got=['power-quality-summary']"
+   ],
+   [
+    34,
+    "AHU-2 current harmonic distortion",
+    "want~['distortion-harmonics', 'harmonics-pq', 'power-quality'] got=['power-quality-summary']"
+   ],
+   [
+    35,
+    "TDD and current harmonics on AHU-10",
+    "want~['distortion-harmonics', 'harmonics-pq', 'power-quality'] got=['power-quality-summary']"
+   ],
+   [
+    36,
+    "current THD for BusCoupler-12",
+    "want~['distortion-harmonics', 'harmonics-pq', 'power-quality'] got=['power-quality-summary']"
+   ],
+   [
+    37,
+    "Bus Coupler-19 PQ compliance overview",
+    "want~['harmonics-pq', 'power-quality', 'power-quality-history'] got=['power-quality-summary']"
+   ],
+   [
+    38,
+    "power quality assessment of solar incomer 1",
+    "want~['harmonics-pq', 'power-quality', 'power-quality-history'] got=['power-quality-summary']"
+   ],
+   [
+    39,
+    "power quality summary for solar incomer 2",
+    "want~['harmonics-pq', 'power-quality', 'power-quality-history'] got=['power-quality-summary']"
+   ],
+   [
+    40,
+    "BPDB-01 For Lamination-01&02 pf per phase",
+    "want~['energy-power', 'power-quality'] got=['power-quality-summary']"
+   ],
+   [
+    42,
+    "power factor for Transformer 1",
+    "want~['energy-power', 'power-quality'] got=['power-quality-summary', 'voltage-history']"
+   ],
+   [
+    47,
+    "reactive power per phase on Transformer 6",
+    "want~['energy-power'] got=['real-time-monitoring']"
+   ],
+   [
+    50,
+    "apparent power per phase on HT Transformer 1",
+    "want~['energy-power'] got=['real-time-monitoring']"
+   ],
+   [
+    52,
+    "PCC Panel 1 B R Y B phase power split",
+    "want~['energy-power'] got=['real-time-monitoring']"
+   ],
+   [
+    53,
+    "phase-wise kW on PCC Panel 2 A",
+    "want~['energy-power'] got=['real-time-monitoring']"
+   ],
+   [
+    54,
+    "per-phase active power for PCC Panel 2 B",
+    "want~['energy-power'] got=['real-time-monitoring']"
+   ],
+   [
+    63,
+    "single line diagram for Diesel Generator-06",
+    "want~['energy-power', 'overview', 'real-time-monitoring'] got=['energy-distribution']"
+   ]
+  ]
+ }
+}

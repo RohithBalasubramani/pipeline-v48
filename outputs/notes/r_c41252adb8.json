@@ -1,0 +1,12 @@
+{
+ "run_id": "r_c41252adb8",
+ "loop1": [
+  {
+   "card_id": 48,
+   "title": "Distortion & Harmonic Profile",
+   "answerability": "partial",
+   "note": "Showing V-THD and I-THD trends. H5/H7 specific harmonic order data is not available in the shared buffer; I-THD phases are used as proxies for the H5/H7 series to maintain the chart structure."
+  }
+ ],
+ "loop2": null
+}

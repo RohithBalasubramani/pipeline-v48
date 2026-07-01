@@ -1,0 +1,12 @@
+{
+ "run_id": "r_aea5abb769",
+ "loop1": [
+  {
+   "card_id": 43,
+   "title": "Voltage Live Health",
+   "answerability": "partial",
+   "note": "Showing voltage deviation and average voltage; unbalance metric is derived from current phase values as a proxy for load balance."
+  }
+ ],
+ "loop2": null
+}

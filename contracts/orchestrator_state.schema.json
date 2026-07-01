@@ -1,0 +1,9 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "v48/orchestrator_state",
+  "title": "OrchestratorState",
+  "type": "object",
+  "properties": {},
+  "additionalProperties": true,
+  "$comment": "TODO(v48): fill from V48_BUILD_SPEC_CONTRACTS.md"
+}

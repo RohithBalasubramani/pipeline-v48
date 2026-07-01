@@ -1,0 +1,12 @@
+{
+ "run_id": "r_1dcd02c99b",
+ "loop1": [
+  {
+   "card_id": 37,
+   "title": "Voltage Monitor (Real-Time)",
+   "answerability": "partial",
+   "note": "Showing line-to-line average voltage as a proxy for max/min line-to-neutral voltage, as per-phase max/min is not directly available in the shared buffer."
+  }
+ ],
+ "loop2": null
+}

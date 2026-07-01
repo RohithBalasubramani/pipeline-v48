@@ -1,0 +1,12 @@
+{
+ "run_id": "r_79394315fd",
+ "loop1": [
+  {
+   "card_id": 24,
+   "title": "Harmonics & PQ Timeline",
+   "answerability": "partial",
+   "note": "Showing event counts and worst deviations from the shared context buffer; specific harmonic THD time-series data is not directly available in the group atom's current schema, so event proxies are used."
+  }
+ ],
+ "loop2": null
+}

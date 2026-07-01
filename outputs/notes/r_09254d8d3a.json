@@ -1,0 +1,12 @@
+{
+ "run_id": "r_09254d8d3a",
+ "loop1": [
+  {
+   "card_id": 41,
+   "title": "Input vs Output Energy",
+   "answerability": "partial",
+   "note": "Showing total active power as a proxy for both HV input and LV output, as per-phase or separate input/output meters are not available for this Diesel Generator asset."
+  }
+ ],
+ "loop2": null
+}

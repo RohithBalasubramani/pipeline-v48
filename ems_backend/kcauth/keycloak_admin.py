@@ -1,0 +1,266 @@
+"""Keycloak Admin REST client — synchronous port of LoggerFast's async
+httpx version. Used by the /api/auth/* views for user + role management
+and password/refresh grants. Same endpoints, same behaviour, sync.
+"""
+from __future__ import annotations
+
+import logging
+from typing import Any, Dict, List, Optional
+
+import requests
+
+from .keycloak_config import (
+    KEYCLOAK_ADMIN_BASE_URL,
+    KEYCLOAK_ADMIN_CLIENT_ID,
+    KEYCLOAK_ADMIN_CLIENT_SECRET,
+    KEYCLOAK_TOKEN_URL,
+)
+
+log = logging.getLogger(__name__)
+
+_TIMEOUT = 15.0
+
+
+class KeycloakAdminError(Exception):
+    pass
+
+
+_session: Optional[requests.Session] = None
+
+
+def _get_session() -> requests.Session:
+    global _session
+    if _session is None:
+        _session = requests.Session()
+    return _session
+
+
+def get_service_account_token() -> str:
+    """Obtain admin token via client_credentials grant."""
+    s = _get_session()
+    resp = s.post(
+        KEYCLOAK_TOKEN_URL,
+        data={
+            "grant_type": "client_credentials",
+            "client_id": KEYCLOAK_ADMIN_CLIENT_ID,
+            "client_secret": KEYCLOAK_ADMIN_CLIENT_SECRET,
+        },
+        timeout=_TIMEOUT,
+    )
+    if resp.status_code != 200:
+        raise KeycloakAdminError(f"Failed to get admin token: {resp.status_code} {resp.text}")
+    return resp.json()["access_token"]
+
+
+def create_user(
+    token: str,
+    username: str,
+    email: str,
+    first_name: str = "",
+    last_name: str = "",
+    enabled: bool = True,
+) -> str:
+    """Create a user in Keycloak. Returns user_id (UUID)."""
+    s = _get_session()
+    payload: Dict[str, Any] = {
+        "username": username,
+        "email": email,
+        "firstName": first_name,
+        "lastName": last_name,
+        "enabled": enabled,
+        "emailVerified": False,
+    }
+    resp = s.post(
+        f"{KEYCLOAK_ADMIN_BASE_URL}/users",
+        json=payload,
+        headers={"Authorization": f"Bearer {token}"},
+        timeout=_TIMEOUT,
+    )
+    if resp.status_code not in (201, 204):
+        raise KeycloakAdminError(f"User create failed: {resp.status_code} {resp.text}")
+
+    location = resp.headers.get("location", "")
+    if not location:
+        user_id = get_user_id_by_username(token, username)
+        if not user_id:
+            raise KeycloakAdminError("User created but user_id not found")
+        return user_id
+    return location.rstrip("/").split("/")[-1]
+
+
+def set_user_password(token: str, user_id: str, password: str, temporary: bool = False) -> None:
+    s = _get_session()
+    resp = s.put(
+        f"{KEYCLOAK_ADMIN_BASE_URL}/users/{user_id}/reset-password",
+        json={"type": "password", "value": password, "temporary": temporary},
+        headers={"Authorization": f"Bearer {token}"},
+        timeout=_TIMEOUT,
+    )
+    if resp.status_code != 204:
+        raise KeycloakAdminError(f"Set password failed: {resp.status_code} {resp.text}")
+
+
+def get_user_id_by_username(token: str, username: str) -> Optional[str]:
+    s = _get_session()
+    resp = s.get(
+        f"{KEYCLOAK_ADMIN_BASE_URL}/users",
+        params={"username": username, "exact": "true"},
+        headers={"Authorization": f"Bearer {token}"},
+        timeout=_TIMEOUT,
+    )
+    if resp.status_code != 200:
+        return None
+    users = resp.json()
+    if not users:
+        return None
+    return users[0].get("id")
+
+
+def get_users_by_realm_role(token: str, role_name: str) -> List[Dict[str, Any]]:
+    """Return all users who have the given realm-level role."""
+    s = _get_session()
+    resp = s.get(
+        f"{KEYCLOAK_ADMIN_BASE_URL}/roles/{role_name}/users",
+        headers={"Authorization": f"Bearer {token}"},
+        timeout=_TIMEOUT,
+    )
+    if resp.status_code == 404:
+        log.warning("Realm role '%s' not found in Keycloak", role_name)
+        return []
+    if resp.status_code != 200:
+        raise KeycloakAdminError(
+            f"Failed to get users for realm role '{role_name}': {resp.status_code} {resp.text}"
+        )
+    return resp.json()
+
+
+def get_realm_role(token: str, role_name: str) -> Optional[Dict[str, Any]]:
+    """Get a realm-level role by name. Returns role representation or None."""
+    s = _get_session()
+    resp = s.get(
+        f"{KEYCLOAK_ADMIN_BASE_URL}/roles/{role_name}",
+        headers={"Authorization": f"Bearer {token}"},
+        timeout=_TIMEOUT,
+    )
+    if resp.status_code == 404:
+        return None
+    if resp.status_code != 200:
+        raise KeycloakAdminError(f"Realm role fetch failed: {resp.status_code} {resp.text}")
+    return resp.json()
+
+
+def assign_realm_role_to_user(token: str, user_id: str, role_repr: Dict[str, Any]) -> None:
+    """Assign a realm-level role to a user."""
+    s = _get_session()
+    resp = s.post(
+        f"{KEYCLOAK_ADMIN_BASE_URL}/users/{user_id}/role-mappings/realm",
+        json=[role_repr],
+        headers={"Authorization": f"Bearer {token}"},
+        timeout=_TIMEOUT,
+    )
+    if resp.status_code != 204:
+        raise KeycloakAdminError(f"Assign realm role failed: {resp.status_code} {resp.text}")
+
+
+def remove_realm_role_from_user(token: str, user_id: str, role_repr: Dict[str, Any]) -> None:
+    """Remove a realm-level role from a user."""
+    s = _get_session()
+    resp = s.request(
+        "DELETE",
+        f"{KEYCLOAK_ADMIN_BASE_URL}/users/{user_id}/role-mappings/realm",
+        json=[role_repr],
+        headers={"Authorization": f"Bearer {token}"},
+        timeout=_TIMEOUT,
+    )
+    if resp.status_code != 204:
+        raise KeycloakAdminError(f"Remove realm role failed: {resp.status_code} {resp.text}")
+
+
+def get_user_realm_roles(token: str, user_id: str) -> List[Dict[str, Any]]:
+    """Get all realm-level roles assigned to a user."""
+    s = _get_session()
+    resp = s.get(
+        f"{KEYCLOAK_ADMIN_BASE_URL}/users/{user_id}/role-mappings/realm",
+        headers={"Authorization": f"Bearer {token}"},
+        timeout=_TIMEOUT,
+    )
+    if resp.status_code != 200:
+        raise KeycloakAdminError(f"Get user realm roles failed: {resp.status_code} {resp.text}")
+    return resp.json()
+
+
+def get_client_uuid(token: str, client_id: str) -> Optional[str]:
+    s = _get_session()
+    resp = s.get(
+        f"{KEYCLOAK_ADMIN_BASE_URL}/clients",
+        params={"clientId": client_id},
+        headers={"Authorization": f"Bearer {token}"},
+        timeout=_TIMEOUT,
+    )
+    if resp.status_code != 200:
+        raise KeycloakAdminError(f"Client lookup failed: {resp.status_code} {resp.text}")
+    arr = resp.json()
+    if not arr:
+        return None
+    return arr[0]["id"]
+
+
+def get_client_role(token: str, client_uuid: str, role_name: str) -> Optional[Dict[str, Any]]:
+    s = _get_session()
+    resp = s.get(
+        f"{KEYCLOAK_ADMIN_BASE_URL}/clients/{client_uuid}/roles/{role_name}",
+        headers={"Authorization": f"Bearer {token}"},
+        timeout=_TIMEOUT,
+    )
+    if resp.status_code == 404:
+        return None
+    if resp.status_code != 200:
+        raise KeycloakAdminError(f"Client role fetch failed: {resp.status_code} {resp.text}")
+    return resp.json()
+
+
+def assign_client_role_to_user(
+    token: str, user_id: str, client_uuid: str, role_repr: Dict[str, Any]
+) -> None:
+    s = _get_session()
+    resp = s.post(
+        f"{KEYCLOAK_ADMIN_BASE_URL}/users/{user_id}/role-mappings/clients/{client_uuid}",
+        json=[role_repr],
+        headers={"Authorization": f"Bearer {token}"},
+        timeout=_TIMEOUT,
+    )
+    if resp.status_code != 204:
+        raise KeycloakAdminError(f"Assign client role failed: {resp.status_code} {resp.text}")
+
+
+def user_login(username: str, password: str) -> Dict[str, Any]:
+    """Authenticate user via password grant. Returns token response."""
+    s = _get_session()
+    data: Dict[str, str] = {
+        "grant_type": "password",
+        "client_id": KEYCLOAK_ADMIN_CLIENT_ID,
+        "username": username,
+        "password": password,
+    }
+    if KEYCLOAK_ADMIN_CLIENT_SECRET:
+        data["client_secret"] = KEYCLOAK_ADMIN_CLIENT_SECRET
+    resp = s.post(KEYCLOAK_TOKEN_URL, data=data, timeout=_TIMEOUT)
+    if resp.status_code != 200:
+        raise KeycloakAdminError(f"Login failed: {resp.status_code} {resp.text}")
+    return resp.json()
+
+
+def user_refresh(refresh_token: str) -> Dict[str, Any]:
+    """Refresh an access token using a refresh_token grant."""
+    s = _get_session()
+    data: Dict[str, str] = {
+        "grant_type": "refresh_token",
+        "client_id": KEYCLOAK_ADMIN_CLIENT_ID,
+        "refresh_token": refresh_token,
+    }
+    if KEYCLOAK_ADMIN_CLIENT_SECRET:
+        data["client_secret"] = KEYCLOAK_ADMIN_CLIENT_SECRET
+    resp = s.post(KEYCLOAK_TOKEN_URL, data=data, timeout=_TIMEOUT)
+    if resp.status_code != 200:
+        raise KeycloakAdminError(f"Token refresh failed: {resp.status_code} {resp.text}")
+    return resp.json()

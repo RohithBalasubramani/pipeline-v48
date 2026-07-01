@@ -1,0 +1,18 @@
+{
+ "run_id": "r_d8a89da1a1",
+ "loop1": [
+  {
+   "card_id": 12,
+   "title": "Energy Input & Distribution",
+   "answerability": "partial",
+   "note": "Showing active energy import (kWh) as a proxy for instantaneous power due to schema constraints."
+  },
+  {
+   "card_id": 13,
+   "title": "Energy Flow Diagram",
+   "answerability": "partial",
+   "note": "Showing active energy import/export as primary flow metrics; per-phase power and detailed loss breakdowns are not directly measured for this asset, so efficiency and loss KPIs are approximated or derived from available aggregate energy data."
+  }
+ ],
+ "loop2": null
+}

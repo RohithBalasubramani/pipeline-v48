@@ -1,0 +1,121 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>EMS Query Copilot</title>
+<style>
+  :root { --teal:#2f6f6f; --border:#e2ddd0; --bg:#faf8f3; --ink:#3a3a36; --ghost:#b3ada0; }
+  * { box-sizing: border-box; }
+  body { margin:0; background:var(--bg); color:var(--ink);
+         font:15px/1.5 ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,sans-serif; }
+  .page { max-width:760px; margin:9vh auto; padding:0 20px; }
+  h1 { font-size:20px; font-weight:650; color:var(--teal); margin:0 0 4px; }
+  .sub { color:#8a857a; font-size:13px; margin:0 0 22px; }
+  .wrap { position:relative; }
+  .ghost, #box {
+    width:100%; padding:14px 16px; font-size:17px; font-family:inherit;
+    border:1px solid var(--border); border-radius:12px; background:#fff;
+    letter-spacing:0; white-space:pre; overflow:hidden;
+  }
+  .ghost { position:absolute; inset:0; border-color:transparent; background:transparent;
+           color:transparent; pointer-events:none; }
+  .ghost .gs { color:var(--ghost); }
+  #box { position:relative; background:transparent; color:var(--ink); outline:none; }
+  #box:focus { border-color:var(--teal); box-shadow:0 0 0 3px rgba(47,111,111,.10); }
+  .hint { margin:7px 2px 0; font-size:12px; color:#a7a194; height:16px; }
+  .hint b { color:var(--teal); font-weight:600; }
+  #drop { list-style:none; margin:10px 0 0; padding:6px;
+          border:1px solid var(--border); border-radius:12px; background:#fff;
+          box-shadow:0 8px 30px rgba(0,0,0,.06); display:none; }
+  #drop.on { display:block; }
+  #drop li { padding:10px 12px; border-radius:8px; cursor:pointer; display:flex; gap:10px; align-items:center; }
+  #drop li .ic { color:var(--teal); font-size:12px; opacity:.7; }
+  #drop li.active, #drop li:hover { background:#f1efe7; }
+  .tag { margin-left:auto; font-size:11px; color:#b3ada0; }
+</style>
+</head>
+<body>
+<div class="page">
+  <h1>EMS Query Copilot</h1>
+  <p class="sub">Start typing an EMS request. Inline ghost text completes it; press <b>Tab</b> to accept, <b>↑/↓</b> + <b>Enter</b> to pick a suggestion.</p>
+  <div class="wrap">
+    <div class="ghost" id="ghost"></div>
+    <input id="box" autocomplete="off" autocapitalize="off" spellcheck="false"
+           placeholder="e.g.  voltage sags and current imbalance on the PCC panel this week" />
+  </div>
+  <div class="hint" id="hint"></div>
+  <ul id="drop"></ul>
+</div>
+<script>
+const box = document.getElementById('box');
+const ghostEl = document.getElementById('ghost');
+const drop = document.getElementById('drop');
+const hint = document.getElementById('hint');
+let ghost = '', suggestions = [], active = -1, timer = null, ctrl = null, seq = 0;
+
+const esc = s => s.replace(/[&<>]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));
+
+function paintGhost() {
+  const t = box.value;
+  ghostEl.innerHTML = esc(t) + (ghost ? '<span class="gs">' + esc(ghost) + '</span>' : '');
+}
+function renderDrop() {
+  if (!suggestions.length) { drop.classList.remove('on'); drop.innerHTML = ''; return; }
+  drop.innerHTML = suggestions.map((s, i) =>
+    `<li data-i="${i}" class="${i===active?'active':''}"><span class="ic">▸</span>${esc(s)}</li>`).join('');
+  drop.classList.add('on');
+  [...drop.children].forEach(li => {
+    li.onclick = () => { accept(suggestions[+li.dataset.i]); };
+  });
+}
+function accept(text) {
+  box.value = text; ghost = ''; suggestions = []; active = -1;
+  paintGhost(); renderDrop(); box.focus(); fetchSoon();
+}
+function fetchSoon() {
+  clearTimeout(timer);
+  timer = setTimeout(run, 160);
+}
+async function run() {
+  const text = box.value;
+  if (!text.trim()) { ghost=''; suggestions=[]; active=-1; paintGhost(); renderDrop(); hint.textContent=''; return; }
+  if (ctrl) ctrl.abort();
+  ctrl = new AbortController();
+  const my = ++seq;
+  hint.textContent = '…';
+  try {
+    const r = await fetch('/copilot/suggest', {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ text }), signal: ctrl.signal });
+    const d = await r.json();
+    if (my !== seq) return;                       // stale response
+    ghost = (d.ghost && d.autofill.toLowerCase().startsWith(text.toLowerCase())) ? d.ghost : '';
+    suggestions = d.suggestions || [];
+    active = -1;
+    paintGhost(); renderDrop();
+    hint.innerHTML = `<b>${d.source}</b> · ${d.latency_ms ?? '?'} ms${d.cached?' · cached':''}`;
+  } catch (e) {
+    if (e.name !== 'AbortError') hint.textContent = 'error';
+  }
+}
+box.addEventListener('input', () => { ghost=''; paintGhost(); fetchSoon(); });
+box.addEventListener('scroll', () => { ghostEl.scrollLeft = box.scrollLeft; });
+box.addEventListener('keydown', (e) => {
+  if (e.key === 'Tab' && ghost) { e.preventDefault(); accept(box.value + ghost); return; }
+  if (e.key === 'ArrowDown' && suggestions.length) {
+    e.preventDefault(); active = (active+1) % suggestions.length; renderDrop(); return; }
+  if (e.key === 'ArrowUp' && suggestions.length) {
+    e.preventDefault(); active = (active-1+suggestions.length) % suggestions.length; renderDrop(); return; }
+  if (e.key === 'Enter') {
+    if (active >= 0) { e.preventDefault(); accept(suggestions[active]); }
+    return;
+  }
+  if (e.key === 'Escape') { ghost=''; suggestions=[]; active=-1; paintGhost(); renderDrop(); }
+  if (e.key === 'ArrowRight' && ghost && box.selectionStart === box.value.length) {
+    e.preventDefault(); accept(box.value + ghost); }
+});
+box.focus();
+</script>
+</body>
+</html>

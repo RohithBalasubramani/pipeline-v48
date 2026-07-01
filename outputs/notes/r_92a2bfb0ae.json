@@ -1,0 +1,12 @@
+{
+ "run_id": "r_92a2bfb0ae",
+ "loop1": [
+  {
+   "card_id": 46,
+   "title": "Current History",
+   "answerability": "partial",
+   "note": "Showing historical current trends for R, Y, and B phases. Max Deviation KPI is approximated using active power load factor as the specific current deviation metric is not directly available in the shared buffer."
+  }
+ ],
+ "loop2": null
+}

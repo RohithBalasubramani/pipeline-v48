@@ -1,0 +1,18 @@
+{
+ "run_id": "r_df2cf6596c",
+ "loop1": [
+  {
+   "card_id": 41,
+   "title": "Input vs Output Energy",
+   "answerability": "partial",
+   "note": "Showing total active power and energy \u2014 per-phase breakdown is not distinguished for this AHU meter."
+  },
+  {
+   "card_id": 42,
+   "title": "Load Anomalies",
+   "answerability": "partial",
+   "note": "Showing active power load profile and load factor; specific 'expected load' baseline and anomaly event flags are not directly measured for this asset and are approximated or omitted."
+  }
+ ],
+ "loop2": null
+}

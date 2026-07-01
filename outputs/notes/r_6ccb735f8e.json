@@ -1,0 +1,12 @@
+{
+ "run_id": "r_6ccb735f8e",
+ "loop1": [
+  {
+   "card_id": 41,
+   "title": "Input vs Output Energy",
+   "answerability": "partial",
+   "note": "Showing total active power and energy metrics; per-phase breakdown is not available for this specific input/output energy comparison card."
+  }
+ ],
+ "loop2": null
+}
