@@ -195,13 +195,18 @@ export function agingVM(payload: any): InsulationAgingVM {
   const s = slice(payload, "aging");
   const usable = !!s && typeof s === "object" &&
     (Array.isArray(rec(s).points) || arr(rec(s).legend).length > 0 || rec(s).kpis != null);
-  const points = arr(rec(s).points)
+  const mapped = arr(rec(s).points)
     .map((p: any): AgingPoint | null => {
       const r = rec(p);
       if (r.label == null) return null;
       return { label: String(r.label), faa: fin(r.faa, 1), lolPct: fin(r.lolPct), hotspotPeakC: fin(r.hotspotPeakC) };
     })
     .filter((p): p is AgingPoint => p !== null);
+  // STRUCTURAL FLOOR: InsulationAgingCard computes `areaPath` reading lolPoints[last].x / lolPoints[0].x UNCONDITIONALLY
+  // (ChartSvg InsulationAgingCard.tsx:74) — an EMPTY series crashes it (undefined.x). When the meter logs no aging data
+  // the series is honestly empty; fall back to the empty view-model's single flat baseline point so the chart draws a
+  // flat honest line, never crashes. NOT a fabricated measurement (faa=1× normal reference, label '—'). [card 77]
+  const points = mapped.length ? mapped : empty.points;
   if (!usable) return empty;
   const k = rec(s.kpis);
   const hasKpis = rec(s.kpis) != null && Object.keys(rec(s.kpis)).length > 0;
