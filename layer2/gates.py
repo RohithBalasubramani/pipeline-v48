@@ -266,11 +266,17 @@ def _quantity_mismatch(f, col_by_name):
     ★ SLOT-SIDE UNIT FALLBACK: when the slot path itself is unclassified, the field's OWN declared display unit
     ('score', 'years', '°C') classifies the slot (the c51/c53 'unit=score series ← raw kW' family)."""
     kind = f.get("kind")
-    if kind not in ("raw", "bucketed", "derived"):
+    # POLICE ANY FIELD THAT BINDS A REAL MEASURED SOURCE [card 78: a power COLUMN bound to the 'RTCC Mode' text KPI].
+    # The wall used to police only raw/bucketed/derived, so a kind='text'/'kpi' field carrying a `column`/`fn` slipped
+    # through as an un-checked cross-quantity proxy (declared kind was the escape hatch). A field is exempt ONLY when it
+    # asserts NO measured quantity — a source-less label ($ctx / literal / kind=time timestamp / const). Same-quantity
+    # binds still pass (compatible() below); only a genuine cross-quantity source into any slot honest-blanks.
+    has_source = bool(f.get("column") or f.get("fn"))
+    if not has_source and kind not in ("raw", "bucketed", "derived"):
         return False, None
     from layer2.quantity_class import (slot_class, unit_class, name_class, column_class, compatible,
-                                       semantic_family_mismatch)
-    if kind == "derived":
+                                       semantic_family_mismatch, source_role_mismatch)
+    if f.get("fn") and not f.get("column"):
         src_name = f.get("fn")
         ccls, src = name_class(src_name), f"fn {src_name!r}"
     else:
@@ -298,12 +304,25 @@ def _quantity_mismatch(f, col_by_name):
     # that merely echoes the bound column classifies identically and never flags).
     scls = slot_class(f.get("slot")) or unit_class(f.get("unit")) or unit_class(f.get("_sibling_unit")) \
         or name_class(f.get("_sibling_label")) or name_class(f.get("metric"))
-    if not scls:
-        return False, None
-    if compatible(scls, ccls):
-        return False, None
-    return True, (f"{scls} not measured by this meter (no {scls} column) — {src} measures {ccls}, "
-                  f"not {scls}; leaf honest-blanks")
+    # DIMENSIONAL QUANTITY WALL — a confident cross-quantity bind blanks with its OWN reason (readiness ← load-factor,
+    # power → °C). This owns EVERY cross-quantity case, so it runs BEFORE the same-quantity role wall below — a
+    # bypass-metric readiness cell (ups_bypass_permissive_score ← loadFactorPct) is a readiness/load-factor mismatch
+    # here, NOT a bypass role smear (the role wall targets ONLY the compatible-quantity gap the dimensional wall passes).
+    if scls and not compatible(scls, ccls):
+        return True, (f"{scls} not measured by this meter (no {scls} column) — {src} measures {ccls}, "
+                      f"not {scls}; leaf honest-blanks")
+    # NAME-LEVEL SOURCE-ROLE WALL [card 59: composite.points[*].bypassVoltageV ← voltage_avg]: a SAME-QUANTITY,
+    # DIFFERENT-ROLE smear — the slot names a DEDICATED-SENSING role (bypass) while the source is the meter's plain
+    # input/line reading of the SAME quantity (voltage↔voltage is compatible, so the dimensional wall above passes it).
+    # Runs ONLY on a dimensionally-compatible (or unclassified) bind, so it never re-words a genuine cross-quantity
+    # blank; a NON-dedicated role (input) and an unclaimed slot never flag. The meter has no bypass sensor → honest-blank.
+    role_hit, roles = source_role_mismatch(
+        (f.get("slot"), f.get("metric"), f.get("_sibling_label")), src_name)
+    if role_hit:
+        role_txt = "/".join(roles)
+        return True, (f"slot names the {role_txt} source role — {src} is this meter's input/line reading, not a "
+                      f"{role_txt} sensor (this meter has no {role_txt} column); leaf honest-blanks")
+    return False, None
 
 
 def _const_without_source(f, nameplate_missing):
@@ -328,6 +347,14 @@ def _const_without_source(f, nameplate_missing):
     # A quantity-named const (131 A / 0.0 kW / 1461 kWh) never matches these tokens and stays policed below.
     if structural_const_name(f):
         return False, None
+    # AXIS-CHROME CARVE-OUT [c49 LoadImpactChart]: a const whose SLOT names axis-geometry (yMax/yMin/yTicks bounds, or a
+    # watchLines[*].value threshold line) is DISPLAY CHROME re-supplied from the card's design default, NOT a measured
+    # reading — the post-fill yscale recomputes filled views from the real series, and a fixed threshold line legitimately
+    # keeps its design literal. Match ANY path SEGMENT (not just the leaf) so watchLines[0].value is exempted while
+    # stats[*].value — a real KPI reading with NO axis segment — stays gated. DB-tunable (quantity.axis_chrome_const_slots).
+    _segs = {t.lower() for t in _re.findall(r"[^.\[\]]+", str(f.get("slot") or "")) if t and not t.isdigit() and t != "*"}
+    if _axis_chrome_const_segs() & _segs:
+        return False, None
     src = const_source(f)
     if src is None:
         return True, (f"const {v!r} has no real DB source (not a nameplate rating slot/metric, no matching "
@@ -336,6 +363,15 @@ def _const_without_source(f, nameplate_missing):
     if src[0] == "nameplate" and nameplate_missing:
         return True, "nameplate rating is empty for this asset — const rating leaf honest-blanks"
     return False, None
+
+
+def _axis_chrome_const_segs():
+    """Slot path SEGMENTS whose const value is AXIS-GEOMETRY chrome (yMax/yMin/yTicks bounds + watchLines threshold
+    lines) — exempt from the const-source gate: a design-default axis scale/threshold is display chrome, not a
+    fabricated reading. ANY-segment match (catches watchLines[*].value; stats[*].value has no axis segment → stays
+    gated). DB-driven (quantity.axis_chrome_const_slots) with a code-default mirror. [c49 carve-out]"""
+    return {str(t).replace(" ", "").lower() for t in
+            cfg("quantity.axis_chrome_const_slots", ["ymax", "ymin", "yticks", "watchlines"]) or []}
 
 
 def _axis_slot_suffixes():
@@ -441,6 +477,24 @@ def _topology_boundary_proxy(f):
             return True, (f"{sn} is a topology boundary quantity (computed across meters, not measured by this one) — "
                           f"column {f.get('column')!r} is this meter's own reading, not {sn}; leaf honest-blanks")
     return False, None
+
+
+def _time_axis_label_bind(f):
+    """(True, reason) when a MEASURED field (raw/bucketed/derived on a column/fn) binds a series TIME-AXIS LABEL slot
+    (points[*].label / .slot / .time — layer2.quantity_class.is_time_axis_label_slot): that leaf is the time-axis tick
+    label, filled from the card's OWN bucket timestamps as a kind=time atom, never a measured column. Binding
+    active_power_total_kw there renders negative kW AS x-axis time labels (card 59 secondary). A kind=time atom (the
+    correct emission) carries no column and never reaches this wall — only a column/fn bind flags."""
+    from layer2.quantity_class import is_time_axis_label_slot
+    if f.get("kind") not in ("raw", "bucketed", "derived"):
+        return False, None
+    if not (f.get("column") or f.get("fn")):
+        return False, None
+    if not is_time_axis_label_slot(f.get("slot")):
+        return False, None
+    src = f"column {f.get('column')!r}" if f.get("column") else f"fn {f.get('fn')!r}"
+    return True, (f"time-axis label slot bound to a measured {src} — a series time label is filled from the card's "
+                  "own bucket timestamps (kind=time), never a measured column; leaf honest-blanks")
 
 
 def enforce_honest_blank(data_instructions, basket, *, is_group_card=False, exact_metadata=None):
@@ -564,6 +618,10 @@ def enforce_honest_blank(data_instructions, basket, *, is_group_card=False, exac
         if bad:
             blanked.append(f"{slot}: {reason}")
             continue
+        bad, reason = _time_axis_label_bind(f)                               # RULE (iii-e) — time-axis label [c59]
+        if bad:
+            blanked.append(f"{slot}: {reason}")
+            continue
         bad, reason = _const_without_source(f, npm_missing)                  # RULE (iv) — const-source guard
         if bad:
             blanked.append(f"{slot}: {reason}")
@@ -655,7 +713,18 @@ def gate_data_instructions(data_instructions, basket, *, is_group_card=False, fi
         if src not in ("live", "test-db"):
             issues.append(f"fields[{i}] bad source {src!r} (want live|test-db|const|$ctx)")
         if col and col not in real:
-            issues.append(_col_issue(i, col, failed))
+            # A validate-FAIL column (present in `failed` — a REAL column with sparse/dead data on THIS meter) must NOT
+            # block the card: the executor still fills its live rows and blanks the null rest PER-LEAF, so a
+            # card-blocking payload_error here breaks the per-leaf-degradation mandate (verdicts are telemetry, never a
+            # render gate — its own _col_issue text already says "leaf honest-blanks"). Record it as honest-blank
+            # telemetry and KEEP the field so any live rows still fill. Only a genuinely HALLUCINATED column (absent from
+            # the schema — not even a failed basket entry) is a hard defect, and those were already dropped by the
+            # enforce_honest_blank pre-pass above, so this branch is the validate-fail case. [card 47: harmonics bound to
+            # a thd_* column this UPS logs 100% null → honest-blank, not payload_error]
+            if col in failed:
+                data_instructions["_honest_blanked"] = (data_instructions.get("_honest_blanked") or []) + [_col_issue(i, col, failed)]
+            else:
+                issues.append(_col_issue(i, col, failed))
         if not col:
             issues.append(f"fields[{i}] kind={kind} missing a resolved column")
         if kind == "event" and not f.get("edge"):

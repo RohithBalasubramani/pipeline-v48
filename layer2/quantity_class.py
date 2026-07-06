@@ -153,6 +153,14 @@ _SEMANTIC_FAMILIES_DEFAULT = {
                                          "specific energy consumption"], "classes": []},
     "consumption": {"markers": ["consumption", "consumed"], "classes": ["energy", "power"]},
     "fuel": {"markers": ["fuel"], "classes": []},
+    # SAME-DIMENSION '%' PUN [card 69: data.stats[2] 'Unbalance' ← loadFactorPct]: an unbalance slot carries a '%' unit,
+    # so the dimensional wall classifies it WEAK-percent and (cautiously) permits any ratio — masking its real semantic.
+    # The name-level family wall runs on the slot NAME independent of the unit: an unbalance slot binds ONLY an
+    # unbalance-class source (a load-factor / deviation ratio is a fabrication). Corpus-verified clean (2 blanks, both
+    # real: unbalance ← current_max / ← loadFactorPct). NOTE: a 'deviation' family was TRIED and REVERTED — the token is
+    # too broad (57 corpus blanks, unvalidated: many 'Max Deviation' slots legitimately carry a deviation-derived fn),
+    # so deviation puns stay on the cautious weak-percent policy until a narrower marker set is proven.
+    "unbalance": {"markers": ["unbalance", "imbalance"], "classes": ["unbalance"]},
 }
 
 # NAME-LEVEL SOURCE ROLES [card 59: composite.points[*].bypassVoltageV / bypassFrequencyHz ← voltage_avg / frequency_hz]:

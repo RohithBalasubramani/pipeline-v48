@@ -21,6 +21,10 @@ SYNC = {
     "quantity.unit_classes": (qc._UNIT_CLASSES_DEFAULT,
         "unit token → quantity class. Source of truth: layer2/quantity_class.py _UNIT_CLASSES_DEFAULT. "
         "Regenerate via tools/seed_quantity_vocab.py."),
+    "quantity.semantic_families": (qc._SEMANTIC_FAMILIES_DEFAULT,
+        "name-level semantic family {family: {markers, classes}} — a slot naming a family binds only a same-family "
+        "source (guards same-dimension '%' puns). Source of truth: quantity_class.py _SEMANTIC_FAMILIES_DEFAULT. "
+        "Regenerate via tools/seed_quantity_vocab.py."),
 }
 
 dry = "--dry" in sys.argv
