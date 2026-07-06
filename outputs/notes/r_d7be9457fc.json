@@ -1,0 +1,24 @@
+{
+ "run_id": "r_d7be9457fc",
+ "loop1": [
+  {
+   "card_id": 54,
+   "title": "Transfer readiness",
+   "answerability": "none",
+   "note": "No columns or recovery functions exist for the required 'readiness score', 'score-index', or 'transfer readiness' quantities; the card renders with honest blanks."
+  },
+  {
+   "card_id": 55,
+   "title": "Activity",
+   "answerability": "none",
+   "note": "This is a group card ($ctx) with no basket columns; the required transfer activity metrics (count, last transfer days, lifetime transfers) are not measured by the asset's electrical meter and are not available in the shared context buffer."
+  },
+  {
+   "card_id": 56,
+   "title": "Source Transfer \u2014 Composite",
+   "answerability": "partial",
+   "note": "Showing Input Voltage, Current, and Bypass Frequency trends. Readiness Score, Bypass Voltage, and Transfer Counts are not measured by this meter and are omitted."
+  }
+ ],
+ "loop2": "'ups-asset-dashboard/source-transfer' answers the prompt as routed; these cards cover quantities not recorded for this asset and render honest-blank per-leaf with the reason: Transfer readiness (No columns or recovery functions exist for the required 'readiness score', 'score-index', or 'transfer readiness' quantities; the card renders with honest blanks.); Activity (This is a group card ($ctx) with no basket columns; the required transfer activity metrics (count, last transfer days, lifetime transfers) are not measured by the asset's electrical meter and are not available in the shared context buffer.)."
+}

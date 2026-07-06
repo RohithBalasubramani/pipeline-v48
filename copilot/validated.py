@@ -26,8 +26,8 @@ for t in json.loads(sys.argv[1]):
     basket = [{'column': c[0], 'label': c[1], 'kind': c[2], 'unit': c[3]} for c in col_dict(t)]
     if not basket:
         continue
-    df, _loaded = load_asset_frame(t, [b['column'] for b in basket])
-    rep = validate_data(df, basket)
+    df, _loaded, ordered = load_asset_frame(t, [b['column'] for b in basket])
+    rep = validate_data(df, basket, ordered=ordered)
     out[t] = [c['column'] for c in rep['columns'] if c['verdict'] in ('pass', 'warn')]
 print(json.dumps(out))
 """

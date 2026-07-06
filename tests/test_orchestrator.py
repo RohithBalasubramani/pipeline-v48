@@ -29,4 +29,4 @@ def test_pipeline_live_join():
     out = run_pipeline("voltage and current health for AHU-5")
     assert out["errors"] == {}
     assert out["layer1a"]["page_key"] == "individual-feeder-meter-shell/voltage-current"
-    assert out["layer1b"]["how"] == "AI" and out["layer1b"]["asset"]["mfm_id"] == 36   # GIC-03-N6-AHU-5 (app_devices/gic)
+    assert out["layer1b"]["how"] == "AI" and out["layer1b"]["asset"]["mfm_id"] == 36   # GIC-03-N6-AHU-5 (canonical lt_mfm.id)

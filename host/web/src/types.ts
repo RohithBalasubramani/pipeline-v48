@@ -68,6 +68,8 @@ export interface Card {
   payload_error: string | null;
   render?: RenderVerdict | null;                // render-guarantee verdict (Layer 3)
   frame_status?: FrameStatus | null;            // per-endpoint {ok, why} reason channel
+  data_note?: string | null;                    // B1: Layer 2's plain-words proxy/substitution disclosure (additive)
+  l2_answerability?: "full" | "partial" | "none" | null; // B1: L2's OWN claim (telemetry; render.answerability is the derived truth)
 }
 
 export interface Candidate {

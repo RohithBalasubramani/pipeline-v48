@@ -1,0 +1,19 @@
+{
+ "run_id": "r_35a4892a83",
+ "loop1": [
+  {
+   "card_id": 40,
+   "title": "Power Energy Analysis",
+   "answerability": "partial",
+   "note": "Showing aggregated active and reactive power trends for this week. Rated and Contracted power are omitted as the asset's nameplate ratings are unknown."
+  },
+  {
+   "card_id": 42,
+   "title": "Load Anomalies",
+   "answerability": "partial",
+   "note": "Showing load factor and actual load trends as proxies for anomaly detection; expected load/range thresholds are not directly measured by this meter and are omitted."
+  }
+ ],
+ "loop2": null,
+ "reconcile": "asset 'PQM Transformer-1 Incomer (PCC-01)' has_feeders=False but the routed page 'panel-overview-shell/energy-power' is the panel-aggregate granularity \u2014 reconciled to 'individual-feeder-meter-shell/energy-power'"
+}

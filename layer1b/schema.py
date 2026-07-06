@@ -8,6 +8,11 @@ def build_layer1b_output(resolved, basket):
         "how": resolved.get("how"),
         "candidate_list": for_picker(resolved.get("candidates", [])),
         "column_basket": basket,
+        # resolution telemetry (NOT gates): the prompt-implied class prior, whether the resolution disagrees with it,
+        # and whether the resolver LLM was never heard (fail-open {} twice). [hardening: class-consistency telemetry]
+        "class_prior": resolved.get("class_prior"),
+        "class_mismatch": bool(resolved.get("class_mismatch")),
+        "llm_failed": bool(resolved.get("llm_failed")),
     }
 
 
@@ -25,4 +30,6 @@ def validate_layer1b_output(out):
             p.append(f"how={how} but no asset")
         elif not out.get("column_basket", {}).get("columns"):
             p.append("resolved asset but empty column_basket")
+    if (out.get("column_basket") or {}).get("llm_failed"):            # basket AI never heard — floor-only basket [item 15]
+        p.append("basket llm_failed (fail-open {} twice) — basket is the logged floor only")
     return p

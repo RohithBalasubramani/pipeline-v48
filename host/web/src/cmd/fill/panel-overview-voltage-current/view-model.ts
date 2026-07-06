@@ -1,17 +1,21 @@
 // Shared aggregate-page view-model helpers for the lt-pcc panel-overview Voltage&Current tab (cards 18-22).
 //
-// LIVE PATH — we REUSE the page's OWN CMD V2 reducer + mapper + viewModel exactly as the page hook does, but
-// fed by the host's single ems_backend snapshot frame instead of a live socket:
-//   frame (aggregate envelope {widgets}) → AggregateState → mapPanelVoltageCurrentAggregateToSnapshot
-//   → createPanelVoltageCurrentViewModel → derive selectedPeriod/stats/points like VoltageCurrentPanelTab.
-// HONEST-DEGRADE: every live derivation is wrapped in try/catch; a missing/unmappable frame returns null so
-// the card falls straight back to its seed payload (byte-identical default data). NEVER throws on a missing frame.
+// PAYLOAD-DIRECT (ems_backend RETIRED — the host emits frames={} EMPTY). The ONLY data
+// source is each card's Layer-2 completed `payload` (real neuract values + honest-blank '—',
+// shaped as the CMD V2 card props). The old LIVE path (aggregate-envelope frame → AggregateState
+// → mapPanelVoltageCurrentAggregateToSnapshot → createPanelVoltageCurrentViewModel) is dead code
+// now (no frame ever arrives) and was DELETED — with it went the aggregateFrameReducer + mapper
+// imports and the asSnapshotFrame / panelVcViewModel / liveViewModel helpers.
+//
+// What remains is the HONEST-EMPTY always-draw fallback (chrome-only, ZERO fabricated data) plus
+// the pure per-card derivation helpers a card runs over whichever period it renders.
 
 import {
   createPanelVoltageCurrentViewModel,
   periodStats,
+  buildVcPresentation,
 } from "@cmd-v2/pages/electrical/lt-pcc/panel-overview/voltage-current/viewModel";
-import { mapPanelVoltageCurrentAggregateToSnapshot } from "@cmd-v2/pages/electrical/lt-pcc/panel-overview/voltage-current/panelVoltageCurrentMapper";
+import type { VcPresentation } from "@cmd-v2/pages/electrical/lt-pcc/panel-overview/voltage-current/types";
 import type {
   PanelPeriodState,
   PanelPeriodStats,
@@ -19,31 +23,6 @@ import type {
   PeriodBucket,
 } from "@cmd-v2/pages/electrical/lt-pcc/panel-overview/voltage-current/types";
 import type { EventTimelinePoint } from "@cmd-v2/pages/electrical/lt-pcc/panel-overview/voltage-current/EventTimelineChart";
-
-import {
-  createInitialAggregateState,
-  reduceAggregateFrame,
-} from "@cmd-v2/realtime/aggregateFrameReducer";
-
-/** Ensure the host snapshot frame carries `type:'snapshot'` so the CMD V2 reducers accept it
- *  (fetch_frame may emit type=null for a snapshot). */
-export function asSnapshotFrame(frame: any): any {
-  if (frame && typeof frame === "object" && frame.type == null) return { ...frame, type: "snapshot" };
-  return frame;
-}
-
-/** Live view-model for cards 18-22 (aggregate page). null when the frame can't be mapped. */
-export function panelVcViewModel(frame: any): PanelVoltageCurrentViewModel | null {
-  if (!frame) return null;
-  try {
-    const state = reduceAggregateFrame(createInitialAggregateState(), asSnapshotFrame(frame) as any);
-    const snapshot = mapPanelVoltageCurrentAggregateToSnapshot({ state, status: "open" } as any);
-    if (!snapshot || !snapshot.periods?.length) return null;
-    return createPanelVoltageCurrentViewModel(snapshot);
-  } catch {
-    return null;
-  }
-}
 
 /** Resolve the selected period bucket the way VoltageCurrentPanelTab does (no interactivity here —
  *  pick the model's default selected label, falling back to the latest useful bucket). */
@@ -83,4 +62,48 @@ export function statsFor(
 export function selectPanelId(data: PanelVoltageCurrentViewModel, period: PeriodBucket): string {
   if (period.panels.some((p: PanelPeriodState) => p.id === data.defaultSelectedPanelId)) return data.defaultSelectedPanelId;
   return data.defaultSelectedPanelId || period.panels[0]?.id || "";
+}
+
+// ── HONEST-EMPTY always-draw fallback [ZERO fabrication] ───────────────────────
+// The RULE: every card must DRAW — never return null, NEVER fabricate. When the payload
+// elides its data-array leaves, we fall back to an HONEST-EMPTY view-model: an EMPTY-periods
+// snapshot ('api' source, periods: []) carrying only the page's real presentation CHROME
+// (buildVcPresentation — labels/colours, no data). This is the SAME structure the page's
+// api-placeholder branch uses (there is no mock builder here). The component .map()s the empty
+// periods → an honest empty timeline/strip; hasPanels() stays false so callers know it's blank.
+let _fallbackModel: PanelVoltageCurrentViewModel | null = null;
+/** The page's HONEST-EMPTY view-model (memoised): real presentation chrome, ZERO
+ *  fabricated data (empty periods/panels/points). Used when the payload supplies no
+ *  drawable structure — never a mock. */
+export function fallbackViewModel(): PanelVoltageCurrentViewModel {
+  if (!_fallbackModel) {
+    _fallbackModel = createPanelVoltageCurrentViewModel({
+      source: "api",
+      availability: "ready",
+      periods: [],                          // NO fabricated buckets — honest empty
+      presentation: buildVcPresentation(),  // real chrome only (labels/colours), not data
+    } as any);
+  }
+  return _fallbackModel;
+}
+
+/** A `{ period, points, stats, selectedPanelId }` bundle from a model — the shape
+ *  every card 18-22 needs. Pure; never throws. */
+export function bundleFrom(data: PanelVoltageCurrentViewModel) {
+  const { period, label } = selectPeriod(data);
+  const stats = statsFor(data, period, label);
+  const selectedPanelId = selectPanelId(data, period);
+  const selectedPanel = period.panels.find((p: PanelPeriodState) => p.id === selectedPanelId);
+  return { period, label, stats, selectedPanelId, selectedPanel, points: data.timelinePoints, timeOptions: data.periods.map((p: PeriodBucket) => p.label) };
+}
+
+/** `data.presentation` sub-slices, from the CMD V2 default builder — the guaranteed
+ *  `pres` source when the payload elided a card's presentation leaf. */
+export function defaultPresentation(): VcPresentation {
+  return buildVcPresentation();
+}
+
+/** A period is drawable when it carries at least one panel row. */
+export function hasPanels(period: PeriodBucket | undefined | null): boolean {
+  return !!period && Array.isArray(period.panels) && period.panels.length > 0;
 }

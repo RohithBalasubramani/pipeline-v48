@@ -18,15 +18,30 @@ def reason(cause, **kw):
     cause key itself when no template exists so the channel is never empty."""
     t = template(cause)
     if t is None:
-        return cause
+        return _tell_failures(cause, cause)
     try:
-        return t.format(**kw)
+        return _tell_failures(cause, t.format(**kw))
     except (KeyError, IndexError):
         # leave any unresolved placeholder literal rather than crash the reason channel
         out = t
         for k, v in kw.items():
             out = out.replace("{" + k + "}", str(v))
-        return out
+        return _tell_failures(cause, out)
+
+
+def _tell_failures(cause, sentence):
+    """failures fan-out [#17; fullsweep_20260706 telemetry gap: failures_ fired on 1/42 defect cards]. Every generated
+    reason sentence IS a per-leaf honest-degrade recording point (fill._gap_sentence, layer2 unbound_by_emit, asset_3d
+    no-model, harness degrade, …) and they ALL funnel through here — so this ONE hook mirrors the whole reason channel
+    onto obs.failures (keyed by the current ai_log run id) without touching any layer's code. Telemetry only: never
+    raises, always returns the sentence unchanged."""
+    try:
+        from obs import ai_log, failures
+        failures.record("reason", cause, detail=str(sentence)[:280],
+                        run_id=getattr(ai_log, "_RUN_ID", "default"))
+    except Exception:
+        pass
+    return sentence
 
 
 def all_templates():

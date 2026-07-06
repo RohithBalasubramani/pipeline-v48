@@ -1,0 +1,18 @@
+{
+ "run_id": "r_44796d791a",
+ "loop1": [
+  {
+   "card_id": 70,
+   "title": "Live Operations & Runtime",
+   "answerability": "partial",
+   "note": "Showing today's total energy (kWh) as a proxy for run-hours, and load factor (kW) as a proxy for availability, as the meter does not log dedicated runtime counters or availability scores."
+  },
+  {
+   "card_id": 72,
+   "title": "Energy & Reliability",
+   "answerability": "partial",
+   "note": "Showing today's active/reactive/apparent energy and power factor; MTBF and MTTR are not measured by this meter and are left blank."
+  }
+ ],
+ "loop2": null
+}

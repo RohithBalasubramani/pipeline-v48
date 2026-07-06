@@ -1,5 +1,12 @@
 import React from "react";
 // Card 18 · Events strip — lt-pcc panel-overview Voltage&Current tab.
+//
+// PAYLOAD-DIRECT (ems_backend RETIRED — `frame` is always empty now). Priority:
+// payload → CMD V2 HONEST-EMPTY view-model. The strip reads stats.worst*/counts + a filter
+// selection; if the payload elided its leaves, fall back to the page's OWN honest-empty
+// model / presentation (chrome only, NO fabrication) — never null. The old live-aggregate-
+// frame branch is dead code and was DELETED. The date/range/sampling control stays LIVE:
+// onPresetChange/onResampleChange/… emit onDateChange (a payload re-fetch, not a frame path).
 
 import { EventsTopStrip } from "@cmd-v2/pages/electrical/lt-pcc/panel-overview/voltage-current/EventsTopStrip";
 import { resolveEventFilter } from "@cmd-v2/components/charts/primitives";
@@ -10,35 +17,39 @@ import type {
 } from "@cmd-v2/components/charts/primitives";
 import type {
   PanelPeriodStats,
-  PeriodBucket,
 } from "@cmd-v2/pages/electrical/lt-pcc/panel-overview/voltage-current/types";
 
-import { panelVcViewModel, selectPeriod, statsFor } from "./view-model";
+import { fallbackViewModel, defaultPresentation, bundleFrom } from "./view-model";
 import { selectionToWindow, resampleForPreset, type DateWindow } from "./date-wiring";
 
-function StripCard({ strip, frame, onDateChange }: { strip: any; frame?: any; onDateChange?: (dw: DateWindow) => void }) {
-  // Seed (byte-identical default) data.
-  let stats: PanelPeriodStats = strip.stats;
-  let timeChoice: string = strip.timeChoice;
-  let timeOptions: string[] = strip.timeOptions;
-  try {
-    const data = panelVcViewModel(frame);
-    if (data) {
-      const { period, label } = selectPeriod(data);
-      stats = statsFor(data, period, label);
-      timeChoice = label;
-      timeOptions = data.periods.length ? data.periods.map((p: PeriodBucket) => p.label) : [label];
-    }
-  } catch { /* keep seed */ }
+/** A safe default CMD V2 filter selection when the payload elided strip.filterSelection. */
+const DEFAULT_SELECTION: EventFilterSelection = {
+  preset: "today",
+  resample: "hourly",
+  customDate: "",
+  rangeStart: "",
+  rangeEnd: "",
+};
+
+function StripCard({ strip, onDateChange }: { strip: any; onDateChange?: (dw: DateWindow) => void }) {
+  // 1) payload (Layer-2 completed — real or honest-blank; data leaves may be elided).
+  let stats: PanelPeriodStats | undefined = strip?.stats;
+  let timeChoice: string | undefined = strip?.timeChoice;
+  let timeOptions: string[] | undefined = strip?.timeOptions;
+
+  // 2) DRAW GUARANTEE — backfill any missing leaf from the page's OWN honest-empty model.
+  if (!stats || !timeChoice || !timeOptions || timeOptions.length === 0) {
+    const b = bundleFrom(fallbackViewModel());
+    stats = stats ?? b.stats;
+    timeChoice = timeChoice ?? b.label;
+    timeOptions = (timeOptions && timeOptions.length > 0) ? timeOptions : (b.timeOptions.length ? b.timeOptions : [b.label]);
+  }
+
+  const pres = strip?.pres ?? defaultPresentation().strip;
 
   // Local copy of the strip's CMD V2 filter selection (preset/resample/dates).
-  // The control row drives THIS state; each change maps to a host date_window
-  // and re-fetches just this card's frame via onDateChange. The view-model
-  // mapper-fill above is unchanged — only the control wiring is added.
-  const [selection, setSelection] = React.useState<EventFilterSelection>(strip.filterSelection);
+  const [selection, setSelection] = React.useState<EventFilterSelection>(strip?.filterSelection ?? DEFAULT_SELECTION);
 
-  // Push a selection into local state AND the host window re-fetch (optional-call
-  // guarded — older call paths pass no onDateChange).
   const applySelection = React.useCallback((next: EventFilterSelection) => {
     setSelection(next);
     onDateChange?.(selectionToWindow(next));
@@ -47,7 +58,7 @@ function StripCard({ strip, frame, onDateChange }: { strip: any; frame?: any; on
   const resolvedFilter = resolveEventFilter(selection);
   return (
     <EventsTopStrip
-      pres={strip.pres}
+      pres={pres}
       preset={selection.preset}
       resample={resolvedFilter.resample}
       resolvedFilter={resolvedFilter}
@@ -57,14 +68,10 @@ function StripCard({ strip, frame, onDateChange }: { strip: any; frame?: any; on
       rangeStart={selection.rangeStart}
       rangeEnd={selection.rangeEnd}
       stats={stats}
-      selectedTileKey={strip.selectedTileKey ?? null}
+      selectedTileKey={strip?.selectedTileKey ?? null}
       onTileSelect={() => undefined}
-      // Period preset: mirror the live tab — picking a multi-day preset forces a
-      // daily resample, others reset to hourly; resolveEventFilter then clamps.
       onPresetChange={(preset: EventPreset) => applySelection({ ...selection, preset, resample: resampleForPreset(preset) })}
       onResampleChange={(resample: ResampleMode) => applySelection({ ...selection, resample })}
-      // The hour-bucket picker selects WITHIN the current window (a bucket label,
-      // not a date) — it's not a window re-fetch, so leave it inert.
       onTimeChange={() => undefined}
       onCustomDateChange={(customDate: string) => applySelection({ ...selection, customDate })}
       onRangeStartChange={(rangeStart: string) => applySelection({ ...selection, rangeStart })}
@@ -73,5 +80,5 @@ function StripCard({ strip, frame, onDateChange }: { strip: any; frame?: any; on
   );
 }
 
-export const card18 = (p: any, f?: any, onDateChange?: (dw: any) => void): React.ReactNode =>
-  p?.strip ? <StripCard strip={p.strip} frame={f} onDateChange={onDateChange} /> : null;
+export const card18 = (p: any, _f?: any, onDateChange?: (dw: any) => void): React.ReactNode =>
+  <StripCard strip={p?.strip} onDateChange={onDateChange} />;

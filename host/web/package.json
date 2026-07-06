@@ -6,6 +6,8 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc -b && vite build",
+    "ssr-gate": "vite-node scripts/ssr_gate.mjs --",
+    "client-gate": "vite-node scripts/client_repro.tsx --gate",
     "preview": "vite preview"
   },
   "dependencies": {
@@ -17,8 +19,10 @@
     "@types/react": "^19.2.0",
     "@types/react-dom": "^19.2.0",
     "@vitejs/plugin-react": "^4.3.4",
+    "jsdom": "^29.1.1",
     "tailwindcss": "^4.2.2",
     "typescript": "^5.5.4",
-    "vite": "^5.4.2"
+    "vite": "^5.4.2",
+    "vite-node": "^6.0.0"
   }
 }

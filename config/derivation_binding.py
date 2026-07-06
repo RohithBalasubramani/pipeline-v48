@@ -7,17 +7,19 @@ this table. [DID-02/05, DS-04(ieee519)]
 """
 from data.db_client import q
 
-_COLS = ["metric", "fn", "base_columns", "fidelity"]
+_COLS = ["metric", "fn", "base_columns", "fidelity", "scope"]
 
 
 def binding(metric):
-    """{fn, base_columns:[...], fidelity} for a derived metric, or None if it isn't a registered derivation."""
+    """{fn, base_columns:[...], fidelity, scope} for a derived metric, or None if it isn't a registered derivation.
+    `scope` ('row'|'window'|'series'|'topology') tells the executor which ctx to build — a series/window-scoped fn needs
+    the windowed time-series (∫power, load-factor, peaks), not just the latest row. Defaults to 'row' (a NULL cell)."""
     rows = q("cmd_catalog",
              "SELECT " + ",".join(_COLS) + f" FROM derivation_binding WHERE metric='{_esc(metric)}'")
     if not rows:
         return None
-    _, fn, base, fidelity = rows[0]
-    return {"fn": fn, "base_columns": _split(base), "fidelity": fidelity}
+    _, fn, base, fidelity, scope = (list(rows[0]) + ["row"])[:5]
+    return {"fn": fn, "base_columns": _split(base), "fidelity": fidelity, "scope": (scope or "row").strip() or "row"}
 
 
 def base_columns(metric):
@@ -44,6 +46,26 @@ def bindable(metric, present_columns):
 def all_bindings():
     rows = q("cmd_catalog", "SELECT " + ",".join(_COLS) + " FROM derivation_binding ORDER BY metric")
     return [{"metric": r[0], "fn": r[1], "base_columns": _split(r[2]), "fidelity": r[3]} for r in rows]
+
+
+_TOPOLOGY_PAIR_DEFAULT = frozenset({"hv_input_kw", "lv_output_kw"})
+_topo_cache = {}
+
+
+def topology_pair_columns():
+    """The SYNTHETIC TOPOLOGY-PAIR column vocabulary — the base columns of every scope='topology' derivation row
+    (hv_input_kw / lv_output_kw: boundary quantities computed ACROSS meters, never measured by one). The emit gate
+    uses it to refuse a single-meter proxy into a boundary slot (card 41: the meter's own active power shipped as
+    'HV INPUT'). Cached per process; DB outage → the code-default mirror of the seed rows (never an empty wall)."""
+    if "cols" in _topo_cache:
+        return _topo_cache["cols"]
+    try:
+        rows = q("cmd_catalog", "SELECT base_columns FROM derivation_binding WHERE scope='topology'")
+        cols = frozenset(c for r in rows for c in _split(r[0]) if not c.startswith("nameplate:"))
+        _topo_cache["cols"] = cols or _TOPOLOGY_PAIR_DEFAULT
+    except Exception:
+        return _TOPOLOGY_PAIR_DEFAULT
+    return _topo_cache["cols"]
 
 
 def _split(base):

@@ -1,0 +1,24 @@
+{
+ "run_id": "r_1bc17049b9",
+ "loop1": [
+  {
+   "card_id": 47,
+   "title": "Power Quality",
+   "answerability": "partial",
+   "note": "Showing current THD (thd_compliance_i_avg) as a proxy for both I-THD and V-THD, as specific voltage THD columns are not logged for this asset. H5 and H7 values are bound to R-phase current THD as the closest available harmonic distortion proxy."
+  },
+  {
+   "card_id": 48,
+   "title": "Distortion & Harmonic Profile",
+   "answerability": "partial",
+   "note": "Showing Current THD (I-THD) time-series trends; Voltage THD (V-THD) and specific harmonic orders (H5/H7) are not measured by this meter and are left blank."
+  },
+  {
+   "card_id": 49,
+   "title": "Load Impact & Transformer Stress",
+   "answerability": "partial",
+   "note": "K-Factor is not directly measured; showing Load Factor (active power / rated capacity) as a proxy for harmonic-driven transformer stress. True PF and PF Gap are derived from active and apparent power."
+  }
+ ],
+ "loop2": null
+}

@@ -1,52 +1,33 @@
 """data/lt_panels/panel_members.py — THE single source of truth for panel fan-out (topology member resolution).
 
 Every aggregate card + Sankey resolves its members through THIS one function so coverage / degrade behaviour is uniform.
-The topology gotchas this file resolves (see V48_RENDER_GUARANTEE_AUDIT §TOPOLOGY):
+Edges are read from the CANONICAL registry (data/registry/lt_mfm.py — cmd_catalog `registry_*` mirror-first, live
+neuract fallback), keyed by canonical lt_mfm.id — the SAME id-space asset_candidates now emits, so a pipeline mfm_id
+can never resolve a FOREIGN asset's subtree again (the AUDIT-3 collision). Gotchas resolved here:
 
-  · [TOPO-02] direction — fan-out is the FROM side ONLY: `to_mfm_id WHERE from_mfm_id=self`. NEVER lt_mfm_incoming: the
-              seed inverts it (a PCC's `incoming` returns its own downstream loads), so incoming is byte-identical to
-              outgoing and any loss/meter-gap math built on it collapses to a fabricated 0. We only ever read outgoing.
+  · [TOPO-02] direction — fan-out is the FROM side ONLY (`to_mfm_id WHERE from_mfm_id=self`). Canonical lt_mfm_incoming
+              is the verified EXACT mirror of lt_mfm_outgoing (from=receiver, to=source; 0 unmirrored rows both ways) —
+              well-formed and legitimately usable for UPSTREAM/SLD source rendering, but fan-out stays on outgoing so
+              parent/child can never be misread. (The old lt_feeder root-fix seam is DELETED: its premise — an inverted
+              dummy self-M2M seed — was disproven by AUDIT-3, lt_feeder is empty canonical-wide, and the probe was a
+              needless request-time tunnel read. If lt_feeder is ever seeded, add it to data/registry/lt_mfm.py.)
   · [TOPO-05] recurse — a parent whose only children are themselves EMPTY aggregates (transformer 164 → PCC-Panel-1
               317, own table pcc_panel_1_feedbacks = 0 rows) drills one level down to the grandchildren leaf meters.
   · [TOPO-04/DS-08/VC-04] coverage — filter leaves through has_data; report reporting_count / expected_count so a
               partial feeder sum is labelled partial, never presented as a complete panel total.
   · [TOPO-06] dedup — a leaf reachable via multiple parents (loads 54/57, HT ties) is attributed ONCE (dedup on
               to_mfm_id) so a cross-parent rollup can't double-count.
-  · [TOPO-01/07] orphan — a scoped asset with zero outgoing edges (303 of 320) yields members=[] + orphaned=True so
-              the caller honest-degrades ('no topology mapped') instead of closing the socket / crashing.
+  · [TOPO-01/07] orphan — a scoped asset with zero outgoing edges yields members=[] + orphaned=True so the caller
+              honest-degrades ('no topology mapped') instead of closing the socket / crashing.
 
-NO hardcoded table names (config.databases.TOPOLOGY_OUTGOING / DATA_SCHEMA) and NO hardcoded thresholds
-(config.quality_policy). Pure deterministic PRE — no AI. [worker member resolution]
+NO hardcoded table names (data/registry mirror routing) and NO hardcoded thresholds (config.quality_policy).
+Pure deterministic PRE — no AI. [worker member resolution]
 """
-from config.databases import DATA_DB, DATA_SCHEMA, TOPOLOGY_OUTGOING
-from data.db_client import q
+from data.registry.lt_mfm import outgoing_edges as _outgoing, parent_ids as _registry_parents
 from layer1b.resolve.has_data import tables_with_data, tables_with_values
 
 _MAX_DEPTH = 6                                  # topology is <= 5 deep; depth guard against a cycle in the seeded edges
 _MEMBERS_CACHE = {}                             # per-process cache keyed (mfm_id, meaningful) — recursion is DB-heavy
-
-
-def _outgoing(ids):
-    """One batched hop DOWN the FROM side: [(to_mfm_id, table_name)] for every child of any id in `ids`. Never touches
-    lt_mfm_incoming (inverted by the seed — see TOPO-02). fail-open to [] so a bad edge can't crash the whole resolve."""
-    if not ids:
-        return []
-    id_list = ",".join(str(int(i)) for i in ids)
-    try:
-        rows = q(DATA_DB,
-                 f'SELECT o.to_mfm_id, m.table_name '
-                 f'FROM {DATA_SCHEMA}."{TOPOLOGY_OUTGOING}" o '
-                 f'JOIN {DATA_SCHEMA}.lt_mfm m ON m.id = o.to_mfm_id '
-                 f'WHERE o.from_mfm_id IN ({id_list}) ORDER BY o.id')
-    except Exception as e:  # fail-open — a topology read failure honest-degrades to "no members", never a crash
-        import sys
-        sys.stderr.write(f"[panel_members] outgoing read failed ({str(e)[:80]}) — treating as no children\n")
-        return []
-    out = []
-    for r in rows:
-        if r and r[0]:
-            out.append((int(r[0]), (r[1] or None)))
-    return out
 
 
 def panel_members(mfm_id, meaningful=False):
@@ -131,13 +112,8 @@ def panel_members(mfm_id, meaningful=False):
 
 def _parent_ids():
     """The set of mfm_ids that fan out (have >= 1 outgoing edge) — used to tell an EMPTY AGGREGATE (recurse through it)
-    apart from a pure LEAF (terminal). fail-open to empty so a topology read failure just stops recursion."""
-    if "_parents" in _MEMBERS_CACHE:
-        return _MEMBERS_CACHE["_parents"]
-    try:
-        ids = {int(r[0]) for r in q(DATA_DB,
-               f'SELECT DISTINCT from_mfm_id FROM {DATA_SCHEMA}."{TOPOLOGY_OUTGOING}"') if r and r[0]}
-    except Exception:
-        ids = set()
-    _MEMBERS_CACHE["_parents"] = ids
-    return ids
+    apart from a pure LEAF (terminal). CANONICAL registry parents (mirror-first). fail-open to empty so a topology read
+    failure just stops recursion."""
+    if "_parents" not in _MEMBERS_CACHE:
+        _MEMBERS_CACHE["_parents"] = _registry_parents()
+    return _MEMBERS_CACHE["_parents"]

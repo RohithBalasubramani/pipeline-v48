@@ -3,11 +3,24 @@ import type { Card, DateWindow } from "../types";
 import { renderCmd } from "../cmd/registry";
 import { fetchCardFrame } from "../api";
 
-class Boundary extends React.Component<{ children: React.ReactNode }, { err: string | null }> {
+// HONEST-BLANK on a deep component throw [FR-1 / frontend-contract crash family]: a CMD_V2 component can throw DURING
+// React's render of the already-built node — e.g. an unguarded `data.activePowerAvgKw.toFixed()` when an honest-blank
+// leaf arrived as '—'/null (card 40), or an object-array prop consumed as raw numbers (card 42). That throw is caught
+// here. Rather than a generic "render error" box (which reads as a bug), we degrade to the card's OWN honest-blank tile
+// (its title + the machine reason) so a single unrenderable leaf never masks the card as broken — the same per-leaf
+// degradation contract the payload path already honors. GENERIC: no card id, driven by the passed title/reason.
+class Boundary extends React.Component<{ children: React.ReactNode; title?: string; reason?: string | null },
+                                       { err: string | null }> {
   state = { err: null as string | null };
   static getDerivedStateFromError(e: any) { return { err: String(e?.message ?? e) }; }
   render() {
-    if (this.state.err) return <div className="placeholder"><div className="big">⚠</div><div>render error</div><div className="k">{this.state.err}</div></div>;
+    if (this.state.err) return (
+      <div className="placeholder" style={{ height: "100%", minHeight: 0 }}>
+        <div className="big">—</div>
+        <div>{this.props.title || "no live data"}</div>
+        <div className="k">{this.props.reason || this.state.err}</div>
+      </div>
+    );
     return this.props.children;
   }
 }
@@ -68,6 +81,9 @@ export function CmdCard({ card, h, liveFrame, pageFrame }: { card: Card; h?: num
           : reason ? reason
           : `card #${card.card_id} — not wired yet`}
       </div>
+      {/* B1: a card with NO renderable component never mounts the GapInfo marker — surface Layer 2's proxy/
+          substitution data_note here so the disclosure is never lost on the placeholder path. */}
+      {card.data_note ? <div className="k">{card.data_note}</div> : null}
     </div>
   );
   return (
@@ -77,7 +93,7 @@ export function CmdCard({ card, h, liveFrame, pageFrame }: { card: Card; h?: num
         <span title={reason}
           style={{ position: "absolute", top: 6, left: 6, zIndex: 5, fontSize: 10, opacity: 0.55, cursor: "help" }}>ⓘ</span>
       ) : null}
-      <Boundary>{node}</Boundary>
+      <Boundary title={card.title} reason={rv.reason || rv.coverage_note}>{node}</Boundary>
     </div>
   );
 }

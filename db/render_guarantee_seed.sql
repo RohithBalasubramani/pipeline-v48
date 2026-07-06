@@ -15,8 +15,29 @@ INSERT INTO data_quality_policy (key, num_value, txt_value, note) VALUES
  ('feeder_coverage_partial_pct', 50.0, NULL, 'aggregate reporting < this %% of feeders → downgrade to honest-partial [DS-08/VC-04]'),
  ('negative_power_convention', NULL, 'abs_with_flag', 'genuine negative power (UPS/incomer): abs magnitude + reverse-flow flag, not clamp [DS-06/VC-03]'),
  ('pf_sign_policy',           NULL,  'magnitude_plus_leadlag', 'PF: |PF|<=1 magnitude + lead/lag flag; never discard the sign [VC-07/DID-04]'),
- ('cumulative_counter_policy', NULL, 'window_delta', 'cumulative *_import_kwh counters → windowed MAX-MIN delta, never a spot reading [VC-06]')
+ ('cumulative_counter_policy', NULL, 'window_delta', 'cumulative *_import_kwh counters → windowed MAX-MIN delta, never a spot reading [VC-06]'),
+ -- rating.* — the nameplate→ratings derivation knobs (config/rating_knobs.py; ports backend2 feeder_rating_overrides) —
+ ('rating.feeder_pf',           0.9,   NULL, 'assumed PF for the nameplate kVA->kW conversion [#12 derive_ratings]'),
+ ('rating.lv_line_v',           415.0, NULL, 'default LT 3-phase line-to-LINE voltage (V) for the rated-current basis [#12]'),
+ ('rating.current_alarm_factor',1.2,   NULL, 'high-current alarm = rated_current x this (120%% of rated) [#12]'),
+ ('rating.contracted_factor',   0.9,   NULL, 'contracted kW/kVA = rated x this when no per-asset/class fraction [#12]'),
+ ('rating.critical_load_factor',0.5,   NULL, 'critical-load kW = rated_kw x this [#12]'),
+ ('rating.energy_target_hours', 12.0,  NULL, 'daily energy target = rated_kw x this (equivalent full-load h/day) [#12]'),
+ ('rating.capacity_pf',         0.9,   NULL, 'window capacity_kwh = rated_kva x this x hours (energydist _cap_util) [#12]')
 ON CONFLICT (key) DO UPDATE SET num_value=EXCLUDED.num_value, txt_value=EXCLUDED.txt_value, note=EXCLUDED.note;
+
+
+-- ── asset_class_default ── per-CLASS engineering defaults (ports config_defaults.py) — asset_category -> default JSON ─
+--    NO rated_kva here (rating stays honest per-asset). Read by config/asset_class_defaults.py; per-asset row wins.
+--    Re-derived FROM LIVE 2026-07-06: every class gained ieee_519_current/voltage_thd_limit_pct,
+--    ieee_519_individual_harmonic_limit_pct, crest_factor_ideal (1.414) and flicker_pst_limit (1.0).
+INSERT INTO asset_class_default (asset_category, default_json) VALUES
+ ('Transformer', '{"contracted_kw":2000.0,"critical_load_kw":1500.0,"contracted_frac":0.94,"voltage_statutory_deviation_pct":10.0,"current_tolerance_pct":20.0,"energy_target_kwh_today":40000.0,"target_efficiency_pct":99.0,"thd_v_limit_pct":5.0,"thd_i_limit_pct":8.0,"ieee_519_current_thd_limit_pct":8.0,"ieee_519_voltage_thd_limit_pct":8.0,"ieee_519_individual_harmonic_limit_pct":8.0,"crest_factor_ideal":1.414,"flicker_pst_limit":1.0}'),
+ ('Distribution Panel', '{"contracted_kw":4000.0,"critical_load_kw":2700.0,"contracted_frac":0.94,"voltage_statutory_deviation_pct":10.0,"current_tolerance_pct":20.0,"energy_target_kwh_today":80000.0,"target_efficiency_pct":99.0,"thd_v_limit_pct":5.0,"thd_i_limit_pct":8.0,"ieee_519_current_thd_limit_pct":8.0,"ieee_519_voltage_thd_limit_pct":8.0,"ieee_519_individual_harmonic_limit_pct":8.0,"crest_factor_ideal":1.414,"flicker_pst_limit":1.0}'),
+ ('LT Panel', '{"contracted_kw":450.0,"critical_load_kw":270.0,"contracted_frac":0.9,"voltage_statutory_deviation_pct":10.0,"current_tolerance_pct":20.0,"energy_target_kwh_today":1200.0,"target_efficiency_pct":97.0,"thd_v_limit_pct":5.0,"thd_i_limit_pct":8.0,"ieee_519_current_thd_limit_pct":8.0,"ieee_519_voltage_thd_limit_pct":8.0,"ieee_519_individual_harmonic_limit_pct":8.0,"crest_factor_ideal":1.414,"flicker_pst_limit":1.0}'),
+ ('DG', '{"contracted_kw":808.0,"critical_load_kw":600.0,"contracted_frac":0.8,"service_interval_hours":300.0,"service_warn_pct":85.0,"demand_limit_kw":1700.0,"voltage_statutory_deviation_pct":5.0,"current_tolerance_pct":20.0,"current_unbalance_watch_pct":10.0,"energy_target_kwh_today":8000.0,"target_efficiency_pct":40.0,"thd_v_limit_pct":5.0,"thd_i_limit_pct":8.0,"ieee_519_current_thd_limit_pct":8.0,"ieee_519_voltage_thd_limit_pct":8.0,"ieee_519_individual_harmonic_limit_pct":8.0,"crest_factor_ideal":1.414,"flicker_pst_limit":1.0}'),
+ ('UPS', '{"contracted_kw":540.0,"critical_load_kw":400.0,"contracted_frac":0.9,"voltage_statutory_deviation_pct":10.0,"current_tolerance_pct":20.0,"energy_target_kwh_today":6000.0,"target_efficiency_pct":96.0,"thd_v_limit_pct":5.0,"thd_i_limit_pct":8.0,"ready_threshold":60.0,"moderate_zone":30.0,"watch_zone":0.0,"readiness_floor":70.0,"ieee_519_current_thd_limit_pct":8.0,"ieee_519_voltage_thd_limit_pct":8.0,"ieee_519_individual_harmonic_limit_pct":8.0,"crest_factor_ideal":1.414,"flicker_pst_limit":1.0}')
+ON CONFLICT (asset_category) DO UPDATE SET default_json=EXCLUDED.default_json;
 
 
 -- ── metric_class ── which column CLASS each of the 9 EMS pages requires (per-(asset,page) feasibility gate) ────────
@@ -49,6 +70,7 @@ INSERT INTO reason_template (cause, template) VALUES
  ('empty_feeders',      'Partial total: {reporting} of {expected} feeders reporting.'),
  ('structurally_null',  '{metric} not logged by this meter.'),
  ('window_clamped',     'Data available from {since}; window clamped to logged range.'),
+ ('no_reading',         '{metric} — no valid reading in this window.'),
  ('denorm_garbage',     'Sensor reading below valid range — treated as no reading.'),
  ('no_topology',        'No topology mapped for {asset}.'),
  ('incomer_unverified', 'Incomer set unverified — loss / meter-gap not computed.'),
@@ -61,21 +83,24 @@ ON CONFLICT (cause) DO UPDATE SET template=EXCLUDED.template;
 
 
 -- ── derivation_binding ── recovery fns + their base columns + fidelity (only bind when base ⊆ present) ────────────
+--    CORE subset only, re-derived FROM LIVE 2026-07-06 (fidelity vocab is real_exact/real_approx; the old
+--    recovered/approx labels are retired). The full 46-fn registry coverage lives in seed_derivation_binding_full.sql
+--    (+ seed_derivation_binding_expressions.sql / _gap6.sql / fix_derivation_binding_*.sql) — this block only pins the
+--    render-guarantee core metrics. kwLoadPctOfRated was renamed kpiKwLoadPctOfRated; currentUnbalancePct and
+--    windowEnergyExportKwh were retired from live and are gone here too.
 INSERT INTO derivation_binding (metric, fn, base_columns, fidelity) VALUES
  ('windowEnergyKwh',        'windowEnergyKwh',       'active_energy_import_kwh',                              'real_exact'),
- ('windowEnergyExportKwh',  'windowEnergyKwh',       'active_energy_export_kwh',                              'real_exact'),
- ('todaysEnergyTotalKwh',   'todaysEnergyTotalKwh',  'active_energy_import_kwh',                              'real_exact'),
- ('thdComplianceIeee519',   'thdComplianceIeee519',  'thd_current_r_pct,thd_current_y_pct,thd_current_b_pct', 'recovered'),
- ('neutralCurrent',         'neutralCurrent',        'current_r,current_y,current_b',                         'recovered'),
- ('currentUnbalancePct',    'currentUnbalancePct',   'current_r,current_y,current_b',                         'recovered'),
+ ('todaysEnergyTotalKwh',   'todaysEnergyTotalKwh',  'active_energy_import_kwh,active_energy_export_kwh,reactive_energy_import_kvarh,reactive_energy_export_kvarh', 'real_exact'),
+ ('thdComplianceIeee519',   'thdComplianceIeee519',  'thd_current_r_pct,thd_current_y_pct,thd_current_b_pct', 'real_approx'),
+ ('neutralCurrent',         'neutralCurrent',        'current_r,current_y,current_b',                         'real_approx'),
  ('displacementPf',         'displacementPf',        'power_factor_total',                                    'real_exact'),
- ('truePf',                 'truePf',                'active_power_total_kw,apparent_power_total_kva',         'recovered'),
- ('pfAngleDeg',             'pfAngleDeg',            'phase_angle_deg',                                       'real_exact'),
- ('loadFactorPct',          'loadFactorPct',         'active_power_total_kw',                                 'recovered'),
+ ('truePf',                 'truePf',                'active_power_total_kw,apparent_power_total_kva',         'real_exact'),
+ ('pfAngleDeg',             'pfAngleDeg',            'power_factor_total',                                    'real_exact'),
+ ('loadFactorPct',          'loadFactorPct',         'active_power_total_kw',                                 'real_approx'),
  ('ratedKva',               'ratedKva',              'nameplate:rated_kva',                                   'real_exact'),
- ('ratedKw',                'ratedKw',               'nameplate:rated_kva',                                   'approx'),
- ('kwLoadPctOfRated',       'kwLoadPctOfRated',      'active_power_total_kw,nameplate:rated_kva',             'recovered'),
- ('sectionContracts',       'sectionContracts',      'nameplate:contracted_kva',                             'real_exact')
+ ('ratedKw',                'ratedKw',               'nameplate:rated_kva',                                   'real_approx'),
+ ('kpiKwLoadPctOfRated',    'kpiKwLoadPctOfRated',   'active_power_total_kw,nameplate:rated_kva',             'real_exact'),
+ ('sectionContracts',       'sectionContracts',      'nameplate:rated_kva',                                   'real_exact')
 ON CONFLICT (metric) DO UPDATE SET fn=EXCLUDED.fn, base_columns=EXCLUDED.base_columns, fidelity=EXCLUDED.fidelity;
 
 
@@ -119,8 +144,8 @@ INSERT INTO render_guarantee_matrix (tag, asset_selector, asset_name_hint, page_
  -- 9) AMBIGUOUS name (HHF collision) → asset-picker gate is an honest terminal                       [RN-04 ambiguous]
  ('ambiguous',        'name~hhf|name~kvar',           'GIC-01-N10-HHF-01',                 'individual-feeder-meter-shell/power-quality','', 'power quality for {a}',  'RN-04: HHF norm-key collision → ambiguous gate'),
  ('ambiguous_concept','concept:harmonic-filter',      'harmonic filter',                   'individual-feeder-meter-shell/power-quality','', 'show me the harmonic filter','RN-04: bare-concept ambiguous phrasing'),
- -- 10) generic non-UPS feeder loading% / nameplate                                                   [RN-01/05 VC-05]
- ('feeder_generic',   'class=Panel&has_data|class=AHU&has_data|class=Fan&has_data|class=Pump&has_data','GIC-05-N3-FCBC','individual-feeder-meter-shell/energy-power|individual-feeder-meter-shell/voltage-current','', '{page} {a}', 'RN-01/05: non-UPS loading%% / section'),
+ -- 10) generic non-UPS feeder loading% / nameplate (all-electrical classes incl. Chiller/Compressor) [RN-01/05 VC-05]
+ ('feeder_generic',   'class=Panel&has_data|class=AHU&has_data|class=Fan&has_data|class=Pump&has_data|class=Chiller&has_data|class=Compressor&has_data','GIC-05-N3-FCBC','individual-feeder-meter-shell/energy-power|individual-feeder-meter-shell/voltage-current','', '{page} {a}', 'RN-01/05: non-UPS loading%% / section (Panel/AHU/Fan/Pump + Chiller/Compressor all-electrical) [BATCH D #14]'),
  -- 11) 30-day / history window (data window ~6 days → honest-blank/clamp)                             [DS-02 ER-7 date-nav]
  ('history_30d',      'name~ups-01&has_data',         'GIC-01-N3-UPS-01 CL:600KVA',        'individual-feeder-meter-shell/energy-power','last_30d','last 30 days energy for {a}','DS-02: trailing window before earliest row → clamp+reason'),
  ('history_30d_trend','name~ups-01&has_data',         'GIC-01-N3-UPS-01 CL:600KVA',        'individual-feeder-meter-shell/energy-power','last_30d','energy trend over the past month for {a}','DS-02: trend window clamp'),

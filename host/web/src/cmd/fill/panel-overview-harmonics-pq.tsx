@@ -3,9 +3,18 @@
  *
  * Thin BARREL. The registry loads this via `import.meta.glob("./fill/*.tsx")`
  * and reads `m.CARDS`, so this file must keep exporting `CARDS`. Each card's
- * render fn + the shared helpers (date-wiring / mapper / view-model derivation)
- * live atomised, one concern per file, in the same-named folder next to this
- * file. See that folder for the LIVE-PATH / HONEST-DEGRADE docs.
+ * render fn + the shared helpers (date-window / derive / noop) live atomised,
+ * one concern per file, in the same-named folder next to this file.
+ *
+ * PAYLOAD-DIRECT (ems_backend RETIRED — the host emits frames={} EMPTY): the ONLY data
+ * source is each card's Layer-2 completed `payload` (real neuract periods/stats + honest-blank).
+ * The old LIVE aggregate-frame path (snapshot.ts's mapPanelHarmonicsPqAggregateToSnapshot +
+ * the per-card snapshotFromFrame branch) AND the buildPQPeriods() fabrication fallback (which
+ * synthesised iThd/vThd/harmonic waves from a mock fixture — a SEED LEAK) are dead code now and
+ * were DELETED. A payload that elides its periods degrades to derive.ts's honest-empty builders
+ * (emptyPeriod / emptyPeriodWithRow / emptyStats — zero counts, '—' chrome, ZERO fabrication),
+ * so every card DRAWS honest '—' chrome, never a mock. Card 23's date control stays live
+ * (onDateChange = a payload re-fetch, not a frame path).
  */
 import type { DateWindow } from "./panel-overview-harmonics-pq/date-window";
 import { renderTopStrip } from "./panel-overview-harmonics-pq/card-23";

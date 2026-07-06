@@ -1,0 +1,12 @@
+{
+ "run_id": "r_bb525a5212",
+ "loop1": [
+  {
+   "card_id": 42,
+   "title": "Load Anomalies",
+   "answerability": "partial",
+   "note": "Showing load factor as a proxy for load anomalies; the 'load-anomalies' endpoint is a live-only screen and does not provide historical time-series data for the 'Today' window, so the chart will render with current snapshot data."
+  }
+ ],
+ "loop2": null
+}

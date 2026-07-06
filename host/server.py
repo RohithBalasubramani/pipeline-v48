@@ -10,9 +10,16 @@ Endpoints
     GET  /api/health           -> {ok, sb_base}
     POST /api/run  {prompt, asset_id?}  -> the pipeline result + per-card payloads
 
-NOTE: each card's `payload` is Layer 2's `exact_metadata` (the byte-identical CMD_V2 default + the AI's morphs;
-run/layer2_all.py sets payload=exact_metadata). _enrich_card sends it as the ONLY source — no card_payloads fallback.
-The DATA leaves are filled live on the frontend from the ems_backend frame (frames[card.endpoint]).
+DATA PATH (ems_exec — 2026-07-02): each card's `payload` is the COMPLETED CMD_V2 payload from
+ems_exec.serve.run.run_card(exact_metadata, data_instructions, asset_table, db_link, window). run_card fills the payload
+skeleton from NEURACT directly (real where the AI named a column/fn, honest None/'—' else; every seed number stripped) —
+NO ws/mfm frame-fetch, NO Layer 2 frontend-fill, NO Layer 3. Feeder + asset + panel cards ALL go through run_card
+per-card (panel-aggregate leaves simply honest-blank; aggregation deferred). `frames` is emitted EMPTY for back-compat.
+Layer 3 is RETIRED (archive/layer3_archive_20260702.tar.gz) and the old ems_backend is archived too — neither is imported.
+
+THIS FILE = the HTTP surface (Handler + build_response + the response dump). The serve-boundary seams are atomic host
+siblings, re-exported byte-compatibly: host/enrich.py (the FE card build + blank-reason wording + emit-gap merge),
+host/exec_cards.py (the parallel per-card executor fan-out), host/payload_store.py (the skeleton/raw-default caches).
 """
 import json
 import os
@@ -27,158 +34,37 @@ if _ROOT not in sys.path:
     sys.path.insert(0, _ROOT)
 
 from run.harness import run_pipeline                       # noqa: E402
-from validate.payload_lookup import card_payloads_for      # noqa: E402
-from layer2.emit.data.consumer_binding import page_endpoint  # noqa: E402
 from config.app_config import cfg                          # noqa: E402  DB-tunable operational knobs
+from ems_exec.serve import run as ems_exec_run             # noqa: E402  per-card NEURACT executor (run_card)
+from config import neuract_dsn as _neuract_dsn             # noqa: E402  DB-driven neuract DSN (code-default fallback)
+from host.enrich import (                                  # noqa: E402,F401  the FE card build (re-exported for tests)
+    _enrich_card, _merge_emit_gaps, _gap_note, _no_data_reason, _asset_has_logged_data, _per_metric_blank_reason)
+from host.exec_cards import _run_cards, _date_window_for   # noqa: E402  the parallel executor fan-out
+from host.payload_store import _skeleton_payload, _raw_default_payload, _as_json  # noqa: E402,F401
 
 SB_BASE = os.environ.get("STORYBOOK_URL", "http://100.90.185.31:6008").rstrip("/")
 PORT = int(os.environ.get("V48_HOST_PORT", "8770"))
 
 
-def _sb_url(story_id):
-    if not story_id:
-        return None
-    return f"{SB_BASE}/iframe.html?id={story_id}&viewMode=story&shortcuts=false&nav=false"
-
-
-def _story_render(story_id, import_path):
-    """How to render this card in OUR frontend EXACTLY like EMS: run the card's Storybook STORY render function
-    (the bespoke `render: (args) => <CardComposer .../>` glue) with the pipeline payload — import-only, CMD_V2 untouched.
-    {module: the .stories.tsx under CMD_V2/src, export: the Story export name}. None when the card has no story."""
-    if not story_id or not import_path:
-        return None
-    module = import_path.replace("./src/", "").lstrip("/")             # path under the cmd2 symlink
-    export = "".join(p.capitalize() for p in story_id.split("--")[-1].split("-"))  # main-heatmap-card-story → MainHeatmapCardStory
-    return {"module": module, "export": export, "via": "story"}
-
-
-def _enrich_card(card, page_key, val_by_id, l2_out, l3_out=None, frame_status=None):
-    """The payload is Layer 2's `exact_metadata` — the ONLY source (NO card_payloads fallback). The default payload is
-    merely Layer 2's input; it is never shown raw. If Layer 2 emitted nothing for this card, payload is None (the
-    frontend shows it as not-rendered — honest, not masked). On an accepted swap, the FINAL card is the swap target:
-    render_card_id + payload follow the target (it has a different shape).
-
-    The Layer-3 render envelope (`l3_out`) is the render-guarantee VERDICT for this card: render|partial|honest_blank
-    with a machine reason, the per-slot verified values, the suppress_default_leaves (NO-SEED-LEAK force-blank list), and
-    a coverage/date_control flag. It rides onto the card as `render` so the frontend safe-renderer knows exactly what to
-    draw or blank. The per-endpoint {ok,why} (`frame_status`) is the reason channel [ER-6]."""
-    cid = card.get("card_id")
-    l2 = l2_out or {}
-    l3 = l3_out or {}
-    swap = l2.get("swap_decision") or {"action": "keep"}
-    render_card_id = swap.get("swap_to_id") or cid           # the card actually drawn (swap target if swapped)
-    payload = l3.get("exact_metadata") if l3.get("exact_metadata") is not None else l2.get("payload")
-    consumer = (l2.get("data_instructions") or {}).get("consumer") or {}
-    endpoint = consumer.get("endpoint")
-    fstat = (frame_status or {}).get(endpoint) or {}
-
-    # NO-SEED-LEAK [VC-01/02]: the render-guarantee VERDICT the frontend obeys — the L3 suppress_default_leaves (paths to
-    # force-blank), the render verdict, and the watermark. A numeric that equals its seed with no live provenance is
-    # force-blanked on the FE using these paths; the watermark 'live' means every shown numeric is live-verified.
-    render_verdict = l3.get("render_verdict")
-    suppress = l3.get("suppress_default_leaves") or []       # the L3-named seed-leaking paths (already blanked in payload)
-    reason = l3.get("reason") or (fstat.get("why") if fstat.get("ok") is False else None)
-
-    return {
-        "card_id": cid,
-        "render_card_id": render_card_id,
-        "title": card.get("title"),
-        "story": card.get("analytical_story"),
-        "role": card.get("role_in_story"),
-        "slot": card.get("slot"),
-        "size": card.get("size"),
-        "payload": payload,
-        "endpoint": endpoint,                                # which frames[endpoint] this card's CMD V2 mapper consumes
-        "is_history": consumer.get("is_history"),            # date-navigable card?
-        "swap": swap,
-        "conforms": l2.get("conforms"),
-        "fill_source": l2.get("fill_source"),                # always "live-frontend" — DATA fills on the FE from the ems_backend frame
-        "fill_ok": l2.get("fill_ok"),
-        "fill_why": l2.get("fill_why"),
-        "data_instructions": l2.get("data_instructions"),
-        "validation": val_by_id.get(cid),
-        "has_payload": payload is not None,
-        "payload_error": l2.get("exception") or (l2.get("failure") or {}).get("detail"),
-        # ── RENDER-GUARANTEE channel (Layer 3 verdict + frame reason) ─────────────────────────────────────────────
-        "render": {
-            "verdict": render_verdict,                       # render | partial | honest_blank | None (L3 skipped)
-            "answerability": l3.get("answerability"),
-            "reason": reason,                                # human/machine reason for a blank/partial/frame-empty
-            "coverage_note": l3.get("coverage_note"),        # 'N of M feeders reporting' for aggregates
-            "date_control": l3.get("date_control"),          # enabled | disabled (ER-7 no-history domains)
-            "slots": l3.get("slots"),                        # {slot: {value|None, blank_reason, fidelity_note, source}}
-            "suppress_default_leaves": suppress,             # NO-SEED-LEAK: FE force-blanks these payload paths
-            "watermark": l3.get("watermark") or "live",      # provenance stamp; a blanked slot carries None, never a seed
-        },
-        "frame_status": {"endpoint": endpoint, "ok": fstat.get("ok"), "why": fstat.get("why")},  # ER-6 reason channel
-    }
-
-
-# Wall-clock ceiling for the WHOLE parallel frame-fetch fan-out (all endpoints together). A single retired/cold-connect
-# endpoint used to cost ~60s serially and (×N endpoints) drop the whole page; PARALLEL + a budget means a slow endpoint
-# degrades to ok=False+why='frame budget exceeded' instead of sinking every other card's frame. [ER-8]
-_FRAME_BUDGET_S = cfg("ems_backend.frame_budget_s", float(os.environ.get("V48_FRAME_BUDGET_S", "45")))
-
-
-def _card_frames(l2, date_window=None, run_id="-"):
-    """The ems_backend frames the page's cards render from: ONE frame per DISTINCT endpoint (cards sharing an endpoint
-    share a frame), fetched IN PARALLEL with the user's date_window (history endpoints re-window). Returns
-    (frames, frame_status): frames={endpoint: frame} for the FE mappers; frame_status={endpoint:{ok,why}} the reason
-    channel threads onto each card [ER-6]. A per-endpoint failure/timeout is an honest {ok:False, why} — never a silent
-    drop with no reason. [date-nav; ER-6/8 parallel+budget]"""
-    try:
-        from workers.fill.sources.ems_backend_source import fetch_frame
-        from obs.stage import stage
-        from concurrent.futures import ThreadPoolExecutor, as_completed, TimeoutError as _FTimeout
-    except Exception:
-        return {}, {}
-    # one representative consumer per endpoint (params identical across same-endpoint cards on a page), and the MERGED
-    # row-scope recovery map per endpoint = {target_column: fn} from EVERY card on that endpoint whose AI emitted a
-    # data_instructions.fields[] entry with kind=="derived" and scope=="row". This is the AI→executor seam: the host
-    # ships these recipes to ems_backend, whose fill_derived(row) hook runs registry.run(fn, {"row": row}) per row.
-    by_endpoint, derived_by_endpoint = {}, {}
-    for o in (l2 or {}).values():
-        di = (o or {}).get("data_instructions") or {}
-        c = di.get("consumer") or {}
-        ep = c.get("endpoint")
-        if not (ep and c.get("mfm_id")):
-            continue
-        by_endpoint.setdefault(ep, c)
-        dmap = derived_by_endpoint.setdefault(ep, {})
-        for f in (di.get("fields") or []):
-            if not isinstance(f, dict) or f.get("kind") != "derived" or (f.get("scope") or "row") != "row":
-                continue
-            tgt, fn = f.get("target_column"), f.get("fn")
-            if tgt and fn:
-                dmap[tgt] = fn                                   # last writer wins (same target+fn across cards = identical)
-
-    frames, frame_status = {}, {}
-    if not by_endpoint:
-        return frames, frame_status
-
-    def _fetch(ep, consumer):
-        return fetch_frame(consumer, date_window=date_window, derived_map=(derived_by_endpoint.get(ep) or None))
-
-    deadline = time.time() + _FRAME_BUDGET_S
-    with ThreadPoolExecutor(max_workers=max(2, len(by_endpoint))) as ex:
-        futs = {ex.submit(_fetch, ep, c): ep for ep, c in by_endpoint.items()}
-        for fut in as_completed(futs):
-            ep = futs[fut]
-            remaining = max(0.0, deadline - time.time())
-            try:
-                frame, ok, why = fut.result(timeout=remaining or 0.01)
-                if ok:
-                    frames[ep] = frame                          # keep EVERY frame with a shape (queue / buckets / widgets)
-                frame_status[ep] = {"ok": bool(ok), "why": (why if not ok else "ok")}
-                stage(run_id, "frame", endpoint=ep, ok=ok, why=(why if not ok else "ok"),
-                      derived=sorted((derived_by_endpoint.get(ep) or {}).keys()))
-            except _FTimeout:
-                frame_status[ep] = {"ok": False, "why": "frame budget exceeded"}
-                stage(run_id, "frame", endpoint=ep, ok=False, why="frame budget exceeded")
-            except Exception as e:
-                frame_status[ep] = {"ok": False, "why": f"{type(e).__name__}: {e}"}
-                stage(run_id, "frame", endpoint=ep, ok=False, why=f"{type(e).__name__}: {e}")
-    return frames, frame_status
+def _attach_l2_notes(cards, l2):
+    """B1 [residual 'fe' — invisible proxy notes]: attach Layer 2's card-level honesty disclosures to each served card
+    as ADDITIVE fields. _enrich_card's whitelist dropped them — e.g. r_44796d791a card 70's 'kWh shown as a proxy for
+    run-hours' data_note reached only the page-level notes.loop1, never the card the FE renders — so every emitted
+    proxy/substitution note was invisible on the card itself.
+      data_note        — the emit's plain-words proxy/substitution/blank explanation. Canonical home = the Layer 2
+                         output's TOP level (layer2/build.py `out['data_note']`); falls back to the emit-variance
+                         location inside data_instructions (the model sometimes nests it there — see r_44796d791a
+                         card 71). Whitespace-only / non-string → None (honest, never fabricated).
+      l2_answerability — Layer 2's OWN full/partial/none claim. Telemetry beside the verdict: render.answerability
+                         (derived from the completed payload by validate/render_verdict) stays the single source of
+                         truth; this is the AI's claim, served so a disagreement is visible.
+    Generic (no card ids), additive (no existing field moves). Mutates + returns `cards`."""
+    for c in cards or []:
+        l2o = (l2 or {}).get(c.get("card_id")) or {}
+        note = l2o.get("data_note") or (l2o.get("data_instructions") or {}).get("data_note")
+        c["data_note"] = note.strip() if isinstance(note, str) and note.strip() else None
+        c["l2_answerability"] = l2o.get("answerability")
+    return cards
 
 
 def build_response(prompt, asset_id=None, date_window=None):
@@ -193,21 +79,35 @@ def build_response(prompt, asset_id=None, date_window=None):
 
     page_key = l1a.get("page_key")
     l2 = out.get("layer2") or {}                              # {card_id: Layer2CardOutput} — the payload source
-    l3 = out.get("layer3") or {}                              # {card_id: render envelope} — the render-guarantee verdict
-    frames, frame_status = _card_frames(l2, date_window, run_id=out.get("run_id"))  # (frames, {endpoint:{ok,why}})
-    # INFRA-OUTAGE honest terminal — a live data source is unreachable, so 1a/1b never reached ground truth and Layer 2/3
-    # never ran. Emit ZERO cards (an honest page-level terminal via `data_unavailable` + `degrade.reason`) rather than the
-    # bare 1a card shells, which would carry NO render verdict — a silent verdict-less dead-end the guarantee forbids.
-    if out.get("data_unavailable"):
-        cards = []
+
+    # PER-CARD NEURACT EXECUTOR — the ONE data path (ems_exec). Every Layer-2 card (feeder / asset / panel alike) has its
+    # payload COMPLETED by ems_exec.run_card straight from neuract: real where the AI named a column/fn, honest None/'—'
+    # everywhere else, every seed number stripped. No ws/mfm frame-fetch, no asset-dashboard socket, no Layer 3. Panel-
+    # aggregate leaves simply honest-blank per-card (aggregation deferred). `frames` is emitted EMPTY for FE back-compat.
+    asset_table = (l1b.get("asset") or {}).get("table")
+    db_link = _neuract_dsn.dsn()                              # DB-driven neuract DSN (config accessor + code-default)
+    frames, frame_status = {}, {}                             # data no longer flows through endpoint frames
+    if out.get("data_unavailable") or not asset_table:
+        # INFRA-OUTAGE / no resolved table — 1a/1b never reached ground truth so Layer 2 never ran (or has no meter to
+        # read). Emit ZERO cards (honest page-level terminal via data_unavailable + degrade.reason) rather than bare 1a
+        # shells carrying no verdict — the silent verdict-less dead-end the guarantee forbids.
+        completed_by_id, status_by_id, cards = {}, {}, []
     else:
+        completed_by_id, status_by_id = _run_cards(l2, asset_table, db_link=db_link,
+                                                    date_window=date_window, run_id=out.get("run_id"),
+                                                    asset=(l1b.get("asset") or {}), page_key=page_key)
         cards = [_enrich_card(c, page_key, val_by_id, l2.get(c.get("card_id")),
-                              l3_out=l3.get(c.get("card_id")), frame_status=frame_status)
+                              completed=completed_by_id.get(c.get("card_id")),
+                              run_ok=(status_by_id.get(c.get("card_id")) or {}).get("ok", True),
+                              run_why=(status_by_id.get(c.get("card_id")) or {}).get("why"),
+                              asset_table=asset_table)
                  for c in (l1a.get("cards") or [])]
+    _attach_l2_notes(cards, l2)   # B1: serve data_note + l2_answerability per card (additive; see the helper)
     from obs.stage import stage
     stage(out.get("run_id") or "-", "RESPONSE", page=page_key, cards=len(cards),
-          with_payload=sum(1 for c in cards if c.get("has_payload")), frames=sorted(frames.keys()),
-          rendered=sum(1 for c in cards if (c.get("render") or {}).get("verdict") == "render"),
+          with_payload=sum(1 for c in cards if c.get("has_payload")), frames=[],
+          rendered=sum(1 for c in cards if (c.get("render") or {}).get("verdict") in ("render", "partial")),
+          partial=sum(1 for c in cards if (c.get("render") or {}).get("verdict") == "partial"),
           blank=sum(1 for c in cards if (c.get("render") or {}).get("verdict") == "honest_blank"),
           asset_pending=out.get("asset_pending"), elapsed_ms=int((time.time() - t0) * 1000))
 
@@ -246,13 +146,27 @@ def build_response(prompt, asset_id=None, date_window=None):
             "payload_summary": (val.get("payload") or {}).get("summary"),
         },
         "cards": cards,
-        "frames": frames,                                        # {endpoint: ems_backend frame}; FE: frames[card.endpoint] → card's CMD_V2 mapper
-        "frame_status": frame_status,                            # {endpoint: {ok, why}} — the reason channel (ER-6); empty/mismatched frames carry a why
-        "live_frame": frames.get(page_endpoint(page_key)) or (next(iter(frames.values()), None)),  # back-comat: the page frame
+        "frames": frames,                                        # EMPTY now — DATA rides on each card's `payload` (ems_exec-completed); kept for FE back-compat
+        "frame_status": frame_status,                            # EMPTY now — the honest fetch-reason is per-card (card.frame_status / card.render.reason)
+        "live_frame": None,                                      # back-compat FE field; always None under the ems_exec path (DATA rides on each card's `payload`)
         "date_window": date_window,
         "notes": out.get("notes") or {"loop1": [], "loop2": None},  # reflect-loop: best-effort substitutions + persistent-gap explain
         "errors": out.get("errors") or {},
     }
+
+
+def _dump_response(resp):
+    """Persist the full /api/run response to outputs/logs/response_<run_id>.json so a client timeout / disconnect never
+    loses the per-run payload — the sweep + debugging read it FROM DISK (the pipeline already ran; the only thing a broken
+    pipe costs is the wire copy). Keyed by run_id (matches pipeline_<run_id>.jsonl / ai_<run_id>.jsonl). Never raises."""
+    try:
+        rid = (resp or {}).get("run_id") or "default"
+        d = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "outputs", "logs")
+        os.makedirs(d, exist_ok=True)
+        with open(os.path.join(d, f"response_{rid}.json"), "w") as f:
+            json.dump(resp, f)
+    except Exception:
+        pass
 
 
 class Handler(BaseHTTPRequestHandler):
@@ -289,6 +203,16 @@ class Handler(BaseHTTPRequestHandler):
             except Exception as e:
                 traceback.print_exc()
                 return self._send(500, {"ok": False, "error": f"{type(e).__name__}: {e}"})
+        # HEADER STATUS — site identity + LIVE dot. `site.name` is a DB-tunable app_config row; the LIVE flag is a REAL
+        # probe of the live-data DB connection (DATA_DB = target_version1/neuract) — green iff that DB answers.
+        if self.path.startswith("/api/site"):
+            from data.db_client import q
+            from config.databases import DATA_DB
+            try:
+                q(DATA_DB, "SELECT 1"); live = True
+            except Exception:
+                live = False
+            return self._send(200, {"ok": True, "site": cfg("site.name", "PEGEPL · SEETARAMPUR"), "live": live})
         return self._send(404, {"ok": False, "error": "not found"})
 
     def do_POST(self):
@@ -298,19 +222,30 @@ class Handler(BaseHTTPRequestHandler):
         except Exception as e:
             return self._send(400, {"ok": False, "error": f"bad body: {e}"})
 
-        # PER-CARD date re-fetch: one card's CMD V2 date control changed → re-fetch JUST its frame for the new window.
+        # PER-CARD date re-fetch: one card's CMD V2 date control changed → re-COMPLETE JUST that card's payload for the
+        # new window via ems_exec.run_card (the SAME executor the page uses — no ws/mfm). The FE posts the card's own
+        # {exact_metadata, data_instructions, asset_table, date_window}; the response `payload` is the re-filled CMD_V2
+        # payload it swaps in. Honest-degrade: any error still returns a stripped+shape-complete payload (no seed leak).
         if self.path.startswith("/api/frame"):
             try:
-                from workers.fill.sources.ems_backend_source import fetch_frame
-                consumer = req.get("consumer") or {}          # data_instructions.consumer of THE card
-                # the card's OWN row-scope recovery map {target_column: fn} from its data_instructions.fields[]
-                # (kind=="derived", scope=="row") so a date-nav re-fetch keeps the AI's recovered values too.
-                dmap = {f.get("target_column"): f.get("fn")
-                        for f in ((req.get("data_instructions") or {}).get("fields") or [])
-                        if isinstance(f, dict) and f.get("kind") == "derived" and (f.get("scope") or "row") == "row"
-                        and f.get("target_column") and f.get("fn")}
-                frame, ok, why = fetch_frame(consumer, date_window=req.get("date_window"), derived_map=(dmap or None))
-                return self._send(200, {"ok": ok, "why": why, "endpoint": consumer.get("endpoint"), "frame": frame})
+                exact_metadata = req.get("exact_metadata") or (req.get("payload") if isinstance(req.get("payload"), dict) else None)
+                data_instructions = req.get("data_instructions") or {}
+                asset_table = req.get("asset_table") or ((req.get("consumer") or {}).get("asset_table"))
+                consumer = (data_instructions.get("consumer") or {}) or (req.get("consumer") or {})
+                window = _date_window_for(consumer, req.get("date_window"))
+                if exact_metadata is None or not asset_table:
+                    return self._send(400, {"ok": False, "error": "exact_metadata + asset_table required"})
+                _rid = req.get("render_card_id") or req.get("card_id")
+                payload = ems_exec_run.run_card(exact_metadata, data_instructions, asset_table,
+                                                db_link=_neuract_dsn.dsn(), window=window,
+                                                default_payload=req.get("_default_payload"),
+                                                shape_ref=_raw_default_payload(_rid), card_id=_rid)
+                from host.display_dash import apply as _dash    # same serve-boundary display policy as /api/run
+                from ems_exec.executor import roster_stats as _rstats
+                _rstats.pop(payload)                             # telemetry key never rides to the FE
+                payload = _dash(payload, req.get("_default_payload"))
+                return self._send(200, {"ok": True, "why": "ok", "endpoint": consumer.get("endpoint"),
+                                        "payload": payload})
             except Exception as e:
                 traceback.print_exc()
                 return self._send(500, {"ok": False, "error": f"{type(e).__name__}: {e}"})
@@ -323,15 +258,44 @@ class Handler(BaseHTTPRequestHandler):
                 return self._send(400, {"ok": False, "error": "prompt required"})
             asset_id = req.get("asset_id")
             date_window = req.get("date_window")              # {range,start,end,sampling} from the FE date control (or None)
-            return self._send(200, build_response(prompt, asset_id=asset_id, date_window=date_window))
+            # KNOWLEDGE PRE-ROUTE [separate pipeline, 2026-07-06]: a CONCEPTUAL electrical/mechanical question
+            # ("what is voltage", "what are transformers") gets ONE restricted educator answer; off-domain prompts
+            # ("who is George Bush") are refused; asset/data prompts fall through UNCHANGED to the card pipeline.
+            # Skipped when the FE re-POSTs with a pinned asset_id (that is always a dashboard flow). Fail-open.
+            if asset_id is None:
+                from knowledge.route import classify as _kclassify
+                from knowledge import answer as _kanswer
+                _kind = _kclassify(prompt)
+                if _kind == "knowledge":
+                    resp = {"ok": True, "prompt": prompt, **_kanswer.answer(prompt)}
+                    _dump_response(resp)
+                    return self._send(200, resp)
+                if _kind == "off_domain":
+                    resp = {"ok": True, "prompt": prompt, **_kanswer.refuse()}
+                    _dump_response(resp)
+                    return self._send(200, resp)
+            resp = build_response(prompt, asset_id=asset_id, date_window=date_window)
+            _dump_response(resp)                              # persist server-side FIRST (robust to a client-side curl timeout)
+            return self._send(200, resp)
         except Exception as e:
             traceback.print_exc()
             return self._send(500, {"ok": False, "error": f"{type(e).__name__}: {e}"})
 
 
+class _Server(ThreadingHTTPServer):
+    # Bursty connection robustness: a page fires many card requests + the live frontend polls while a sweep runs. The
+    # stdlib default listen backlog (request_queue_size=5) drops connections under that burst → the browser sees
+    # "Failed to fetch". A deeper backlog + daemon threads (so a slow /api/run never blocks accept or shutdown) keeps
+    # the API reachable for the interactive frontend even while a batch sweep hammers it. allow_reuse_address avoids a
+    # TIME_WAIT bind failure on a fast restart.
+    request_queue_size = 128
+    daemon_threads = True
+    allow_reuse_address = True
+
+
 def main():
-    srv = ThreadingHTTPServer(("0.0.0.0", PORT), Handler)
-    print(f"[host] V48 preview API on http://0.0.0.0:{PORT}  (storybook={SB_BASE})", flush=True)
+    srv = _Server(("0.0.0.0", PORT), Handler)
+    print(f"[host] V48 preview API on http://0.0.0.0:{PORT}  (storybook={SB_BASE})  [backlog={_Server.request_queue_size}]", flush=True)
     try:
         srv.serve_forever()
     except KeyboardInterrupt:

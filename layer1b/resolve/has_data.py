@@ -6,12 +6,11 @@ chunked so one bad table can't void the whole check, FAIL-OPEN, cached per proce
                           is NOT data-bearing). This is the honest has_data signal — a meter the pipeline can render.
 [neuract live-data filter]"""
 from data.db_client import q
-from config.databases import DATA_DB, DATA_SCHEMA, DATA_TS_COL
+from config.databases import DATA_DB, DATA_SCHEMA, DATA_TS_COL, DATA_TS_CAST
+from config.validation import PLUMBING_COLUMNS as _PLUMBING   # ONE shared home with col_dict._SKIP (was drifting)
 
 _CACHE = {}
 _VAL_CACHE = {}
-# plumbing/identity columns excluded from the metric value-count (always present, not real readings)
-_PLUMBING = ("timestamp_utc", "panel_id", "id", "ts", "mfm_id", "created_at", "updated_at", "device_id")
 VALUE_MIN = 3                                          # >= this many non-null metric columns ⇒ a renderable meter
 
 
@@ -32,7 +31,7 @@ def value_counts(tables, chunk=40):
             union = " UNION ALL ".join(
                 f"""SELECT '{t}'::text AS tbl, (SELECT count(*) FROM jsonb_each(x.r) e
                        WHERE e.value <> 'null'::jsonb AND e.key NOT IN ({excl})) AS n
-                    FROM (SELECT to_jsonb(s) AS r FROM {DATA_SCHEMA}."{t}" s ORDER BY "{DATA_TS_COL}" DESC LIMIT 1) x"""
+                    FROM (SELECT to_jsonb(s) AS r FROM {DATA_SCHEMA}."{t}" s ORDER BY "{DATA_TS_COL}"{DATA_TS_CAST} DESC LIMIT 1) x"""
                 for t in part)
             for r in q(DATA_DB, union):
                 counts[r[0]] = int(r[1])

@@ -1,7 +1,7 @@
 """tests/test_render_guarantee_50.py — the 50-PROMPT render-guarantee acceptance suite.
 
 Runs the FULL V48 pipeline (run_pipeline + host.build_response) end-to-end on 50 DB-DRIVEN prompts and asserts the
-render-guarantee INVARIANTS from V48_RENDER_GUARANTEE_CONTRACT.md / _AUDIT.md hold on EVERY card:
+render-guarantee INVARIANTS from docs/V48_RENDER_GUARANTEE_CONTRACT.md / docs/V48_RENDER_GUARANTEE_AUDIT.md hold on EVERY card:
 
   I1  render-verdict present      — every card carries render.verdict ∈ {render, partial, honest_blank}
   I2  no-crash                    — build_response never raises; ok is set; no per-layer 'layer-exception'

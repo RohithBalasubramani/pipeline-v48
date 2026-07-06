@@ -1,0 +1,73 @@
+-- db/seed_role_scrub_vocab.sql — the ROLE-BASED string-scrub vocabularies (cmd_catalog.app_config, data_type='json').
+-- Home of the key/parent/pattern lists that grounding.role_scrub consults to blank ACTIVE, DATA-DERIVED STRING leaves
+-- (worst*/selectedPanel picks, status/badge verdicts, anomaly-event titles, fabricated MFM_xx pointers) while keeping
+-- lookup-dictionary / enum / roster-identity chrome byte-identical. The CODE holds only the generic ROLE walk (which a
+-- flat config list cannot express — it needs the ancestor chain to tell `status.label` from `statusVocab.normal`); the
+-- code-defaults mirror these rows, so a missing row / DB outage degrades honestly (empty → scrub narrows to nothing).
+-- NO card_id, NO specific value string — only slot-ROLE key/parent vocabularies.
+-- Idempotent. Run: psql (cmd_catalog DSN per config/databases.py) -f db/seed_role_scrub_vocab.sql
+--   then REBUILD: scripts/build_stripped_payloads.py (payload_stripped is derived from this policy).
+
+INSERT INTO app_config (key, value, data_type, section, note) VALUES
+ ('vocab.role_scrub.derived_pick_parents',
+  '["worst","selectedpanel"]',
+  'json', 'vocab',
+  'parent keys whose WHOLE object is a data-derived PICK (blank every string attr of the object) — the object IS "which panel scored worst / is selected". "worst" also matches any worst* key (worstCurrent/worstVoltage/worstIThd/worstVThd) by prefix in code; selectedPanel is the active selected-panel pick.'),
+ ('vocab.role_scrub.active_value_keys',
+  '["label","statuslabel","statuskey","tone","dstone","status","key","driver","driverkey","cause","causekey","insightkey","ieeestate","availability","severity","severitylabel","severityaction","table","id","panel","deltatone"]',
+  'json', 'vocab',
+  'the verdict / derived-fact / identity attribute keys blanked inside a derived-pick or active-state object — the asserted current condition + the pick identity + the fabricated DB pointer (table). Inside a ROSTER element only the roster_blank_keys subset is blanked (id/panel kept as the dropdown label).'),
+ ('vocab.role_scrub.active_state_parents',
+  '["status","statusbadge","badge","freshness","ieeebadge","state","service"]',
+  'json', 'vocab',
+  'parent keys of an ACTIVE-STATE object (the current asserted condition) — blank its active_value_keys {label,statusKey,tone,dsTone,status,key,...} and its sibling active pointers insightKey/ieeeState/availability. Distinct from a *Vocab dictionary (kept).'),
+ ('vocab.role_scrub.roster_parents',
+  '["panels","periods"]',
+  'json', 'vocab',
+  'roster LIST parents (panels[] / periods[].panels[]) — a roster row carries a DERIVED verdict + a display identity. Blank the derived facts (roster_blank_keys) + DB pointer, KEEP the roster identity (roster_identity_keys).'),
+ ('vocab.role_scrub.roster_identity_keys',
+  '["id","panel"]',
+  'json', 'vocab',
+  'roster display-identity keys KEPT inside a roster element — the selectable-panel dropdown label dictionary, NOT a verdict (id/panel).'),
+ ('vocab.role_scrub.roster_blank_keys',
+  '["status","cause","causekey","driver","driverkey","table"]',
+  'json', 'vocab',
+  'the DERIVED per-panel facts + the fabricated DB pointer blanked inside a roster element (the roster identity id/panel stays).'),
+ ('vocab.role_scrub.event_parents',
+  '["anomalies","events","event","anomaly"]',
+  'json', 'vocab',
+  'parent keys of an EVENT / ANOMALY instance list/object — a "what happened" claim. Blank event_value_keys; KEEP lane/series chrome {axis,unit,chart,series,seriesLabel,color}.'),
+ ('vocab.role_scrub.event_value_keys',
+  '["title","label","type","severity","status"]',
+  'json', 'vocab',
+  'the event/anomaly instance attributes that ASSERT what happened (title/label/type/severity/status) — blanked. Structural lane chrome (axis/unit/chart/series/seriesLabel/color) is NOT in this list and stays.'),
+ ('vocab.role_scrub.dictionary_subtree_keys',
+  '["statusvocab","insightvocab","causevocab","drivervocab","notevocab","vocab","compliancewords","eventtypekeys","drivercodemap","eventmodeorder","eventcolumn","statuslegend","bandthresholds","legend","palette","presentation"]',
+  'json', 'vocab',
+  'KEEP-HARD: if ANY ancestor key is one of these (or contains the substring "vocab"), the string is a lookup-DICTIONARY / enum option-set / roster-of-design-bands / presentation chrome container the component needs to render ANY state — kept byte-identical. This OVERRIDES every blank rule (status.label BLANK vs statusVocab.normal KEEP; panels[].status BLANK vs bandThresholds.stops.kw[].status KEEP; snapshot.severityLabel="High" BLANK vs snapshot.presentation.complianceStrip.severityLabel="Severity" KEEP — "presentation" is an all-static label/palette/spectrum dictionary container).'),
+ ('vocab.role_scrub.global_active_keys',
+  '["ieeestate","filterstate","availability","capacitorbank","severityaction","severitylabel","insightkey","statuslabel","statuskey","mode"]',
+  'json', 'vocab',
+  'ACTIVE-POINTER keys that are a live-derived assertion by their OWN NAME regardless of parent (a *State result / an availability / a severity action-verdict / a per-metric statusLabel / an operating MODE) — blanked ANYWHERE except inside a dictionary_subtree. The key name itself denotes the current condition, so no parent-role scope is needed (snapshot.ieeeState="fail", metrics[].statusLabel="Watch", points[].mode="normal", summary.mode="sag" — the UPS/event operating mode is a live verdict knowable only from data). A same-named STATIC caption or option-set is spared by living under a dictionary_subtree (complianceStrip.severityLabel, any modeVocab/eventModeOrder).'),
+ ('vocab.role_scrub.tone_key_suffix',
+  '"tone"',
+  'json', 'vocab',
+  'any key ENDING in this suffix (tone / dsTone / deltaTone / nextPriorityTone) is a live verdict TONE — blanked ANYWHERE except under a reference_line_parent (a static line style) or a dictionary_subtree. Covers status.tone / statusBadge.tone / service.tone / freshness.tone / metrics[].tone / totals[].tone all as verdicts, while referenceLines[].tone="reference" / watchLines[].tone="threshold" stay.'),
+ ('vocab.role_scrub.reference_line_parents',
+  '["referencelines","watchlines"]',
+  'json', 'vocab',
+  'reference/watch LINE list parents — a *.tone under one of these is a FIXED design line style ("reference"/"threshold"), NOT a live verdict → the tone-suffix blank is suppressed inside them.'),
+ ('vocab.role_scrub.mfm_pointer_pattern',
+  '"^\\s*MFM[_-]?\\d+\\s*$"',
+  'json', 'vocab',
+  'a fabricated meter/table pointer (MFM_033 etc. — verified absent from registry_lt_mfm) — blanked by VALUE in ANY slot (case-insensitive). The real live table pointer is bound downstream from the asset resolver, never a Storybook seed.'),
+ ('vocab.role_scrub.metric_value_parents',
+  '["stats","stat","metrics","metric","kpis","kpi","kpicells","kpicell","cells","tiles","scorecells","summarystats","quickstats"]',
+  'json', 'vocab',
+  'KPI/stat/tile container parents whose element value/displayValue IS the measured datum. A NUMERIC value was already zeroed by leaf_classify (runs before this scrub); a SURVIVING STRING value under one of these is a data-derived TEXT descriptor (e.g. a stat "Primary Event"="Motor start sag") → a fabricated seed, blanked. label/unit/note stay (only the value key is the datum).'),
+ ('vocab.role_scrub.metric_value_keys',
+  '["value","displayvalue"]',
+  'json', 'vocab',
+  'the datum keys inside a metric_value_parent — a non-numeric string here is the fabricated measured value/descriptor.')
+ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value, data_type = EXCLUDED.data_type,
+                                section = EXCLUDED.section, note = EXCLUDED.note;

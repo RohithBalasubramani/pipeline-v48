@@ -3,9 +3,11 @@ from config.available_pages import AVAILABLE_PAGES, available_page_keys, filter_
 from layer1a.route import route
 
 
-def test_nine_available():
-    assert len(AVAILABLE_PAGES) == 9
+def test_available_pages_set():
+    # 9 EMS pages (5 panel-overview + 4 equipment-detail) + 9 asset deep-tab pages = 18 routable page_keys.
+    assert len(AVAILABLE_PAGES) == 18
     assert "panel-overview-shell/real-time-monitoring" in AVAILABLE_PAGES
+    assert "ups-asset-dashboard/output-load-capacity" in AVAILABLE_PAGES
 
 
 def test_filter_to_available():

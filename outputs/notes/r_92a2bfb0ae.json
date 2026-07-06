@@ -2,10 +2,10 @@
  "run_id": "r_92a2bfb0ae",
  "loop1": [
   {
-   "card_id": 46,
-   "title": "Current History",
+   "card_id": 43,
+   "title": "Voltage Live Health",
    "answerability": "partial",
-   "note": "Showing historical current trends for R, Y, and B phases. Max Deviation KPI is approximated using active power load factor as the specific current deviation metric is not directly available in the shared buffer."
+   "note": "Showing live phase voltages and deviation. 'Rate Change' (V/min) is not a voltage quantity; bound to active power rate of change as a proxy for system activity."
   }
  ],
  "loop2": null

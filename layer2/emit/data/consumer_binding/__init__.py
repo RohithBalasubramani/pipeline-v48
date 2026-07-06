@@ -2,7 +2,7 @@
 `ems_backend/` WS dispatcher (`ws/mfm/<mfm_id>/<endpoint>/`). The AI (Layer 2) AUTHORS the fetch spec — endpoint
 (live vs date-capable history), window/range/sampling, metrics, selection. This package only ASSEMBLES the AI's spec
 with the one non-AI key, `mfm_id` (1b's resolved asset = the WS path key). NO deterministic fallbacks/guesses.
-[design-notes 'Layer 2 DATA source — reuse ems_backend', findings/ems_backend_hardcoding.md]
+[design-notes 'Layer 2 DATA source — reuse ems_backend', docs/findings/ems_backend_hardcoding.md]
 
 BARREL — this package REPLACES the old `consumer_binding.py` module. Every public name the old module exposed is
 re-exported here so `from layer2.emit.data.consumer_binding import build, page_endpoint, canonical_screen,

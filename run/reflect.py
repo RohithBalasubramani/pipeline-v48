@@ -23,10 +23,12 @@ def asset_supports(l1b):
 
 
 def gap_summary(l1a, gaps):
-    """[(title, why)] for the cards Layer 2 could not answer (answerability=none)."""
+    """[(title, why)] for the cards Layer 2 could not answer (answerability=none) OR hard-failed (no valid emit —
+    the `exception` fallback covers the run_2_all per-card exception envelope, which has no data_note/failure)."""
     titles = _card_titles(l1a)
     return [(titles.get(o.get("card_id"), o.get("card_id")),
-             o.get("data_note") or (o.get("failure") or {}).get("reason") or "no real column serves its data")
+             o.get("data_note") or (o.get("failure") or {}).get("reason") or o.get("exception")
+             or "no real column serves its data")
             for o in gaps]
 
 
@@ -49,3 +51,14 @@ def build_loop2_note(l1a, gaps):
     items = "; ".join(f"{t} ({why})" for t, why in gap_summary(l1a, gaps))
     return (f"After re-routing to '{page}', these still cannot be answered from the available data: {items}. "
             f"The requested information isn't recorded for this asset on any available template.")
+
+
+def build_honest_terminal_note(l1a, gaps):
+    """User-facing explanation for the HONEST TERMINAL (reflect.reroute_on='hard_failure'): every emit CONFORMED, the
+    gapped cards simply cover quantities this asset does not measure — the routed page is KEPT and those cards render
+    their real component with per-leaf honest blanks + the reason. This note replaces the old destructive re-route:
+    the words survive, the page discard does not. [per-leaf degradation: honest-blank is a PASS]"""
+    page = (l1a or {}).get("page_key")
+    items = "; ".join(f"{t} ({why})" for t, why in gap_summary(l1a, gaps))
+    return (f"'{page}' answers the prompt as routed; these cards cover quantities not recorded for this asset and "
+            f"render honest-blank per-leaf with the reason: {items}.")

@@ -1,0 +1,667 @@
+{
+ "19": [
+  {
+   "story_id": "ems-panel-overview-voltage-current-cards--ai-summary",
+   "story_name": "AI Summary Card",
+   "variant": "baseline",
+   "is_subcard": false,
+   "payload": {
+    "summary": {
+     "mode": "sag",
+     "pres": {
+      "vocab": {
+       "atWord": "at",
+       "noPrefix": "No",
+       "acrossWord": "across",
+       "eventsWord": "events",
+       "currentUnit": "A",
+       "panelPlural": "panels",
+       "percentUnit": "%",
+       "voltageUnit": "V",
+       "worstILabel": "worst I",
+       "worstVLabel": "Worst V",
+       "driversPrefix": "Redistribution at ",
+       "driversSuffix": "; inspect peak before clearing.",
+       "panelSingular": "panel"
+      },
+      "aiLabel": "AI",
+      "density": "compact",
+      "cardTitle": "AI Summary",
+      "titleGlyph": "\u2726",
+      "driversLabel": "Likely Drivers",
+      "modeShortByKey": {
+       "sag": "Sag",
+       "swell": "Swell",
+       "current": "Current",
+       "neutral": "Neutral"
+      },
+      "worstIDecimals": 1,
+      "worstVDecimals": 2,
+      "selectedDecimals": 0
+     },
+     "stats": {
+      "sag": 3,
+      "swell": 4,
+      "total": 7,
+      "current": 0,
+      "neutral": 0,
+      "worstCurrent": "[Circular]",
+      "worstVoltage": "[Circular]"
+     },
+     "period": {
+      "label": "18:00",
+      "panels": [
+       {
+        "id": "ups-01",
+        "sag": 0,
+        "amps": 249.6,
+        "vAvg": 416.6,
+        "vMax": 420.2,
+        "vMin": 412.8,
+        "cause": "",
+        "panel": "UPS-01",
+        "swell": 1,
+        "table": "MFM_025",
+        "status": "warning",
+        "current": 0,
+        "neutral": 0,
+        "causeKey": "capacitorStep",
+        "neutralA": 12.8,
+        "iUnbalance": 6,
+        "vDeviation": 0.39
+       },
+       {
+        "id": "ups-02",
+        "sag": 0,
+        "amps": 309.3,
+        "vAvg": 418.7,
+        "vMax": 422.9,
+        "vMin": 414.4,
+        "cause": "",
+        "panel": "UPS-02",
+        "swell": 1,
+        "table": "MFM_026",
+        "status": "success",
+        "current": 0,
+        "neutral": 0,
+        "causeKey": "capacitorStep",
+        "neutralA": 16.3,
+        "iUnbalance": 6.5,
+        "vDeviation": 0.9
+       },
+       {
+        "id": "ups-03",
+        "sag": 0,
+        "amps": 258.2,
+        "vAvg": 410.6,
+        "vMax": 414.2,
+        "vMin": 405.8,
+        "cause": "",
+        "panel": "UPS-03",
+        "swell": 0,
+        "table": "MFM_027",
+        "status": "warning",
+        "current": 0,
+        "neutral": 0,
+        "causeKey": "normal",
+        "neutralA": 14.2,
+        "iUnbalance": 6.9,
+        "vDeviation": -1.05
+       },
+       {
+        "id": "ups-04",
+        "sag": 0,
+        "amps": 322.3,
+        "vAvg": 415.6,
+        "vMax": 419.8,
+        "vMin": 411.8,
+        "cause": "",
+        "panel": "UPS-04",
+        "swell": 0,
+        "table": "MFM_033",
+        "status": "warning",
+        "current": 0,
+        "neutral": 0,
+        "causeKey": "normal",
+        "neutralA": 18.2,
+        "iUnbalance": 7.5,
+        "vDeviation": 0.16
+       },
+       {
+        "id": "ups-05",
+        "sag": 2,
+        "amps": 265.9,
+        "vAvg": 403.2,
+        "vMax": 406.8,
+        "vMin": 394.7,
+        "cause": "",
+        "panel": "UPS-05",
+        "swell": 0,
+        "table": "MFM_034",
+        "status": "danger",
+        "current": 0,
+        "neutral": 0,
+        "causeKey": "upsInrush",
+        "neutralA": 26.1,
+        "iUnbalance": 6.3,
+        "vDeviation": -2.84
+       },
+       {
+        "id": "ups-06",
+        "sag": 1,
+        "amps": 342.7,
+        "vAvg": 409.2,
+        "vMax": 413.4,
+        "vMin": 400.7,
+        "cause": "",
+        "panel": "UPS-06",
+        "swell": 0,
+        "table": "MFM_035",
+        "status": "warning",
+        "current": 0,
+        "neutral": 0,
+        "causeKey": "upsInrush",
+        "neutralA": 18.1,
+        "iUnbalance": 6.6,
+        "vDeviation": -1.4
+       },
+       {
+        "id": "bpdb-01",
+        "sag": 0,
+        "amps": 140.3,
+        "vAvg": 416,
+        "vMax": 419.6,
+        "vMin": 412.2,
+        "cause": "",
+        "panel": "BPDB-01",
+        "swell": 0,
+        "table": "MFM_023",
+        "status": "success",
+        "current": 0,
+        "neutral": 0,
+        "causeKey": "normal",
+        "neutralA": 6.9,
+        "iUnbalance": 6.1,
+        "vDeviation": 0.23
+       },
+       {
+        "id": "bpdb-02",
+        "sag": 0,
+        "amps": 81,
+        "vAvg": 417.2,
+        "vMax": 421.4,
+        "vMin": 412.9,
+        "cause": "",
+        "panel": "BPDB-02",
+        "swell": 1,
+        "table": "MFM_061",
+        "status": "success",
+        "current": 0,
+        "neutral": 0,
+        "causeKey": "capacitorStep",
+        "neutralA": 3.8,
+        "iUnbalance": 5.4,
+        "vDeviation": 0.53
+       },
+       {
+        "id": "hhf-01",
+        "sag": 0,
+        "amps": 110.9,
+        "vAvg": 418.1,
+        "vMax": 421.7,
+        "vMin": 413.3,
+        "cause": "",
+        "panel": "HHF-01",
+        "swell": 1,
+        "table": "MFM_024",
+        "status": "warning",
+        "current": 0,
+        "neutral": 0,
+        "causeKey": "capacitorStep",
+        "neutralA": 5.5,
+        "iUnbalance": 6.4,
+        "vDeviation": 0.74
+       },
+       {
+        "id": "hhf-02",
+        "sag": 0,
+        "amps": 91.4,
+        "vAvg": 411.8,
+        "vMax": 416,
+        "vMin": 408,
+        "cause": "",
+        "panel": "HHF-02",
+        "swell": 0,
+        "table": "MFM_032",
+        "status": "success",
+        "current": 0,
+        "neutral": 0,
+        "causeKey": "normal",
+        "neutralA": 4.6,
+        "iUnbalance": 6.6,
+        "vDeviation": -0.78
+       }
+      ]
+     },
+     "selectedPanel": "[Circular]"
+    },
+    "variant": "baseline"
+   },
+   "key_roles": {
+    "summary": "mixed",
+    "variant": "metadata"
+   },
+   "import_path": "./src/pages/electrical/lt-pcc/panel-overview/voltage-current/storybook/VoltageCurrentCards.stories.tsx"
+  }
+ ],
+ "49": [
+  {
+   "story_id": "ems-equipment-detail-power-quality-cards--load-impact",
+   "story_name": "Load Impact Chart",
+   "variant": "baseline",
+   "is_subcard": false,
+   "payload": {
+    "variant": "baseline",
+    "loadImpact": {
+     "view": "pf-health",
+     "title": "Load Impact & Transformer Stress",
+     "views": {
+      "k-stress": {
+       "yMax": 7,
+       "yMin": 2,
+       "stats": [
+        {
+         "label": "Heating Status",
+         "value": "Heating Risk"
+        },
+        {
+         "label": "K - factor",
+         "value": "12.9",
+         "swatch": {
+          "color": "#bc9e44",
+          "style": "solid"
+         }
+        },
+        {
+         "label": "K - Watch",
+         "value": "15",
+         "swatch": {
+          "color": "#c13b38",
+          "style": "solid"
+         }
+        },
+        {
+         "label": "Action",
+         "value": "Reduce I-THD"
+        }
+       ],
+       "series": [
+        {
+         "color": "#bc9e44",
+         "label": "K - factor",
+         "style": "solid",
+         "values": [
+          4.91,
+          4.9271611829370325,
+          4.944090969331003,
+          4.950565439666124,
+          4.9463753868788585,
+          4.9313330763850995,
+          4.915278312275397,
+          4.898083613663621,
+          4.879658333927667,
+          4.859951589738821,
+          4.848953905235128,
+          4.836697518211272,
+          4.833255338431147,
+          4.838738591722764,
+          4.843293225980964,
+          4.857095195209353,
+          4.880344773986445,
+          4.903260086070411,
+          4.916070056250196,
+          4.929007013187076,
+          4.932299182268206,
+          4.9361633110476895,
+          4.930797665566428,
+          4.916375623857992,
+          4.903040073651073,
+          4.880898795293396,
+          4.860020979086909,
+          4.850434989568225,
+          4.842127448976296,
+          4.855043669522839,
+          4.879089420497761
+         ]
+        }
+       ],
+       "yTicks": [
+        7,
+        6,
+        5,
+        4,
+        2
+       ],
+       "xLabels": "[Circular]",
+       "railKind": "stat-list",
+       "watchLines": [
+        {
+         "tone": "threshold",
+         "color": "#c13b38",
+         "label": "K -Watch",
+         "value": 5.25
+        }
+       ],
+       "yAxisLabel": "PF Scale",
+       "xLabelIndexes": "[Circular]"
+      },
+      "pf-angle": {
+       "yMax": 550,
+       "yMin": 350,
+       "stats": [
+        {
+         "label": "Trends",
+         "value": "Stable/Raising"
+        },
+        {
+         "label": "Phase angle",
+         "value": "19.0",
+         "swatch": {
+          "color": "#bc9e44",
+          "style": "solid"
+         }
+        },
+        {
+         "label": "Lag Status",
+         "value": "Watch",
+         "swatch": {
+          "color": "#c13b38",
+          "style": "solid"
+         }
+        }
+       ],
+       "series": [
+        {
+         "color": "#bc9e44",
+         "label": "Phase angle",
+         "style": "solid",
+         "values": [
+          450,
+          452.0895147867129,
+          454.17613711663756,
+          456.25706799582656,
+          457.3296923359857,
+          457.39166345481374,
+          456.4409789034425,
+          454.47604517079526,
+          452.49572917409586,
+          451.49939487173526,
+          452.48692381543907,
+          454.4587189776409,
+          456.41569173038937,
+          457.35923239653454,
+          457.29116532476206,
+          456.2136899401169,
+          453.12930967483055,
+          451.0407510758801,
+          450.95087570312745,
+          451.86258766483843,
+          453.7787397783526,
+          455.7020413880961,
+          457.63497081958036,
+          457.5796952982249,
+          456.5380009206384,
+          454.51123494116746,
+          452.50026223858634,
+          451.5054373696028,
+          452.52659311220367,
+          454.5630458690355,
+          456.613617756222
+         ]
+        }
+       ],
+       "yTicks": [
+        550,
+        500,
+        450,
+        400,
+        350
+       ],
+       "xLabels": "[Circular]",
+       "railKind": "stat-list",
+       "watchLines": [
+        {
+         "tone": "threshold",
+         "color": "#c13b38",
+         "label": "Lag Watch 20",
+         "value": 485
+        }
+       ],
+       "yAxisLabel": "PF Scale",
+       "xLabelIndexes": "[Circular]"
+      },
+      "pf-health": {
+       "yMax": 1,
+       "yMin": 0.4,
+       "stats": [
+        {
+         "label": "Power Factor",
+         "value": "0.909",
+         "swatch": {
+          "color": "#237492",
+          "style": "solid"
+         }
+        },
+        {
+         "label": "True PF",
+         "value": "0.857",
+         "swatch": {
+          "color": "#6488a3",
+          "style": "solid"
+         }
+        },
+        {
+         "label": "PF Gap (displ.)",
+         "value": "0.52",
+         "swatch": {
+          "color": "#bc9e44",
+          "style": "solid"
+         }
+        },
+        {
+         "label": "PF Target",
+         "value": "0.95",
+         "swatch": {
+          "color": "#3f93b4",
+          "style": "dashed"
+         }
+        }
+       ],
+       "series": [
+        {
+         "id": "pf",
+         "color": "#237492",
+         "label": "Power Factor",
+         "style": "solid",
+         "values": [
+          0.901,
+          0.906074177440555,
+          0.9101136453996506,
+          0.9150848159499188,
+          0.9179563080318289,
+          0.9166999614577649,
+          0.9142917468413098,
+          0.9117125420495431,
+          0.9099487500891501,
+          0.9109927384608232,
+          0.9138430857852692,
+          0.9165046277316908,
+          0.9189883007646721,
+          0.9193107887584148,
+          0.9164939838971445,
+          0.912564279281403,
+          0.9095517160979667,
+          0.9064890129105616,
+          0.9064105084375293,
+          0.9083510519780613,
+          0.910344877340231,
+          0.9114244966571534,
+          0.9096196498349642,
+          0.9069563435786989,
+          0.9034560110476609,
+          0.9011348192940094,
+          0.9020031468630363,
+          0.9050652484352338,
+          0.9073191173464443,
+          0.9067565504284258,
+          0.9053634130746641
+         ]
+        },
+        {
+         "id": "truepf",
+         "color": "#6488a3",
+         "label": "True PF",
+         "style": "solid",
+         "values": [
+          0.851,
+          0.8544322365874065,
+          0.8588181938662007,
+          0.8631130879332249,
+          0.8662750773757718,
+          0.8652666152770199,
+          0.8640556624550796,
+          0.8616167227327242,
+          0.8609316667855335,
+          0.8619903179477642,
+          0.8647907810470256,
+          0.8673395036422544,
+          0.8686510676862295,
+          0.868747718344553,
+          0.8656586451961926,
+          0.8614190390418707,
+          0.8580689547972888,
+          0.8546520172140821,
+          0.8542140112500392,
+          0.855801402637415,
+          0.8574598364536412,
+          0.8582326622095379,
+          0.8561595331132856,
+          0.8532751247715984,
+          0.8496080147302145,
+          0.8471797590586793,
+          0.8480041958173817,
+          0.8510869979136451,
+          0.8534254897952591,
+          0.8530087339045678,
+          0.8518178840995521
+         ]
+        },
+        {
+         "id": "pfgap",
+         "color": "#bc9e44",
+         "label": "PF Gap (displ.)",
+         "style": "solid",
+         "values": [
+          0.51,
+          0.5161483548811099,
+          0.5222272907993011,
+          0.5281696318998373,
+          0.5329126160636577,
+          0.5313999229155298,
+          0.5295834936826194,
+          0.5274250840990862,
+          0.5248975001783003,
+          0.5269854769216463,
+          0.5306861715705383,
+          0.5340092554633817,
+          0.5359766015293442,
+          0.5356215775168296,
+          0.531987967794289,
+          0.5271285585628059,
+          0.5221034321959334,
+          0.5169780258211233,
+          0.5158210168750588,
+          0.5167021039561225,
+          0.5186897546804617,
+          0.5198489933143069,
+          0.5172392996699284,
+          0.5139126871573977,
+          0.5099120220953217,
+          0.5062696385880189,
+          0.5070062937260726,
+          0.5101304968704676,
+          0.5136382346928887,
+          0.5135131008568518,
+          0.5117268261493282
+         ]
+        }
+       ],
+       "yTicks": [
+        1,
+        0.9,
+        0.8,
+        0.7,
+        0.6,
+        0.5,
+        0.4
+       ],
+       "xLabels": [
+        "00:00",
+        "02:00",
+        "04:00",
+        "08:00",
+        "10:00",
+        "12:00",
+        "14:00",
+        "16:00",
+        "18:00",
+        "22:00"
+       ],
+       "railKind": "stat-list",
+       "watchLines": [
+        {
+         "tone": "threshold",
+         "color": "#3f93b4",
+         "label": "PF Target",
+         "value": 0.95
+        }
+       ],
+       "yAxisLabel": "Power Factor",
+       "xLabelIndexes": [
+        0,
+        3,
+        6,
+        9,
+        13,
+        16,
+        19,
+        22,
+        26,
+        30
+       ]
+      }
+     },
+     "viewOptions": [
+      {
+       "label": "PF Health",
+       "value": "pf-health"
+      },
+      {
+       "label": "PF Angle",
+       "value": "pf-angle"
+      },
+      {
+       "label": "K-Stress",
+       "value": "k-stress"
+      }
+     ]
+    }
+   },
+   "key_roles": {
+    "variant": "metadata",
+    "loadImpact": "mixed"
+   },
+   "import_path": "./src/pages/electrical/tabs/power-quality/storybook/PowerQualityCards.stories.tsx"
+  }
+ ]
+}

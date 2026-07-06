@@ -32,10 +32,10 @@ def test_page_cards_rtm_slot_size():
 
 def test_resolve_page_key():
     keys = ["a/b", "c/d"]
-    assert resolve_page_key("a/b", keys) == "a/b"
-    assert resolve_page_key("b", keys) == "a/b"
-    assert resolve_page_key("zzz", keys) == "a/b"
-    assert resolve_page_key(None, keys) == "a/b"
+    assert resolve_page_key("a/b", keys) == ("a/b", "verbatim")
+    assert resolve_page_key("b", keys) == ("a/b", "segment")     # unique tail segment recovers
+    assert resolve_page_key("zzz", keys) == (None, "no_match")   # fail-closed: no silent keys[0] misroute
+    assert resolve_page_key(None, keys) == (None, "missing")
 
 
 def test_clamp_metric_intent():

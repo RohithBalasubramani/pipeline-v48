@@ -1,13 +1,15 @@
-"""layer1b/resolve/ambiguous_candidates.py — ambiguous outcome → the de-duplicated candidate list for the picker. [RN-06, DS-09]
+"""layer1b/resolve/ambiguous_candidates.py — ambiguous outcome → the de-duplicated candidate list for the picker. [RN-06]
 
-When the AI cannot pin one meter, this builds the candidate list the frontend AssetPicker shows. Two de-dup passes so
-the picker never offers junk:
+When the AI cannot pin one meter, this builds the candidate list the frontend AssetPicker shows. De-dup passes:
   1. registry-id de-dup — the AI's picks/candidates lists can name the same row twice.
-  2. device-identity prefer-populated de-dup — when a physical device has a populated table AND an empty duplicate
-     (DG-01 → dg_1_mfm vs gic_28_n1_dg_01_jk), offer ONLY the populated one, so the user can't click a greyed twin
-     that would blank the card. Resolution is by table membership of has_meaningful_data, never by row-id. [DS-09]
+  2. device-identity pass — CURRENTLY A NO-OP: confident_pin._ident returns None (the canonical device_mappings prove
+     no two registry rows are the same physical device — every device has its own device_id, F5). So each row is kept as
+     its own device and homonyms like DG-3 MFM vs GIC-28-N3-DG-03 [Jackson] BOTH surface for the user to disambiguate,
+     instead of one being silently collapsed away. The pass is retained so a proven device_id-keyed duplication can be
+     re-enabled in one place.
 
-Order is preserved (AI listing order), which the picker renders top-to-bottom.
+Order is preserved (AI/collision listing order), then STABLE-sorted data-bearing first, which the picker renders top-to-
+bottom.
 """
 from layer1b.resolve.asset_candidates import as_asset
 from layer1b.resolve.confident_pin import _ident
@@ -46,6 +48,9 @@ def dedup_candidates(rows, cands):
 
 def ambiguous_candidates(rows, cands):
     """The ambiguous resolution outcome: de-dup the candidate rows and project them to asset dicts for the picker.
+    STABLE-sorted data-bearing first (dead-meter-honest: the picker — and any harness auto-pick — leads with meters
+    that can actually render; AI listing order is preserved within each group). [hardening: candidate ordering]
     Returns the outcome dict {asset:None, how:'ambiguous', candidates:[as_asset,...]}."""
     uniq = dedup_candidates(rows, cands)
+    uniq = sorted(uniq, key=lambda c: 0 if (len(c) > 6 and c[6]) else 1)
     return {"asset": None, "how": "ambiguous", "candidates": [as_asset(c) for c in uniq]}

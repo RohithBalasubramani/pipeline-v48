@@ -1,25 +1,23 @@
 import React from "react";
-// Card 45 — Current Health Summary (page individual-feeder-meter-shell/voltage-current, CMD V2
-// Equipment-Detail "Voltage & Current" tab). HealthSummaryPanel fed the LIVE `voltage-current`
-// column-row ems_backend frame (current slice), mapped through the page's OWN reducers + mapper +
-// view-model. Honest-degrade: a missing/unmappable frame renders the byte-faithful payload default.
-// Card 45 renders a live health snapshot with NO date/range/sampling control — so it carries no onDateChange.
+// Card 45 — Current Health Summary (page individual-feeder-meter-shell/voltage-current, CMD V2 Equipment-Detail
+// "Voltage & Current" tab). FRAMES ARE RETIRED: the ONLY data source is the Layer-2 completed payload (real neuract
+// values + honest-blank '—', shape = the Storybook story args `{ variant, health: { data, phaseVariant } }`). We render
+// HealthSummaryPanel DIRECTLY from `payload.health.data` + `payload.health.phaseVariant`, guarded by sanitizeHealth.
+// Card 45 renders a health snapshot with NO date/range/sampling control — so it carries no onDateChange.
 import { HealthSummaryPanel } from "@cmd-v2/pages/electrical/tabs/voltage-current/HealthSummaryPanel";
-import { liveHealth } from "./frame-view-model";
-import { healthData, healthPhaseVariant } from "./payload-unwrap";
+import { healthData, healthPhaseVariant, sanitizeHealth, unavailableHealth } from "./payload-unwrap";
 
-/** Card 45 — Current Health Summary: HealthSummaryPanel fed the live
- *  `voltage-current` column-row frame (current slice). */
-function CurrentHealthCard({ payload, frame }: { payload: any; frame?: any }) {
-  const fallback = healthData(payload);
-  const live = liveHealth(frame, "current");
-  const data = live ?? fallback;
-  // GUARD: HealthSummaryPanel maps data.metrics (MetricStrip) and data.phases (PhaseRows/PhaseBarRows); Layer 2 elides
-  // those array leaves from the seed payload, so render a placeholder instead of crashing on `.map` of undefined.
-  if (!data || !Array.isArray(data.metrics) || !Array.isArray(data.phases)) return null;
+/** Card 45 — Current Health Summary: HealthSummaryPanel fed the payload's `health.data`. */
+function CurrentHealthCard({ payload }: { payload: any }) {
+  const slice = healthData(payload);
+  // ALWAYS-DRAW: use the payload slice when it carries metrics+phases; else CMD V2's OWN structured-empty slice
+  // (metrics/phases "—") so the panel draws chrome instead of a blank/null card. sanitizeHealth then guards whichever
+  // won: a phase's widthPct/markerPct honest-dashed to '—' (sits beside a `unit`, so display_dash → '—') can NEVER
+  // reach PhaseBarRows clampPct/CSS-% and render `width: NaN%`; band.markerPct falls back to a finite centre. The '—'
+  // text VALUES pass through untouched. Matches the sanitizeSupply pattern. [NaN-guard]
+  const usable = (d: any) => !!d && Array.isArray(d.metrics) && Array.isArray(d.phases);
+  const data = sanitizeHealth(usable(slice) ? slice! : unavailableHealth("current"));
   return <HealthSummaryPanel data={data} phaseVariant={healthPhaseVariant(payload)} />;
 }
 
-export const card45 = (p: any, f?: any): React.ReactNode => (
-  <CurrentHealthCard payload={p} frame={f} />
-);
+export const card45 = (p: any): React.ReactNode => <CurrentHealthCard payload={p} />;

@@ -1,0 +1,30 @@
+{
+ "run_id": "r_99879f110d",
+ "loop1": [
+  {
+   "card_id": 14,
+   "title": "Cumulative Energy",
+   "answerability": "partial",
+   "note": "Showing total active and reactive energy for load feeders; supply-side members (Solar Incomers, Transformers) are dark (has_data=N) and honest-blank."
+  },
+  {
+   "card_id": 16,
+   "title": "Energy Consumption Trend",
+   "answerability": "partial",
+   "note": "Showing energy trend for active feeders (UPS, BPDP, HHF); supply-side feeders (Solar Incomers, Transformers) are dark (has_data=N) and honest-blank their slots."
+  },
+  {
+   "card_id": 15,
+   "title": "Today live power analysis",
+   "answerability": "partial",
+   "note": "Showing apparent power (kVA) and active/reactive power (kW/kVAr) from panel members. Capacity (rated kVA) and Load Factor are not measured for this asset, so those slots are blank."
+  },
+  {
+   "card_id": 17,
+   "title": "Daily Power Demand by Feeder",
+   "answerability": "partial",
+   "note": "HHF feeder data is not measured on this panel (no HHF members in roster); UPS and BPDP demand are shown."
+  }
+ ],
+ "loop2": null
+}

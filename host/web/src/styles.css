@@ -231,6 +231,30 @@ body {
 .placeholder .big { font-size: 22px; }
 .placeholder .k { font-family: var(--font-mono); font-size: 11px; color: var(--slate-500); }
 
+/* ── EXPLAINED-BLANKS gap marker (render.gaps → GapInfo) ──
+   Same quiet affordance language as the reason-ⓘ: hairline pop, cream paper, muted ink; brown only on the action. */
+.gapinfo { position: relative; display: inline-flex; align-items: center; flex: none; }
+.gapinfo.corner { position: absolute; top: 5px; right: 22px; z-index: 5; }
+.gapinfo-i {
+  background: none; border: 0; padding: 0; font-size: 10px; line-height: 1;
+  color: var(--slate-500); opacity: 0.6; cursor: help;
+}
+.gapinfo-i:hover { opacity: 1; color: var(--teal-700); }
+.gapinfo-pop {
+  position: absolute; top: calc(100% + 6px); right: 0; z-index: 40; width: 264px; max-height: 220px; overflow-y: auto;
+  background: #ffffff; border: 1px solid var(--hairline); border-radius: 8px; box-shadow: 0 10px 34px rgba(6,46,57,0.13);
+  padding: 9px 11px; text-align: left; cursor: auto; animation: cc-fade 140ms ease-out;
+}
+.gapinfo-head {
+  font-family: var(--font-sans); font-size: 10px; font-weight: 600; letter-spacing: 0.08em;
+  text-transform: uppercase; color: var(--slate-500); margin-bottom: 6px; white-space: nowrap;
+}
+.gapinfo-note { font-family: var(--font-sans); font-size: 11.5px; color: var(--teal-700); line-height: 1.45; margin: 2px 0 8px; }
+.gapinfo-pop ul { margin: 0; padding: 0 0 0 14px; }
+.gapinfo-pop li { font-family: var(--font-sans); font-size: 11.5px; color: var(--teal-700); line-height: 1.45; margin: 2px 0; }
+.gapinfo-more { background: none; border: 0; padding: 0; margin-top: 5px; font-family: var(--font-mono); font-size: 10.5px; color: var(--brown-600); cursor: pointer; }
+.gapinfo-more:hover { color: var(--brown-700); }
+
 .card .cfoot { border-top: 1px solid var(--hairline); }
 .card .cfoot .togglerow { display: flex; gap: 14px; padding: 7px 11px; }
 .card .cfoot .togglerow button { background: none; border: 0; color: var(--brown-600); cursor: pointer; font-size: 12px; padding: 0; }

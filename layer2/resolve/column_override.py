@@ -1,7 +1,16 @@
 """layer2/resolve/column_override.py — SAFE per-field column binding: snap each field to the basket column for its
 metric ONLY when that metric is unique on the card AND the unit/quantity is compatible; drop a hallucinated column
 (not in basket, not const/$ctx). The unit-guard [DID-06] stops a mislabelled metric snapping to a semantically-wrong
-real column (e.g. an apparent-kVA field snapping onto the sole 'power'-tagged active-kW column). [PROMPTS §L2 gate 3]"""
+real column (e.g. an apparent-kVA field snapping onto the sole 'power'-tagged active-kW column). [PROMPTS §L2 gate 3]
+
+SLOT-QUANTITY GUARD [2026-07-03 PCC-4 defect E]: the slot KEY names its own display quantity (`…Kw` → kW, `…Kwh` →
+kWh, `…Pct` → %) — the KPI-QUANTITY rule of the data_instructions prompt. An emission that binds a column of a
+DIFFERENT known quantity into such a slot WITHOUT declaring the proxy (empty `data_note`) rendered a kWh counter
+delta as '1,820,542 kW'. The guard drops that binding to the frame path (column=None → the leaf honest-blanks) —
+per-leaf honest-degrade, never a card-level conformance failure. A DECLARED proxy (non-empty data_note) passes ONLY
+when the emission ALSO carried the mandated display morph (an APPLIED metadata morph inside the slot's own parent
+block — e.g. `…kpis.unit` for `…kpis.sourceInputKw`); a declared-but-unmorphed proxy still renders the wrong reading
+under the designed unit, so it is treated as undeclared and honest-blanked."""
 
 
 def _unit_of(u):
@@ -49,6 +58,19 @@ def _units_compatible(declared_unit, target_col, basket_unit_by_col):
     return d == t
 
 
+_SLOT_QTY_SUFFIXES = ("kvarh", "kvah", "kwh", "kvar", "kva", "kw", "pct")
+
+
+def _slot_quantity(slot):
+    """The display quantity a slot KEY itself names (…Kw → 'kw', …Kwh → 'kwh', …Pct → '%'), or None (no claim —
+    unsuffixed keys carry no unit claim, so no guard)."""
+    last = str(slot or "").split(".")[-1].split("[")[0].strip().lower()
+    for suf in _SLOT_QTY_SUFFIXES:
+        if last.endswith(suf) and last != suf or last == suf:
+            return "%" if suf == "pct" else suf
+    return None
+
+
 def _basket_index(basket):
     by_metric, real, unit_by_col = {}, set(), {}
     for c in (basket.get("columns") or []):
@@ -63,15 +85,56 @@ def _basket_index(basket):
     return by_metric, real, unit_by_col
 
 
-def apply(data_instructions, basket):
-    """Return (data_instructions, issues[]). Mutates fields[].column to a real basket column where safe."""
+def _display_morphed(slot, applied_morphs):
+    """Did the emission morph any metadata leaf in the slot's OWN parent block (the mandated proxy unit/caption
+    morph)? Path arithmetic only — no key names, no card knowledge."""
+    parent = ".".join(str(slot or "").split(".")[:-1])
+    if not parent:
+        return False
+    return any(str(mp) == parent or str(mp).startswith(parent + ".") or str(mp).startswith(parent + "[")
+               for mp in (applied_morphs or []))
+
+
+def apply(data_instructions, basket, data_note=None, applied_morphs=None):
+    """Return (data_instructions, notes[]). Mutates fields[].column to a real basket column where safe. `data_note`
+    (the emission's own degradation note) + `applied_morphs` (the APPLIED metadata morph paths) mark a DECLARED,
+    display-morphed proxy — the slot-quantity guard stands down only for that.
+
+    `notes` is NON-GATING TELEMETRY [silent-normalization defect]: every repair this normalizer performs (mislabelled
+    const reclass, slot-quantity blank, metric snap, hallucinated-column drop) used to be completely invisible — an
+    emission that bound four invented columns shipped conforms=True with zero record. Each normalization now appends a
+    note; build.py carries them in data_instructions['_normalized'] (telemetry for sweeps / the prompt-steer loop),
+    NEVER in `failures` and NEVER affecting conforms — per-leaf degradation, verdicts are telemetry."""
     by_metric, real, unit_by_col = _basket_index(basket)
-    issues = []
+    notes = []
+    proxy_declared = bool(str(data_note or "").strip())
     for f in (data_instructions.get("fields") or []):
         src = f.get("source")
+        # MISLABELLED-CONST REPAIR [thermal-legend defect]: a truly literal field is source=='const' WITH a baked
+        # `value`. When the AI stamps kind=='const' on a field it ALSO marked live/frame/test-db (a data binding — it
+        # carries a metric, agg, no value), that is not a literal: it is an intended live/frame leaf mis-tagged as
+        # const. Reclassify it to the FRAME honest-blank path (column=None → the leaf renders blank, per-leaf degrade)
+        # so a missing column blanks THAT one leaf instead of tripping the card-level 'kind=const without a value'
+        # gate. A real literal (source=='const' or a present value) is untouched. Generic — no card/slot vocab.
+        if f.get("kind") == "const" and src in ("live", "frame", "test-db") and f.get("value") is None:
+            f["kind"] = "raw"
+            src = f["source"] = "frame"
+            notes.append(f"slot {f.get('slot')!r}: mislabelled const (source={src}, no value) reclassified to frame")
         if f.get("kind") == "const" or src == "$ctx" or src == "const":
             continue                                   # const baked / shared-buffer projection: no column needed
         col, metric = f.get("column"), f.get("metric")
+        # SLOT-QUANTITY GUARD — a unit-crossing binding (a kWh counter bound into a `…Kw` slot) honest-blanks the
+        # leaf unless it is a DECLARED proxy WHOSE display metadata was morphed [PCC-4 defect E].
+        if col and col in real and f.get("kind") not in ("derived", "time"):
+            sq = _slot_quantity(f.get("slot"))
+            cq = _unit_of(unit_by_col.get(col)) or _col_unit(col)
+            if sq is not None and cq is not None and sq != cq \
+                    and not (proxy_declared and _display_morphed(f.get("slot"), applied_morphs)):
+                f["column"] = None
+                f["source"] = "frame"                  # undeclared/unmorphed different-quantity proxy → honest-blank
+                notes.append(f"slot {f.get('slot')!r}: unit-crossing bind {col!r} ({cq}) into a {sq} slot blocked "
+                             f"(undeclared/unmorphed proxy) — leaf honest-blanks")
+                continue
         cols_for_metric = by_metric.get(metric, [])
         if len(cols_for_metric) == 1 and col != cols_for_metric[0]:
             # SAFE snap (metric unique on the card) — GUARDED by unit compatibility [DID-06]. A KNOWN unit mismatch
@@ -80,9 +143,12 @@ def apply(data_instructions, basket):
             target = cols_for_metric[0]
             if _units_compatible(f.get("unit"), target, unit_by_col):
                 f["column"] = target
+                notes.append(f"slot {f.get('slot')!r}: column {col!r} snapped to {target!r} (unique metric {metric!r})")
             elif col and col not in real:
                 f["column"] = None
                 f["source"] = "frame"                  # unit mismatch + hallucinated column → frame-filled, honest-degrade
+                notes.append(f"slot {f.get('slot')!r}: hallucinated column {col!r} dropped (unit-incompatible with "
+                             f"{target!r}) — frame/honest-blank")
         elif col and col not in real:
             # DROP the hallucinated column (names no real column, can't be snapped) and mark the field FRAME-filled:
             # the frontend fills it from the live frame's fan-out / list structure (a Sankey's per-feeder
@@ -90,4 +156,6 @@ def apply(data_instructions, basket):
             # stated "drop a hallucinated column" intent — honest-degrade, not a hard conformance failure.
             f["column"] = None
             f["source"] = "frame"
-    return data_instructions, issues
+            notes.append(f"slot {f.get('slot')!r}: hallucinated column {col!r} dropped (not in basket) — "
+                         f"frame/honest-blank")
+    return data_instructions, notes

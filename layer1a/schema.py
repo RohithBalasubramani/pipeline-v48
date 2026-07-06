@@ -15,6 +15,8 @@ def build_layer1a_output(route_result, cards, layout, groups):
         "metric": route_result["metric"],
         "intent": route_result["intent"],
         "story": spec.get("theme", "") or spec.get("answers", ""),
+        # routing telemetry (stage-logged by run/harness.py): fallback kind, gate-dropped templates, reroute exclusion
+        "routing": route_result.get("routing") or {},
         "layout": {k: layout.get(k) for k in _LAYOUT_KEYS},
         "cards": [
             {"card_id": c["card_id"], "title": c["title"],

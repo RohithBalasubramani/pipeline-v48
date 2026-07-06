@@ -168,9 +168,37 @@ function FillPiece({ card, frame }: { card?: CardT; frame?: any }) {
   return <>{renderCmd(card, frame)}</>;
 }
 
+// The footer/scrubber (160/6) is CHROME for the SAME history the heatmap shows — CMD_V2's Layout derives the footer
+// state from ONE shared history. Layer 2 authors that chrome with empty labels (it cannot know runtime timestamps),
+// so when the footer's OWN payload carries no real tick label, ride card 5's REAL heatmap.history (real member-row
+// timestamps) — a same-page fact share, never a fabricated tick. No real history anywhere → the footer's own empty
+// state stands (honest).
+const hasRealLabel = (h: any): boolean =>
+  Array.isArray(h) && h.some((s: any) => typeof s?.label === "string" && s.label.trim() !== "");
+
+function withHeatmapCursor(c160: CardT | undefined, c5: CardT | undefined): CardT | undefined {
+  if (!c160) return c160;
+  const own = (c160.payload as any)?.footer ?? (c160.payload as any)?.heatmap ?? c160.payload;
+  const heatHistory = ((c5?.payload as any)?.heatmap ?? {})?.history;
+  if (hasRealLabel(own?.history) || !hasRealLabel(heatHistory)) return c160;
+  const last = heatHistory.length - 1;
+  return {
+    ...c160,
+    payload: {
+      ...(typeof own === "object" && own ? own : {}),
+      history: heatHistory,
+      selectedSampleIndex: last,
+      currentLabel: heatHistory[last]?.label ?? "",
+      canStepBack: last > 0,
+      canStepForward: false,
+      liveMode: own?.liveMode !== false,
+    },
+  } as CardT;
+}
+
 export function RtmComposite({ cards, frames }: { cards: CardT[]; frames?: Record<string, any> }) {
   const m = byId(cards);
-  const c7 = m[7], c5 = m[5], c160 = m[160];
+  const c7 = m[7], c5 = m[5], c160 = withHeatmapCursor(m[160], m[5]);
   const c8 = m[8], c9 = m[9], c10 = m[10], c11 = m[11];
 
   // The RTM composite is ONE page sharing ONE live frame (the real-time-monitoring endpoint). Non-data atoms — the

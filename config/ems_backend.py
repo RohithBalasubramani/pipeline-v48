@@ -1,5 +1,5 @@
 """config/ems_backend.py — how the DATA-fill helper reaches V48's ems_backend WS dispatcher. Edit here, not in workers/.
-(user 2026-06-30: "we will be using …/ems_backend to render the cards"). [findings/ems_backend_hardcoding.md]"""
+(user 2026-06-30: "we will be using …/ems_backend to render the cards"). [docs/findings/ems_backend_hardcoding.md]"""
 import os
 
 from config.app_config import cfg   # operational knobs are DB-tunable (cmd_catalog.app_config, ems_backend.* keys)

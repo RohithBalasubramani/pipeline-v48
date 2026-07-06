@@ -31,10 +31,14 @@ _OUTAGE_FINGERPRINTS = (
     "server closed the connection",
     "terminating connection",
     "the database system is",          # starting up / shutting down / in recovery
+    "llm transport/parse failure",     # layer1a route fail-closed raise (vLLM :8200 outage / unparseable completion)
 )
 
 # The layers whose failure means "we never even reached ground truth" → the page is a data_unavailable terminal.
-_INFRA_LAYERS = ("layer1a", "layer1b")
+# 'validation' closes the fail-open hole: a :5433 outage during the validate probe used to swallow into
+# errors.validation → validation None → validation_blocked False → Layer 2 ran with ZERO validation. An outage-shaped
+# validate error is the same honest terminal; a NON-outage validate exception stays annotate-only (not matched here).
+_INFRA_LAYERS = ("layer1a", "layer1b", "validation")
 
 
 def is_outage_error(detail):

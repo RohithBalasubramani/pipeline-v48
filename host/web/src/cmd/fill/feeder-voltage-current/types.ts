@@ -6,5 +6,3 @@
 //   start/end — ISO yyyy-mm-dd, only for custom-range.
 export type DateWindow = { range?: string; sampling?: string; start?: string; end?: string };
 export type OnDateChange = (dw: DateWindow) => void;
-
-export type Slot = "voltage-current" | "voltage-history" | "current-history";

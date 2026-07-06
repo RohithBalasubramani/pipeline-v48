@@ -1,0 +1,25 @@
+{
+ "run_id": "r_1fbcd7afb4",
+ "loop1": [
+  {
+   "card_id": 47,
+   "title": "Power Quality",
+   "answerability": "partial",
+   "note": "Showing current THD (thd_current_r_pct) as a proxy for voltage THD, H5, and H7 harmonics because the meter does not log specific voltage harmonic columns (thd_voltage_*). Crest factor and flicker data are not measured by this meter and are omitted."
+  },
+  {
+   "card_id": 48,
+   "title": "Distortion & Harmonic Profile",
+   "answerability": "partial",
+   "note": "Showing voltage THD evolution (V-THD tab) \u2014 per-phase voltage THD columns (thd_voltage_r/y/b_pct) are mostly null on this meter, so the V-THD series will be empty. Showing current THD evolution (I-THD tab) \u2014 per-phase current THD columns (thd_current_r/y/b_pct) are available and will populate the series."
+  },
+  {
+   "card_id": 49,
+   "title": "Load Impact & Transformer Stress",
+   "answerability": "partial",
+   "note": "Showing PF Health and K-Stress trends from the shared buffer; PF Angle and K-factor scalar values are partially unmeasured (power_factor_total and kpi_true_pf are mostly null on this meter, so K-factor is derived from available data or left blank)."
+  }
+ ],
+ "loop2": "1 of 3 cards hard-failed their emit (frac 0.33 < reflect.min_gap_frac 0.34); left honest-blank per-leaf, page NOT re-routed.",
+ "reconcile": "asset 'GIC-18-N1-APFCR Panel (Type-01)-600KVAR' has_feeders=False but the routed page 'panel-overview-shell/harmonics-pq' is the panel-aggregate granularity \u2014 reconciled to 'individual-feeder-meter-shell/power-quality'"
+}

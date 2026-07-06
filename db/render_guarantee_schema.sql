@@ -19,6 +19,15 @@ CREATE TABLE IF NOT EXISTS asset_nameplate (
     source            text                        -- provenance: cmd_equipment | name_parse | class_default | none
 );
 
+-- ── asset_class_default ── per-CLASS engineering defaults (policy/limit knobs a per-asset nameplate can't carry) ─────
+--    asset_category → default JSON (contracted_frac, statutory band, THD limits, UPS battery bands, DG service knobs).
+--    Resolution: per-asset nameplate row → this class default → None. NEVER a fabricated rated_kva (rating stays honest
+--    per-asset). Ported from CMD/backend2/core/config_defaults.py. Read by config/asset_class_defaults.py. [#12 port]
+CREATE TABLE IF NOT EXISTS asset_class_default (
+    asset_category text PRIMARY KEY,               -- class bucket: Transformer | Distribution Panel | LT Panel | DG | UPS
+    default_json   jsonb                            -- {contracted_frac, voltage_statutory_deviation_pct, thd_*_limit_pct, ready_threshold, …}
+);
+
 -- ── schema_slot_map ── per-fingerprint routed column map: which physical column feeds which logical slot [DS-03/07]
 --    fingerprint ∈ {p1_72, tm_ups_56, feedbacks_35, ng_se_jk_70, sch_stub_3, …}
 CREATE TABLE IF NOT EXISTS schema_slot_map (
@@ -70,14 +79,8 @@ CREATE TABLE IF NOT EXISTS endpoint_policy (
     PRIMARY KEY (page_key, resolver_scope)
 );
 
--- ── render_spec ── L3 output cache: the per-card RenderSpec verdict (reviewable / overridable rows) [L3 output]
-CREATE TABLE IF NOT EXISTS render_spec (
-    run_id     text,                              -- pipeline run id
-    card_id    integer,                           -- card id within the run
-    spec       jsonb,                             -- the RenderSpec (render_verdict, slot_decisions, reason, …)
-    created_at timestamptz DEFAULT now(),
-    PRIMARY KEY (run_id, card_id)
-);
+-- (render_spec REMOVED 2026-07-02 — it was the retired Layer 3's output cache; the render verdict is now derived
+--  in host/server.py::_card_leaf_stats from the ems_exec-completed payload. Rows archived: archive/render_spec_rows_*.json)
 
 -- ── render_guarantee_matrix ── the EDITABLE acceptance-suite prompt matrix (which failure-mode asset×page×window each
 --    of the 50-prompt render-guarantee prompts must exercise). Lives in cmd_catalog (UP even when the live DATA DB is

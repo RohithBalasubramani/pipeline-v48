@@ -21,9 +21,8 @@ DATA_TS_COL       = os.environ.get("DATA_TS_COL", "timestamp_utc")     # the tim
 DATA_TS_CAST      = os.environ.get("DATA_TS_CAST", "::timestamptz")    # neuract stores ts as ISO-8601 TEXT → cast for time math ('' if already timestamptz)
 DATA_HAS_PANEL_ID = os.environ.get("DATA_HAS_PANEL_ID", "0") == "1"    # neuract = per-meter tables → no panel_id filter
 
-# the panel→feeder TOPOLOGY table (lives in DATA_DB/DATA_SCHEMA). An aggregate panel's data comes from its outgoing
-# feeders, so 1b reads this to know which empty-own-table panels are still data-bearing. Rename here if the DB changes.
-TOPOLOGY_OUTGOING = os.environ.get("TOPOLOGY_OUTGOING", "lt_mfm_outgoing")   # M2M edge: from_mfm_id (panel) → to_mfm_id (feeder)
+# (the panel→feeder TOPOLOGY now reads the canonical registry via data/registry/lt_mfm.py — cmd_catalog registry_*
+#  mirror-first, live neuract fallback. The old TOPOLOGY_OUTGOING knob is retired with the private-id-space era.)
 
 
 def db_link():
@@ -46,10 +45,9 @@ def django_db():
 PSQL_USER   = PG_USER
 CMD_CATALOG = os.environ.get("CMD_CATALOG_DB", "cmd_catalog")   # card/page catalog (1a/1b/Layer2 structure)
 
-# ── asset REGISTRY — the DEVICE registry DB (read-only source for 1b's asset_candidates / col_dict) ─────────────────
-# meta_data_version1: app_devices (320), app_device_tables (575 → neuract data tables), app_gateways (37 GIC nodes).
-# layer1b/resolve/asset_candidates.py builds the asset list from these read-only — no tables are created in the tunnel.
-LT_PANELS_DB = os.environ.get("REGISTRY_DB", "meta_data_version1")
+# ── asset REGISTRY — the CANONICAL CMD_V2 registry (neuract lt_mfm/asset/device_mappings et al), MIRRORED into
+# cmd_catalog as registry_* by scripts/sync_neuract_registry.py and read via data/registry/lt_mfm.py (mirror-first,
+# live fallback). The old meta_data_version1 shadow registry (private row_number id-space) is RETIRED. [directives c+d]
 
 # the live time-series DATA database + schema (== the logging DB above).
 DATA_DB         = PG_DB
@@ -69,7 +67,7 @@ def data_db():
 # fixtures are on the LOCAL endpoint. q() picks per-db so the pipeline reads each db from the right place.
 CATALOG_HOST = os.environ.get("CATALOG_HOST", "127.0.0.1")     # local endpoint for cmd_catalog
 CATALOG_PORT = os.environ.get("CATALOG_PORT", "5432")
-_TUNNEL_DBS = {DATA_DB, LT_PANELS_DB, "meta_data_version1", "target_version1", "target_version1_meta"}
+_TUNNEL_DBS = {DATA_DB, "meta_data_version1", "target_version1", "target_version1_meta"}
 
 
 def conn_env(db):

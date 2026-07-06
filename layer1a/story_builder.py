@@ -30,7 +30,19 @@ def build_stories(prompt, page_key, metric, intent, db="cmd_catalog"):
     system = _load_prompt("story_instruction.md")
     user = (f"PROMPT: {prompt!r}\nMETRIC: {metric}  INTENT: {intent}\nPAGE: {page_key}\n"
             f"CARDS:\n{listing}\nJSON:")
-    r = call_qwen(system, user)
+    # stage='stories' names this call site in llm/obs failure telemetry + keys the per-stage timeout row
+    # (app_config llm.timeout.stories, base llm.timeout fallback). on_error='marker' distinguishes an OUTAGE from an
+    # honest empty emission — before this, a transport failure set every story='' silently and that empty story rode
+    # into every L2 emit unattributed (stage='-'). [AI_QUALITY_BACKLOG item 15]
+    r = call_qwen(system, user, stage="stories", on_error="marker")
+    if isinstance(r, dict) and r.get("_llm_error"):
+        try:  # telemetry only — the degrade path (every story '') is unchanged
+            from obs import ai_log, failures
+            failures.record("layer1a", "stories_llm_failed",
+                            detail=f"{r['_llm_error']}: {r.get('_llm_error_detail', '')} — every story degrades to ''",
+                            run_id=getattr(ai_log, "_RUN_ID", "default"))
+        except Exception:
+            pass
     stories = r.get("stories", {}) if isinstance(r, dict) else {}
     norm = {_norm_id(k): v for k, v in stories.items()}
     for c in cards:

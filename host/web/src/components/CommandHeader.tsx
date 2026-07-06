@@ -1,3 +1,4 @@
+import { useEffect, useState } from "react";
 import { PromptBar, type Seed } from "./PromptBar";
 
 // Neuract mark — the engineer's monogram, teal ink. Quiet brand chrome (README: brand lives in
@@ -10,19 +11,37 @@ function NeuractMark() {
   );
 }
 
+type SiteStatus = { site: string; live: boolean };
+
 export function CommandHeader({
   onRun,
   loading,
   seed,
-  site = "PEGEPL · SEETARAMPUR",
   showStatus = true,
 }: {
   onRun: (prompt: string) => void;
   loading: boolean;
   seed?: Seed;
-  site?: string;
   showStatus?: boolean;
 }) {
+  // Site identity + LIVE dot come from the backend (GET /api/site): `site` is the DB-tunable app_config value; `live`
+  // is a REAL probe of the live-data DB connection. Poll every 15s so the dot tracks the actual connection.
+  const [status, setStatus] = useState<SiteStatus>({ site: "PEGEPL · SEETARAMPUR", live: true });
+
+  useEffect(() => {
+    let alive = true;
+    const load = () =>
+      fetch("/api/site")
+        .then((r) => r.json())
+        .then((d) => { if (alive && d.ok) setStatus({ site: d.site || "PEGEPL · SEETARAMPUR", live: !!d.live }); })
+        .catch(() => { if (alive) setStatus((s) => ({ ...s, live: false })); });
+    load();
+    const t = window.setInterval(load, 15000);
+    return () => { alive = false; window.clearInterval(t); };
+  }, []);
+
+  const { site, live } = status;
+
   return (
     <header className="cc-header">
       <div className="cc-logo"><NeuractMark /></div>
@@ -36,8 +55,17 @@ export function CommandHeader({
         <div className="cc-status">
           <div className="cc-status-col">
             <div className="cc-status-live">
-              <span className="cc-status-dot" />
-              <span className="cc-status-livelabel">LIVE</span>
+              <span
+                className="cc-status-dot"
+                style={{
+                  background: live ? "var(--sage-400)" : "var(--slate-soft)",
+                  boxShadow: live ? "0 0 0 3px rgba(163,193,136,0.22)" : "none",
+                }}
+                title={live ? "live-data DB connected" : "live-data DB unreachable"}
+              />
+              <span className="cc-status-livelabel" style={{ color: live ? "var(--sage-700)" : "var(--slate-500)" }}>
+                {live ? "LIVE" : "OFFLINE"}
+              </span>
             </div>
             <span className="cc-status-site">{site}</span>
           </div>

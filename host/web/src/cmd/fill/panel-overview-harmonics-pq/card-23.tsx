@@ -1,29 +1,24 @@
 /**
  * card 23 — PqTopStrip (issue summary strip).
  *
- * payload.strip = { pres, filterSelection, timeChoice, timeOptions, stats,
- * selectedTileKey }. Live: stats from the last period; timeOptions from the
- * live bucket labels.
+ * PAYLOAD-DIRECT (ems_backend RETIRED — `frame` is always empty now). The Layer-2
+ * completed payload IS the render source: payload.strip = { pres, filterSelection,
+ * timeChoice, timeOptions, stats, selectedTileKey }, carrying REAL neuract counts /
+ * worst V-I or honest-blank per leaf. The old live snapshotFromFrame(frame) branch AND
+ * the buildPQPeriods() fabrication fallback (synthetic iThd/vThd waves — a seed leak)
+ * are DELETED. A payload that elides `stats` degrades to emptyStats() (zero counts +
+ * blank worst — honest '—', NEVER a fabricated bucket).
  *
- * This is the ONE card on the page with a date/range/sampling control (the
- * EventStripControls "Show Issues for [preset] by [resample] …" row). Its
- * preset / resample / custom-date / range inputs drive a re-fetch of THIS
- * card's ems_backend frame via the host onDateChange. The "at [time bucket]"
- * picker (onTimeChange) is intra-window bucket navigation, NOT a window
- * change, so it is deliberately left as noop.
+ * This is the ONE card on the page with a date/range/sampling control. Its preset /
+ * resample / custom-date / range inputs drive a re-fetch of THIS card's payload via the
+ * host onDateChange. The "at [time bucket]" picker (onTimeChange) is intra-window bucket
+ * navigation, NOT a window change, so it is deliberately left as noop.
  */
 import React from "react";
 
 import { PqTopStrip } from "@cmd-v2/pages/electrical/lt-pcc/panel-overview/harmonics-pq/HarmonicsPqTab";
-import {
-  buildHpqPresentation,
-  buildPQPeriods,
-  periodStats,
-} from "@cmd-v2/pages/electrical/lt-pcc/panel-overview/harmonics-pq/viewModel";
-import type {
-  PQPeriod,
-  PQStats,
-} from "@cmd-v2/pages/electrical/lt-pcc/panel-overview/harmonics-pq/types";
+import { buildHpqPresentation } from "@cmd-v2/pages/electrical/lt-pcc/panel-overview/harmonics-pq/viewModel";
+import type { PQStats } from "@cmd-v2/pages/electrical/lt-pcc/panel-overview/harmonics-pq/types";
 import {
   resolveEventFilter,
   type EventFilterSelection,
@@ -32,24 +27,21 @@ import {
 } from "@cmd-v2/components/charts/primitives";
 
 import { DateWindow, defaultFilterSelection, selectionToWindow } from "./date-window";
-import { lastPeriod, presentation } from "./derive";
+import { emptyStats } from "./derive";
 import { noop } from "./noop";
-import { snapshotFromFrame } from "./snapshot";
 
 function TopStripCard({
   payload,
-  frame,
   onDateChange,
 }: {
   payload: any;
-  frame?: any;
   onDateChange?: (dw: DateWindow) => void;
 }): React.ReactElement | null {
   const args = payload?.strip ?? payload ?? {};
-  const pres = args.pres ?? buildHpqPresentation().strip;
+  let pres = args.pres ?? buildHpqPresentation().strip;
 
   // The strip owns its filter selection so the preset/resample/date inputs are
-  // live, controlled inputs. Seed from the payload (story default) or today.
+  // live, controlled inputs. Seed from the payload or today.
   const [filterSelection, setFilterSelection] = React.useState<EventFilterSelection>(
     args.filterSelection ?? defaultFilterSelection(),
   );
@@ -70,39 +62,30 @@ function TopStripCard({
     [onDateChange],
   );
 
-  // Live stats / bucket labels (unchanged live mapper-fill).
+  // Stats / bucket labels come straight from the payload.
   let timeChoice: string = args.timeChoice ?? "";
   let timeOptions: string[] = args.timeOptions ?? [];
   let stats: PQStats = args.stats;
 
-  try {
-    const snap = snapshotFromFrame(frame);
-    if (snap) {
-      const fullPres = presentation(snap);
-      const selected = lastPeriod(snap.periods);
-      if (selected) {
-        timeOptions = snap.periods.map((p: PQPeriod) => p.label);
-        timeChoice = selected.label;
-        stats = periodStats(selected, fullPres.limits);
-      }
-    }
-  } catch {
-    /* keep payload defaults */
-  }
+  // DRAW GUARANTEE — a payload that elided `stats` degrades to honest-empty (zero counts +
+  // blank worst), NEVER a fabricated bucket. NEVER null.
+  if (!stats) stats = emptyStats();
 
-  if (!stats) {
-    const periods = buildPQPeriods();
-    const sel = lastPeriod(periods)!;
-    stats = periodStats(sel, buildHpqPresentation().limits);
-    if (timeOptions.length === 0) timeOptions = periods.map((p: PQPeriod) => p.label);
-    if (!timeChoice) timeChoice = sel.label;
-  }
+  // Per-leaf honest degrade: the executor scrubs seed clock labels to "" (a fixture "00:00" is not this run's
+  // bucket). Blank entries are honest but unusable as selector rows — drop them and keep only the REAL labels.
+  // Never re-fabricate fixture times here.
+  timeOptions = timeOptions.filter((s: string) => typeof s === "string" && s.trim().length > 0);
+  if (timeOptions.length === 0 && timeChoice) timeOptions = [timeChoice];
 
   // Elided-seed guard: Layer 2 elides `strip.segments` (a roster array) from the
   // fallback payload, but PqTopStrip does `pres.segments.map(...)` unconditionally
-  // at render top. A present-but-partial `pres` (missing `segments`) crashes —
-  // render null so the card shows a clean placeholder instead.
-  if (!Array.isArray(pres?.segments)) return null;
+  // at render top. A present-but-partial `pres` (missing `segments`) would crash —
+  // so ALWAYS-DRAW by falling back to CMD V2's OWN default strip presentation
+  // (which carries a valid `segments` roster). NEVER null.
+  if (!Array.isArray(pres?.segments)) {
+    const def = buildHpqPresentation().strip;
+    pres = { ...def, ...(pres ?? {}), segments: def.segments };
+  }
 
   return (
     <PqTopStrip
@@ -135,8 +118,8 @@ function TopStripCard({
 
 export function renderTopStrip(
   payload: any,
-  frame?: any,
+  _frame?: any,
   onDateChange?: (dw: DateWindow) => void,
 ): React.ReactNode {
-  return <TopStripCard payload={payload} frame={frame} onDateChange={onDateChange} />;
+  return <TopStripCard payload={payload} onDateChange={onDateChange} />;
 }

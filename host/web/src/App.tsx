@@ -4,6 +4,7 @@ import type { PipelineResult } from "./types";
 import { CommandHeader } from "./components/CommandHeader";
 import { SuggestedCommands } from "./components/SuggestedCommands";
 import { CardGrid } from "./components/CardGrid";
+import { KnowledgeAnswer } from "./components/KnowledgeAnswer";
 import { AssetResolution } from "./components/AssetResolution";
 import type { Seed } from "./components/PromptBar";
 
@@ -43,13 +44,20 @@ export function App() {
   // NO-DATA: 1b resolved the named asset but its neuract table is empty → handled IN the picker now (opens greyed +
   // alternatives; "None of these" → no-data terminal), so it never falls through to the card grid or reaches Layer 2.
   const noData = !!result && (result as any).asset_no_data === true;
-  const hasCards = !!result && !(result as any).asset_pending && !noData && !loading && !resolving;
+  // KNOWLEDGE pipeline (separate, 2026-07-06): a conceptual electrical/mechanical answer or the domain refusal —
+  // rendered as ONE text panel, never the card grid.
+  const knowledge = !!result && (result as any).kind === "knowledge";
+  const hasCards = !!result && !knowledge && !(result as any).asset_pending && !noData && !loading && !resolving;
 
   return (
     <div className="cc-shell">
       <CommandHeader onRun={(p) => run(p)} loading={loading} seed={seed} />
 
-      {hasCards ? (
+      {knowledge && !loading ? (
+        <main className="cc-work">
+          <KnowledgeAnswer prompt={lastPrompt} answer={(result as any).answer} refused={(result as any).refused} />
+        </main>
+      ) : hasCards ? (
         <div className="cc-results">
           <ValidationBar validation={(result as any).validation} cards={result!.cards} />
           <div className="cc-grid-fill">

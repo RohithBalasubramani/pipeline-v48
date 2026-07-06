@@ -1,0 +1,18 @@
+{
+ "run_id": "r_e02e4237bf",
+ "loop1": [
+  {
+   "card_id": 58,
+   "title": "UPS Load",
+   "answerability": "partial",
+   "note": "AI emit unavailable (transport failure) \u2014 default metadata shown, data leaves honest-blank"
+  },
+  {
+   "card_id": 59,
+   "title": "Output Load & Capacity \u2014 Composite",
+   "answerability": "partial",
+   "note": "Showing total active power as a proxy for UPS readiness score (load factor); per-phase power is not measured for this asset."
+  }
+ ],
+ "loop2": "1 of 3 cards hard-failed their emit (frac 0.33 < reflect.min_gap_frac 0.34); left honest-blank per-leaf, page NOT re-routed."
+}

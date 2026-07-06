@@ -15,13 +15,16 @@ from layer1b.resolve.ambiguous_candidates import ambiguous_candidates
 from config.reason_templates import reason
 
 
-def empty_fallback(prompt, prefer_data=True):
+def empty_fallback(prompt, prefer_data=True, rows=None):
     """The logged no-match outcome: browse-all registry as an ambiguous candidate list. `prefer_data` restricts the
     browse list to data-bearing meters first (so the picker leads with renderable assets), falling back to the full
-    registry when none are data-bearing. Logs the machine-readable no-match reason to stderr."""
+    registry when none are data-bearing. `rows` (optional) overrides the browse list — asset_resolve passes the
+    CLASS-NARROWED rows when a class prior exists, so a 'dg ...' prompt browses DG meters, not the whole plant.
+    Logs the machine-readable no-match reason to stderr."""
     cands = asset_candidates()
-    rows = [c for c in cands if c[6]] if prefer_data else cands
-    rows = rows or cands
+    if rows is None:
+        rows = [c for c in cands if c[6]] if prefer_data else cands
+        rows = rows or cands
     why = reason("no_data", asset=(str(prompt)[:60] if prompt else "your query"))
     sys.stderr.write(f"[empty_fallback] no confident asset match — browse-all registry offered "
                      f"({len(rows)} candidates). prompt={prompt!r} reason={why!r}\n")

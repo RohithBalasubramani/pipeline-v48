@@ -1,0 +1,12 @@
+{
+ "run_id": "r_d06f6da969",
+ "loop1": [
+  {
+   "card_id": 81,
+   "title": "Tap Activity & Wear",
+   "answerability": "partial",
+   "note": "Showing total active power as a proxy for tap activity \u2014 the meter does not log a dedicated 'tap_count' column, so active_power_total_kw is used to infer operational frequency."
+  }
+ ],
+ "loop2": null
+}

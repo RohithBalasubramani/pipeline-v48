@@ -18,4 +18,5 @@ def pinned_skip(asset_id_override, by_id):
     if asset_id_override is None or str(asset_id_override) not in by_id:
         return None
     asset = as_asset(by_id[str(asset_id_override)])
-    return no_data_outcome(asset) or {"asset": asset, "how": "user-choice", "candidates": []}
+    # a data-empty pick still surfaces onward-pick alternatives (not a dead-end picker) — the full registry is by_id's values
+    return no_data_outcome(asset, list(by_id.values())) or {"asset": asset, "how": "user-choice", "candidates": []}

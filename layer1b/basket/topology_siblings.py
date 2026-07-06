@@ -29,7 +29,11 @@ def expand_basket_with_siblings(basket, asset):
     Only fires for an aggregate panel (asset.has_feeders); a leaf/real meter is returned unchanged. The column set is
     left as-is (single representative schema); `member_tables` is the full populated fan-out the aggregate worker sums,
     and `coverage` carries reporting/expected + a partial flag driven by the editable coverage policy. [DS-08, TOPO-04]"""
-    if not asset or not asset.get("has_feeders") or not asset.get("mfm_id"):
+    # CLASS-AWARE [shared policy config.asset_granularity]: only a PANEL-class aggregate gets the member fan-out. A
+    # Transformer/DG/UPS with downstream feeders is a SINGLE asset — attaching its 18 feeder tables here polluted its
+    # basket into a multi-table aggregate whose data-load then failed ('column absent'), blanking a data-rich meter.
+    from config.asset_granularity import belongs_on_panel
+    if not asset or not asset.get("mfm_id") or not belongs_on_panel(asset.get("has_feeders"), asset.get("class")):
         return basket
 
     res = panel_members(asset["mfm_id"], meaningful=True)     # THE member-resolution single source of truth

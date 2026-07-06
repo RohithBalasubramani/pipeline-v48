@@ -1,0 +1,18 @@
+{
+ "run_id": "r_dd90453138",
+ "loop1": [
+  {
+   "card_id": 61,
+   "title": "Thermal Timeline",
+   "answerability": "partial",
+   "note": "Showing active power and frequency as proxies for thermal state \u2014 no temperature columns are measured by this meter."
+  },
+  {
+   "card_id": 62,
+   "title": "Pressure \u00b7 Speed \u00b7 Load",
+   "answerability": "partial",
+   "note": "Showing active power load percentage as a proxy for engine load; oil pressure and engine speed are not measured by this meter's electrical data."
+  }
+ ],
+ "loop2": null
+}

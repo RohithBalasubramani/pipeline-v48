@@ -1,49 +1,33 @@
 /**
  * card 24 — PqTimelineCard.
  *
- * payload.timeline = { pres, limits, periods, selectedLabel, focus }. Live:
- * the per-bucket periods from the mapped snapshot.
+ * PAYLOAD-DIRECT (ems_backend RETIRED — `frame` is always empty now). The Layer-2
+ * completed payload IS the render source: payload.timeline = { pres, limits, periods,
+ * selectedLabel, focus }, carrying REAL per-bucket periods or honest-blank. The old live
+ * snapshotFromFrame(frame) branch AND the buildPQPeriods() fabrication fallback (synthetic
+ * harmonic waves — a seed leak) are DELETED. PqTimelineCard does `periods.map(...)`, so an
+ * empty `periods: []` renders an honest-empty timeline (chrome + no series), NEVER a mock.
  */
 import React from "react";
 
 import { PqTimelineCard } from "@cmd-v2/pages/electrical/lt-pcc/panel-overview/harmonics-pq/HarmonicsPqTab";
-import {
-  buildHpqPresentation,
-  buildPQPeriods,
-} from "@cmd-v2/pages/electrical/lt-pcc/panel-overview/harmonics-pq/viewModel";
+import { buildHpqPresentation } from "@cmd-v2/pages/electrical/lt-pcc/panel-overview/harmonics-pq/viewModel";
 import type {
   FocusKey,
   PQPeriod,
 } from "@cmd-v2/pages/electrical/lt-pcc/panel-overview/harmonics-pq/types";
 
-import { lastPeriod, presentation } from "./derive";
+import { lastPeriod } from "./derive";
 import { noop } from "./noop";
-import { snapshotFromFrame } from "./snapshot";
 
-export function renderTimeline(payload: any, frame?: any): React.ReactNode {
+export function renderTimeline(payload: any): React.ReactNode {
   const args = payload?.timeline ?? payload ?? {};
   const pres = args.pres ?? buildHpqPresentation().timeline;
-  let limits = args.limits ?? buildHpqPresentation().limits;
-  let periods: PQPeriod[] = args.periods ?? [];
-  let selectedLabel: string = args.selectedLabel ?? "";
+  const limits = args.limits ?? buildHpqPresentation().limits;
+  // periods straight from the payload; honest-empty [] when elided (PqTimelineCard .map()s it safely).
+  const periods: PQPeriod[] = Array.isArray(args.periods) ? args.periods : [];
+  const selectedLabel: string = args.selectedLabel ?? lastPeriod(periods)?.label ?? "";
   const focus: FocusKey | null = (args.focus as FocusKey) ?? null;
-
-  try {
-    const snap = snapshotFromFrame(frame);
-    if (snap) {
-      const fullPres = presentation(snap);
-      limits = fullPres.limits;
-      periods = snap.periods;
-      selectedLabel = lastPeriod(periods)?.label ?? selectedLabel;
-    }
-  } catch {
-    /* keep payload defaults */
-  }
-
-  if (periods.length === 0) {
-    periods = buildPQPeriods();
-    if (!selectedLabel) selectedLabel = lastPeriod(periods)?.label ?? "";
-  }
 
   return (
     <div className="h-full min-h-0">

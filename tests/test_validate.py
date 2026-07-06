@@ -70,7 +70,7 @@ def test_validate_live_ahu5():
     out = run_pipeline("voltage and current health for AHU-5")          # GIC-03-N6-AHU-5 (neuract gic table)
     rep = run_validate(out["layer1a"], out["layer1b"])
     assert validate_validation_output(rep) == []                        # report is well-formed
-    assert rep["verdict"] in ("pass", "warn", "fail")
+    assert rep["verdict"] in ("pass", "warn", "pass_with_gaps", "fail")
     s = rep["data"]["summary"]
     assert s["n_columns"] > 0 and s["n_pass"] > 0                        # ran on REAL neuract columns (no empty basket)
     assert s["n_pass"] + s["n_warn"] + s["n_fail"] == s["n_columns"]     # coherent tally (per-column verdicts sum up)
@@ -81,4 +81,4 @@ def test_validate_live_ahu5():
 def test_harness_includes_validation():
     from run.harness import run_pipeline
     out = run_pipeline("voltage and current health for AHU-5")
-    assert "validation" in out and out["validation"]["verdict"] in ("pass", "warn", "fail")
+    assert "validation" in out and out["validation"]["verdict"] in ("pass", "warn", "pass_with_gaps", "fail")

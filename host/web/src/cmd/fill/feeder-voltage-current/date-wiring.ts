@@ -6,7 +6,8 @@
 // `data.onSamplingChange`. The picker's `onChange` fires on Apply with a
 // `SamplingSelection` { preset, range:{start,end}|null, resolution?, shift? }.
 // We translate that → the host date_window vocabulary and hand it to the host's
-// onDateChange, which re-fetches JUST this card's ems_backend frame. The page's
+// onDateChange, which re-runs JUST this card for the new window (frames are retired,
+// so the host re-derives the card's payload — no ems_backend re-fetch). The page's
 // own hook (useVoltageCurrentData.voltageCurrentHistorySelectionToParams) is the
 // reference for the preset→sampling pairing; the host range tokens are the
 // PresetId form (today | yesterday | last-7-days | this-month | custom-range).

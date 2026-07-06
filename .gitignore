@@ -21,10 +21,19 @@ host/web/dist/
 *.log
 logs/
 outputs/*.json
+outputs/logs/
+outputs/logs_*/
+outputs/_log_archive/
+outputs/fullsweep*/
+outputs/replay*/
+.playwright-mcp/
 
 # Env & secrets
 .env
 .env*.local
+
+# Backup snapshots / archive tarballs (redundant with tracked sources)
+archive/
 
 # OS cruft
 .DS_Store

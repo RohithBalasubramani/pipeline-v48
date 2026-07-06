@@ -1,0 +1,432 @@
+"""ems_exec/executor/members.py — PANEL MEMBER resolution + reads for the generic roster interpreter. ZERO card
+knowledge: every column set arrives as a parameter (the caller reads them from app_config roster.* rows / the validated
+roster instruction) — no card ids, no root keys, no element-key names, no thresholds here.
+
+One concern: given a panel's registry mfm_id, resolve its member meters (registries.neuract edges — incomers_of +
+outgoers_of, roles preserved), read each member's declared columns from ems_exec.data.neuract (present-tolerant), select
+subsets by role/reporting, and roll the electrical up into the aggregated superset row the per-card executor fills
+scalar leaves from (Σ for extensive magnitudes, mean for intensities, windowed-delta Σ for the energy counter).
+
+Lifted from ems_exec/renderers/panel_aggregate.py:84-206 (the proven fan-out) with the column sets parameterized so the
+SAME functions serve every roster card. HONEST-DEGRADE everywhere: an orphan panel → ([], honest_blank coverage); a
+member with no gic_* table keeps its identity but reads {} (all leaves honest-null); a column no member reported → None
+(never a fabricated 0). [atomic; DATA = NEURACT ONLY]
+"""
+from __future__ import annotations
+
+from ems_exec.data import neuract as _nx
+from ems_exec.renderers import _agg
+
+
+def _num(x):
+    return _agg.num(x)
+
+
+# ═══════════════════════════════════════════════════════════════════════════════════════════════════════════════════
+#  resolution — the fan-out door (registries.neuract edges + the recursing has-data leaf set for honest coverage)
+# ═══════════════════════════════════════════════════════════════════════════════════════════════════════════════════
+def resolve(mfm_id):
+    """(members, coverage) for a panel. `members` = the DEDUPED union of outgoing (feeder) + incoming (source) member
+    meters, each {mfm_id, name, table, role, type, load_group}; a member with no gic_* table is kept but honest-nulls
+    its electrical. `coverage` = {reporting, expected, verdict} from the recursing panel_members door (the honest
+    denominator). An orphan / unknown panel → ([], honest_blank). Never raises."""
+    if mfm_id is None:
+        return [], _agg.coverage_verdict(0, 0)
+    try:
+        from registries.neuract import members as _members
+        out_side = _members.outgoers_of(mfm_id) or []
+        in_side = _members.incomers_of(mfm_id) or []
+    except Exception:
+        return [], _agg.coverage_verdict(0, 0)
+    seen, members = set(), []
+    for m in list(out_side) + list(in_side):
+        mid = m.get("mfm_id")
+        if mid in seen:
+            continue
+        seen.add(mid)
+        reg = _meter_row(mid)
+        members.append({
+            "mfm_id": mid,
+            "name": m.get("name"),
+            "table": m.get("neuract_table"),
+            "role": m.get("role"),
+            "type": reg.get("type_code"),
+            "load_group": reg.get("load_group"),
+        })
+    try:
+        from data.lt_panels.panel_members import panel_members as _panel_members
+        pm = _panel_members(int(mfm_id))
+        expected = pm.get("expected_count") or len(members)
+        reporting = pm.get("reporting_count") or 0
+    except Exception:
+        expected, reporting = len(members), 0
+    return members, _agg.coverage_verdict(reporting, expected)
+
+
+def _meter_row(mfm_id):
+    """The member's registry row ({type_code, load_group, …}) or {} (honest-degrade on a stale id / registry outage)."""
+    try:
+        from registries import neuract as _reg
+        return _reg.meter_by(mfm_id) or {}
+    except Exception:
+        return {}
+
+
+def ts_col():
+    """The neuract timestamp column name (DB-driven via config.neuract_dsn; None on outage → labels honest-null).
+    The ONE fail-open accessor the member-read callers (roster prepare, panel_aggregate) share."""
+    try:
+        from config import neuract_dsn as _dsnc
+        return _dsnc.ts_col()
+    except Exception:
+        return None
+
+
+# ═══════════════════════════════════════════════════════════════════════════════════════════════════════════════════
+#  reads — ONE latest-row pass per member (present-tolerant: absent column → None; no table → {})
+# ═══════════════════════════════════════════════════════════════════════════════════════════════════════════════════
+def rows(members, columns, ts_col=None):
+    """[(member, latest_row)] — each member's LATEST neuract row for `columns` (+ the row timestamp when `ts_col` is
+    given). Present-tolerant: an absent column simply misses from the row (readers .get() → None); a member with no
+    table reads {} (all leaves honest-null). This is the ONE per-member read pass."""
+    cols = list(dict.fromkeys([c for c in (columns or []) if c] + ([ts_col] if ts_col else [])))
+    out = []
+    for m in (members or []):
+        tbl = m.get("table")
+        try:
+            row = _nx.latest(tbl, cols) if (tbl and cols) else {}
+        except Exception:
+            row = {}
+        out.append((m, row))
+    return out
+
+
+def select(pairs, role_filter="all", reporting_only=False, power_col=None):
+    """The (member, row) subset by ROLE + reporting. supply → role=='incoming' (the meters that FEED the panel);
+    load → every other role (the meters it feeds — the aggregation set; summing both sides would double-count the same
+    physical flow); all → both. reporting_only → only members whose `power_col` read is a real number (honest partial
+    coverage: a dark stub never pads a mean denominator)."""
+    rf = (role_filter or "all").strip().lower()
+    got = []
+    for m, r in (pairs or []):
+        role = (m.get("role") or "").strip().lower()
+        if rf == "supply" and role != "incoming":
+            continue
+        if rf == "load" and role == "incoming":
+            continue
+        if reporting_only and power_col and _num(r.get(power_col)) is None:
+            continue
+        got.append((m, r))
+    return got
+
+
+# ═══════════════════════════════════════════════════════════════════════════════════════════════════════════════════
+#  rollup — the AGGREGATED SUPERSET ROW {column: rolled_value} + the panel's windowed energy
+# ═══════════════════════════════════════════════════════════════════════════════════════════════════════════════════
+def agg_row(pairs, window, columns, sum_cols, energy_col=None, pf_cols=None, power_col=None):
+    """The fleet-rolled superset row the per-card executor fills KPI/scalar leaves from (ctx['_agg_row']). Each column
+    is reduced across the LOAD-side members that reported it — Σ-magnitude for `sum_cols`, mean otherwise. The unsigned
+    true PF fold (`pf_cols` = [preferred_unsigned, signed_fallback]) fills both PF columns; `energy_col` (cumulative
+    counter) becomes the windowed-delta Σ. Honest-null: a column no member reported → None (never a fabricated 0).
+    LOAD side only — supply incomers measure the same flow and would double-count it."""
+    reporting = select(pairs, role_filter="load", reporting_only=bool(power_col), power_col=power_col)
+    row = {}
+    sums = set(sum_cols or ())
+    for col in (columns or []):
+        vals = [r.get(col) for (_m, r) in reporting]
+        row[col] = _agg.sum_magnitude(vals) if col in sums else _agg.mean(vals)
+    if pf_cols and len(pf_cols) >= 2:
+        preferred, signed = pf_cols[0], pf_cols[1]
+        pf = _agg.mean([r.get(preferred) for (_m, r) in reporting])
+        if pf is None:
+            pf = _agg.mean([abs(v) for (_m, r) in reporting if (v := _num(r.get(signed))) is not None])
+        row[preferred] = pf
+        row[signed] = pf
+    if energy_col:
+        row[energy_col] = panel_kwh(pairs, window, energy_col)
+    return row
+
+
+def panel_kwh(pairs, window, energy_col):
+    """Σ of per-member windowed energy deltas over the ctx window (the panel's energy). LOAD side only (double-count
+    guard). None when no member yields a real delta (honest-null).
+
+    REVERSED-CT AWARE (the register fix): a member wired reversed-CT keeps its real energy on the EXPORT register (its
+    import delta is flat ~0 — the 3 GIC UPS feeders read import=0 while active_energy_export_kwh moves ~4700 kWh), a
+    forward member (bpdb-01) on import. So per member the roll-up reads BOTH the import register (`energy_col`) and the
+    configured EXPORT register and PICKS the one that moved (energy.member_energy_delta → _pick_register), abs()'d for a
+    positive kWh. A genuinely dark feeder (neither register moved) contributes nothing, never a fabricated 0. When no
+    export register is configured (roster.energy_export_column unset) this degrades to the legacy import-only Σ."""
+    if not energy_col:
+        return None
+    total = None
+    for m, _r in select(pairs, role_filter="load"):
+        picked = member_delta(m, window, energy_col, ndigits=None)   # the ONE pick_mover selection (register_pairs)
+        if picked is not None:
+            total = (total or 0.0) + picked
+    return round(total, 1) if total is not None else None
+
+
+def _delta_of(pair):
+    """The clamped (end−start)≥0 delta of one member's (start,end) counter pair, or None (missing baseline / empty)."""
+    if pair is None:
+        return None
+    return _agg.windowed_delta([pair])
+
+
+def _export_col():
+    """The configured EXPORT energy register for reversed-CT panel roll-ups (roster.energy_export_column). None when
+    unset → panel_kwh degrades to the legacy import-only Σ (backward compatible)."""
+    try:
+        from config.app_config import cfg
+        v = cfg("roster.energy_export_column", "active_energy_export_kwh")
+        return v or None
+    except Exception:
+        return "active_energy_export_kwh"
+
+
+def register_pairs():
+    """The IMPORT→EXPORT cumulative-register pair map for reversed-CT pick_mover reads (app_config
+    roster.energy_register_pairs; the active pair's export side defaults to roster.energy_export_column). ANY windowed
+    energy delta on a paired import register must read BOTH registers and pick the mover — the roster `delta` binding
+    and the bucketed `energy_delta` fold reuse THIS one map, so the per-member leaves, the entries reducers and the
+    panel Σ (panel_kwh) can never contradict each other again (the cards-12/13/14/16 false-zero / 79670-vs-93771
+    self-contradiction). Editable row; code default = the two neuract energy counter pairs."""
+    default = {
+        "active_energy_import_kwh": "active_energy_export_kwh",
+        "reactive_energy_import_kvarh": "reactive_energy_export_kvarh",
+    }
+    try:
+        from config.app_config import cfg
+        pairs = cfg("roster.energy_register_pairs", default)
+        pairs = pairs if isinstance(pairs, dict) and pairs else default
+        energy_col = cfg("roster.energy_column", "active_energy_import_kwh")
+    except Exception:
+        pairs, energy_col = default, "active_energy_import_kwh"
+    out = {}
+    for imp, exp in pairs.items():
+        if imp == energy_col:
+            exp = _export_col()          # the legacy roster.energy_export_column knob stays the ACTIVE pair's valve:
+        if exp:                          # unset → that pair drops → legacy import-only Σ (backward compatible)
+            out[imp] = exp
+    return out
+
+
+def bucketed_rolled(pairs, column, window, sampling="hourly", reduce="sum_magnitude", role_filter="load"):
+    """The member-rolled [{t, value}] series for ONE column across the selected members — each member's OWN neuract
+    bucketed read, folded per bucket (Σ-magnitude for extensive magnitudes, mean for intensities; the fold is
+    caller-declared, mirroring agg_row's quantity rule). [] when no selected member reports the column (honest-degrade —
+    never a fabricated curve). LOAD side by default: supply incomers measure the same physical flow and would
+    double-count a panel trend. This is the fan-out the single-meter executor cannot do (a panel's own device table
+    carries no electrical series)."""
+    return bucketed_rolled_members(select(pairs, role_filter=role_filter or "load"),
+                                   column, window, sampling=sampling, reduce=reduce)
+
+
+def bucketed_rolled_members(subset_pairs, column, window, sampling="hourly", reduce="sum_magnitude"):
+    """bucketed_rolled over an EXPLICIT (member, row) subset — the same per-bucket fold, but the caller has already
+    selected the members (e.g. one feeder-group split of the panel). Same honest-degrade: [] when no member in the
+    subset reports the column. This is the fan-out door for a multi-series split where each series is one member group."""
+    if not column:
+        return []
+    start, end = (window or (None, None))
+    by_t = {}
+    for m, _r in (subset_pairs or []):
+        tbl = m.get("table")
+        try:
+            if not tbl or column not in _nx.present_columns(tbl):
+                continue
+            for pt in _nx.bucketed(tbl, column, start, end, sampling=sampling or "hourly"):
+                t = pt.get("t")
+                if t is not None:
+                    by_t.setdefault(t, []).append(pt.get("value"))
+        except Exception:
+            continue                                            # one dark/broken member never sinks the rolled series
+    if not by_t:
+        return []
+    fold = _agg.mean if (reduce or "sum_magnitude").strip().lower() == "mean" else _agg.sum_magnitude
+    return [{"t": t, "value": fold(by_t[t])} for t in sorted(by_t)]
+
+
+def _spec_match(member, match):
+    """True when `member` falls in a bucketed_multi spec's optional `match` group (any-of, case-insensitive): types
+    (type_code), load_groups (load_group), name_contains (substring on name OR table — the reliable feeder discriminator
+    when registry names are gic_* / load_groups are the GIC-xx site). No match declared → matches EVERY member (the
+    fleet-wide default). A match with keys that select nobody → the spec is honest-null on every bucket (never the fleet
+    Σ misattributed to an absent feeder class). Mirrors roster._member_match, inlined to avoid a circular import."""
+    if not match:
+        return True
+    if not isinstance(match, dict):
+        return False
+    mtype = str(member.get("type") or "").strip().lower()
+    lg = str(member.get("load_group") or "").strip().lower()
+    hay = (str(member.get("name") or "") + " " + str(member.get("table") or "")).strip().lower()
+    if mtype and mtype in {str(x).strip().lower() for x in (match.get("types") or [])}:
+        return True
+    if lg and lg in {str(x).strip().lower() for x in (match.get("load_groups") or [])}:
+        return True
+    if any(sub and str(sub).strip().lower() in hay for sub in (match.get("name_contains") or [])):
+        return True
+    return False
+
+
+def bucketed_multi(pairs, specs, window, sampling="day", role_filter="load"):
+    """The member-rolled MULTI-KEY bucketed series: [{"t": bucket_iso, "vals": {out_key: rolled_value}}] over the shared
+    bucket axis, one entry per time bucket, ascending. Each `specs` entry declares ONE per-bucket quantity across the
+    selected members:
+        {"key": <out_key>, "column": <neuract col>, "kind": "energy_delta"|"avg"|"event",
+         "reduce": "sum_magnitude"|"mean"|"maximum", "r":n, "match": {types|load_groups|name_contains}?}
+    · kind='energy_delta' → each member's per-bucket max−min counter delta (neuract.bucketed_delta), folded Σ (energy).
+    · kind='avg'          → each member's per-bucket AVG (neuract.bucketed), folded per `reduce` (Σ magnitude / mean /
+                            maximum — maximum = the panel WORST-OF that bucket, e.g. the worst-feeder V-dev / I-unbalance
+                            line; the intensity trend a single fold cannot express).
+    · kind='event'        → each member's per-bucket RISING-EDGE (0/1): a bucket counts 1 for a member only when the flag
+                            goes de-asserted→asserted at THAT bucket (a new event starting), never once per active sample;
+                            folded Σ across members = the honest per-bucket event count (a genuinely quiet flag → 0 every
+                            bucket, never a fabricated bar). The event-timeline stack shape.
+    · match (optional)    → scopes THIS key to a member sub-group (a per-equipment split: ups / bpdb / …); absent → the
+                            whole selected fleet. A match selecting nobody → the key honest-nulls every bucket.
+    The bucket axis is the UNION of every member/column's buckets; a key a bucket has no member reading for → None
+    (honest-null, never a fabricated 0). [] when NO spec yields any bucket. LOAD side by default (double-count guard).
+    This is the ONLY multi-column member fan-out — every key rides the SAME real bucket axis so a point stays coherent."""
+    subset = select(pairs, role_filter=role_filter or "load")
+    specs = [s for s in (specs or []) if isinstance(s, dict) and s.get("key") and s.get("column")]
+    by_t = {}                                                   # bucket_iso -> {out_key: [per-member values]}
+    for s in specs:
+        key, col = s["key"], s["column"]
+        kind = (s.get("kind") or "avg").strip().lower()
+        match = s.get("match")
+        for m, _r in subset:
+            if not _spec_match(m, match):
+                continue
+            tbl = m.get("table")
+            try:
+                if kind == "event":
+                    # per-member per-bucket RISING-EDGE COUNT from the RAW rows (neuract.bucketed_edges): every real
+                    # de-asserted→asserted crossing inside the bucket counts (a register flapping 25×/hour reports 25),
+                    # never one-per-active-sample and never the collapsed bucket-avg edge (the old hourly-AVG loop saw a
+                    # flapping flag as permanently asserted → ~1 edge/day — the cards-18/20/22 zero-events defect). A
+                    # member's per-bucket counts fold Σ across members; a quiet flag contributes real 0s, an absent
+                    # column contributes nothing (honest — never a fabricated bar).
+                    for pt in _nx.bucketed_edges(tbl, col, window[0], window[1], sampling=sampling) if tbl else []:
+                        t = pt.get("t")
+                        if t is not None:
+                            by_t.setdefault(t, {}).setdefault(key, []).append(pt.get("value"))
+                    continue
+                if not tbl or (col not in _nx.present_columns(tbl)
+                               and not (kind == "energy_delta" and _paired_present(tbl, col))):
+                    continue
+                if kind == "energy_delta":
+                    pts = _bucketed_energy_delta(tbl, col, window, sampling)   # pick_mover per bucket (reversed-CT)
+                else:
+                    pts = _nx.bucketed(tbl, col, window[0], window[1], sampling=sampling)
+            except Exception:
+                continue                                        # one dark/broken member never sinks the rolled series
+            for pt in pts:
+                t = pt.get("t")
+                if t is not None:
+                    by_t.setdefault(t, {}).setdefault(key, []).append(pt.get("value"))
+    if not by_t:
+        return []
+    _folds = {"mean": _agg.mean, "maximum": _agg.maximum, "sum_magnitude": _agg.sum_magnitude}
+    fold_of = {s["key"]: _folds.get((s.get("reduce") or "sum_magnitude").strip().lower(), _agg.sum_magnitude)
+               for s in specs}
+    r_of = {s["key"]: s.get("r") for s in specs}
+    out = []
+    for t in sorted(by_t):
+        vals = {}
+        for s in specs:
+            k = s["key"]
+            got = by_t[t].get(k)
+            v = fold_of[k](got) if got else None
+            if v is not None and r_of.get(k) is not None:
+                v = round(v, r_of[k])
+            vals[k] = v
+        out.append({"t": t, "vals": vals})
+    return out
+
+
+def member_delta(member, window, col, ndigits=1):
+    """ONE member's windowed counter delta for `col`. None when the column is absent / the table is empty / the window
+    has no rows (honest-null, never a fabricated 0).
+
+    PICK_MOVER (reversed-CT unification, cards 12/13/14/16): when `col` is a paired energy import register
+    (register_pairs), the member's delta is read from BOTH the import and the export register and the MOVER wins
+    (energy.member_energy_delta — a reversed-CT feeder keeps its real kWh on export while import stays flat ~0). This
+    is the SAME selection panel_kwh already applies, so a roster `delta` element leaf can never render 0.0 while the
+    panel Σ carries that member's real export energy. An unpaired column keeps the legacy single-register delta."""
+    export_col = register_pairs().get(col)
+    if export_col:
+        imp = _delta_of(member_delta_pair(member, window, col))
+        exp = _delta_of(member_delta_pair(member, window, export_col))
+        from ems_exec.derivations import energy as _energy
+        picked = _energy.member_energy_delta(imp, exp)
+        if picked is None:
+            return None
+        return round(picked, ndigits) if ndigits is not None else picked
+    pair = member_delta_pair(member, window, col)
+    if pair is None:
+        return None
+    return _agg.windowed_delta([pair], ndigits=ndigits)
+
+
+def member_event_count(member, window, col, sampling="hourly"):
+    """ONE member's windowed RISING-EDGE count for a boolean flag `col` — counted on the RAW rows (neuract.edge_count),
+    so a register that flaps dozens of times an hour reports every real edge (the old hourly-AVG bucket loop collapsed
+    any flapping flag to ~1 — the cards-18/22 zero-events defect). None when the column is absent / the table is empty
+    (honest-null); a genuinely quiet flag over a present column → 0 (a real, honest zero — never a fabricated bar)."""
+    tbl = member.get("table")
+    if not tbl or not col:
+        return None
+    try:
+        start, end = (window or (None, None))
+        return _nx.edge_count(tbl, col, start, end)
+    except Exception:
+        return None
+
+
+def _paired_present(tbl, col):
+    """True when a paired-import column's EXPORT twin physically exists on the table (the import register may be absent
+    while the reversed-CT export register carries the real energy)."""
+    export_col = register_pairs().get(col)
+    return bool(export_col and export_col in _nx.present_columns(tbl))
+
+
+def _bucketed_energy_delta(tbl, col, window, sampling):
+    """ONE member's per-bucket windowed energy delta [{t, value}] with the reversed-CT pick_mover applied PER BUCKET:
+    when `col` is a paired import register (register_pairs), both the import and the export register are bucket-deltaed
+    and each bucket keeps whichever register MOVED (energy.member_energy_delta — larger |delta| wins, abs magnitude).
+    A bucket where neither register moved keeps the flat register's honest 0.0/None; an unpaired column reads the
+    single register (legacy). This is the same selection member_delta/panel_kwh apply to the scalar leaves, so a trend
+    bucket can never show 0 kWh for a feeder whose export register moved (card-16 UPS false-zero)."""
+    start, end = (window or (None, None))
+    imp_pts = _nx.bucketed_delta(tbl, col, start, end, sampling=sampling)
+    export_col = register_pairs().get(col)
+    if not export_col:
+        return imp_pts
+    exp_pts = _nx.bucketed_delta(tbl, export_col, start, end, sampling=sampling)
+    if not exp_pts:
+        return imp_pts
+    from ems_exec.derivations import energy as _energy
+    by_t = {pt.get("t"): pt.get("value") for pt in imp_pts}
+    out_t = list(dict.fromkeys([pt.get("t") for pt in imp_pts] + [pt.get("t") for pt in exp_pts]))
+    exp_by_t = {pt.get("t"): pt.get("value") for pt in exp_pts}
+    out = []
+    for t in sorted(x for x in out_t if x is not None):
+        out.append({"t": t, "value": _energy.member_energy_delta(by_t.get(t), exp_by_t.get(t))})
+    return out
+
+
+def member_delta_pair(member, window, col):
+    """The (baseline, close) counter pair for one member over the window, or None (no table / column / rows)."""
+    tbl = member.get("table")
+    if not tbl or not col:
+        return None
+    try:
+        if col not in _nx.present_columns(tbl):
+            return None
+        start, end = (window or (None, None))
+        first, last = _nx.window(tbl, [col], start, end)
+        return (first.get(col), last.get(col))
+    except Exception:
+        return None

@@ -2,9 +2,8 @@
 V48's `ems_backend/` WS dispatcher (`ws/mfm/<mfm_id>/<endpoint>/`). The AI (Layer 2) AUTHORS the fetch spec — endpoint
 (live vs date-capable history), window/range/sampling, metrics, selection. `build()` only ASSEMBLES the AI's spec with
 the one non-AI key, `mfm_id` (1b's resolved asset = the WS path key). NO deterministic fallbacks/guesses.
-[design-notes 'Layer 2 DATA source — reuse ems_backend', findings/ems_backend_hardcoding.md]"""
+[design-notes 'Layer 2 DATA source — reuse ems_backend', docs/findings/ems_backend_hardcoding.md]"""
 from layer2.emit.data.endpoint_registry import HISTORY_ENDPOINTS
-from config.app_config import cfg
 
 
 def build(catalog_row, asset, page_key, window=None, ai_spec=None):
@@ -20,7 +19,6 @@ def build(catalog_row, asset, page_key, window=None, ai_spec=None):
     # endpoints (domain_endpoints) as a STRONG preference, and an off-domain pick is fixed in the PROMPT, never overridden
     # here. (user: no fallbacks anywhere; the whole purpose of Layer 2 is that the AI decides.)
     return {
-        "source_backend": cfg("routes.source_backend", "ems_backend"),  # V48-local WS dispatcher (pipeline_v48/ems_backend)
         "mfm_id": asset.get("mfm_id"),                         # 1b's RESOLVED ASSET (not a Layer-2 call) — the WS path key
         "endpoint": endpoint,                                  # ★ AI: the consumer screen (live vs history)
         "is_history": endpoint in HISTORY_ENDPOINTS,           # date-capable? (a fact about the endpoint → query format)

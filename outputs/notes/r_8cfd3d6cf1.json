@@ -1,0 +1,30 @@
+{
+ "run_id": "r_8cfd3d6cf1",
+ "loop1": [
+  {
+   "card_id": 50,
+   "title": "Battery Health",
+   "answerability": "partial",
+   "note": "Battery SOC is not directly measured by this UPS meter; showing voltage deviation as a proxy for battery health status. Temperature is not measured; showing frequency as a proxy."
+  },
+  {
+   "card_id": 51,
+   "title": "Battery Health History",
+   "answerability": "partial",
+   "note": "Showing electrical proxy trends (Active Power, Voltage) for battery health sub-scores (Overall, SOC, DC Bus, Thermal) as the meter does not log native battery scores; the card's mapper normalizes these electrical proxies into the 0-100 score range."
+  },
+  {
+   "card_id": 52,
+   "title": "Backup Readiness",
+   "answerability": "partial",
+   "note": "Battery-specific readiness data (SOC, temperature) is not measured by this UPS meter. Showing electrical load factor and headroom as a proxy for the 'Autonomy envelope' story."
+  },
+  {
+   "card_id": 53,
+   "title": "Backup Readiness History",
+   "answerability": "partial",
+   "note": "Showing autonomy index and component scores derived from active power trends; specific battery autonomy metrics (runtime, headroom) are not directly measured by this electrical meter and are approximated using available power data."
+  }
+ ],
+ "loop2": null
+}

@@ -1,6 +1,8 @@
-"""validate/schema.py — structural validation of the validation-layer output. [validate, contract V]"""
+"""validate/schema.py — structural validation of the validation-layer output. WIRED: run_validate attaches its result
+as report['_schema_issues'] (annotate-only, consistent with validate_layer1b_output / validate_layer2_card_output).
+[validate, contract V]"""
 
-_VERDICTS = {"pass", "warn", "fail", "asset_pending"}
+_VERDICTS = {"pass", "warn", "pass_with_gaps", "fail", "asset_pending"}
 
 
 def validate_validation_output(out):

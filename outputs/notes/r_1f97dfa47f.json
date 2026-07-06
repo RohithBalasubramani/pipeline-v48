@@ -1,0 +1,24 @@
+{
+ "run_id": "r_1f97dfa47f",
+ "loop1": [
+  {
+   "card_id": 63,
+   "title": "Fuel Tank Anatomy",
+   "answerability": "full",
+   "note": "This is a static chrome card (asset_3d). No data fields are bound; the card renders its metadata frame with placeholder values until the 3D viewer or special renderer is populated."
+  },
+  {
+   "card_id": 64,
+   "title": "All Runs (Fuel Log)",
+   "answerability": "partial",
+   "note": "Showing total active energy (kWh) and load factor (%); fuel consumption (L) and specific fuel consumption (L/kWh) are not measured by this meter."
+  },
+  {
+   "card_id": 65,
+   "title": "Fuel & Tank \u2014 Composite",
+   "answerability": "partial",
+   "note": "Showing active power as a proxy for fuel burn rate and energy import as a proxy for fuel level; specific fuel consumption and cost are unavailable for this asset."
+  }
+ ],
+ "loop2": null
+}

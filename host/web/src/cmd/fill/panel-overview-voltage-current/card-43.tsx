@@ -1,45 +1,59 @@
 import React from "react";
-// Card 43 · Voltage Health Summary (equipment-detail page — a different CMD V2 page, column-row frame).
+// Card 43 · Voltage Health Summary (equipment-detail CMD V2 page).
 //
-// LIVE PATH — REUSE the page's OWN CMD V2 reducer + mapper + viewModel, fed by the host's single ems_backend
-// snapshot frame instead of a live socket:
-//   frame (column-row {columns,queue}) → ColumnRowState → mapVoltageCurrentSocketToSnapshot
-//   → createVoltageCurrentViewModel → voltageHealth (HealthCardData).
-// HONEST-DEGRADE: the live derivation is wrapped in try/catch; a missing/unmappable frame falls straight
-// back to the card's seed payload (its byte-identical default data). NEVER throws on a missing frame.
+// PAYLOAD-DIRECT (ems_backend RETIRED — `frame` is always empty now). Priority:
+// payload skeleton → HONEST-EMPTY card. HealthSummaryPanel maps data.metrics + data.phases;
+// if the payload elided those leaves, fall back to a STRUCTURE-PRESERVING honest-empty card
+// (honestEmptyHealth — payload chrome + empty metrics/phases) so the panel still renders —
+// NEVER null, NEVER a source:'mock' seed generator. The old live column-row frame branch
+// (ColumnRowState → mapVoltageCurrentSocketToSnapshot → createVoltageCurrentViewModel) is
+// dead code now (no frame ever arrives) and was DELETED.
 
 import { HealthSummaryPanel } from "@cmd-v2/pages/electrical/tabs/voltage-current/HealthSummaryPanel";
-import { createVoltageCurrentViewModel } from "@cmd-v2/pages/electrical/tabs/voltage-current/voltageCurrentViewModel";
-import { mapVoltageCurrentSocketToSnapshot } from "@cmd-v2/pages/electrical/tabs/voltage-current/voltageCurrentMapper";
+import type { HealthCardData } from "@cmd-v2/pages/electrical/tabs/voltage-current/types";
 
-import {
-  createInitialColumnRowState,
-  reduceColumnRowFrame,
-} from "@cmd-v2/realtime/columnRowReducer";
+/** HONEST-EMPTY draw guarantee [card-43 mock-fabrication fix]: when the payload skeleton yields
+ *  no drawable HealthCardData (metrics/phases elided to null), render a STRUCTURE-PRESERVING empty
+ *  card — the payload's OWN title/status/summary chrome kept, metrics/phases coerced to [];
+ *  HealthSummaryPanel .map()s the empty arrays to an empty (honest-blank) strip, never a crash.
+ *  This REPLACES the old createInitialVoltageCurrentSnapshot(0) fallback, which returned a
+ *  `source:'mock'` view-model with FABRICATED phase readings + a "Motor start sag" event.
+ *  Never fabricates. */
+function honestEmptyHealth(seed: any): HealthCardData {
+  const s = seed && typeof seed === "object" ? seed : {};
+  return {
+    title: typeof s.title === "string" ? s.title : "Voltage Health",
+    status: (s.status && typeof s.status === "object")
+      ? { ...s.status, label: s.status.label ?? "—" }
+      : { label: "—", tone: "neutral" as any },
+    statusVocab: s.statusVocab,
+    insightKey: s.insightKey,
+    insightVocab: s.insightVocab,
+    summary: s.summary,
+    band: s.band,
+    metrics: [],
+    phases: [],
+    insight: typeof s.insight === "string" ? s.insight : "",
+  };
+}
 
-import { asSnapshotFrame } from "./view-model";
+function drawable(data: any): data is HealthCardData {
+  return !!data && Array.isArray(data.metrics) && Array.isArray(data.phases);
+}
 
-function HealthCard({ health, frame }: { health: any; frame?: any }) {
-  let data = health.data;
-  try {
-    if (frame) {
-      const state = reduceColumnRowFrame(createInitialColumnRowState(), asSnapshotFrame(frame) as any);
-      const snapshot = mapVoltageCurrentSocketToSnapshot({ socket: { state, status: "open" } as any });
-      if (snapshot) {
-        const vm = createVoltageCurrentViewModel(snapshot);
-        if (vm?.voltageHealth) data = vm.voltageHealth;
-      }
-    }
-  } catch { /* keep seed */ }
-  // GUARD: HealthSummaryPanel maps data.metrics (MetricStrip) and data.phases (PhaseRows/PhaseBarRows); Layer 2 elides
-  // those array leaves from the seed payload, so render a placeholder instead of crashing on `.map` of undefined.
-  if (!data || !Array.isArray(data.metrics) || !Array.isArray(data.phases)) return null;
+function HealthCard({ health }: { health: any }) {
+  // 1) payload skeleton (Layer-2 completed — real or honest-blank; data leaves may be elided).
+  let data: HealthCardData | undefined = health?.data;
+
+  // 2) DRAW GUARANTEE — if the skeleton isn't drawable, HONEST-EMPTY (structure kept, NO mock seed).
+  if (!drawable(data)) data = honestEmptyHealth(health?.data);
+
   return (
     <div className="h-full">
-      <HealthSummaryPanel data={data} phaseVariant={health.phaseVariant ?? "rows"} />
+      <HealthSummaryPanel data={data} phaseVariant={health?.phaseVariant ?? "rows"} />
     </div>
   );
 }
 
-export const card43 = (p: any, f?: any): React.ReactNode =>
-  p?.health ? <HealthCard health={p.health} frame={f} /> : null;
+export const card43 = (p: any): React.ReactNode =>
+  <HealthCard health={p?.health} />;

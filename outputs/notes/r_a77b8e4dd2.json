@@ -1,0 +1,24 @@
+{
+ "run_id": "r_a77b8e4dd2",
+ "loop1": [
+  {
+   "card_id": 47,
+   "title": "Power Quality",
+   "answerability": "partial",
+   "note": "Showing current THD (R-phase) and aggregated current THD compliance; voltage THD, H5, H7, flicker, and crest factor are not measured by this meter."
+  },
+  {
+   "card_id": 48,
+   "title": "Distortion & Harmonic Profile",
+   "answerability": "partial",
+   "note": "Showing current THD evolution (R/Y/B phases) from the shared buffer; voltage THD columns (thd_voltage_*) are mostly null on this meter and will render as honest blanks."
+  },
+  {
+   "card_id": 49,
+   "title": "Load Impact & Transformer Stress",
+   "answerability": "partial",
+   "note": "Showing Power Factor and Phase Angle time-series from the shared buffer. K-factor data is not directly measured by this meter's schema (no k_factor column), so the K-Stress view stats and series will render as honest blanks."
+  }
+ ],
+ "loop2": null
+}

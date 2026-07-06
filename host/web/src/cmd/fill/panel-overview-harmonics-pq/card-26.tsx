@@ -1,59 +1,27 @@
 /**
  * card 26 — PqFeederTable.
  *
- * payload.table = { pres, period, selectedPanelId }. Live: the priority-rows
- * table-period + its default selected feeder.
+ * PAYLOAD-DIRECT (ems_backend RETIRED — `frame` is always empty now). The Layer-2
+ * completed payload IS the render source: payload.table = { pres, period, selectedPanelId },
+ * carrying REAL per-feeder priority rows or honest-blank. The old live snapshotFromFrame(frame)
+ * branch AND the buildPQPeriods() fabrication fallback (synthetic harmonic waves — a seed leak)
+ * are DELETED. PqFeederTable feeds `rows={period.panels}` to DataTable, so an empty period
+ * (`panels: []`) renders an honest-empty table (chrome + no rows), NEVER a mock.
  */
 import React from "react";
 
 import { PqFeederTable } from "@cmd-v2/pages/electrical/lt-pcc/panel-overview/harmonics-pq/HarmonicsPqTab";
-import {
-  buildHpqPresentation,
-  buildPQPeriods,
-  defaultPanelIdForFocus,
-} from "@cmd-v2/pages/electrical/lt-pcc/panel-overview/harmonics-pq/viewModel";
+import { buildHpqPresentation } from "@cmd-v2/pages/electrical/lt-pcc/panel-overview/harmonics-pq/viewModel";
 import type { PQPeriod } from "@cmd-v2/pages/electrical/lt-pcc/panel-overview/harmonics-pq/types";
 
-import { lastPeriod, liveTablePeriod, presentation } from "./derive";
+import { emptyPeriod } from "./derive";
 import { noop } from "./noop";
-import { snapshotFromFrame } from "./snapshot";
 
-export function renderFeederTable(payload: any, frame?: any): React.ReactNode {
+export function renderFeederTable(payload: any): React.ReactNode {
   const args = payload?.table ?? payload ?? {};
   const pres = args.pres ?? buildHpqPresentation().feederTable;
-  let period: PQPeriod | undefined = args.period;
-  let selectedPanelId: string = args.selectedPanelId ?? "";
-
-  try {
-    const snap = snapshotFromFrame(frame);
-    if (snap) {
-      const fullPres = presentation(snap);
-      const selected = lastPeriod(snap.periods);
-      if (selected) {
-        const tablePeriod = liveTablePeriod(snap, selected);
-        period = tablePeriod;
-        selectedPanelId = defaultPanelIdForFocus(
-          tablePeriod,
-          fullPres.aiSummary.defaultFocusKey,
-          fullPres.limits,
-        );
-      }
-    }
-  } catch {
-    /* keep payload defaults */
-  }
-
-  if (!period) {
-    const periods = buildPQPeriods();
-    const sel = lastPeriod(periods)!;
-    period = sel;
-    if (!selectedPanelId) {
-      selectedPanelId = defaultPanelIdForFocus(
-        sel,
-        buildHpqPresentation().aiSummary.defaultFocusKey,
-      );
-    }
-  }
+  const period: PQPeriod = args.period ?? emptyPeriod();
+  const selectedPanelId: string = args.selectedPanelId ?? period.panels[0]?.id ?? "";
 
   return (
     <div className="h-full min-h-0">

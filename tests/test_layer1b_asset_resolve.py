@@ -1,6 +1,8 @@
 """Layer 1b asset resolution — unit + live (confident / ambiguous / picker round-trip).
-Post-rewire: candidates come from meta_data_version1.app_devices ⋈ neuract gic_* tables (5433). Rows are 7-element
-[id, name, table, mfm_type_id, load_group, class, has_data]. Anchor = GIC-03-N6-AHU-5 (id 36, table gic_03_n6_ahu_5_p1)."""
+CANONICAL id-space (2026-07-04 streamline): candidates come from the cmd_catalog registry_* mirror of the canonical
+neuract registry (lt_mfm ⋈ types ⋈ asset; data/registry/lt_mfm.py), id = lt_mfm.id. Rows are 9-element
+[id, name, table, mfm_type_id, load_group, class, has_data, has_feeders, never_wired].
+Anchor = GIC-03-N6-AHU-5 (canonical lt_mfm.id 36, table gic_03_n6_ahu_5_p1)."""
 from layer1b.resolve.asset_candidates import asset_candidates, as_asset
 from layer1b.resolve.asset_resolve import resolve_asset
 from layer1b.resolve.candidate_list import for_picker
@@ -14,11 +16,16 @@ AHU5_TABLE = "gic_03_n6_ahu_5_p1"
 def test_asset_candidates_live():
     cands = asset_candidates()
     assert len(cands) > 50
-    assert all(len(c) >= 7 for c in cands)                       # [id,name,table,mfm_type,load_group,class,has_data,(has_feeders)]
+    assert all(len(c) >= 9 for c in cands)                       # [id,...,has_data,has_feeders,never_wired]
     by_id = {int(c[0]): c for c in cands}
     row = by_id[AHU5_ID]
-    assert row[1] == AHU5_NAME and row[2] == AHU5_TABLE          # known asset (app_devices → neuract gic table)
+    assert row[1] == AHU5_NAME and row[2] == AHU5_TABLE          # canonical lt_mfm row → neuract gic table
     assert isinstance(row[6], bool)                              # has_data flag present (not dropped)
+    # AUDIT-3 acceptance: the PCC panels resolve at their CANONICAL ids with feeders + data-via-feeders
+    for pid in (317, 318, 319, 320):
+        assert by_id[pid][5] == "Panel" and by_id[pid][6] is True and by_id[pid][7] is True
+    # Transformer-01 = canonical 171, single meter (no outgoing edge), its own live table
+    assert by_id[171][7] is False and by_id[171][6] is True
 
 
 def test_as_asset_shape():

@@ -1,0 +1,36 @@
+{
+ "run_id": "r_a68ae6e694",
+ "loop1": [
+  {
+   "card_id": 23,
+   "title": "PQ Issues KPI Strip (Total Issues / I-THD Events / V-THD Events / PF Gap Feeders / Neutral Stress / Worst I-THD / Worst V-THD)",
+   "answerability": "partial",
+   "note": "Voltage THD data (thd_voltage_*) is not measured by this meter (failed validation), so V-THD events and worst V-THD tiles will be blank. Current THD and other PQ metrics are fully populated."
+  },
+  {
+   "card_id": 24,
+   "title": "Harmonics & PQ Timeline",
+   "answerability": "partial",
+   "note": "AI emit unavailable (transport failure) \u2014 default metadata shown, data leaves honest-blank"
+  },
+  {
+   "card_id": 25,
+   "title": "AI Summary",
+   "answerability": "partial",
+   "note": "Showing active power (kW) for each feeder as a proxy for load context in the AI summary; harmonic (THD) data is not measured per-member for these UPS/BPDB feeders, so the narrative focuses on load distribution."
+  },
+  {
+   "card_id": 26,
+   "title": "Feeder PQ At {period}",
+   "answerability": "partial",
+   "note": "Showing PQ data for 6 active feeders; 2 feeders (UPS-05, UPS-06) are dark (no data) and will render as honest blanks."
+  },
+  {
+   "card_id": 27,
+   "title": "Signature",
+   "answerability": "partial",
+   "note": "Showing harmonic signature for feeders with data (UPS-01 to UPS-04, BPDB-01/02); UPS-05/06 are dark (no data) and will render as honest blanks."
+  }
+ ],
+ "loop2": "1 of 5 cards hard-failed their emit (frac 0.20 < reflect.min_gap_frac 0.34); left honest-blank per-leaf, page NOT re-routed."
+}

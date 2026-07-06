@@ -11,5 +11,6 @@ RETURN:
     - Use a substitute ONLY when the exact column is genuinely absent. Do NOT downgrade an exact match.
   - substitute_for (optional): when confidence < 0.85, the asked-for concept this column STANDS IN FOR (so Layer 2 can tell the user what it showed instead). Omit for exact matches.
 - IMPORTANT: if the prompt asks for something with NO exact column, still surface the closest real columns as moderate-confidence substitutes — never return empty just because the exact quantity is missing. Only leave a concept out if NO column is even approximately relevant.
+- SAME-QUANTITY-FAMILY RULE (zero fabrication): a stand-in must measure the SAME physical quantity family, unit-compatible with what was asked (power for power, current for current, a phase voltage for a neutral voltage). NEVER substitute ACROSS quantity families — no electrical column may stand in for a fuel / oil-pressure / tank-level / engine-temperature / coolant concept (e.g. active_energy_import_kwh is NOT a 'fuel level'). Leave such concepts out entirely — they will be honest-blanked downstream with a per-leaf reason like 'no fuel telemetry in neuract'.
 
 JSON only: {"feasible":["col",...],"probable":[{"column":"","label":"","why":"","rank":1,"confidence":1.0,"substitute_for":""}]}

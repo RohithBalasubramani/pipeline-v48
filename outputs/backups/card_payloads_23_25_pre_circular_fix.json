@@ -1,0 +1,448 @@
+{
+ "23": [
+  {
+   "story_id": "ems-panel-overview-harmonics-pq-cards--issue-summary-strip",
+   "story_name": "Issue Summary Strip",
+   "variant": "baseline",
+   "is_subcard": false,
+   "payload": {
+    "strip": {
+     "pres": {
+      "tiles": [
+       {
+        "key": "total",
+        "pct": 100,
+        "label": "Total Issues",
+        "swatch": "none",
+        "focusKey": null,
+        "representsAll": true
+       },
+       {
+        "key": "iThd",
+        "color": "#c13b38",
+        "label": "I-THD Events",
+        "swatch": "square",
+        "focusKey": "iThd"
+       },
+       {
+        "key": "vThd",
+        "color": "#d6b85c",
+        "label": "V-THD Events",
+        "swatch": "square",
+        "focusKey": "vThd"
+       },
+       {
+        "key": "pfGap",
+        "color": "#6488a3",
+        "label": "PF Gap Feeders",
+        "swatch": "square",
+        "focusKey": "pfGap"
+       },
+       {
+        "key": "neutral",
+        "color": "#7e6ea1",
+        "label": "Neutral Stress",
+        "swatch": "square",
+        "focusKey": "neutral"
+       },
+       {
+        "key": "worstI",
+        "unit": "%",
+        "color": "#c13b38",
+        "label": "Worst I-THD",
+        "swatch": "line",
+        "decimals": 1,
+        "focusKey": "iThd"
+       },
+       {
+        "key": "worstV",
+        "unit": "%",
+        "color": "#bc9e44",
+        "label": "Worst V-THD",
+        "swatch": "line",
+        "decimals": 1,
+        "focusKey": "vThd"
+       }
+      ],
+      "segments": [
+       {
+        "key": "iThd",
+        "color": "#c13b38",
+        "label": "I-THD events"
+       },
+       {
+        "key": "vThd",
+        "color": "#d6b85c",
+        "label": "V-THD events"
+       },
+       {
+        "key": "pfGap",
+        "color": "#6488a3",
+        "label": "PF gap feeders"
+       },
+       {
+        "key": "neutral",
+        "color": "#7e6ea1",
+        "label": "Neutral stress"
+       }
+      ],
+      "tileOrder": [
+       "total",
+       "iThd",
+       "vThd",
+       "pfGap",
+       "neutral",
+       "worstI",
+       "worstV"
+      ],
+      "segmentOrder": [
+       "iThd",
+       "vThd",
+       "pfGap",
+       "neutral"
+      ],
+      "controlsLeadingLabel": "Show Issues for"
+     },
+     "stats": {
+      "iThd": 8,
+      "vThd": 0,
+      "pfGap": 9,
+      "total": 22,
+      "worst": "[Circular]",
+      "neutral": 5,
+      "worstIThd": {
+       "h3": 2.6,
+       "h5": 7.8,
+       "h7": 4.2,
+       "id": "ups-05",
+       "kw": 181.067,
+       "pf": 0.865,
+       "iThd": 11.1,
+       "vThd": 3.5,
+       "panel": "UPS-05",
+       "pfGap": 9.6,
+       "table": "MFM_034",
+       "driver": "5th harmonic current distortion",
+       "iThdPk": 12,
+       "status": "danger",
+       "truePf": 0.854,
+       "kFactor": 13.2,
+       "neutralA": 37.1,
+       "driverKey": "H5"
+      },
+      "worstVThd": {
+       "h3": 2.4,
+       "h5": 7.3,
+       "h7": 4,
+       "id": "ups-03",
+       "kw": 174.585,
+       "pf": 0.871,
+       "iThd": 10.4,
+       "vThd": 3.7,
+       "panel": "UPS-03",
+       "pfGap": 8.9,
+       "table": "MFM_027",
+       "driver": "5th harmonic current distortion",
+       "iThdPk": 11.5,
+       "status": "danger",
+       "truePf": 0.861,
+       "kFactor": 12.6,
+       "neutralA": 33.8,
+       "driverKey": "H5"
+      }
+     },
+     "timeChoice": "Now",
+     "timeOptions": [
+      "00:00",
+      "03:00",
+      "06:00",
+      "09:00",
+      "12:00",
+      "15:00",
+      "18:00",
+      "Now"
+     ],
+     "filterSelection": {
+      "preset": "today",
+      "rangeEnd": "2026-06-29",
+      "resample": "hourly",
+      "customDate": "2026-06-29",
+      "rangeStart": "2026-06-29"
+     },
+     "selectedTileKey": "iThd"
+    },
+    "variant": "baseline"
+   },
+   "key_roles": {
+    "strip": "mixed",
+    "variant": "metadata"
+   },
+   "import_path": "./src/pages/electrical/lt-pcc/panel-overview/harmonics-pq/storybook/HarmonicsPqCards.stories.tsx"
+  }
+ ],
+ "25": [
+  {
+   "story_id": "ems-panel-overview-harmonics-pq-cards--ai-summary-card",
+   "story_name": "Ai Summary Card",
+   "variant": "baseline",
+   "is_subcard": false,
+   "payload": {
+    "summary": {
+     "pres": {
+      "vocab": {
+       "focusHas": "focus has",
+       "iThdLabel": "I-THD",
+       "vThdLabel": "V-THD",
+       "isConnector": "is",
+       "percentUnit": "%",
+       "truePfLabel": "true PF",
+       "worstPrefix": "Worst",
+       "feederPlural": "feeders",
+       "feederSingular": "feeder",
+       "worstConnector": ", worst",
+       "aboveThresholdAt": "above threshold at",
+       "dominantFeederIs": ", and the dominant feeder is",
+       "selectedFeederPrefix": "Selected feeder"
+      },
+      "density": "compact",
+      "cardTitle": "AI Summary",
+      "badgeLabel": "AI",
+      "worstDecimals": 1,
+      "defaultFocusKey": "iThd",
+      "focusShortByKey": {
+       "iThd": "I-THD",
+       "vThd": "V-THD",
+       "pfGap": "PF gap",
+       "neutral": "Neutral"
+      },
+      "selectedDecimals": 1,
+      "selectedPfDecimals": 3
+     },
+     "focus": "iThd",
+     "stats": {
+      "iThd": 8,
+      "vThd": 0,
+      "pfGap": 9,
+      "total": 22,
+      "worst": "[Circular]",
+      "neutral": 5,
+      "worstIThd": "[Circular]",
+      "worstVThd": "[Circular]"
+     },
+     "period": {
+      "label": "Now",
+      "panels": [
+       {
+        "h3": 1.9,
+        "h5": 5.9,
+        "h7": 3.2,
+        "id": "ups-01",
+        "kw": 174.218,
+        "pf": 0.888,
+        "iThd": 8.4,
+        "vThd": 3.2,
+        "panel": "UPS-01",
+        "pfGap": 7,
+        "table": "MFM_025",
+        "driver": "5th harmonic current distortion",
+        "iThdPk": 8.9,
+        "status": "warning",
+        "truePf": 0.88,
+        "kFactor": 11.1,
+        "neutralA": 27.6,
+        "driverKey": "H5"
+       },
+       {
+        "h3": 2,
+        "h5": 6,
+        "h7": 3.6,
+        "id": "ups-02",
+        "kw": 219.381,
+        "pf": 0.902,
+        "iThd": 8.6,
+        "vThd": 3.3,
+        "panel": "UPS-02",
+        "pfGap": 5.7,
+        "table": "MFM_026",
+        "driver": "5th harmonic current distortion",
+        "iThdPk": 9.3,
+        "status": "warning",
+        "truePf": 0.893,
+        "kFactor": 11.4,
+        "neutralA": 32.3,
+        "driverKey": "H5"
+       },
+       {
+        "h3": 2.4,
+        "h5": 7.3,
+        "h7": 4,
+        "id": "ups-03",
+        "kw": 174.585,
+        "pf": 0.871,
+        "iThd": 10.4,
+        "vThd": 3.7,
+        "panel": "UPS-03",
+        "pfGap": 8.9,
+        "table": "MFM_027",
+        "driver": "5th harmonic current distortion",
+        "iThdPk": 11.5,
+        "status": "danger",
+        "truePf": 0.861,
+        "kFactor": 12.6,
+        "neutralA": 33.8,
+        "driverKey": "H5"
+       },
+       {
+        "h3": 2.2,
+        "h5": 6.6,
+        "h7": 4,
+        "id": "ups-04",
+        "kw": 221.853,
+        "pf": 0.893,
+        "iThd": 9.4,
+        "vThd": 3.7,
+        "panel": "UPS-04",
+        "pfGap": 6.6,
+        "table": "MFM_033",
+        "driver": "5th harmonic current distortion",
+        "iThdPk": 10,
+        "status": "warning",
+        "truePf": 0.884,
+        "kFactor": 12.1,
+        "neutralA": 36.3,
+        "driverKey": "H5"
+       },
+       {
+        "h3": 2.6,
+        "h5": 7.8,
+        "h7": 4.2,
+        "id": "ups-05",
+        "kw": 181.067,
+        "pf": 0.865,
+        "iThd": 11.1,
+        "vThd": 3.5,
+        "panel": "UPS-05",
+        "pfGap": 9.6,
+        "table": "MFM_034",
+        "driver": "5th harmonic current distortion",
+        "iThdPk": 12,
+        "status": "danger",
+        "truePf": 0.854,
+        "kFactor": 13.2,
+        "neutralA": 37.1,
+        "driverKey": "H5"
+       },
+       {
+        "h3": 2.4,
+        "h5": 7.3,
+        "h7": 4.4,
+        "id": "ups-06",
+        "kw": 237.72,
+        "pf": 0.895,
+        "iThd": 10.4,
+        "vThd": 3.4,
+        "panel": "UPS-06",
+        "pfGap": 6.5,
+        "table": "MFM_035",
+        "driver": "5th harmonic current distortion",
+        "iThdPk": 11.4,
+        "status": "danger",
+        "truePf": 0.885,
+        "kFactor": 12.8,
+        "neutralA": 40.1,
+        "driverKey": "H5"
+       },
+       {
+        "h3": 1.5,
+        "h5": 5.2,
+        "h7": 3.1,
+        "id": "bpdb-01",
+        "kw": 93.562,
+        "pf": 0.901,
+        "iThd": 8.1,
+        "vThd": 3.3,
+        "panel": "BPDB-01",
+        "pfGap": 5.7,
+        "table": "MFM_023",
+        "driver": "5th harmonic current distortion",
+        "iThdPk": 8.6,
+        "status": "warning",
+        "truePf": 0.893,
+        "kFactor": 10.5,
+        "neutralA": 13.7,
+        "driverKey": "H5"
+       },
+       {
+        "h3": 1.4,
+        "h5": 4.9,
+        "h7": 3.2,
+        "id": "bpdb-02",
+        "kw": 54.584,
+        "pf": 0.905,
+        "iThd": 7.6,
+        "vThd": 3.3,
+        "panel": "BPDB-02",
+        "pfGap": 5.3,
+        "table": "MFM_061",
+        "driver": "displacement plus harmonic PF gap",
+        "iThdPk": 8.2,
+        "status": "warning",
+        "truePf": 0.897,
+        "kFactor": 10.3,
+        "neutralA": 7.6,
+        "driverKey": "PF"
+       },
+       {
+        "h3": 1.6,
+        "h5": 5.7,
+        "h7": 3.4,
+        "id": "hhf-01",
+        "kw": 73.073,
+        "pf": 0.894,
+        "iThd": 8.9,
+        "vThd": 3,
+        "panel": "HHF-01",
+        "pfGap": 6.5,
+        "table": "MFM_024",
+        "driver": "5th harmonic current distortion",
+        "iThdPk": 9.8,
+        "status": "warning",
+        "truePf": 0.885,
+        "kFactor": 11.1,
+        "neutralA": 11.6,
+        "driverKey": "H5"
+       },
+       {
+        "h3": 1.3,
+        "h5": 4.5,
+        "h7": 3,
+        "id": "hhf-02",
+        "kw": 60.849,
+        "pf": 0.913,
+        "iThd": 7.1,
+        "vThd": 2.9,
+        "panel": "HHF-02",
+        "pfGap": 4.4,
+        "table": "MFM_032",
+        "driver": "within monitored PQ limits",
+        "iThdPk": 7.5,
+        "status": "success",
+        "truePf": 0.906,
+        "kFactor": 9.9,
+        "neutralA": 7.8,
+        "driverKey": "OK"
+       }
+      ]
+     },
+     "selectedPanel": "[Circular]"
+    },
+    "variant": "baseline"
+   },
+   "key_roles": {
+    "summary": "mixed",
+    "variant": "metadata"
+   },
+   "import_path": "./src/pages/electrical/lt-pcc/panel-overview/harmonics-pq/storybook/HarmonicsPqCards.stories.tsx"
+  }
+ ]
+}

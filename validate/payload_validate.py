@@ -1,13 +1,26 @@
 """validate/payload_validate.py — can the validated columns fill each card payload's DATA leaves? (non-AI, coarse). [validate]"""
+from config.app_config import cfg
 from config.validation import PHASE_SUFFIXES
+from validate.handling_lookup import handling_class_for
 from validate.leaf_classify import classify
 
 
+def _payload_exempt_classes():
+    """Handling classes that render WITHOUT a harvested card_payloads default (pure chrome / AI-written / built from
+    topology or member aggregation) — a missing card_payloads row is NOT a payload gap for these. DB-driven vocab
+    (app_config validation.payload_exempt_classes); the code default mirrors feasibility_recompute.PAYLOAD_EXEMPT."""
+    return set(cfg("validation.payload_exempt_classes",
+                   ["narrative_ai", "topology_sld", "panel_aggregate", "nav_index"]))
+
+
 def _supply(data_report):
-    """Aggregate the validated columns into fill capacity. Only pass/warn columns count as usable."""
+    """Aggregate the validated columns into fill capacity. Only pass/warn columns count as usable. kind='derived'
+    columns are excluded from the PHASE count (current_spread_ry/by/br end in a phase-pair suffix but are derived
+    spreads, not per-phase measurements — they false-counted as phase supply)."""
     usable = [c for c in data_report["columns"] if c["verdict"] in ("pass", "warn")]
     numeric_ok = [c for c in usable if c["numeric"]]
-    phase_cols = [c for c in numeric_ok if any(c["column"].lower().endswith(s) for s in PHASE_SUFFIXES)]
+    phase_cols = [c for c in numeric_ok
+                  if c.get("kind") != "derived" and any(c["column"].lower().endswith(s) for s in PHASE_SUFFIXES)]
     series_ok = [c for c in numeric_ok if c["series_capable"]]
     return {"numeric_ok": len(numeric_ok), "phase_cols": len(phase_cols),
             "has_timeseries": len(series_ok) > 0, "series_cols": len(series_ok)}
@@ -46,6 +59,13 @@ def validate_payloads(selected_cards, lookup, data_report):
         cid = c.get("card_id")
         stories = lookup(cid) if cid is not None else []
         if not stories:
+            # PAYLOAD-EXEMPT classes (chrome / narrative / topology / aggregate — see _payload_exempt_classes) render
+            # without a harvested default: no card_payloads row is the EXPECTED state, so it's a PASS, not a warn.
+            hc = handling_class_for(cid) if cid is not None else None
+            if hc in _payload_exempt_classes():
+                cards.append({"card_id": cid, "title": c.get("title"), "stories": [], "verdict": "pass",
+                              "reasons": [f"payload-exempt handling class ({hc}): renders without a harvested card_payload"]})
+                continue
             cards.append({"card_id": cid, "title": c.get("title"), "stories": [],
                           "verdict": "warn", "reasons": ["no default payload in card_payloads for this card+page"]})
             continue
