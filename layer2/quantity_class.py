@@ -53,6 +53,11 @@ _UNIT_CLASSES_DEFAULT = {
     "min": "duration", "mins": "duration", "minutes": "duration", "s": "duration", "sec": "duration",
     "h": "duration", "hr": "duration", "hrs": "duration", "hours": "duration", "ms": "duration", "days": "duration",
     "°": "angle", "deg": "angle",
+    # ASSET-DOMAIN units an electrical MFM does NOT sense — a same-family source never exists in a V/A/kW/PF basket,
+    # so the slot honest-blanks. rpm = crankshaft tacho (DG); kPa/bar/psi = oil/manifold pressure (DG — also FIXES
+    # 'Oil P' kPa mis-reading as temperature/count on card 62).
+    "rpm": "engine-speed", "r/min": "engine-speed",
+    "kpa": "pressure", "bar": "pressure", "psi": "pressure", "mbar": "pressure",
 }
 
 # name token (or ADJACENT-token pair, concatenated) → quantity class. Token-exact — matched against the camelCase/
@@ -101,6 +106,33 @@ _NAME_CLASSES_DEFAULT = {
     "slot": "timestamp",                          # a points[*].slot time-label leaf NEVER takes a measured column (card 76); kind=time atoms are exempt upstream
     "angle": "angle", "deg": "angle",
     "minutes": "duration", "hours": "duration", "runtime": "duration", "backuptime": "duration",
+    # ── ASSET-DASHBOARD DOMAIN TELEMETRY [cards 51-81] — quantities a single electrical MFM (V/A/kW/PF/energy) CANNOT
+    # sense. Each is a NEW hard class with NO measuring column in any electrical basket, so a slot the AI tags with it
+    # honest-blanks per the emit rule (no same-qty column → OMIT the field). Leaf-most-first + PAIR-before-single keep
+    # every real electrical leaf (inputVoltageV, bypassFrequencyHz, R/Y/B phase) classified on its OWN name FIRST, so
+    # these tokens only fire on the genuine domain leaf/container — verified by the full-corpus classification diff.
+    # TAP-CHANGER POSITION [transformer tap-rtcc 78-81] — discrete OLTC step (small int); the 'tap' PATH token wins over
+    # a "Current position" LABEL (slot_class runs before name_class), killing the current↔"Current position" homonym
+    # that bound current_max as the tap position (=−913 regulation.points[*].tap).
+    "tap": "tap-position", "tapposition": "tap-position", "oltc": "tap-position", "tapchanger": "tap-position",
+    "totap": "tap-position", "fromtap": "tap-position",
+    # ENGINE SPEED [DG engine-cooling mech, card 62] — crankshaft rpm; compound tokens only ('speed' bare stays absent).
+    "enginespeed": "engine-speed", "speedraw": "engine-speed", "rpm": "engine-speed",
+    # OIL / MANIFOLD PRESSURE [DG, card 62 'Oil P'] — the 'oilp' PAIR beats the 'oil'→temperature single (PAIR before
+    # single), so oil PRESSURE is no longer mis-classed as oil TEMPERATURE.
+    "oilp": "pressure", "oilpressure": "pressure", "pressure": "pressure", "manifold": "pressure",
+    # FUEL [DG fuel-efficiency 63-65] — tank level / burn rate / total litres; no MFM fuel source. ('fuelTemp' stays
+    # temperature — 'temp' is leaf-most and wins.)
+    "fuel": "fuel", "fuellevel": "fuel", "fuelrate": "fuel", "totalfuel": "fuel", "fueltank": "fuel",
+    # AUTONOMY / RESERVE [DG snapshot.autonomy 63; UPS 'Autonomy index' 53] — run-time-remaining on current fuel/charge,
+    # a fuel/battery-model estimate, no MFM source.
+    "autonomy": "autonomy", "autonomyindex": "autonomy",
+    # BATTERY / HEALTH COMPOSITE SCORE [UPS 'Overall Battery Score' 51] — a computed 0-100 composite (SoC+temp+bus), not
+    # a meter reading. PAIR only (the bare 'score' stays deliberately absent — container FP risk).
+    "batteryscore": "readiness", "batteryhealthscore": "readiness", "healthscore": "readiness",
+    # SOURCE-TRANSFER ACTIVITY [UPS source-transfer 55] — days-since / count of static-switch transfers; a transfer-
+    # switch event the MFM does not log (FIVE WALLS #5). ('transfers' plural already → count.)
+    "transferdays": "count", "lasttransfer": "count",
 }
 
 # dimension-only classes too generic to flag: an unclassified-by-name '%' column could be ANY percent-semantic —
@@ -122,6 +154,39 @@ _SEMANTIC_FAMILIES_DEFAULT = {
     "consumption": {"markers": ["consumption", "consumed"], "classes": ["energy", "power"]},
     "fuel": {"markers": ["fuel"], "classes": []},
 }
+
+# NAME-LEVEL SOURCE ROLES [card 59: composite.points[*].bypassVoltageV / bypassFrequencyHz ← voltage_avg / frequency_hz]:
+# a SAME-QUANTITY, DIFFERENT-ROLE smear that slips BOTH the dimensional quantity wall (voltage↔voltage, freq↔freq are
+# compatible so `compatible` returns True) AND the reuse-smear wall (the shared bind classifies, so rule (ii) defers to
+# the quantity wall which then passes it). A UPS presents several PHYSICALLY DISTINCT sensing points of the SAME
+# electrical quantity — INPUT/line, OUTPUT/load, BYPASS/static-switch, BATTERY, RECTIFIER — and this gic_* meter senses
+# only the INPUT/line (voltage_avg / frequency_hz ARE the input reading; the schema has NO bypass column). A slot whose
+# NAME claims a DEDICATED-SENSING role (bypass / output / battery / rectifier) must bind a source whose OWN name carries
+# that SAME role; binding it the meter's plain input/line reading presents the input AS the bypass — a fabrication (the
+# card's own data_note even says bypass is not measured by this meter). The RIGHT outcome: the bypass leaf HONEST-BLANKS.
+# DB row: quantity.source_roles — {role: {"markers":[...], "dedicated": true}}. `markers` = the role tokens a slot/source
+# NAME carries (token-EXACT, leaf-most first — same discipline as the class vocab). `dedicated`:true = this role has its
+# OWN sensor: a slot claiming it binds ONLY a source that ALSO claims it; a same-quantity source claiming a DIFFERENT
+# dedicated role, or NO role at all (the plain meter reading), is a role smear and honest-blanks. A NON-dedicated role
+# (input/line/mains — the meter's plain reading) NEVER flags: input* slots legitimately bind the bare voltage_avg /
+# frequency_hz. A slot claiming NO role never flags (no false positive on plain value slots).
+# SCOPE [minimal, grounded]: seeded with the ONE verified defect — `bypass` (the gic_* UPS meter has NO bypass column,
+# confirmed against information_schema; voltage_avg / frequency_hz ARE the input reading). Additional dedicated-sensing
+# roles (output / battery / rectifier) are NOT seeded here — those punned binds are already caught by the score-index /
+# quantity walls, and adding them would re-classify (not mis-render, but re-word) those already-correct blanks. Add a
+# role row only when a NEW same-quantity-different-role smear is found that no other wall catches.
+_SOURCE_ROLES_DEFAULT = {
+    "bypass": {"markers": ["bypass"], "dedicated": True},
+    "input": {"markers": ["input", "line", "mains"], "dedicated": False},
+}
+
+# TIME-AXIS LABEL leaf tokens [card 59 secondary: composite.points[*].label ← active_power_total_kw = negative kW
+# rendered AS x-axis time labels]: the per-point `label` / `slot` leaf of a time SERIES is the time-axis tick label —
+# it is filled from the card's OWN bucket timestamps (kind=time), NEVER from a measured column. A raw/bucketed field
+# binding a MEASURED column into such a leaf ships the reading as a time label (the negative-kW-as-time defect). A
+# kind=time atom (the correct emission) carries no column and is exempt by construction. Token-exact, leaf-most only.
+# DB row: quantity.time_axis_label_tokens.
+_TIME_AXIS_LABEL_TOKENS_DEFAULT = ["label", "slot", "time", "ts", "tick", "axislabel", "timestamp", "bucket"]
 
 # HARD DIMENSIONAL classes — the absolute electrical/thermal dimensions a WEAK (ratio-only) side can never stand in
 # for: a '%'-declared slot fed a kW column ships raw kilowatts labelled '%' (card 42: −197.4 kW anomalies under
@@ -332,6 +397,77 @@ def semantic_family_mismatch(slot_names, source_name, source_cls=None):
     if source_cls and str(source_cls).lower() in licensed:
         return False, None
     return True, sorted(fams)
+
+
+def _roles_cfg():
+    """{role: ([marker token tuples], dedicated:bool)} from the DB row (code-default mirror). Tolerates a bare
+    marker-list row value ({role: [markers]} → dedicated defaults True)."""
+    raw = cfg("quantity.source_roles", _SOURCE_ROLES_DEFAULT) or {}
+    out = {}
+    for role, spec in raw.items():
+        if isinstance(spec, dict):
+            markers = spec.get("markers") or []
+            dedicated = bool(spec.get("dedicated", True))
+        else:
+            markers, dedicated = list(spec or []), True
+        seqs = [tuple(_tokens(m)) for m in markers]
+        out[str(role)] = ([s for s in seqs if s], dedicated)
+    return out
+
+
+def source_roles(*names):
+    """The set of NAME-LEVEL source roles ANY of `names` claims (token-exact marker match; a multi-word marker matches
+    an adjacent token run). Empty set = no role claim (callers never flag)."""
+    roles = set()
+    role_map = _roles_cfg()
+    for name in names:
+        toks = _tokens(name)
+        if not toks:
+            continue
+        for role, (seqs, _ded) in role_map.items():
+            if any(_marker_hit(toks, s) for s in seqs):
+                roles.add(role)
+    return roles
+
+
+def source_role_mismatch(slot_names, source_name):
+    """(True, [roles]) on a NAME-LEVEL SOURCE-ROLE breach: the SLOT side (any of `slot_names`: slot path, metric,
+    sibling label) claims ≥1 DEDICATED-SENSING role (bypass / output / battery / rectifier — a physically distinct
+    sensing point) while the SOURCE name claims NONE of the slot's roles — the card-59 bypassVoltageV ← voltage_avg
+    same-quantity role smear (the input/line reading presented AS the bypass reading; this meter has NO bypass sensor).
+    (False, None) when the slot claims no dedicated role, or the source shares one of the slot's roles (bypassVoltage ←
+    a real bypass_voltage column passes). A NON-dedicated role (input/line/mains — the meter's plain reading) never
+    flags: an input* slot legitimately binds the bare voltage_avg. Unclaimed/unknown never flags — no false positive on
+    plain value slots or unfamiliar spellings."""
+    slot_roles = source_roles(*(slot_names or ()))
+    role_map = _roles_cfg()
+    dedicated = {r for r in slot_roles if role_map.get(r, ((), False))[1]}
+    if not dedicated:
+        return False, None
+    if dedicated & source_roles(source_name):
+        return False, None
+    return True, sorted(dedicated)
+
+
+def _time_axis_label_tokens():
+    return {str(t).replace(" ", "").lower() for t in
+            (cfg("quantity.time_axis_label_tokens", _TIME_AXIS_LABEL_TOKENS_DEFAULT) or [])}
+
+
+def is_time_axis_label_slot(slot):
+    """True when a slot's LEAF token is a series time-axis label (label / slot / time / ts / tick — DB row
+    quantity.time_axis_label_tokens) AND the slot is a per-element series path ([*] / an indexed points list): such a
+    leaf is filled from the card's own bucket timestamps (kind=time), never a measured column. Leaf-token-exact so a
+    'label' that is NOT a per-point series leaf (a legend/badge label) never matches — a plain scalar label is not a
+    time axis. [card 59 secondary: composite.points[*].label ← active_power_total_kw]."""
+    segs = [s for s in re.findall(r"[^.\[\]]+", str(slot or "")) if s and s != "*"]
+    if not segs:
+        return False
+    leaf = segs[-1].lower()
+    if leaf not in _time_axis_label_tokens():
+        return False
+    # only a per-ELEMENT series leaf (wildcard/indexed list path) is a time axis — a bare scalar label is not
+    return "[*]" in str(slot) or any(s.isdigit() for s in re.findall(r"[^.\[\]]+", str(slot or "")))
 
 
 def slot_quantity(slot, ctx=None):

@@ -39,12 +39,13 @@ def test_real_column_slot_is_untouched():
     assert [f["slot"] for f in di["fields"]] == ["kpi.load"]
 
 
-def test_one_energy_value_reused_across_days_count_slots_blanked_to_one():
-    """c55: one energy fn (activeEnergyTodayKwh over active_energy_import_kwh) bound into days-since / count-30d /
-    lifetime scalar slots — distinct quantities punned from one counter. PRECISION REWORK: the classified bind's
-    cross-quantity cells now blank per-cell via the QUANTITY WALL (metric-name evidence: 'ups_transfers_30d' /
-    'ups_transfers_lifetime' name a COUNT the energy fn cannot answer) with their own honest reasons; the same
-    single legitimate slot survives as before."""
+def test_one_energy_value_reused_across_transfer_count_slots_all_blank():
+    """c55: one energy fn (activeEnergyTodayKwh over active_energy_import_kwh) smeared across days-since / count-30d /
+    lifetime scalar slots — all transfer-activity quantities an energy counter cannot answer (FIVE WALLS #5). Since
+    the quantity vocab now classifies `lastTransferDays` (transferdays → count) alongside the two explicit-count
+    slots, EVERY cell blanks per-cell via the QUANTITY WALL — none survives. (Previously `lastTransferDays` was
+    UNCLASSIFIED and slipped through as a false 'legitimate' survivor: an energy kWh shown as days-since-transfer.
+    Classifying it closed that gap — 0 fabrications instead of 1.)"""
     basket = {"columns": [{"column": "active_energy_import_kwh"}]}
     di = {"fields": [
         {"slot": "activity.lastTransferDays", "kind": "derived", "fn": "activeEnergyTodayKwh",
@@ -55,9 +56,8 @@ def test_one_energy_value_reused_across_days_count_slots_blanked_to_one():
          "base_columns": ["active_energy_import_kwh"], "metric": "ups_transfers_lifetime", "source": "live"},
     ]}
     blanked = enforce_honest_blank(di, basket)
-    assert len(di["fields"]) == 1                                 # blanked to at most ONE legitimate slot
-    assert di["fields"][0]["slot"] == "activity.lastTransferDays"  # unclassified-claim scalar kept, order preserved
-    assert len(blanked) == 2 and all("count not measured by this meter" in b for b in blanked)
+    assert len(di["fields"]) == 0                                 # every transfer-count cell honest-blanks
+    assert len(blanked) == 3 and all("count not measured by this meter" in b for b in blanked)
 
 
 def test_c54_readiness_scores_all_blank():
@@ -174,3 +174,24 @@ def test_gate_self_heals_and_records_telemetry_not_a_card_gate():
     assert ok and not issues                                      # self-healed → not a card gate failure
     assert len(di["fields"]) == 1                                 # blanked in place
     assert len(di.get("_honest_blanked") or []) == 2             # telemetry recorded
+
+
+def test_validate_fail_column_honest_blanks_not_payload_error():
+    """[card 47] A field bound to a validate-FAIL column (real column, 100%-null data on this meter — e.g. harmonics
+    thd_* on a UPS) must NOT hard-fail the card. The executor still fills any live rows and blanks the null rest
+    per-leaf; conforms stays True (no payload_error), the reason rides _honest_blanked telemetry, and the field is
+    KEPT so live rows still fill. A genuinely hallucinated column is a separate path (dropped by the pre-pass)."""
+    from layer2.gates import gate_data_instructions
+    basket = {"columns": [
+        {"column": "thd_current_r_pct", "verdict": "fail", "validate_reasons": ["null_rate 1.00 > 0.5"]},
+        {"column": "current_r", "verdict": "pass"},
+    ]}
+    di = {"fields": [
+        {"slot": "snapshot.iThd.valuePct", "kind": "raw", "source": "live", "column": "thd_current_r_pct"},
+        {"slot": "snapshot.amps.value", "kind": "raw", "source": "live", "column": "current_r"},
+    ]}
+    ok, issues = gate_data_instructions(di, basket)
+    assert ok is True, issues                                    # conforms — NOT a payload_error
+    assert issues == []
+    assert any("thd_current_r_pct" in r for r in (di.get("_honest_blanked") or []))
+    assert len(di["fields"]) == 2                                # field kept so current_r fills + thd null-blanks per-leaf
