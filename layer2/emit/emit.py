@@ -108,11 +108,35 @@ def _endpoint_sets():
         return [], []
 
 
+_MORPHMAP_PROMPT = os.path.join(os.path.dirname(os.path.abspath(__file__)), "morphmap", "prompt.md")
+
+
 def _system(card_in=None):
+    # PROMPT SELECTION (two DEFAULT-OFF flags; default path is the byte-identical 3-file concat):
+    #  · llm.prompt_v2 → the rules-first rewrite data_instructions_v2.md which SUBSUMES swap+metadata+data into ONE file
+    #    (still the full-author exact_metadata contract). Held default-off pending a larger A/B (the 8-card A/B showed a
+    #    coverage regression). Takes precedence: v2 carries its own metadata contract, so morph-map does not compose in.
+    #  · emit.morphmap_mode → swap ONLY the metadata slice (metadata.md → morphmap/prompt.md, the morphs-only Part-2
+    #    variant); swap.md + data_instructions.md unchanged. build.py routes the {"morphs":…} return through
+    #    morphmap.producer.apply. The two flags are mutually exclusive; prompt_v2 wins if both are somehow set.
+    #    ★ DP-GATED: the morph-map metadata slice is composed ONLY for a card that HAS a stored skeleton to overlay
+    #    (use_morphmap_metadata = flag on AND catalog_row.default_payload.payload_stripped non-null — the SAME fact
+    #    build._finalize routes the morphs on). A NO-DEFAULT-PAYLOAD card (no card_payloads row — e.g. the AI-Summary /
+    #    Heatmap time-axis narrative cards) keeps the FULL-author metadata.md even with the flag on, so it authors
+    #    exact_metadata, hits build.py's no-dp else-branch, and never trips "no default payload + empty exact_metadata".
+    from config.app_config import cfg as _cfg
+    from layer2.emit.morphmap.mode import use_morphmap_metadata as _use_mm
+    prompt_v2 = str(_cfg("llm.prompt_v2", "false")).strip().lower() in ("1", "true", "yes", "on")
     parts = []
-    for name in ("swap.md", "metadata.md", "data_instructions.md"):
-        with open(os.path.join(_P, name), errors="replace") as f:
+    if prompt_v2:
+        with open(os.path.join(_P, "data_instructions_v2.md"), errors="replace") as f:
             parts.append(f.read().strip())
+    else:
+        _mm = _use_mm(card_in)
+        for name in ("swap.md", "metadata.md", "data_instructions.md"):
+            path = _MORPHMAP_PROMPT if (name == "metadata.md" and _mm) else os.path.join(_P, name)
+            with open(path, errors="replace") as f:
+                parts.append(f.read().strip())
     out = "\n\n".join(parts)
     live, retired = _endpoint_sets()
     out = out.replace("{{LIVE_ENDPOINTS}}", str(live)).replace("{{RETIRED_ENDPOINTS}}", str(retired))
@@ -126,6 +150,15 @@ def _system(card_in=None):
             out = out[:b] + out[e + len(_ROSTER_END) + 1:]
     if _LIB_PLACEHOLDER in out:
         out = out.replace(_LIB_PLACEHOLDER, _recovery_library_block(card_in))
+    # MORPH-MAP OUTPUT-ENVELOPE ACTIVATION [live-activation of the morphs path]: the metadata slice is morphmap/prompt.md
+    # (morphs-only), but data_instructions.md's final 'Emit exactly {…}' envelope still shows
+    # "exact_metadata":{"_morphed":[]} — a contradiction the model resolves toward the concrete JSON template, so it
+    # emitted exact_metadata and build.py's shape-router sent it down the FULL path (morph-map never actually activated).
+    # When the morph-map metadata slice is composed, rewrite that ONE envelope key to the morphs shape so the single
+    # output contract the model sees is morphs (build._mm_raw then routes {"morphs":…} through morphmap.producer.apply).
+    # Off / prompt_v2 / no-dp cards keep exact_metadata verbatim — the substring is unique to the envelope line.
+    if not prompt_v2 and _use_mm(card_in):
+        out = out.replace('"exact_metadata":{"_morphed":[]}', '"morphs":{}')
     return out
 
 

@@ -1,76 +1,56 @@
-# Multi-Asset / Compare Prompts — THE SIMPLE PLAN (2026-07-06, user-corrected)
+# Multi-Asset / Compare — AS BUILT (2026-07-07)
 
-**Requirement:** prompts naming 1+ assets must work — "compare UPS-01 and UPS-02", "DG-1 vs DG-2 power" — resolved
-concurrently, in a single run.
+**Requirement:** prompts naming 1+ assets work — "compare UPS-01 and UPS-02", 3-way, cross-class — in a single run.
 
-## The model (user's, 2026-07-06)
+## The model (user-corrected twice; final): AUTHOR ONCE PER CLASS
 
-**N× FAN-OUT IN ONE RUN.** Not a virtual panel / roster. The spine is unchanged; an OUTER LOOP over the N resolved
-assets wraps `validate → L2 → executor`. 1a runs ONCE (template choice); everything from 1b's baskets onward is N×.
+Layer 2 authors the card recipe from the column **schema**, which same-class assets share — so it is **NOT** N×:
 
 ```
-prompt
- → 1a  : choose appropriate templates (page + cards) from STORY WORDS   [UNCHANGED — 1×]
- → 1b  : resolve the N named assets → [basket_1 … basket_N]             [same logic, output = N × current, ONE run]
- → for each asset i  (N×, straightforward fan-out):
-      validate(basket_i)                                                 [N×]
-      L2 emit from basket_i  + card SWAP (reuse existing §A swap:         [N×]
-          if a swap-candidate card has the columns for the payload AND
-          matches prompt intent, swap it in for this asset)
-      executor fill → asset_i's cards                                    [N×]
- → host: serve the UNION of all N assets' cards, each tagged by asset    [1 response]
+1a        → ONCE            (template from story words; later class lanes get it INJECTED + LOCKED)
+1b        → per class lane  (representative asset resolves; siblings need no basket — executor rediscovers schema)
+Layer 2   → ONCE PER CLASS  (recipe binds by column NAME → portable across sibling meters)
+executor  → PER ASSET       (same recipe, each asset's OWN neuract table; honest-blank data-driven at fill time)
+host      → merge + tag each card `card.asset={id,name,class}`
+FE        → picker multi-select → asset_ids[] re-POST; CardGrid groups by card.asset (stacked page per asset)
 ```
 
-## The seams (minimal)
+Primary entry = the **picker re-POST `asset_ids:[…]`** (AI-free — the F5/F6 collision gate pre-empts short names, so the
+picker is where N is chosen). N==1 never enters this path: the single-asset `run_pipeline`/`build_response` are
+byte-untouched; dispatch requires `len(asset_ids) >= 2` AND the DB knob `multi_asset.enabled`.
 
-1. **1a — NO CHANGE.** SUBJECT-vs-STORY routing already strips device names; the template set comes from story words.
-   ("compare UPS-01 and UPS-02 energy" → energy page, same as "energy for UPS-01".)
+## Implementation (atomic files)
 
-2. **1b — N baskets, single run** (`layer1b/build.py` + `resolve/asset_resolve.py`):
-   detect the N asset names (existing tokenizer), resolve each with the SAME `resolve_asset` (concurrently), and return
-   a LIST: `assets: [{asset, basket, validation…}, …]` (N × the current single output). N==1 → today's shape exactly
-   (list of one), so single-asset is untouched. Any unresolved name → the existing picker for that name only
-   (`asset_pending`); re-POST accepts `asset_ids: [...]`.
+- `run/harness.py` — `run_pipeline(..., layer1a=None)`: inject a shared template + LOCK it (reconcile / preflight /
+  reflect re-routes suppressed for shared-template lanes). `run_pipeline_multi(prompt, assets)`: group by class → ONE
+  `run_pipeline` per class (first routes 1a; later classes get `deepcopy`; run_id salted `class:<cls>`).
+- `host/assemble.py` — `assemble_cards(out, asset, date_window)`: the per-asset executor+enrich (pure extraction of
+  build_response's block; single path calls it byte-identically).
+- `host/rebind_consumer.py` — repoint a reused recipe's `consumer.mfm_id` + `binding.asset_id/table` at a sibling
+  (deep-copied; the AI fields are copied verbatim — zero fabrication).
+- `host/asset_lanes.py` — `resolve_assets(ids)`: registry ids → as_asset dicts (unknown dropped, order kept).
+- `host/multi_asset.py` — `build_response_multi`: per asset rebind → assemble (own table) → tag → concat; propagates a
+  lane's `data_unavailable`/`degrade` (no silent blank grid). `host/server.py do_POST` dispatches on `asset_ids`.
+- DB: `db/seed_multi_asset.sql` → `app_config` `multi_asset.enabled` (bool) / `multi_asset.max_assets` (int, cap 6).
+- FE: `AssetResolution.tsx` = ONE interaction model — **click row = toggle select (never runs); one adaptive button**
+  ("Open X" / "Compare N assets") fires once, disabled while loading. `App.tsx` `run(id|ids[])` + honest
+  `DataUnavailable` notice on outage/0-cards. `CardGrid.tsx` groups by `card.asset` under an AssetHeader.
+- Related hardening: `layer1b/resolve/has_data.py` chunk handlers now RAISE on an outage-shaped error (fingerprints from
+  `run/degrade_gate`) instead of fabricating has_data=True — a full :5433 outage reaches the honest
+  `data_unavailable` terminal instead of the picker (bad-table fail-open preserved).
 
-3. **Layer 2 — per basket + swap** (no new mechanism): the existing per-card fan-out runs once per asset over that
-   asset's basket. The existing KEEP/SWAP decision (swap.md §A) already picks the card whose columns tell the story;
-   for a given asset, if the templated card lacks the columns but a same-footprint swap candidate has them AND matches
-   the prompt intent, it swaps — which is exactly how heterogeneous assets get the right card. No code change beyond
-   feeding it the asset's own basket.
+## Verified (2026-07-07, live + logs)
 
-4. **validate + executor — N×**: each asset's basket is validated and each asset's cards are filled by the current
-   single-asset code, unchanged. Pure fan-out.
+- Same-class 3-way `asset_ids:[11,12,13]` → 12 cards = 4×3 groups, ALL render; distinct real values per meter
+  (totalEnergyKwh 29,111/29,202/29,285); **1 Layer-2 authoring** for 3 assets; 59.5s; SSR gate 12/12.
+- Cross-class `[11,171]` (UPS + Transformer) → one shared page, 6 cards = 3×2 groups all render, **2 authorings (one
+  per class)**, 0 errors, 84.5s.
+- Outage: single + multi both return `data_unavailable:True` + degrade.reason (FE shows the notice, not a blank grid).
+- Tests: `tests/test_multi_asset.py` (10) + `tests/test_has_data_outage.py` (3) + full non-live suite; client-gate
+  103/103; `tsc` clean.
 
-5. **host — merge + tag** (`build_response`): loop the N assets, tag each produced card with its `asset` (name/id) for
-   FE grouping/labeling, return the union. `/api/run` accepts `asset_ids: [...]` for the multi-picker re-POST. FE:
-   payload-direct, unchanged (may add an asset label/group header — optional, additive).
+## NOT built (deliberate)
 
-## Where the outer loop lives
-
-`run/harness.py`: after 1a (once), 1b yields N `{asset, basket}`; loop them through the existing
-`validate → run_2_all(L2) → executor` steps (each is already single-asset), collecting `cards_i`. The host flattens
-`[cards_1 … cards_N]` into the response. Single-asset path = the loop with N==1 (byte-identical behavior).
-
-## NOT building (keep it straightforward)
-
-- No new pages/cards/layouts/FE components; no aggregation/roster machinery; no compare-overlay card.
-- No cross-class fusion: comparing UPS vs DG just fans out — each renders its own cards; a metric a meter lacks
-  honest-blanks per leaf with a reason (correct answer). Swap handles per-asset card fit.
-- No cmd_catalog card-schema changes.
-
-## Acceptance (compare battery)
-
-"compare UPS-01 and UPS-02" · "DG-1 vs DG-2 power" · "energy of UPS-01, UPS-02 and UPS-03 today" (3-way) ·
-"compare Transformer-01 and UPS-01" (cross-class; common metrics real, class leaves honest-blank + swap where needed) ·
-"compare UPS-4 and UPS-01" (one ambiguous → picker for that name only, the other stays resolved) — every asset's
-cards: real from neuract, per-leaf reasons, zero fabrication, correct card via swap, SSR+client render clean,
-single-asset prompts byte-unchanged (N==1 regression pin).
-
-## Verified grounding
-
-- `layer1b/build.py` — one `resolve_asset(prompt, asset_id)` → wrap in a per-name loop, return the list.
-- `run/harness.py` — 1a → 1b → validate → `run_2_all` (per-card L2) → executor; the outer asset loop wraps
-  validate…executor.
-- `layer2/prompts/swap.md` §A KEEP/SWAP — already selects the card whose columns fit + intent; reused verbatim.
-- `host/server.py build_response` — flattens per-card lists today; flatten per-asset×per-card instead.
-- Picker re-POST already threads `asset_id` through `/api/run → run_1b`; `asset_ids` plural is additive.
+- No cross-class fusion/overlay card — each class renders its own group; shared page only.
+- No AI multi-name confident path (picks[1:]) — the picker re-POST covers it; additive fast-follow if ever needed.
+- Sequential class lanes (usually 1); parallel lanes = fast-follow (needs ai_log contextvar).

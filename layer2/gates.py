@@ -272,6 +272,16 @@ def _quantity_mismatch(f, col_by_name):
     # asserts NO measured quantity — a source-less label ($ctx / literal / kind=time timestamp / const). Same-quantity
     # binds still pass (compatible() below); only a genuine cross-quantity source into any slot honest-blanks.
     has_source = bool(f.get("column") or f.get("fn"))
+    # kind=event is EXEMPT from the cross-quantity wall: an event COUNTS edge-crossings of its source column (the `edge`
+    # threshold), so its OUTPUT quantity is a COUNT produced by the field kind — NOT the source column's quantity. A
+    # 'starts' count ← active_power_total_kw is the number of times power crossed the start threshold (engine starts),
+    # never a power reading; the executor can only ever emit a count here, so no wrong-quantity value can leak. A source
+    # column of a different quantity than the count slot is BY DESIGN (you count crossings of power/voltage/…). An event
+    # WITHOUT an edge is malformed and caught separately (gate_data_instructions: 'kind=event without edge'). This keeps
+    # the kind=text/kpi proxy catch intact — a text/kpi field DISPLAYS the raw value, it does not transform it. [33cddcd
+    # 'regardless of kind' swept kind=event in as collateral of the kind=text fix]
+    if kind == "event":
+        return False, None
     if not has_source and kind not in ("raw", "bucketed", "derived"):
         return False, None
     from layer2.quantity_class import (slot_class, unit_class, name_class, column_class, compatible,

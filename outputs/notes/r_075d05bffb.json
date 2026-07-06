@@ -1,0 +1,18 @@
+{
+ "run_id": "r_075d05bffb",
+ "loop1": [
+  {
+   "card_id": 12,
+   "title": "Energy Input & Distribution",
+   "answerability": "partial",
+   "note": "Supply-side members (Solar Incomers, Transformers) are dark (has_data=N) and will render as honest-blanks; only load-side feeders (UPS, BPDB) have live data."
+  },
+  {
+   "card_id": 13,
+   "title": "Energy Flow Diagram",
+   "answerability": "partial",
+   "note": "Showing energy flow for active feeders (UPS-01, UPS-02, UPS-03, BPDB-01, BPDB-02, UPS-04); incomers and UPS-05/06 are dark (no data) and will render as honest blanks."
+  }
+ ],
+ "loop2": null
+}

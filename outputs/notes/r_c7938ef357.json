@@ -2,10 +2,10 @@
  "run_id": "r_c7938ef357",
  "loop1": [
   {
-   "card_id": 66,
-   "title": "Voltage Live Health",
+   "card_id": 68,
+   "title": "Current Live Health",
    "answerability": "partial",
-   "note": "Showing L-L average voltage and deviation. Per-phase L1-L2/L2-L3/L3-L1 values and Unbalance metric are omitted because the meter does not log line-to-line phase voltages or a validated unbalance metric."
+   "note": "Showing current unbalance percentage from a column that failed validation (data=N); values may be unreliable or zero."
   }
  ],
  "loop2": null

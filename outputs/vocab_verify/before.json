@@ -1,0 +1,4862 @@
+{
+"5|heatmap.history[*].sections[*].totalKw": {
+"q": "power",
+"label": "HHF Reactive",
+"unit": ""
+},
+"5|heatmap.sectionContracts.hhf": {
+"q": null,
+"label": "hhf",
+"unit": ""
+},
+"5|heatmap.sectionContracts.ups": {
+"q": null,
+"label": "ups",
+"unit": ""
+},
+"5|heatmap.sectionContracts.bpdb": {
+"q": null,
+"label": "bpdb",
+"unit": ""
+},
+"5|heatmap.sectionContracts.incomers": {
+"q": null,
+"label": "incomers",
+"unit": ""
+},
+"5|heatmap.selectedSampleIndex": {
+"q": null,
+"label": "selected sample index",
+"unit": ""
+},
+"5|metadata_leaf_count": {
+"q": "count",
+"label": "metadata leaf count",
+"unit": ""
+},
+"5|demand.scalars": {
+"q": "power",
+"label": "scalars",
+"unit": ""
+},
+"5|demand.arrays": {
+"q": "power",
+"label": "arrays",
+"unit": ""
+},
+"5|demand.series": {
+"q": "power",
+"label": "demand",
+"unit": ""
+},
+"7|railVM.trend.series": {
+"q": null,
+"label": "trend",
+"unit": ""
+},
+"7|railVM.trend.areaOpacity": {
+"q": null,
+"label": "area opacity",
+"unit": ""
+},
+"7|railVM.trend.bottomStats[*].value": {
+"q": "power-factor",
+"label": "Power Factor",
+"unit": ""
+},
+"7|railVM.supply.value": {
+"q": "power",
+"label": "supply",
+"unit": "kW"
+},
+"7|railVM.supply.breakdown[*].value": {
+"q": "power",
+"label": "HHF Reactive",
+"unit": "kW"
+},
+"7|railVM.supply.denominator": {
+"q": "power",
+"label": "denominator",
+"unit": "kW"
+},
+"7|railVM.supply.consumedHint.leftKw": {
+"q": "power",
+"label": "left kw",
+"unit": ""
+},
+"7|railVM.supply.consumedHint.consumedPct": {
+"q": null,
+"label": "consumed pct",
+"unit": ""
+},
+"7|railVM.quickStats[*].value": {
+"q": "current",
+"label": "Electrical load",
+"unit": "A"
+},
+"7|metadata_leaf_count": {
+"q": "count",
+"label": "metadata leaf count",
+"unit": ""
+},
+"7|demand.scalars": {
+"q": "power",
+"label": "scalars",
+"unit": ""
+},
+"7|demand.arrays": {
+"q": "power",
+"label": "arrays",
+"unit": ""
+},
+"7|demand.series": {
+"q": "power",
+"label": "demand",
+"unit": ""
+},
+"9|supply.value": {
+"q": "power",
+"label": "supply",
+"unit": "kW"
+},
+"9|supply.breakdown[*].value": {
+"q": "power",
+"label": "HHF Reactive",
+"unit": "kW"
+},
+"9|supply.denominator": {
+"q": "power",
+"label": "denominator",
+"unit": "kW"
+},
+"9|supply.consumedHint.leftKw": {
+"q": "power",
+"label": "left kw",
+"unit": ""
+},
+"9|supply.consumedHint.consumedPct": {
+"q": null,
+"label": "consumed pct",
+"unit": ""
+},
+"9|metadata_leaf_count": {
+"q": "count",
+"label": "metadata leaf count",
+"unit": ""
+},
+"9|demand.scalars": {
+"q": "power",
+"label": "scalars",
+"unit": ""
+},
+"9|demand.arrays": {
+"q": "power",
+"label": "arrays",
+"unit": ""
+},
+"9|demand.series": {
+"q": "power",
+"label": "demand",
+"unit": ""
+},
+"10|trend.series": {
+"q": null,
+"label": "trend",
+"unit": ""
+},
+"10|trend.areaOpacity": {
+"q": null,
+"label": "area opacity",
+"unit": ""
+},
+"10|trend.bottomStats[*].value": {
+"q": "power-factor",
+"label": "Power Factor",
+"unit": ""
+},
+"10|metadata_leaf_count": {
+"q": "count",
+"label": "metadata leaf count",
+"unit": ""
+},
+"10|demand.scalars": {
+"q": "power",
+"label": "scalars",
+"unit": ""
+},
+"10|demand.arrays": {
+"q": "power",
+"label": "arrays",
+"unit": ""
+},
+"10|demand.series": {
+"q": "power",
+"label": "demand",
+"unit": ""
+},
+"11|stats[*].value": {
+"q": "current",
+"label": "Electrical load",
+"unit": "A"
+},
+"11|metadata_leaf_count": {
+"q": "count",
+"label": "metadata leaf count",
+"unit": ""
+},
+"11|demand.scalars": {
+"q": "power",
+"label": "scalars",
+"unit": ""
+},
+"11|demand.arrays": {
+"q": "power",
+"label": "arrays",
+"unit": ""
+},
+"11|demand.series": {
+"q": "power",
+"label": "demand",
+"unit": ""
+},
+"12|metadata_leaf_count": {
+"q": "count",
+"label": "metadata leaf count",
+"unit": ""
+},
+"12|demand.scalars": {
+"q": "power",
+"label": "scalars",
+"unit": ""
+},
+"12|demand.arrays": {
+"q": "power",
+"label": "arrays",
+"unit": ""
+},
+"12|demand.series": {
+"q": "power",
+"label": "demand",
+"unit": ""
+},
+"13|flow.vm.kpis.lossKw": {
+"q": "power",
+"label": "loss kw",
+"unit": "kW"
+},
+"13|flow.vm.kpis.lossPct": {
+"q": "power",
+"label": "loss pct",
+"unit": "kW"
+},
+"13|flow.vm.kpis.efficiencyPct": {
+"q": "power",
+"label": "efficiency pct",
+"unit": "kW"
+},
+"13|flow.vm.kpis.sourceInputKw": {
+"q": "power",
+"label": "source input kw",
+"unit": "kW"
+},
+"13|flow.vm.kpis.feederOutputKw": {
+"q": "power",
+"label": "feeder output kw",
+"unit": "kW"
+},
+"13|flow.vm.sankey.links[*].value": {
+"q": null,
+"label": "links",
+"unit": ""
+},
+"13|flow.vm.sankey.nodes[*].value": {
+"q": null,
+"label": "Losses",
+"unit": ""
+},
+"13|flow.vm.sources[*].totalKw": {
+"q": "power",
+"label": "Solar",
+"unit": ""
+},
+"13|flow.vm.sources[*].totalKwh": {
+"q": "energy",
+"label": "Solar",
+"unit": ""
+},
+"13|flow.vm.sources[*].utilizationPct": {
+"q": null,
+"label": "Solar",
+"unit": ""
+},
+"13|flow.vm.consumers[*].totalKw": {
+"q": "power",
+"label": "HHF",
+"unit": ""
+},
+"13|flow.vm.consumers[*].totalKwh": {
+"q": "energy",
+"label": "HHF",
+"unit": ""
+},
+"13|flow.vm.consumers[*].utilizationPct": {
+"q": null,
+"label": "HHF",
+"unit": ""
+},
+"13|flow.vm.allTotalKw": {
+"q": "power",
+"label": "all total kw",
+"unit": ""
+},
+"13|flow.vm.allTotalKwh": {
+"q": "energy",
+"label": "all total kwh",
+"unit": ""
+},
+"13|flow.vm.totalConsumedKw": {
+"q": "power",
+"label": "total consumed kw",
+"unit": ""
+},
+"13|flow.vm.totalSuppliedKw": {
+"q": "power",
+"label": "total supplied kw",
+"unit": ""
+},
+"13|flow.vm.totalConsumedKwh": {
+"q": "energy",
+"label": "total consumed kwh",
+"unit": ""
+},
+"13|flow.vm.totalSuppliedKwh": {
+"q": "energy",
+"label": "total supplied kwh",
+"unit": ""
+},
+"13|flow.vm.allUtilizationPct": {
+"q": null,
+"label": "all utilization pct",
+"unit": ""
+},
+"13|metadata_leaf_count": {
+"q": "count",
+"label": "metadata leaf count",
+"unit": ""
+},
+"13|demand.scalars": {
+"q": "power",
+"label": "scalars",
+"unit": ""
+},
+"13|demand.arrays": {
+"q": "power",
+"label": "arrays",
+"unit": ""
+},
+"13|demand.series": {
+"q": "power",
+"label": "demand",
+"unit": ""
+},
+"14|card.view.value": {
+"q": null,
+"label": "card",
+"unit": ""
+},
+"14|card.view.target": {
+"q": null,
+"label": "target",
+"unit": ""
+},
+"14|card.view.metrics[*].value": {
+"q": null,
+"label": "SEC",
+"unit": "kWh/t"
+},
+"14|card.view.segments[*].value": {
+"q": null,
+"label": "Reactive",
+"unit": ""
+},
+"14|card.view.markerPct": {
+"q": null,
+"label": "marker pct",
+"unit": ""
+},
+"14|card.view.markerLabel.value": {
+"q": null,
+"label": "marker label",
+"unit": "MVAh"
+},
+"14|card.view.capacityValue": {
+"q": null,
+"label": "capacity value",
+"unit": ""
+},
+"14|metadata_leaf_count": {
+"q": "count",
+"label": "metadata leaf count",
+"unit": ""
+},
+"14|demand.scalars": {
+"q": "power",
+"label": "scalars",
+"unit": ""
+},
+"14|demand.arrays": {
+"q": "power",
+"label": "arrays",
+"unit": ""
+},
+"14|demand.series": {
+"q": "power",
+"label": "demand",
+"unit": ""
+},
+"15|card.view.value": {
+"q": null,
+"label": "card",
+"unit": ""
+},
+"15|card.view.metrics[*].value": {
+"q": "percent",
+"label": "Load Factor",
+"unit": "%"
+},
+"15|card.view.segments[*].value": {
+"q": null,
+"label": "Reactive",
+"unit": ""
+},
+"15|card.view.markerPct": {
+"q": null,
+"label": "marker pct",
+"unit": ""
+},
+"15|card.view.markerLabel.value": {
+"q": "power",
+"label": "marker label",
+"unit": "kVA"
+},
+"15|card.view.capacityValue": {
+"q": null,
+"label": "capacity value",
+"unit": ""
+},
+"15|metadata_leaf_count": {
+"q": "count",
+"label": "metadata leaf count",
+"unit": ""
+},
+"15|demand.scalars": {
+"q": "power",
+"label": "scalars",
+"unit": ""
+},
+"15|demand.arrays": {
+"q": "power",
+"label": "arrays",
+"unit": ""
+},
+"15|demand.series": {
+"q": "power",
+"label": "demand",
+"unit": ""
+},
+"16|trend.view.legend[*].value": {
+"q": "energy",
+"label": "HHF",
+"unit": "kWh"
+},
+"16|trend.view.points[*].hhf": {
+"q": null,
+"label": "hhf",
+"unit": ""
+},
+"16|trend.view.points[*].ups": {
+"q": null,
+"label": "ups",
+"unit": ""
+},
+"16|trend.view.points[*].bpdp": {
+"q": null,
+"label": "bpdp",
+"unit": ""
+},
+"16|trend.view.points[*].rated": {
+"q": null,
+"label": "rated",
+"unit": ""
+},
+"16|trend.view.points[*].total": {
+"q": null,
+"label": "total",
+"unit": ""
+},
+"16|trend.view.points[*].active": {
+"q": null,
+"label": "active",
+"unit": ""
+},
+"16|trend.view.points[*].reactive": {
+"q": null,
+"label": "reactive",
+"unit": ""
+},
+"16|trend.view.points[*].contracted": {
+"q": null,
+"label": "contracted",
+"unit": ""
+},
+"16|trend.view.points[*].label": {
+"q": null,
+"label": "21 (Today)",
+"unit": ""
+},
+"16|trend.view.totals[*].value": {
+"q": null,
+"label": "totals",
+"unit": ""
+},
+"16|trend.view.baseRatio": {
+"q": null,
+"label": "base ratio",
+"unit": ""
+},
+"16|trend.view.totalLegend[*].value": {
+"q": "energy",
+"label": "Reactive Energy",
+"unit": "kVArh"
+},
+"16|metadata_leaf_count": {
+"q": "count",
+"label": "metadata leaf count",
+"unit": ""
+},
+"16|demand.scalars": {
+"q": "power",
+"label": "scalars",
+"unit": ""
+},
+"16|demand.arrays": {
+"q": "power",
+"label": "arrays",
+"unit": ""
+},
+"16|demand.series": {
+"q": "power",
+"label": "demand",
+"unit": ""
+},
+"17|demand.view.stats[*].value": {
+"q": "percent",
+"label": "Load Factor",
+"unit": "%"
+},
+"17|demand.view.legend[*].value": {
+"q": "power",
+"label": "HHF",
+"unit": "kW"
+},
+"17|demand.view.points[*].hhf": {
+"q": "power",
+"label": "hhf",
+"unit": ""
+},
+"17|demand.view.points[*].ups": {
+"q": "power",
+"label": "ups",
+"unit": ""
+},
+"17|demand.view.points[*].bpdp": {
+"q": "power",
+"label": "bpdp",
+"unit": ""
+},
+"17|demand.view.points[*].label": {
+"q": "power",
+"label": "21 (Today)",
+"unit": ""
+},
+"17|demand.view.criticalKw": {
+"q": "power",
+"label": "critical kw",
+"unit": ""
+},
+"17|metadata_leaf_count": {
+"q": "count",
+"label": "metadata leaf count",
+"unit": ""
+},
+"17|demand.scalars": {
+"q": "power",
+"label": "scalars",
+"unit": ""
+},
+"17|demand.arrays": {
+"q": "power",
+"label": "arrays",
+"unit": ""
+},
+"17|demand.series": {
+"q": "power",
+"label": "demand",
+"unit": ""
+},
+"18|strip.stats.sag": {
+"q": null,
+"label": "sag",
+"unit": ""
+},
+"18|strip.stats.swell": {
+"q": null,
+"label": "swell",
+"unit": ""
+},
+"18|strip.stats.total": {
+"q": null,
+"label": "total",
+"unit": ""
+},
+"18|strip.stats.current": {
+"q": "current",
+"label": "current",
+"unit": ""
+},
+"18|strip.stats.neutral": {
+"q": null,
+"label": "neutral",
+"unit": ""
+},
+"18|strip.stats.worstCurrent.sag": {
+"q": "current",
+"label": "sag",
+"unit": ""
+},
+"18|strip.stats.worstCurrent.amps": {
+"q": "current",
+"label": "amps",
+"unit": ""
+},
+"18|strip.stats.worstCurrent.vAvg": {
+"q": "current",
+"label": "voltage avg",
+"unit": ""
+},
+"18|strip.stats.worstCurrent.vMax": {
+"q": "current",
+"label": "voltage max",
+"unit": ""
+},
+"18|strip.stats.worstCurrent.vMin": {
+"q": "current",
+"label": "voltage min",
+"unit": ""
+},
+"18|strip.stats.worstCurrent.swell": {
+"q": "current",
+"label": "swell",
+"unit": ""
+},
+"18|strip.stats.worstCurrent.current": {
+"q": "current",
+"label": "current",
+"unit": ""
+},
+"18|strip.stats.worstCurrent.neutral": {
+"q": "current",
+"label": "neutral",
+"unit": ""
+},
+"18|strip.stats.worstCurrent.neutralA": {
+"q": "current",
+"label": "neutral a",
+"unit": ""
+},
+"18|strip.stats.worstCurrent.iUnbalance": {
+"q": "unbalance",
+"label": "current unbalance",
+"unit": ""
+},
+"18|strip.stats.worstCurrent.vDeviation": {
+"q": "deviation-spread",
+"label": "voltage deviation",
+"unit": ""
+},
+"18|strip.stats.worstVoltage.sag": {
+"q": "voltage",
+"label": "sag",
+"unit": ""
+},
+"18|strip.stats.worstVoltage.amps": {
+"q": "current",
+"label": "amps",
+"unit": ""
+},
+"18|strip.stats.worstVoltage.vAvg": {
+"q": "voltage",
+"label": "voltage avg",
+"unit": ""
+},
+"18|strip.stats.worstVoltage.vMax": {
+"q": "voltage",
+"label": "voltage max",
+"unit": ""
+},
+"18|strip.stats.worstVoltage.vMin": {
+"q": "voltage",
+"label": "voltage min",
+"unit": ""
+},
+"18|strip.stats.worstVoltage.swell": {
+"q": "voltage",
+"label": "swell",
+"unit": ""
+},
+"18|strip.stats.worstVoltage.current": {
+"q": "current",
+"label": "current",
+"unit": ""
+},
+"18|strip.stats.worstVoltage.neutral": {
+"q": "voltage",
+"label": "neutral",
+"unit": ""
+},
+"18|strip.stats.worstVoltage.neutralA": {
+"q": "voltage",
+"label": "neutral a",
+"unit": ""
+},
+"18|strip.stats.worstVoltage.iUnbalance": {
+"q": "unbalance",
+"label": "current unbalance",
+"unit": ""
+},
+"18|strip.stats.worstVoltage.vDeviation": {
+"q": "deviation-spread",
+"label": "voltage deviation",
+"unit": ""
+},
+"18|metadata_leaf_count": {
+"q": "count",
+"label": "metadata leaf count",
+"unit": ""
+},
+"18|demand.scalars": {
+"q": "power",
+"label": "scalars",
+"unit": ""
+},
+"18|demand.arrays": {
+"q": "power",
+"label": "arrays",
+"unit": ""
+},
+"18|demand.series": {
+"q": "power",
+"label": "demand",
+"unit": ""
+},
+"19|summary.pres.worstIDecimals": {
+"q": "current",
+"label": "worst current decimals",
+"unit": ""
+},
+"19|summary.pres.worstVDecimals": {
+"q": "voltage",
+"label": "worst voltage decimals",
+"unit": ""
+},
+"19|summary.pres.selectedDecimals": {
+"q": null,
+"label": "selected decimals",
+"unit": ""
+},
+"19|summary.stats.sag": {
+"q": null,
+"label": "sag",
+"unit": ""
+},
+"19|summary.stats.swell": {
+"q": null,
+"label": "swell",
+"unit": ""
+},
+"19|summary.stats.total": {
+"q": null,
+"label": "total",
+"unit": ""
+},
+"19|summary.stats.current": {
+"q": "current",
+"label": "current",
+"unit": ""
+},
+"19|summary.stats.neutral": {
+"q": null,
+"label": "neutral",
+"unit": ""
+},
+"19|summary.stats.worstCurrent.sag": {
+"q": "current",
+"label": "sag",
+"unit": ""
+},
+"19|summary.stats.worstCurrent.amps": {
+"q": "current",
+"label": "amps",
+"unit": ""
+},
+"19|summary.stats.worstCurrent.vAvg": {
+"q": "current",
+"label": "voltage avg",
+"unit": ""
+},
+"19|summary.stats.worstCurrent.vMax": {
+"q": "current",
+"label": "voltage max",
+"unit": ""
+},
+"19|summary.stats.worstCurrent.vMin": {
+"q": "current",
+"label": "voltage min",
+"unit": ""
+},
+"19|summary.stats.worstCurrent.swell": {
+"q": "current",
+"label": "swell",
+"unit": ""
+},
+"19|summary.stats.worstCurrent.current": {
+"q": "current",
+"label": "current",
+"unit": ""
+},
+"19|summary.stats.worstCurrent.neutral": {
+"q": "current",
+"label": "neutral",
+"unit": ""
+},
+"19|summary.stats.worstCurrent.neutralA": {
+"q": "current",
+"label": "neutral a",
+"unit": ""
+},
+"19|summary.stats.worstCurrent.iUnbalance": {
+"q": "unbalance",
+"label": "current unbalance",
+"unit": ""
+},
+"19|summary.stats.worstCurrent.vDeviation": {
+"q": "deviation-spread",
+"label": "voltage deviation",
+"unit": ""
+},
+"19|summary.stats.worstVoltage.sag": {
+"q": "voltage",
+"label": "sag",
+"unit": ""
+},
+"19|summary.stats.worstVoltage.amps": {
+"q": "current",
+"label": "amps",
+"unit": ""
+},
+"19|summary.stats.worstVoltage.vAvg": {
+"q": "voltage",
+"label": "voltage avg",
+"unit": ""
+},
+"19|summary.stats.worstVoltage.vMax": {
+"q": "voltage",
+"label": "voltage max",
+"unit": ""
+},
+"19|summary.stats.worstVoltage.vMin": {
+"q": "voltage",
+"label": "voltage min",
+"unit": ""
+},
+"19|summary.stats.worstVoltage.swell": {
+"q": "voltage",
+"label": "swell",
+"unit": ""
+},
+"19|summary.stats.worstVoltage.current": {
+"q": "current",
+"label": "current",
+"unit": ""
+},
+"19|summary.stats.worstVoltage.neutral": {
+"q": "voltage",
+"label": "neutral",
+"unit": ""
+},
+"19|summary.stats.worstVoltage.neutralA": {
+"q": "voltage",
+"label": "neutral a",
+"unit": ""
+},
+"19|summary.stats.worstVoltage.iUnbalance": {
+"q": "unbalance",
+"label": "current unbalance",
+"unit": ""
+},
+"19|summary.stats.worstVoltage.vDeviation": {
+"q": "deviation-spread",
+"label": "voltage deviation",
+"unit": ""
+},
+"19|summary.period.panels[*].sag": {
+"q": null,
+"label": "hhf-02",
+"unit": ""
+},
+"19|summary.period.panels[*].amps": {
+"q": "current",
+"label": "hhf-02",
+"unit": ""
+},
+"19|summary.period.panels[*].vAvg": {
+"q": null,
+"label": "hhf-02",
+"unit": ""
+},
+"19|summary.period.panels[*].vMax": {
+"q": null,
+"label": "hhf-02",
+"unit": ""
+},
+"19|summary.period.panels[*].vMin": {
+"q": null,
+"label": "hhf-02",
+"unit": ""
+},
+"19|summary.period.panels[*].swell": {
+"q": null,
+"label": "hhf-02",
+"unit": ""
+},
+"19|summary.period.panels[*].current": {
+"q": "current",
+"label": "hhf-02",
+"unit": ""
+},
+"19|summary.period.panels[*].neutral": {
+"q": null,
+"label": "hhf-02",
+"unit": ""
+},
+"19|summary.period.panels[*].neutralA": {
+"q": null,
+"label": "hhf-02",
+"unit": ""
+},
+"19|summary.period.panels[*].iUnbalance": {
+"q": "unbalance",
+"label": "hhf-02",
+"unit": ""
+},
+"19|summary.period.panels[*].vDeviation": {
+"q": "deviation-spread",
+"label": "hhf-02",
+"unit": ""
+},
+"19|summary.selectedPanel.sag": {
+"q": null,
+"label": "sag",
+"unit": ""
+},
+"19|summary.selectedPanel.amps": {
+"q": "current",
+"label": "amps",
+"unit": ""
+},
+"19|summary.selectedPanel.vAvg": {
+"q": "voltage",
+"label": "voltage avg",
+"unit": ""
+},
+"19|summary.selectedPanel.vMax": {
+"q": "voltage",
+"label": "voltage max",
+"unit": ""
+},
+"19|summary.selectedPanel.vMin": {
+"q": "voltage",
+"label": "voltage min",
+"unit": ""
+},
+"19|summary.selectedPanel.swell": {
+"q": null,
+"label": "swell",
+"unit": ""
+},
+"19|summary.selectedPanel.current": {
+"q": "current",
+"label": "current",
+"unit": ""
+},
+"19|summary.selectedPanel.neutral": {
+"q": null,
+"label": "neutral",
+"unit": ""
+},
+"19|summary.selectedPanel.neutralA": {
+"q": null,
+"label": "neutral a",
+"unit": ""
+},
+"19|summary.selectedPanel.iUnbalance": {
+"q": "unbalance",
+"label": "current unbalance",
+"unit": ""
+},
+"19|summary.selectedPanel.vDeviation": {
+"q": "deviation-spread",
+"label": "voltage deviation",
+"unit": ""
+},
+"19|metadata_leaf_count": {
+"q": "count",
+"label": "metadata leaf count",
+"unit": ""
+},
+"19|demand.scalars": {
+"q": "power",
+"label": "scalars",
+"unit": ""
+},
+"19|demand.arrays": {
+"q": "power",
+"label": "arrays",
+"unit": ""
+},
+"19|demand.series": {
+"q": "power",
+"label": "demand",
+"unit": ""
+},
+"20|trend.pres.dimOpacity.line": {
+"q": null,
+"label": "line",
+"unit": ""
+},
+"20|trend.pres.dimOpacity.stack": {
+"q": null,
+"label": "stack",
+"unit": ""
+},
+"20|trend.period.panels[*].sag": {
+"q": null,
+"label": "hhf-02",
+"unit": ""
+},
+"20|trend.period.panels[*].amps": {
+"q": "current",
+"label": "hhf-02",
+"unit": ""
+},
+"20|trend.period.panels[*].vAvg": {
+"q": null,
+"label": "hhf-02",
+"unit": ""
+},
+"20|trend.period.panels[*].vMax": {
+"q": null,
+"label": "hhf-02",
+"unit": ""
+},
+"20|trend.period.panels[*].vMin": {
+"q": null,
+"label": "hhf-02",
+"unit": ""
+},
+"20|trend.period.panels[*].swell": {
+"q": null,
+"label": "hhf-02",
+"unit": ""
+},
+"20|trend.period.panels[*].current": {
+"q": "current",
+"label": "hhf-02",
+"unit": ""
+},
+"20|trend.period.panels[*].neutral": {
+"q": null,
+"label": "hhf-02",
+"unit": ""
+},
+"20|trend.period.panels[*].neutralA": {
+"q": null,
+"label": "hhf-02",
+"unit": ""
+},
+"20|trend.period.panels[*].iUnbalance": {
+"q": "unbalance",
+"label": "hhf-02",
+"unit": ""
+},
+"20|trend.period.panels[*].vDeviation": {
+"q": "deviation-spread",
+"label": "hhf-02",
+"unit": ""
+},
+"20|trend.points[*].sag": {
+"q": null,
+"label": "Now",
+"unit": ""
+},
+"20|trend.points[*].label": {
+"q": null,
+"label": "Now",
+"unit": ""
+},
+"20|trend.points[*].swell": {
+"q": null,
+"label": "Now",
+"unit": ""
+},
+"20|trend.points[*].iWorst": {
+"q": null,
+"label": "Now",
+"unit": ""
+},
+"20|trend.points[*].vWorst": {
+"q": null,
+"label": "Now",
+"unit": ""
+},
+"20|trend.points[*].current": {
+"q": "current",
+"label": "Now",
+"unit": ""
+},
+"20|trend.points[*].neutral": {
+"q": null,
+"label": "Now",
+"unit": ""
+},
+"20|metadata_leaf_count": {
+"q": "count",
+"label": "metadata leaf count",
+"unit": ""
+},
+"20|demand.scalars": {
+"q": "power",
+"label": "scalars",
+"unit": ""
+},
+"20|demand.arrays": {
+"q": "power",
+"label": "arrays",
+"unit": ""
+},
+"20|demand.series": {
+"q": "power",
+"label": "demand",
+"unit": ""
+},
+"21|distribution.pres.railDecimals": {
+"q": "current",
+"label": "rail decimals",
+"unit": "A"
+},
+"21|distribution.period.panels[*].sag": {
+"q": null,
+"label": "hhf-02",
+"unit": ""
+},
+"21|distribution.period.panels[*].amps": {
+"q": "current",
+"label": "hhf-02",
+"unit": ""
+},
+"21|distribution.period.panels[*].vAvg": {
+"q": null,
+"label": "hhf-02",
+"unit": ""
+},
+"21|distribution.period.panels[*].vMax": {
+"q": null,
+"label": "hhf-02",
+"unit": ""
+},
+"21|distribution.period.panels[*].vMin": {
+"q": null,
+"label": "hhf-02",
+"unit": ""
+},
+"21|distribution.period.panels[*].swell": {
+"q": null,
+"label": "hhf-02",
+"unit": ""
+},
+"21|distribution.period.panels[*].current": {
+"q": "current",
+"label": "hhf-02",
+"unit": ""
+},
+"21|distribution.period.panels[*].neutral": {
+"q": null,
+"label": "hhf-02",
+"unit": ""
+},
+"21|distribution.period.panels[*].neutralA": {
+"q": null,
+"label": "hhf-02",
+"unit": ""
+},
+"21|distribution.period.panels[*].iUnbalance": {
+"q": "unbalance",
+"label": "hhf-02",
+"unit": ""
+},
+"21|distribution.period.panels[*].vDeviation": {
+"q": "deviation-spread",
+"label": "hhf-02",
+"unit": ""
+},
+"21|metadata_leaf_count": {
+"q": "count",
+"label": "metadata leaf count",
+"unit": ""
+},
+"21|demand.scalars": {
+"q": "power",
+"label": "scalars",
+"unit": ""
+},
+"21|demand.arrays": {
+"q": "power",
+"label": "arrays",
+"unit": ""
+},
+"21|demand.series": {
+"q": "power",
+"label": "demand",
+"unit": ""
+},
+"22|table.pres.layout.rowHeight": {
+"q": null,
+"label": "row height",
+"unit": ""
+},
+"22|table.pres.layout.headerHeight": {
+"q": null,
+"label": "header height",
+"unit": ""
+},
+"22|table.pres.layout.maxRowHeight": {
+"q": null,
+"label": "max row height",
+"unit": ""
+},
+"22|table.pres.columns[*].fit.fitMax": {
+"q": null,
+"label": "fit max",
+"unit": ""
+},
+"22|table.pres.columns[*].fit.fitMin": {
+"q": null,
+"label": "fit min",
+"unit": ""
+},
+"22|table.pres.minWidth": {
+"q": null,
+"label": "min width",
+"unit": ""
+},
+"22|table.pres.singleModeMinWidth": {
+"q": null,
+"label": "single mode min width",
+"unit": ""
+},
+"22|table.period.panels[*].sag": {
+"q": null,
+"label": "hhf-02",
+"unit": ""
+},
+"22|table.period.panels[*].amps": {
+"q": "current",
+"label": "hhf-02",
+"unit": ""
+},
+"22|table.period.panels[*].vAvg": {
+"q": null,
+"label": "hhf-02",
+"unit": ""
+},
+"22|table.period.panels[*].vMax": {
+"q": null,
+"label": "hhf-02",
+"unit": ""
+},
+"22|table.period.panels[*].vMin": {
+"q": null,
+"label": "hhf-02",
+"unit": ""
+},
+"22|table.period.panels[*].swell": {
+"q": null,
+"label": "hhf-02",
+"unit": ""
+},
+"22|table.period.panels[*].current": {
+"q": "current",
+"label": "hhf-02",
+"unit": ""
+},
+"22|table.period.panels[*].neutral": {
+"q": null,
+"label": "hhf-02",
+"unit": ""
+},
+"22|table.period.panels[*].neutralA": {
+"q": null,
+"label": "hhf-02",
+"unit": ""
+},
+"22|table.period.panels[*].iUnbalance": {
+"q": "unbalance",
+"label": "hhf-02",
+"unit": ""
+},
+"22|table.period.panels[*].vDeviation": {
+"q": "deviation-spread",
+"label": "hhf-02",
+"unit": ""
+},
+"22|metadata_leaf_count": {
+"q": "count",
+"label": "metadata leaf count",
+"unit": ""
+},
+"22|demand.scalars": {
+"q": "power",
+"label": "scalars",
+"unit": ""
+},
+"22|demand.arrays": {
+"q": "power",
+"label": "arrays",
+"unit": ""
+},
+"22|demand.series": {
+"q": "power",
+"label": "demand",
+"unit": ""
+},
+"23|strip.pres.tiles[*].pct": {
+"q": "percent",
+"label": "Worst V-THD",
+"unit": "%"
+},
+"23|strip.stats.iThd": {
+"q": "current-thd",
+"label": "current thd",
+"unit": ""
+},
+"23|strip.stats.vThd": {
+"q": "voltage-thd",
+"label": "voltage thd",
+"unit": ""
+},
+"23|strip.stats.pfGap": {
+"q": "power-factor",
+"label": "pf gap",
+"unit": ""
+},
+"23|strip.stats.total": {
+"q": null,
+"label": "total",
+"unit": ""
+},
+"23|strip.stats.worst.h3": {
+"q": "voltage-harmonic",
+"label": "h3",
+"unit": ""
+},
+"23|strip.stats.worst.h5": {
+"q": "voltage-harmonic",
+"label": "h5",
+"unit": ""
+},
+"23|strip.stats.worst.h7": {
+"q": "voltage-harmonic",
+"label": "h7",
+"unit": ""
+},
+"23|strip.stats.worst.kw": {
+"q": "power",
+"label": "kw",
+"unit": ""
+},
+"23|strip.stats.worst.pf": {
+"q": "power-factor",
+"label": "pf",
+"unit": ""
+},
+"23|strip.stats.worst.iThd": {
+"q": "current-thd",
+"label": "current thd",
+"unit": ""
+},
+"23|strip.stats.worst.vThd": {
+"q": "voltage-thd",
+"label": "voltage thd",
+"unit": ""
+},
+"23|strip.stats.worst.pfGap": {
+"q": "power-factor",
+"label": "pf gap",
+"unit": ""
+},
+"23|strip.stats.worst.iThdPk": {
+"q": "current-thd",
+"label": "current thd pk",
+"unit": ""
+},
+"23|strip.stats.worst.truePf": {
+"q": "power-factor",
+"label": "true pf",
+"unit": ""
+},
+"23|strip.stats.worst.kFactor": {
+"q": null,
+"label": "k factor",
+"unit": ""
+},
+"23|strip.stats.worst.neutralA": {
+"q": null,
+"label": "neutral a",
+"unit": ""
+},
+"23|strip.stats.neutral": {
+"q": null,
+"label": "neutral",
+"unit": ""
+},
+"23|strip.stats.worstIThd.h3": {
+"q": "voltage-harmonic",
+"label": "h3",
+"unit": ""
+},
+"23|strip.stats.worstIThd.h5": {
+"q": "voltage-harmonic",
+"label": "h5",
+"unit": ""
+},
+"23|strip.stats.worstIThd.h7": {
+"q": "voltage-harmonic",
+"label": "h7",
+"unit": ""
+},
+"23|strip.stats.worstIThd.kw": {
+"q": "power",
+"label": "kw",
+"unit": ""
+},
+"23|strip.stats.worstIThd.pf": {
+"q": "power-factor",
+"label": "pf",
+"unit": ""
+},
+"23|strip.stats.worstIThd.iThd": {
+"q": "current-thd",
+"label": "current thd",
+"unit": ""
+},
+"23|strip.stats.worstIThd.vThd": {
+"q": "voltage-thd",
+"label": "voltage thd",
+"unit": ""
+},
+"23|strip.stats.worstIThd.pfGap": {
+"q": "power-factor",
+"label": "pf gap",
+"unit": ""
+},
+"23|strip.stats.worstIThd.iThdPk": {
+"q": "current-thd",
+"label": "current thd pk",
+"unit": ""
+},
+"23|strip.stats.worstIThd.truePf": {
+"q": "power-factor",
+"label": "true pf",
+"unit": ""
+},
+"23|strip.stats.worstIThd.kFactor": {
+"q": "current-thd",
+"label": "k factor",
+"unit": ""
+},
+"23|strip.stats.worstIThd.neutralA": {
+"q": "current-thd",
+"label": "neutral a",
+"unit": ""
+},
+"23|strip.stats.worstVThd.h3": {
+"q": "voltage-harmonic",
+"label": "h3",
+"unit": ""
+},
+"23|strip.stats.worstVThd.h5": {
+"q": "voltage-harmonic",
+"label": "h5",
+"unit": ""
+},
+"23|strip.stats.worstVThd.h7": {
+"q": "voltage-harmonic",
+"label": "h7",
+"unit": ""
+},
+"23|strip.stats.worstVThd.kw": {
+"q": "power",
+"label": "kw",
+"unit": ""
+},
+"23|strip.stats.worstVThd.pf": {
+"q": "power-factor",
+"label": "pf",
+"unit": ""
+},
+"23|strip.stats.worstVThd.iThd": {
+"q": "current-thd",
+"label": "current thd",
+"unit": ""
+},
+"23|strip.stats.worstVThd.vThd": {
+"q": "voltage-thd",
+"label": "voltage thd",
+"unit": ""
+},
+"23|strip.stats.worstVThd.pfGap": {
+"q": "power-factor",
+"label": "pf gap",
+"unit": ""
+},
+"23|strip.stats.worstVThd.iThdPk": {
+"q": "current-thd",
+"label": "current thd pk",
+"unit": ""
+},
+"23|strip.stats.worstVThd.truePf": {
+"q": "power-factor",
+"label": "true pf",
+"unit": ""
+},
+"23|strip.stats.worstVThd.kFactor": {
+"q": "voltage-thd",
+"label": "k factor",
+"unit": ""
+},
+"23|strip.stats.worstVThd.neutralA": {
+"q": "voltage-thd",
+"label": "neutral a",
+"unit": ""
+},
+"23|metadata_leaf_count": {
+"q": "count",
+"label": "metadata leaf count",
+"unit": ""
+},
+"23|demand.scalars": {
+"q": "power",
+"label": "scalars",
+"unit": ""
+},
+"23|demand.arrays": {
+"q": "power",
+"label": "arrays",
+"unit": ""
+},
+"23|demand.series": {
+"q": "power",
+"label": "demand",
+"unit": ""
+},
+"24|timeline.pres.dimOpacity.line": {
+"q": null,
+"label": "line",
+"unit": ""
+},
+"24|timeline.pres.dimOpacity.stack": {
+"q": null,
+"label": "stack",
+"unit": ""
+},
+"24|timeline.limits.iThdLimit": {
+"q": "current-thd",
+"label": "current thd limit",
+"unit": ""
+},
+"24|timeline.limits.vThdLimit": {
+"q": "voltage-thd",
+"label": "voltage thd limit",
+"unit": ""
+},
+"24|timeline.limits.truePfFloor": {
+"q": "power-factor",
+"label": "true pf floor",
+"unit": ""
+},
+"24|timeline.limits.truePfTarget": {
+"q": "power-factor",
+"label": "true pf target",
+"unit": ""
+},
+"24|timeline.limits.neutralLimitA": {
+"q": null,
+"label": "neutral limit a",
+"unit": ""
+},
+"24|timeline.periods[*].panels[*].kw": {
+"q": "power",
+"label": "hhf-02",
+"unit": ""
+},
+"24|metadata_leaf_count": {
+"q": "count",
+"label": "metadata leaf count",
+"unit": ""
+},
+"24|demand.scalars": {
+"q": "power",
+"label": "scalars",
+"unit": ""
+},
+"24|demand.arrays": {
+"q": "power",
+"label": "arrays",
+"unit": ""
+},
+"24|demand.series": {
+"q": "power",
+"label": "demand",
+"unit": ""
+},
+"25|summary.pres.worstDecimals": {
+"q": null,
+"label": "worst decimals",
+"unit": ""
+},
+"25|summary.pres.selectedDecimals": {
+"q": null,
+"label": "selected decimals",
+"unit": ""
+},
+"25|summary.pres.selectedPfDecimals": {
+"q": "power-factor",
+"label": "selected pf decimals",
+"unit": ""
+},
+"25|summary.stats.iThd": {
+"q": "current-thd",
+"label": "current thd",
+"unit": ""
+},
+"25|summary.stats.vThd": {
+"q": "voltage-thd",
+"label": "voltage thd",
+"unit": ""
+},
+"25|summary.stats.pfGap": {
+"q": "power-factor",
+"label": "pf gap",
+"unit": ""
+},
+"25|summary.stats.total": {
+"q": null,
+"label": "total",
+"unit": ""
+},
+"25|summary.stats.worst.h3": {
+"q": "voltage-harmonic",
+"label": "h3",
+"unit": ""
+},
+"25|summary.stats.worst.h5": {
+"q": "voltage-harmonic",
+"label": "h5",
+"unit": ""
+},
+"25|summary.stats.worst.h7": {
+"q": "voltage-harmonic",
+"label": "h7",
+"unit": ""
+},
+"25|summary.stats.worst.kw": {
+"q": "power",
+"label": "kw",
+"unit": ""
+},
+"25|summary.stats.worst.pf": {
+"q": "power-factor",
+"label": "pf",
+"unit": ""
+},
+"25|summary.stats.worst.iThd": {
+"q": "current-thd",
+"label": "current thd",
+"unit": ""
+},
+"25|summary.stats.worst.vThd": {
+"q": "voltage-thd",
+"label": "voltage thd",
+"unit": ""
+},
+"25|summary.stats.worst.pfGap": {
+"q": "power-factor",
+"label": "pf gap",
+"unit": ""
+},
+"25|summary.stats.worst.iThdPk": {
+"q": "current-thd",
+"label": "current thd pk",
+"unit": ""
+},
+"25|summary.stats.worst.truePf": {
+"q": "power-factor",
+"label": "true pf",
+"unit": ""
+},
+"25|summary.stats.worst.kFactor": {
+"q": null,
+"label": "k factor",
+"unit": ""
+},
+"25|summary.stats.worst.neutralA": {
+"q": null,
+"label": "neutral a",
+"unit": ""
+},
+"25|summary.stats.neutral": {
+"q": null,
+"label": "neutral",
+"unit": ""
+},
+"25|summary.stats.worstIThd.h3": {
+"q": "voltage-harmonic",
+"label": "h3",
+"unit": ""
+},
+"25|summary.stats.worstIThd.h5": {
+"q": "voltage-harmonic",
+"label": "h5",
+"unit": ""
+},
+"25|summary.stats.worstIThd.h7": {
+"q": "voltage-harmonic",
+"label": "h7",
+"unit": ""
+},
+"25|summary.stats.worstIThd.kw": {
+"q": "power",
+"label": "kw",
+"unit": ""
+},
+"25|summary.stats.worstIThd.pf": {
+"q": "power-factor",
+"label": "pf",
+"unit": ""
+},
+"25|summary.stats.worstIThd.iThd": {
+"q": "current-thd",
+"label": "current thd",
+"unit": ""
+},
+"25|summary.stats.worstIThd.vThd": {
+"q": "voltage-thd",
+"label": "voltage thd",
+"unit": ""
+},
+"25|summary.stats.worstIThd.pfGap": {
+"q": "power-factor",
+"label": "pf gap",
+"unit": ""
+},
+"25|summary.stats.worstIThd.iThdPk": {
+"q": "current-thd",
+"label": "current thd pk",
+"unit": ""
+},
+"25|summary.stats.worstIThd.truePf": {
+"q": "power-factor",
+"label": "true pf",
+"unit": ""
+},
+"25|summary.stats.worstIThd.kFactor": {
+"q": "current-thd",
+"label": "k factor",
+"unit": ""
+},
+"25|summary.stats.worstIThd.neutralA": {
+"q": "current-thd",
+"label": "neutral a",
+"unit": ""
+},
+"25|summary.stats.worstVThd.h3": {
+"q": "voltage-harmonic",
+"label": "h3",
+"unit": ""
+},
+"25|summary.stats.worstVThd.h5": {
+"q": "voltage-harmonic",
+"label": "h5",
+"unit": ""
+},
+"25|summary.stats.worstVThd.h7": {
+"q": "voltage-harmonic",
+"label": "h7",
+"unit": ""
+},
+"25|summary.stats.worstVThd.kw": {
+"q": "power",
+"label": "kw",
+"unit": ""
+},
+"25|summary.stats.worstVThd.pf": {
+"q": "power-factor",
+"label": "pf",
+"unit": ""
+},
+"25|summary.stats.worstVThd.iThd": {
+"q": "current-thd",
+"label": "current thd",
+"unit": ""
+},
+"25|summary.stats.worstVThd.vThd": {
+"q": "voltage-thd",
+"label": "voltage thd",
+"unit": ""
+},
+"25|summary.stats.worstVThd.pfGap": {
+"q": "power-factor",
+"label": "pf gap",
+"unit": ""
+},
+"25|summary.stats.worstVThd.iThdPk": {
+"q": "current-thd",
+"label": "current thd pk",
+"unit": ""
+},
+"25|summary.stats.worstVThd.truePf": {
+"q": "power-factor",
+"label": "true pf",
+"unit": ""
+},
+"25|summary.stats.worstVThd.kFactor": {
+"q": "voltage-thd",
+"label": "k factor",
+"unit": ""
+},
+"25|summary.stats.worstVThd.neutralA": {
+"q": "voltage-thd",
+"label": "neutral a",
+"unit": ""
+},
+"25|summary.period.panels[*].kw": {
+"q": "power",
+"label": "hhf-02",
+"unit": ""
+},
+"25|summary.selectedPanel.h3": {
+"q": "voltage-harmonic",
+"label": "h3",
+"unit": ""
+},
+"25|summary.selectedPanel.h5": {
+"q": "voltage-harmonic",
+"label": "h5",
+"unit": ""
+},
+"25|summary.selectedPanel.h7": {
+"q": "voltage-harmonic",
+"label": "h7",
+"unit": ""
+},
+"25|summary.selectedPanel.kw": {
+"q": "power",
+"label": "kw",
+"unit": ""
+},
+"25|summary.selectedPanel.pf": {
+"q": "power-factor",
+"label": "pf",
+"unit": ""
+},
+"25|summary.selectedPanel.iThd": {
+"q": "current-thd",
+"label": "current thd",
+"unit": ""
+},
+"25|summary.selectedPanel.vThd": {
+"q": "voltage-thd",
+"label": "voltage thd",
+"unit": ""
+},
+"25|summary.selectedPanel.pfGap": {
+"q": "power-factor",
+"label": "pf gap",
+"unit": ""
+},
+"25|summary.selectedPanel.iThdPk": {
+"q": "current-thd",
+"label": "current thd pk",
+"unit": ""
+},
+"25|summary.selectedPanel.truePf": {
+"q": "power-factor",
+"label": "true pf",
+"unit": ""
+},
+"25|summary.selectedPanel.kFactor": {
+"q": null,
+"label": "k factor",
+"unit": ""
+},
+"25|summary.selectedPanel.neutralA": {
+"q": null,
+"label": "neutral a",
+"unit": ""
+},
+"25|metadata_leaf_count": {
+"q": "count",
+"label": "metadata leaf count",
+"unit": ""
+},
+"25|demand.scalars": {
+"q": "power",
+"label": "scalars",
+"unit": ""
+},
+"25|demand.arrays": {
+"q": "power",
+"label": "arrays",
+"unit": ""
+},
+"25|demand.series": {
+"q": "power",
+"label": "demand",
+"unit": ""
+},
+"26|table.pres.layout.rowHeight": {
+"q": null,
+"label": "row height",
+"unit": ""
+},
+"26|table.pres.layout.headerHeight": {
+"q": null,
+"label": "header height",
+"unit": ""
+},
+"26|table.pres.layout.maxRowHeight": {
+"q": null,
+"label": "max row height",
+"unit": ""
+},
+"26|table.pres.columns[*].fit.fitMax": {
+"q": null,
+"label": "fit max",
+"unit": ""
+},
+"26|table.pres.columns[*].fit.fitMin": {
+"q": null,
+"label": "fit min",
+"unit": ""
+},
+"26|table.pres.decimals.thd": {
+"q": null,
+"label": "thd",
+"unit": ""
+},
+"26|table.pres.decimals.pfLow": {
+"q": "power-factor",
+"label": "pf low",
+"unit": ""
+},
+"26|table.pres.decimals.pfHigh": {
+"q": "power-factor",
+"label": "pf high",
+"unit": ""
+},
+"26|table.pres.pfDecimalThreshold": {
+"q": "power-factor",
+"label": "pf decimal threshold",
+"unit": ""
+},
+"26|table.period.panels[*].kw": {
+"q": "power",
+"label": "hhf-02",
+"unit": ""
+},
+"26|metadata_leaf_count": {
+"q": "count",
+"label": "metadata leaf count",
+"unit": ""
+},
+"26|demand.scalars": {
+"q": "power",
+"label": "scalars",
+"unit": ""
+},
+"26|demand.arrays": {
+"q": "power",
+"label": "arrays",
+"unit": ""
+},
+"26|demand.series": {
+"q": "power",
+"label": "demand",
+"unit": ""
+},
+"27|signature.pres.rail.fallbackCount": {
+"q": "count",
+"label": "fallback count",
+"unit": ""
+},
+"27|signature.pres.style.fleetFillOpacity": {
+"q": null,
+"label": "fleet fill opacity",
+"unit": ""
+},
+"27|signature.pres.style.fleetStrokeWidth": {
+"q": null,
+"label": "fleet stroke width",
+"unit": ""
+},
+"27|signature.pres.style.selectedStrokeWidth": {
+"q": null,
+"label": "selected stroke width",
+"unit": ""
+},
+"27|signature.period.panels[*].kw": {
+"q": "power",
+"label": "hhf-02",
+"unit": ""
+},
+"27|metadata_leaf_count": {
+"q": "count",
+"label": "metadata leaf count",
+"unit": ""
+},
+"27|demand.scalars": {
+"q": "power",
+"label": "scalars",
+"unit": ""
+},
+"27|demand.arrays": {
+"q": "power",
+"label": "arrays",
+"unit": ""
+},
+"27|demand.series": {
+"q": "power",
+"label": "demand",
+"unit": ""
+},
+"36|data.yLabels": {
+"q": null,
+"label": "y labels",
+"unit": ""
+},
+"36|data.readings.activePower.value": {
+"q": "power",
+"label": "Active Power",
+"unit": "kW"
+},
+"36|data.readings.activePower.displayValue": {
+"q": "power",
+"label": "Active Power",
+"unit": "kW"
+},
+"36|data.readings.activeEnergy.value": {
+"q": "energy",
+"label": "Active Energy",
+"unit": "kWh"
+},
+"36|data.readings.activeEnergy.displayValue": {
+"q": "energy",
+"label": "Active Energy",
+"unit": "kWh"
+},
+"36|data.readings.apparentPower.value": {
+"q": "power",
+"label": "Apparent Power",
+"unit": "kVA"
+},
+"36|data.readings.apparentPower.displayValue": {
+"q": "power",
+"label": "Apparent Power",
+"unit": "kVA"
+},
+"36|data.readings.reactivePower.value": {
+"q": "power",
+"label": "Reactive Power",
+"unit": "kVAR"
+},
+"36|data.readings.reactivePower.displayValue": {
+"q": "power",
+"label": "Reactive Power",
+"unit": "kVAR"
+},
+"36|data.readings.reactiveEnergy.value": {
+"q": "energy",
+"label": "Reactive Energy",
+"unit": "kVARh"
+},
+"36|data.readings.reactiveEnergy.displayValue": {
+"q": "energy",
+"label": "Reactive Energy",
+"unit": "kVARh"
+},
+"36|data.readings.projectedDemand.value": {
+"q": "power",
+"label": "Projected Demand",
+"unit": "kW"
+},
+"36|data.readings.projectedDemand.displayValue": {
+"q": "power",
+"label": "Projected Demand",
+"unit": "kW"
+},
+"36|data.axisEndMs": {
+"q": null,
+"label": "axis end ms",
+"unit": ""
+},
+"36|data.dataSeries[*]": {
+"q": null,
+"label": "payload",
+"unit": ""
+},
+"36|data.axisStartMs": {
+"q": null,
+"label": "axis start ms",
+"unit": ""
+},
+"36|data.sampleTimestamps": {
+"q": null,
+"label": "sample timestamps",
+"unit": ""
+},
+"36|data.timeLabelTimestamps": {
+"q": null,
+"label": "time label timestamps",
+"unit": ""
+},
+"36|metadata_leaf_count": {
+"q": "count",
+"label": "metadata leaf count",
+"unit": ""
+},
+"36|demand.scalars": {
+"q": "power",
+"label": "scalars",
+"unit": ""
+},
+"36|demand.arrays": {
+"q": "power",
+"label": "arrays",
+"unit": ""
+},
+"36|demand.series": {
+"q": "power",
+"label": "demand",
+"unit": ""
+},
+"37|data.series[*].data": {
+"q": null,
+"label": "payload",
+"unit": ""
+},
+"37|data.yTicks": {
+"q": null,
+"label": "y ticks",
+"unit": ""
+},
+"37|data.metrics[*].value": {
+"q": null,
+"label": "Min",
+"unit": ""
+},
+"37|data.axisEndMs": {
+"q": null,
+"label": "axis end ms",
+"unit": ""
+},
+"37|data.thresholds[*].value": {
+"q": null,
+"label": "thresholds",
+"unit": ""
+},
+"37|data.axisStartMs": {
+"q": null,
+"label": "axis start ms",
+"unit": ""
+},
+"37|data.legendItems[*].value": {
+"q": null,
+"label": "Y-Phase",
+"unit": ""
+},
+"37|data.sampleTimestamps": {
+"q": null,
+"label": "sample timestamps",
+"unit": ""
+},
+"37|data.timeLabelTimestamps": {
+"q": null,
+"label": "time label timestamps",
+"unit": ""
+},
+"37|metadata_leaf_count": {
+"q": "count",
+"label": "metadata leaf count",
+"unit": ""
+},
+"37|demand.scalars": {
+"q": "power",
+"label": "scalars",
+"unit": ""
+},
+"37|demand.arrays": {
+"q": "power",
+"label": "arrays",
+"unit": ""
+},
+"37|demand.series": {
+"q": "power",
+"label": "demand",
+"unit": ""
+},
+"38|data.series[*].data": {
+"q": null,
+"label": "payload",
+"unit": ""
+},
+"38|data.yTicks": {
+"q": null,
+"label": "y ticks",
+"unit": ""
+},
+"38|data.metrics[*].value": {
+"q": null,
+"label": "Neutral",
+"unit": ""
+},
+"38|data.axisEndMs": {
+"q": null,
+"label": "axis end ms",
+"unit": ""
+},
+"38|data.thresholds[*].value": {
+"q": null,
+"label": "thresholds",
+"unit": ""
+},
+"38|data.axisStartMs": {
+"q": null,
+"label": "axis start ms",
+"unit": ""
+},
+"38|data.legendItems[*].value": {
+"q": null,
+"label": "Y-Phase",
+"unit": ""
+},
+"38|data.sampleTimestamps": {
+"q": null,
+"label": "sample timestamps",
+"unit": ""
+},
+"38|data.timeLabelTimestamps": {
+"q": null,
+"label": "time label timestamps",
+"unit": ""
+},
+"38|metadata_leaf_count": {
+"q": "count",
+"label": "metadata leaf count",
+"unit": ""
+},
+"38|demand.scalars": {
+"q": "power",
+"label": "scalars",
+"unit": ""
+},
+"38|demand.arrays": {
+"q": "power",
+"label": "arrays",
+"unit": ""
+},
+"38|demand.series": {
+"q": "power",
+"label": "demand",
+"unit": ""
+},
+"39|data.secKwhPerUnit": {
+"q": "energy",
+"label": "sec kwh per unit",
+"unit": ""
+},
+"39|data.subsidyLimitKw": {
+"q": "power",
+"label": "subsidy limit kw",
+"unit": ""
+},
+"39|data.totalEnergyKwh": {
+"q": "energy",
+"label": "total energy kwh",
+"unit": ""
+},
+"39|data.activeEnergyKwh": {
+"q": "energy",
+"label": "active energy kwh",
+"unit": ""
+},
+"39|data.energyTargetKwh": {
+"q": "energy",
+"label": "energy target kwh",
+"unit": ""
+},
+"39|data.subsidyMarkerPct": {
+"q": null,
+"label": "subsidy marker pct",
+"unit": ""
+},
+"39|data.progressActivePct": {
+"q": null,
+"label": "progress active pct",
+"unit": ""
+},
+"39|data.reactiveEnergyKwh": {
+"q": "energy",
+"label": "reactive energy kwh",
+"unit": ""
+},
+"39|data.progressReactivePct": {
+"q": null,
+"label": "progress reactive pct",
+"unit": ""
+},
+"39|metadata_leaf_count": {
+"q": "count",
+"label": "metadata leaf count",
+"unit": ""
+},
+"39|demand.scalars": {
+"q": "power",
+"label": "scalars",
+"unit": ""
+},
+"39|demand.arrays": {
+"q": "power",
+"label": "arrays",
+"unit": ""
+},
+"39|demand.series": {
+"q": "power",
+"label": "demand",
+"unit": ""
+},
+"40|data.bars[*].time": {
+"q": null,
+"label": "time",
+"unit": ""
+},
+"40|data.bars[*].active": {
+"q": null,
+"label": "active",
+"unit": ""
+},
+"40|data.bars[*].reactive": {
+"q": null,
+"label": "reactive",
+"unit": ""
+},
+"40|data.yMax": {
+"q": null,
+"label": "y max",
+"unit": ""
+},
+"40|data.yMin": {
+"q": null,
+"label": "y min",
+"unit": ""
+},
+"40|data.ratedKw": {
+"q": "power",
+"label": "rated kw",
+"unit": ""
+},
+"40|data.demandBars[*].value": {
+"q": "power",
+"label": "demand bars",
+"unit": ""
+},
+"40|data.demandYMax": {
+"q": "power",
+"label": "demand y max",
+"unit": ""
+},
+"40|data.demandYMin": {
+"q": "power",
+"label": "demand y min",
+"unit": ""
+},
+"40|data.contractedKw": {
+"q": "power",
+"label": "contracted kw",
+"unit": ""
+},
+"40|data.hourlyAverage": {
+"q": null,
+"label": "hourly average",
+"unit": ""
+},
+"40|data.activePowerAvgKw": {
+"q": "power",
+"label": "active power avg kw",
+"unit": ""
+},
+"40|data.reactivePowerAvgKw": {
+"q": "power",
+"label": "reactive power avg kw",
+"unit": ""
+},
+"40|metadata_leaf_count": {
+"q": "count",
+"label": "metadata leaf count",
+"unit": ""
+},
+"40|demand.scalars": {
+"q": "power",
+"label": "scalars",
+"unit": ""
+},
+"40|demand.arrays": {
+"q": "power",
+"label": "arrays",
+"unit": ""
+},
+"40|demand.series": {
+"q": "power",
+"label": "demand",
+"unit": ""
+},
+"41|data.lossKwh": {
+"q": "energy",
+"label": "loss kwh",
+"unit": ""
+},
+"41|data.deltaPct": {
+"q": null,
+"label": "delta pct",
+"unit": ""
+},
+"41|data.hvInputKw": {
+"q": "power",
+"label": "hv input kw",
+"unit": ""
+},
+"41|data.lvOutputKw": {
+"q": "power",
+"label": "lv output kw",
+"unit": ""
+},
+"41|data.efficiencyPct": {
+"q": "efficiency",
+"label": "efficiency pct",
+"unit": ""
+},
+"41|data.lossPctOfInput": {
+"q": null,
+"label": "loss pct of input",
+"unit": ""
+},
+"41|data.expectedLossKwh": {
+"q": "energy",
+"label": "expected loss kwh",
+"unit": ""
+},
+"41|metadata_leaf_count": {
+"q": "count",
+"label": "metadata leaf count",
+"unit": ""
+},
+"41|demand.scalars": {
+"q": "power",
+"label": "scalars",
+"unit": ""
+},
+"41|demand.arrays": {
+"q": "power",
+"label": "arrays",
+"unit": ""
+},
+"41|demand.series": {
+"q": "power",
+"label": "demand",
+"unit": ""
+},
+"42|data.yMax": {
+"q": null,
+"label": "y max",
+"unit": ""
+},
+"42|data.yMin": {
+"q": null,
+"label": "y min",
+"unit": ""
+},
+"42|data.anomalies[*].value": {
+"q": null,
+"label": "Welding\nOverlap (+25%)",
+"unit": ""
+},
+"42|data.dipEvents": {
+"q": "count",
+"label": "dip events",
+"unit": ""
+},
+"42|data.actualLoad[*].value": {
+"q": null,
+"label": "actual load",
+"unit": ""
+},
+"42|data.surgeEvents": {
+"q": "count",
+"label": "surge events",
+"unit": ""
+},
+"42|data.expectedLoad[*].value": {
+"q": null,
+"label": "expected load",
+"unit": ""
+},
+"42|data.expectedRange[*].max": {
+"q": null,
+"label": "max",
+"unit": ""
+},
+"42|data.expectedRange[*].min": {
+"q": null,
+"label": "min",
+"unit": ""
+},
+"42|data.expectedRange[*].time": {
+"q": null,
+"label": "time",
+"unit": ""
+},
+"42|data.loadFactorPct": {
+"q": "load-factor",
+"label": "load factor pct",
+"unit": ""
+},
+"42|data.maxThresholdPct": {
+"q": null,
+"label": "max threshold pct",
+"unit": ""
+},
+"42|data.presentValuePct": {
+"q": null,
+"label": "present value pct",
+"unit": ""
+},
+"42|metadata_leaf_count": {
+"q": "count",
+"label": "metadata leaf count",
+"unit": ""
+},
+"42|demand.scalars": {
+"q": "power",
+"label": "scalars",
+"unit": ""
+},
+"42|demand.arrays": {
+"q": "power",
+"label": "arrays",
+"unit": ""
+},
+"42|demand.series": {
+"q": "power",
+"label": "demand",
+"unit": ""
+},
+"43|health.data.band.markerPct": {
+"q": null,
+"label": "marker pct",
+"unit": ""
+},
+"43|health.data.phases[*].value": {
+"q": "voltage",
+"label": "B",
+"unit": "V"
+},
+"43|health.data.metrics[*].value": {
+"q": null,
+"label": "Rate Change",
+"unit": "V/min"
+},
+"43|health.data.summary.value": {
+"q": "voltage",
+"label": "Actual voltage",
+"unit": "V"
+},
+"43|health.data.summary.deviation": {
+"q": "voltage",
+"label": "Actual voltage",
+"unit": "V"
+},
+"43|metadata_leaf_count": {
+"q": "count",
+"label": "metadata leaf count",
+"unit": ""
+},
+"43|demand.scalars": {
+"q": "power",
+"label": "scalars",
+"unit": ""
+},
+"43|demand.arrays": {
+"q": "power",
+"label": "arrays",
+"unit": ""
+},
+"43|demand.series": {
+"q": "power",
+"label": "demand",
+"unit": ""
+},
+"44|history.data.maxY": {
+"q": null,
+"label": "max y",
+"unit": ""
+},
+"44|history.data.minY": {
+"q": null,
+"label": "min y",
+"unit": ""
+},
+"44|history.data.stats[*].value": {
+"q": null,
+"label": "Primary Event",
+"unit": ""
+},
+"44|history.data.legend[*].value": {
+"q": null,
+"label": "Expected Range",
+"unit": ""
+},
+"44|history.data.series[*].values": {
+"q": null,
+"label": "B phase",
+"unit": ""
+},
+"44|history.data.yTicks": {
+"q": null,
+"label": "y ticks",
+"unit": ""
+},
+"44|history.data.maxLine.label.value": {
+"q": "voltage",
+"label": "max line",
+"unit": "V"
+},
+"44|history.data.maxLine.value": {
+"q": null,
+"label": "max line",
+"unit": ""
+},
+"44|history.data.minLine.label.value": {
+"q": "voltage",
+"label": "min line",
+"unit": "V"
+},
+"44|history.data.minLine.value": {
+"q": null,
+"label": "min line",
+"unit": ""
+},
+"44|history.data.expectedMax": {
+"q": null,
+"label": "expected max",
+"unit": ""
+},
+"44|history.data.expectedMin": {
+"q": null,
+"label": "expected min",
+"unit": ""
+},
+"44|history.data.xLabelIndexes": {
+"q": null,
+"label": "x label indexes",
+"unit": ""
+},
+"44|metadata_leaf_count": {
+"q": "count",
+"label": "metadata leaf count",
+"unit": ""
+},
+"44|demand.scalars": {
+"q": "power",
+"label": "scalars",
+"unit": ""
+},
+"44|demand.arrays": {
+"q": "power",
+"label": "arrays",
+"unit": ""
+},
+"44|demand.series": {
+"q": "power",
+"label": "demand",
+"unit": ""
+},
+"45|health.data.phases[*].value": {
+"q": "current",
+"label": "N",
+"unit": "A"
+},
+"45|health.data.metrics[*].value": {
+"q": "percent",
+"label": "Neutral/phase",
+"unit": "%"
+},
+"45|health.data.summary.value": {
+"q": "current",
+"label": "Average current",
+"unit": "A"
+},
+"45|health.data.summary.sideValue": {
+"q": "current",
+"label": "Average current",
+"unit": "A"
+},
+"45|metadata_leaf_count": {
+"q": "count",
+"label": "metadata leaf count",
+"unit": ""
+},
+"45|demand.scalars": {
+"q": "power",
+"label": "scalars",
+"unit": ""
+},
+"45|demand.arrays": {
+"q": "power",
+"label": "arrays",
+"unit": ""
+},
+"45|demand.series": {
+"q": "power",
+"label": "demand",
+"unit": ""
+},
+"46|history.data.maxY": {
+"q": null,
+"label": "max y",
+"unit": ""
+},
+"46|history.data.minY": {
+"q": null,
+"label": "min y",
+"unit": ""
+},
+"46|history.data.stats[*].value": {
+"q": "current",
+"label": "Neutral Peak",
+"unit": "A"
+},
+"46|history.data.series[*].values": {
+"q": null,
+"label": "B phase",
+"unit": ""
+},
+"46|history.data.yTicks": {
+"q": null,
+"label": "y ticks",
+"unit": ""
+},
+"46|history.data.maxLine.label.value": {
+"q": "current",
+"label": "max line",
+"unit": "A"
+},
+"46|history.data.maxLine.value": {
+"q": null,
+"label": "max line",
+"unit": ""
+},
+"46|history.data.minLine.label.value": {
+"q": "current",
+"label": "min line",
+"unit": "A"
+},
+"46|history.data.minLine.value": {
+"q": null,
+"label": "min line",
+"unit": ""
+},
+"46|history.data.expectedMax": {
+"q": null,
+"label": "expected max",
+"unit": ""
+},
+"46|history.data.expectedMin": {
+"q": null,
+"label": "expected min",
+"unit": ""
+},
+"46|history.data.xLabelIndexes": {
+"q": null,
+"label": "x label indexes",
+"unit": ""
+},
+"46|metadata_leaf_count": {
+"q": "count",
+"label": "metadata leaf count",
+"unit": ""
+},
+"46|demand.scalars": {
+"q": "power",
+"label": "scalars",
+"unit": ""
+},
+"46|demand.arrays": {
+"q": "power",
+"label": "arrays",
+"unit": ""
+},
+"46|demand.series": {
+"q": "power",
+"label": "demand",
+"unit": ""
+},
+"47|snapshot.h5.valuePct": {
+"q": "voltage-harmonic",
+"label": "h5",
+"unit": ""
+},
+"47|snapshot.h7.valuePct": {
+"q": "voltage-harmonic",
+"label": "h7",
+"unit": ""
+},
+"47|snapshot.iThd.valuePct": {
+"q": "current-thd",
+"label": "current thd",
+"unit": ""
+},
+"47|snapshot.vThd.valuePct": {
+"q": "voltage-thd",
+"label": "voltage thd",
+"unit": ""
+},
+"47|snapshot.flickerPst.value": {
+"q": "flicker",
+"label": "flicker pst",
+"unit": ""
+},
+"47|snapshot.flickerPst.peakToday": {
+"q": "flicker",
+"label": "peak today",
+"unit": ""
+},
+"47|snapshot.crestFactor.ideal": {
+"q": "crest-factor",
+"label": "ideal",
+"unit": ""
+},
+"47|snapshot.crestFactor.value": {
+"q": "crest-factor",
+"label": "crest factor",
+"unit": ""
+},
+"47|snapshot.presentation.spectrum.h5.valueDecimals": {
+"q": "voltage-harmonic",
+"label": "h5",
+"unit": ""
+},
+"47|snapshot.presentation.spectrum.h7.valueDecimals": {
+"q": "voltage-harmonic",
+"label": "h7",
+"unit": ""
+},
+"47|snapshot.presentation.spectrum.axis.scaleMax": {
+"q": null,
+"label": "% THD",
+"unit": ""
+},
+"47|snapshot.presentation.spectrum.axis.tickDecimals": {
+"q": null,
+"label": "% THD",
+"unit": ""
+},
+"47|snapshot.presentation.spectrum.axis.tickFractions": {
+"q": null,
+"label": "% THD",
+"unit": ""
+},
+"47|snapshot.presentation.spectrum.iThd.valueDecimals": {
+"q": "current-thd",
+"label": "current thd",
+"unit": ""
+},
+"47|snapshot.presentation.spectrum.vThd.valueDecimals": {
+"q": "voltage-thd",
+"label": "voltage thd",
+"unit": ""
+},
+"47|snapshot.presentation.voltageQuality.limDecimals": {
+"q": "voltage",
+"label": "lim decimals",
+"unit": ""
+},
+"47|snapshot.presentation.voltageQuality.peakDecimals": {
+"q": "voltage",
+"label": "peak decimals",
+"unit": ""
+},
+"47|snapshot.presentation.voltageQuality.idealDecimals": {
+"q": "voltage",
+"label": "ideal decimals",
+"unit": ""
+},
+"47|snapshot.presentation.voltageQuality.crestValueDecimals": {
+"q": "crest-factor",
+"label": "crest value decimals",
+"unit": ""
+},
+"47|snapshot.presentation.voltageQuality.flickerValueDecimals": {
+"q": "flicker",
+"label": "flicker value decimals",
+"unit": ""
+},
+"47|snapshot.presentation.complianceStrip.trendDecimals": {
+"q": null,
+"label": "trend decimals",
+"unit": ""
+},
+"47|snapshot.trendPctPerHour": {
+"q": null,
+"label": "trend pct per hour",
+"unit": ""
+},
+"47|metadata_leaf_count": {
+"q": "count",
+"label": "metadata leaf count",
+"unit": ""
+},
+"47|demand.scalars": {
+"q": "power",
+"label": "scalars",
+"unit": ""
+},
+"47|demand.arrays": {
+"q": "power",
+"label": "arrays",
+"unit": ""
+},
+"47|demand.series": {
+"q": "power",
+"label": "demand",
+"unit": ""
+},
+"48|distortionProfile.views.h5-h7.yMax": {
+"q": "voltage-harmonic",
+"label": "y max",
+"unit": ""
+},
+"48|distortionProfile.views.h5-h7.yMin": {
+"q": "voltage-harmonic",
+"label": "y min",
+"unit": ""
+},
+"48|distortionProfile.views.h5-h7.series[*].value": {
+"q": "voltage-harmonic",
+"label": "7th Harmonic",
+"unit": ""
+},
+"48|distortionProfile.views.h5-h7.series[*].values": {
+"q": "voltage-harmonic",
+"label": "7th Harmonic",
+"unit": ""
+},
+"48|distortionProfile.views.h5-h7.yTicks": {
+"q": "voltage-harmonic",
+"label": "y ticks",
+"unit": ""
+},
+"48|distortionProfile.views.h5-h7.maxLine.value": {
+"q": "voltage-harmonic",
+"label": "max line",
+"unit": ""
+},
+"48|distortionProfile.views.h5-h7.minLine.value": {
+"q": "voltage-harmonic",
+"label": "min line",
+"unit": ""
+},
+"48|distortionProfile.views.i-thd.yMax": {
+"q": "current-thd",
+"label": "y max",
+"unit": ""
+},
+"48|distortionProfile.views.i-thd.yMin": {
+"q": "current-thd",
+"label": "y min",
+"unit": ""
+},
+"48|distortionProfile.views.i-thd.series[*].values": {
+"q": "current-thd",
+"label": "B · THD",
+"unit": ""
+},
+"48|distortionProfile.views.i-thd.yTicks": {
+"q": "current-thd",
+"label": "y ticks",
+"unit": ""
+},
+"48|distortionProfile.views.i-thd.maxLine.value": {
+"q": "current-thd",
+"label": "max line",
+"unit": ""
+},
+"48|distortionProfile.views.i-thd.minLine.value": {
+"q": "current-thd",
+"label": "min line",
+"unit": ""
+},
+"48|distortionProfile.views.i-thd.averageStat.value": {
+"q": "current-thd",
+"label": "Average Current",
+"unit": ""
+},
+"48|distortionProfile.views.v-thd.yMax": {
+"q": "voltage-thd",
+"label": "y max",
+"unit": ""
+},
+"48|distortionProfile.views.v-thd.yMin": {
+"q": "voltage-thd",
+"label": "y min",
+"unit": ""
+},
+"48|distortionProfile.views.v-thd.series[*].values": {
+"q": "voltage-thd",
+"label": "B · THD",
+"unit": ""
+},
+"48|distortionProfile.views.v-thd.yTicks": {
+"q": "voltage-thd",
+"label": "y ticks",
+"unit": ""
+},
+"48|distortionProfile.views.v-thd.maxLine.value": {
+"q": "voltage-thd",
+"label": "max line",
+"unit": ""
+},
+"48|distortionProfile.views.v-thd.minLine.value": {
+"q": "voltage-thd",
+"label": "min line",
+"unit": ""
+},
+"48|distortionProfile.views.v-thd.averageStat.value": {
+"q": "voltage-thd",
+"label": "Average Voltage",
+"unit": ""
+},
+"48|distortionProfile.xLabelIndexes": {
+"q": null,
+"label": "x label indexes",
+"unit": ""
+},
+"48|metadata_leaf_count": {
+"q": "count",
+"label": "metadata leaf count",
+"unit": ""
+},
+"48|demand.scalars": {
+"q": "power",
+"label": "scalars",
+"unit": ""
+},
+"48|demand.arrays": {
+"q": "power",
+"label": "arrays",
+"unit": ""
+},
+"48|demand.series": {
+"q": "power",
+"label": "demand",
+"unit": ""
+},
+"49|loadImpact.views.k-stress.yMax": {
+"q": null,
+"label": "y max",
+"unit": ""
+},
+"49|loadImpact.views.k-stress.yMin": {
+"q": null,
+"label": "y min",
+"unit": ""
+},
+"49|loadImpact.views.k-stress.stats[*].value": {
+"q": null,
+"label": "Action",
+"unit": ""
+},
+"49|loadImpact.views.k-stress.series[*].values": {
+"q": null,
+"label": "K - factor",
+"unit": ""
+},
+"49|loadImpact.views.k-stress.yTicks": {
+"q": null,
+"label": "y ticks",
+"unit": ""
+},
+"49|loadImpact.views.k-stress.watchLines[*].value": {
+"q": null,
+"label": "K -Watch",
+"unit": ""
+},
+"49|loadImpact.views.k-stress.xLabelIndexes": {
+"q": null,
+"label": "x label indexes",
+"unit": ""
+},
+"49|loadImpact.views.pf-angle.yMax": {
+"q": "angle",
+"label": "y max",
+"unit": ""
+},
+"49|loadImpact.views.pf-angle.yMin": {
+"q": "angle",
+"label": "y min",
+"unit": ""
+},
+"49|loadImpact.views.pf-angle.stats[*].value": {
+"q": "angle",
+"label": "Lag Status",
+"unit": ""
+},
+"49|loadImpact.views.pf-angle.series[*].values": {
+"q": "angle",
+"label": "Phase angle",
+"unit": ""
+},
+"49|loadImpact.views.pf-angle.yTicks": {
+"q": "angle",
+"label": "y ticks",
+"unit": ""
+},
+"49|loadImpact.views.pf-angle.watchLines[*].value": {
+"q": "angle",
+"label": "Lag Watch 20",
+"unit": ""
+},
+"49|loadImpact.views.pf-angle.xLabelIndexes": {
+"q": "angle",
+"label": "x label indexes",
+"unit": ""
+},
+"49|loadImpact.views.pf-health.yMax": {
+"q": "power-factor",
+"label": "y max",
+"unit": ""
+},
+"49|loadImpact.views.pf-health.yMin": {
+"q": "power-factor",
+"label": "y min",
+"unit": ""
+},
+"49|loadImpact.views.pf-health.stats[*].value": {
+"q": "power-factor",
+"label": "PF Target",
+"unit": ""
+},
+"49|loadImpact.views.pf-health.series[*].values": {
+"q": "power-factor",
+"label": "PF Gap (displ.)",
+"unit": ""
+},
+"49|loadImpact.views.pf-health.yTicks": {
+"q": "power-factor",
+"label": "y ticks",
+"unit": ""
+},
+"49|loadImpact.views.pf-health.watchLines[*].value": {
+"q": "power-factor",
+"label": "PF Target",
+"unit": ""
+},
+"49|loadImpact.views.pf-health.xLabelIndexes": {
+"q": "power-factor",
+"label": "x label indexes",
+"unit": ""
+},
+"49|metadata_leaf_count": {
+"q": "count",
+"label": "metadata leaf count",
+"unit": ""
+},
+"49|demand.scalars": {
+"q": "power",
+"label": "scalars",
+"unit": ""
+},
+"49|demand.arrays": {
+"q": "power",
+"label": "arrays",
+"unit": ""
+},
+"49|demand.series": {
+"q": "power",
+"label": "demand",
+"unit": ""
+},
+"50|batteryHealth.soc": {
+"q": "battery-charge",
+"label": "soc",
+"unit": ""
+},
+"50|batteryHealth.socMax": {
+"q": "battery-charge",
+"label": "soc max",
+"unit": ""
+},
+"50|batteryHealth.socPct": {
+"q": "battery-charge",
+"label": "soc pct",
+"unit": ""
+},
+"50|batteryHealth.metrics[*].value": {
+"q": "current",
+"label": "Output Current",
+"unit": "A"
+},
+"50|metadata_leaf_count": {
+"q": "count",
+"label": "metadata leaf count",
+"unit": ""
+},
+"50|demand.scalars": {
+"q": "power",
+"label": "scalars",
+"unit": ""
+},
+"50|demand.arrays": {
+"q": "power",
+"label": "arrays",
+"unit": ""
+},
+"50|demand.series": {
+"q": "power",
+"label": "demand",
+"unit": ""
+},
+"51|batteryHistory.maxY": {
+"q": null,
+"label": "max y",
+"unit": ""
+},
+"51|batteryHistory.minY": {
+"q": null,
+"label": "min y",
+"unit": ""
+},
+"51|batteryHistory.series[*].values": {
+"q": null,
+"label": "Thermal Score",
+"unit": ""
+},
+"51|batteryHistory.yTicks": {
+"q": null,
+"label": "y ticks",
+"unit": ""
+},
+"51|batteryHistory.thresholds[*].value": {
+"q": null,
+"label": "Moderate Zone",
+"unit": ""
+},
+"51|batteryHistory.xLabelIndexes": {
+"q": null,
+"label": "x label indexes",
+"unit": ""
+},
+"51|metadata_leaf_count": {
+"q": "count",
+"label": "metadata leaf count",
+"unit": ""
+},
+"51|demand.scalars": {
+"q": "power",
+"label": "scalars",
+"unit": ""
+},
+"51|demand.arrays": {
+"q": "power",
+"label": "arrays",
+"unit": ""
+},
+"51|demand.series": {
+"q": "power",
+"label": "demand",
+"unit": ""
+},
+"52|backupReadiness.score": {
+"q": "readiness",
+"label": "score",
+"unit": ""
+},
+"52|backupReadiness.metrics[*].value": {
+"q": "readiness",
+"label": "Transfer Mode",
+"unit": ""
+},
+"52|backupReadiness.scoreMax": {
+"q": "readiness",
+"label": "score max",
+"unit": ""
+},
+"52|backupReadiness.deltaLabel": {
+"q": "readiness",
+"label": "delta label",
+"unit": ""
+},
+"52|backupReadiness.envelopePct": {
+"q": "readiness",
+"label": "envelope pct",
+"unit": ""
+},
+"52|backupReadiness.readyMarkerPct": {
+"q": "readiness",
+"label": "ready marker pct",
+"unit": ""
+},
+"52|metadata_leaf_count": {
+"q": "count",
+"label": "metadata leaf count",
+"unit": ""
+},
+"52|demand.scalars": {
+"q": "power",
+"label": "scalars",
+"unit": ""
+},
+"52|demand.arrays": {
+"q": "power",
+"label": "arrays",
+"unit": ""
+},
+"52|demand.series": {
+"q": "power",
+"label": "demand",
+"unit": ""
+},
+"53|backupHistory.maxY": {
+"q": null,
+"label": "max y",
+"unit": ""
+},
+"53|backupHistory.minY": {
+"q": null,
+"label": "min y",
+"unit": ""
+},
+"53|backupHistory.series[*].values": {
+"q": "headroom",
+"label": "Load Headroom",
+"unit": ""
+},
+"53|backupHistory.yTicks": {
+"q": null,
+"label": "y ticks",
+"unit": ""
+},
+"53|backupHistory.thresholds[*].value": {
+"q": null,
+"label": "Moderate Zone",
+"unit": ""
+},
+"53|backupHistory.xLabelIndexes": {
+"q": null,
+"label": "x label indexes",
+"unit": ""
+},
+"53|metadata_leaf_count": {
+"q": "count",
+"label": "metadata leaf count",
+"unit": ""
+},
+"53|demand.scalars": {
+"q": "power",
+"label": "scalars",
+"unit": ""
+},
+"53|demand.arrays": {
+"q": "power",
+"label": "arrays",
+"unit": ""
+},
+"53|demand.series": {
+"q": "power",
+"label": "demand",
+"unit": ""
+},
+"54|readiness.score": {
+"q": "readiness",
+"label": "score",
+"unit": ""
+},
+"54|readiness.metrics[*].value": {
+"q": "score-index",
+"label": "Sync score",
+"unit": "/100"
+},
+"54|readiness.scoreMax": {
+"q": "readiness",
+"label": "score max",
+"unit": ""
+},
+"54|readiness.deltaLabel": {
+"q": "readiness",
+"label": "delta label",
+"unit": ""
+},
+"54|readiness.readyMarkerPct": {
+"q": "readiness",
+"label": "ready marker pct",
+"unit": ""
+},
+"54|metadata_leaf_count": {
+"q": "count",
+"label": "metadata leaf count",
+"unit": ""
+},
+"54|demand.scalars": {
+"q": "power",
+"label": "scalars",
+"unit": ""
+},
+"54|demand.arrays": {
+"q": "power",
+"label": "arrays",
+"unit": ""
+},
+"54|demand.series": {
+"q": "power",
+"label": "demand",
+"unit": ""
+},
+"55|activity.ticks": {
+"q": null,
+"label": "ticks",
+"unit": ""
+},
+"55|activity.metrics[*].value": {
+"q": "count",
+"label": "Lifetime Transfers",
+"unit": ""
+},
+"55|activity.count30d": {
+"q": null,
+"label": "count30d",
+"unit": ""
+},
+"55|activity.windowDays": {
+"q": null,
+"label": "window days",
+"unit": ""
+},
+"55|activity.lastTransferDays": {
+"q": null,
+"label": "last transfer days",
+"unit": ""
+},
+"55|activity.lifetimeTransfers": {
+"q": "count",
+"label": "lifetime transfers",
+"unit": ""
+},
+"55|metadata_leaf_count": {
+"q": "count",
+"label": "metadata leaf count",
+"unit": ""
+},
+"55|demand.scalars": {
+"q": "power",
+"label": "scalars",
+"unit": ""
+},
+"55|demand.arrays": {
+"q": "power",
+"label": "arrays",
+"unit": ""
+},
+"55|demand.series": {
+"q": "power",
+"label": "demand",
+"unit": ""
+},
+"56|composite.floor.value": {
+"q": null,
+"label": "floor",
+"unit": ""
+},
+"56|composite.legend[*].value": {
+"q": "frequency",
+"label": "Bypass (Hz)",
+"unit": "Hz"
+},
+"56|composite.points[*].label": {
+"q": null,
+"label": "00:00",
+"unit": ""
+},
+"56|composite.points[*].readiness": {
+"q": "readiness",
+"label": "readiness",
+"unit": ""
+},
+"56|composite.points[*].inputCurrentA": {
+"q": "current",
+"label": "input current a",
+"unit": ""
+},
+"56|composite.points[*].inputVoltageV": {
+"q": "voltage",
+"label": "input voltage voltage",
+"unit": ""
+},
+"56|composite.points[*].bypassVoltageV": {
+"q": "voltage",
+"label": "bypass voltage voltage",
+"unit": ""
+},
+"56|composite.points[*].bypassFrequencyHz": {
+"q": "frequency",
+"label": "bypass frequency hz",
+"unit": ""
+},
+"56|composite.kpiCells[*].value": {
+"q": "count",
+"label": "Transfers today",
+"unit": ""
+},
+"56|composite.leftAxis.ticks": {
+"q": null,
+"label": "ticks",
+"unit": ""
+},
+"56|composite.leftAxis.domain": {
+"q": null,
+"label": "domain",
+"unit": ""
+},
+"56|composite.rightAxis.ticks": {
+"q": null,
+"label": "ticks",
+"unit": ""
+},
+"56|composite.rightAxis.domain": {
+"q": null,
+"label": "domain",
+"unit": ""
+},
+"56|metadata_leaf_count": {
+"q": "count",
+"label": "metadata leaf count",
+"unit": ""
+},
+"56|demand.scalars": {
+"q": "power",
+"label": "scalars",
+"unit": ""
+},
+"56|demand.arrays": {
+"q": "power",
+"label": "arrays",
+"unit": ""
+},
+"56|demand.series": {
+"q": "power",
+"label": "demand",
+"unit": ""
+},
+"57|capacity.deltaLabel": {
+"q": null,
+"label": "delta label",
+"unit": ""
+},
+"57|capacity.scoreCells[*].value": {
+"q": "score-index",
+"label": "Current(I) score",
+"unit": "/100"
+},
+"57|capacity.readyMarkerPct": {
+"q": null,
+"label": "ready marker pct",
+"unit": ""
+},
+"57|capacity.capacityHeadroom": {
+"q": "headroom",
+"label": "capacity headroom",
+"unit": ""
+},
+"57|metadata_leaf_count": {
+"q": "count",
+"label": "metadata leaf count",
+"unit": ""
+},
+"57|demand.scalars": {
+"q": "power",
+"label": "scalars",
+"unit": ""
+},
+"57|demand.arrays": {
+"q": "power",
+"label": "arrays",
+"unit": ""
+},
+"57|demand.series": {
+"q": "power",
+"label": "demand",
+"unit": ""
+},
+"58|load.sparkline[*].label": {
+"q": null,
+"label": "now",
+"unit": ""
+},
+"58|load.sparkline[*].loadPct": {
+"q": "load-factor",
+"label": "now",
+"unit": ""
+},
+"58|load.scoreCells[*].value": {
+"q": "power-factor",
+"label": "PF",
+"unit": ""
+},
+"58|load.averageLoadPct": {
+"q": "load-factor",
+"label": "average load pct",
+"unit": ""
+},
+"58|metadata_leaf_count": {
+"q": "count",
+"label": "metadata leaf count",
+"unit": ""
+},
+"58|demand.scalars": {
+"q": "power",
+"label": "scalars",
+"unit": ""
+},
+"58|demand.arrays": {
+"q": "power",
+"label": "arrays",
+"unit": ""
+},
+"58|demand.series": {
+"q": "power",
+"label": "demand",
+"unit": ""
+},
+"59|composite.floor.value": {
+"q": null,
+"label": "floor",
+"unit": ""
+},
+"59|composite.legend[*].value": {
+"q": "frequency",
+"label": "Bypass (Hz)",
+"unit": "Hz"
+},
+"59|composite.points[*].label": {
+"q": null,
+"label": "00:00",
+"unit": ""
+},
+"59|composite.points[*].readiness": {
+"q": "readiness",
+"label": "readiness",
+"unit": ""
+},
+"59|composite.points[*].inputCurrentA": {
+"q": "current",
+"label": "input current a",
+"unit": ""
+},
+"59|composite.points[*].inputVoltageV": {
+"q": "voltage",
+"label": "input voltage voltage",
+"unit": ""
+},
+"59|composite.points[*].bypassVoltageV": {
+"q": "voltage",
+"label": "bypass voltage voltage",
+"unit": ""
+},
+"59|composite.points[*].bypassFrequencyHz": {
+"q": "frequency",
+"label": "bypass frequency hz",
+"unit": ""
+},
+"59|composite.kpiCells[*].value": {
+"q": "count",
+"label": "Transfers today",
+"unit": ""
+},
+"59|composite.leftAxis.ticks": {
+"q": null,
+"label": "ticks",
+"unit": ""
+},
+"59|composite.leftAxis.domain": {
+"q": null,
+"label": "domain",
+"unit": ""
+},
+"59|composite.rightAxis.ticks": {
+"q": null,
+"label": "ticks",
+"unit": ""
+},
+"59|composite.rightAxis.domain": {
+"q": null,
+"label": "domain",
+"unit": ""
+},
+"59|metadata_leaf_count": {
+"q": "count",
+"label": "metadata leaf count",
+"unit": ""
+},
+"59|demand.scalars": {
+"q": "power",
+"label": "scalars",
+"unit": ""
+},
+"59|demand.arrays": {
+"q": "power",
+"label": "arrays",
+"unit": ""
+},
+"59|demand.series": {
+"q": "power",
+"label": "demand",
+"unit": ""
+},
+"61|chart.band.y1": {
+"q": null,
+"label": "Expected Range",
+"unit": ""
+},
+"61|chart.band.y2": {
+"q": null,
+"label": "Expected Range",
+"unit": ""
+},
+"61|chart.kpis[*].value": {
+"q": "count",
+"label": "Events",
+"unit": ""
+},
+"61|chart.events[*].value": {
+"q": "temperature",
+"label": "-10h",
+"unit": "°C"
+},
+"61|chart.legend[*].value": {
+"q": null,
+"label": "Expected Range",
+"unit": ""
+},
+"61|metadata_leaf_count": {
+"q": "count",
+"label": "metadata leaf count",
+"unit": ""
+},
+"61|demand.scalars": {
+"q": "power",
+"label": "scalars",
+"unit": ""
+},
+"61|demand.arrays": {
+"q": "power",
+"label": "arrays",
+"unit": ""
+},
+"61|demand.series": {
+"q": "power",
+"label": "demand",
+"unit": ""
+},
+"62|chart.band.y1": {
+"q": null,
+"label": "Expected Range",
+"unit": ""
+},
+"62|chart.band.y2": {
+"q": null,
+"label": "Expected Range",
+"unit": ""
+},
+"62|chart.kpis[*].value": {
+"q": "temperature",
+"label": "Min Oil-P",
+"unit": "kPa"
+},
+"62|chart.events[*].value": {
+"q": "count",
+"label": "-2h",
+"unit": "kPa"
+},
+"62|chart.legend[*].value": {
+"q": null,
+"label": "Expected Range",
+"unit": ""
+},
+"62|metadata_leaf_count": {
+"q": "count",
+"label": "metadata leaf count",
+"unit": ""
+},
+"62|demand.scalars": {
+"q": "power",
+"label": "scalars",
+"unit": ""
+},
+"62|demand.arrays": {
+"q": "power",
+"label": "arrays",
+"unit": ""
+},
+"62|demand.series": {
+"q": "power",
+"label": "demand",
+"unit": ""
+},
+"63|snapshot.autonomy": {
+"q": null,
+"label": "autonomy",
+"unit": ""
+},
+"63|snapshot.fuelRate": {
+"q": null,
+"label": "fuel rate",
+"unit": ""
+},
+"63|snapshot.fuelTemp": {
+"q": "temperature",
+"label": "fuel temp",
+"unit": ""
+},
+"63|snapshot.fuelLevel": {
+"q": null,
+"label": "fuel level",
+"unit": ""
+},
+"63|snapshot.efficiency": {
+"q": "efficiency",
+"label": "efficiency",
+"unit": ""
+},
+"63|metadata_leaf_count": {
+"q": "count",
+"label": "metadata leaf count",
+"unit": ""
+},
+"63|demand.scalars": {
+"q": "power",
+"label": "scalars",
+"unit": ""
+},
+"63|demand.arrays": {
+"q": "power",
+"label": "arrays",
+"unit": ""
+},
+"63|demand.series": {
+"q": "power",
+"label": "demand",
+"unit": ""
+},
+"64|stats.faults": {
+"q": "count",
+"label": "faults",
+"unit": ""
+},
+"64|stats.starts": {
+"q": "count",
+"label": "starts",
+"unit": ""
+},
+"64|stats.avgLoad": {
+"q": null,
+"label": "avg load",
+"unit": ""
+},
+"64|stats.runHours": {
+"q": "duration",
+"label": "run hours",
+"unit": ""
+},
+"64|stats.totalKwh": {
+"q": "energy",
+"label": "total kwh",
+"unit": ""
+},
+"64|stats.totalFuelL": {
+"q": null,
+"label": "total fuel l",
+"unit": ""
+},
+"64|metadata_leaf_count": {
+"q": "count",
+"label": "metadata leaf count",
+"unit": ""
+},
+"64|demand.scalars": {
+"q": "power",
+"label": "scalars",
+"unit": ""
+},
+"64|demand.arrays": {
+"q": "power",
+"label": "arrays",
+"unit": ""
+},
+"64|demand.series": {
+"q": "power",
+"label": "demand",
+"unit": ""
+},
+"65|chart.band.y1": {
+"q": null,
+"label": "Expected Range",
+"unit": ""
+},
+"65|chart.band.y2": {
+"q": null,
+"label": "Expected Range",
+"unit": ""
+},
+"65|chart.kpis[*].value": {
+"q": "percent",
+"label": "Load",
+"unit": "%"
+},
+"65|chart.events[*].value": {
+"q": "percent",
+"label": "-8h",
+"unit": "%"
+},
+"65|chart.legend[*].value": {
+"q": null,
+"label": "Expected Range",
+"unit": ""
+},
+"65|metadata_leaf_count": {
+"q": "count",
+"label": "metadata leaf count",
+"unit": ""
+},
+"65|demand.scalars": {
+"q": "power",
+"label": "scalars",
+"unit": ""
+},
+"65|demand.arrays": {
+"q": "power",
+"label": "arrays",
+"unit": ""
+},
+"65|demand.series": {
+"q": "power",
+"label": "demand",
+"unit": ""
+},
+"66|data.band.markerPct": {
+"q": null,
+"label": "marker pct",
+"unit": ""
+},
+"66|data.phases[*].value": {
+"q": "voltage",
+"label": "L3-L1",
+"unit": "kV"
+},
+"66|data.metrics[*].value": {
+"q": "voltage",
+"label": "Spread",
+"unit": "V"
+},
+"66|data.summary.value": {
+"q": "voltage",
+"label": "Actual voltage (L-L avg)",
+"unit": "kV"
+},
+"66|data.summary.deviation": {
+"q": "voltage",
+"label": "Actual voltage (L-L avg)",
+"unit": "kV"
+},
+"66|metadata_leaf_count": {
+"q": "count",
+"label": "metadata leaf count",
+"unit": ""
+},
+"66|demand.scalars": {
+"q": "power",
+"label": "scalars",
+"unit": ""
+},
+"66|demand.arrays": {
+"q": "power",
+"label": "arrays",
+"unit": ""
+},
+"66|demand.series": {
+"q": "power",
+"label": "demand",
+"unit": ""
+},
+"67|data.maxY": {
+"q": null,
+"label": "max y",
+"unit": ""
+},
+"67|data.minY": {
+"q": null,
+"label": "min y",
+"unit": ""
+},
+"67|data.stats[*].value": {
+"q": null,
+"label": "Primary Event",
+"unit": ""
+},
+"67|data.legend[*].value": {
+"q": null,
+"label": "Expected Range",
+"unit": ""
+},
+"67|data.series[*].values": {
+"q": null,
+"label": "B phase",
+"unit": ""
+},
+"67|data.yTicks": {
+"q": null,
+"label": "y ticks",
+"unit": ""
+},
+"67|data.maxLine.value": {
+"q": null,
+"label": "max line",
+"unit": ""
+},
+"67|data.minLine.value": {
+"q": null,
+"label": "min line",
+"unit": ""
+},
+"67|data.expectedMax": {
+"q": null,
+"label": "expected max",
+"unit": ""
+},
+"67|data.expectedMin": {
+"q": null,
+"label": "expected min",
+"unit": ""
+},
+"67|data.xLabelIndexes": {
+"q": null,
+"label": "x label indexes",
+"unit": ""
+},
+"67|data.yTickDecimals": {
+"q": null,
+"label": "y tick decimals",
+"unit": ""
+},
+"67|metadata_leaf_count": {
+"q": "count",
+"label": "metadata leaf count",
+"unit": ""
+},
+"67|demand.scalars": {
+"q": "power",
+"label": "scalars",
+"unit": ""
+},
+"67|demand.arrays": {
+"q": "power",
+"label": "arrays",
+"unit": ""
+},
+"67|demand.series": {
+"q": "power",
+"label": "demand",
+"unit": ""
+},
+"68|data.phases[*].value": {
+"q": "current",
+"label": "N",
+"unit": "A"
+},
+"68|data.metrics[*].value": {
+"q": "current",
+"label": "Neutral",
+"unit": "A"
+},
+"68|metadata_leaf_count": {
+"q": "count",
+"label": "metadata leaf count",
+"unit": ""
+},
+"68|demand.scalars": {
+"q": "power",
+"label": "scalars",
+"unit": ""
+},
+"68|demand.arrays": {
+"q": "power",
+"label": "arrays",
+"unit": ""
+},
+"68|demand.series": {
+"q": "power",
+"label": "demand",
+"unit": ""
+},
+"69|data.maxY": {
+"q": null,
+"label": "max y",
+"unit": ""
+},
+"69|data.minY": {
+"q": null,
+"label": "min y",
+"unit": ""
+},
+"69|data.stats[*].value": {
+"q": null,
+"label": "Neutral Peak",
+"unit": ""
+},
+"69|data.series[*].values": {
+"q": null,
+"label": "B phase",
+"unit": ""
+},
+"69|data.yTicks": {
+"q": null,
+"label": "y ticks",
+"unit": ""
+},
+"69|data.maxLine.value": {
+"q": null,
+"label": "max line",
+"unit": ""
+},
+"69|data.expectedMax": {
+"q": null,
+"label": "expected max",
+"unit": ""
+},
+"69|data.expectedMin": {
+"q": null,
+"label": "expected min",
+"unit": ""
+},
+"69|data.xLabelIndexes": {
+"q": null,
+"label": "x label indexes",
+"unit": ""
+},
+"69|metadata_leaf_count": {
+"q": "count",
+"label": "metadata leaf count",
+"unit": ""
+},
+"69|demand.scalars": {
+"q": "power",
+"label": "scalars",
+"unit": ""
+},
+"69|demand.arrays": {
+"q": "power",
+"label": "arrays",
+"unit": ""
+},
+"69|demand.series": {
+"q": "power",
+"label": "demand",
+"unit": ""
+},
+"70|liveOps.service.hours": {
+"q": "duration",
+"label": "hours",
+"unit": ""
+},
+"70|liveOps.service.ceiling": {
+"q": null,
+"label": "ceiling",
+"unit": ""
+},
+"70|liveOps.service.warnPct": {
+"q": null,
+"label": "warn pct",
+"unit": ""
+},
+"70|liveOps.service.fraction": {
+"q": null,
+"label": "fraction",
+"unit": ""
+},
+"70|liveOps.service.remaining": {
+"q": null,
+"label": "remaining",
+"unit": ""
+},
+"70|liveOps.service.availability": {
+"q": null,
+"label": "availability",
+"unit": ""
+},
+"70|liveOps.topKpis[*].value": {
+"q": "percent",
+"label": "Availability",
+"unit": "%"
+},
+"70|liveOps.stateKpis[*].value": {
+"q": "duration",
+"label": "Service-in",
+"unit": "h"
+},
+"70|metadata_leaf_count": {
+"q": "count",
+"label": "metadata leaf count",
+"unit": ""
+},
+"70|demand.scalars": {
+"q": "power",
+"label": "scalars",
+"unit": ""
+},
+"70|demand.arrays": {
+"q": "power",
+"label": "arrays",
+"unit": ""
+},
+"70|demand.series": {
+"q": "power",
+"label": "demand",
+"unit": ""
+},
+"71|duty.points[*].label": {
+"q": null,
+"label": "Now",
+"unit": ""
+},
+"71|duty.points[*].starts": {
+"q": "count",
+"label": "Now",
+"unit": ""
+},
+"71|duty.points[*].loadPct": {
+"q": "load-factor",
+"label": "Now",
+"unit": ""
+},
+"71|duty.points[*].runHours": {
+"q": "duration",
+"label": "Now",
+"unit": ""
+},
+"71|duty.topKpis[*].value": {
+"q": "percent",
+"label": "Average load",
+"unit": "%"
+},
+"71|duty.tickInterval": {
+"q": null,
+"label": "tick interval",
+"unit": ""
+},
+"71|duty.demandLimitKw": {
+"q": "power",
+"label": "demand limit kw",
+"unit": ""
+},
+"71|metadata_leaf_count": {
+"q": "count",
+"label": "metadata leaf count",
+"unit": ""
+},
+"71|demand.scalars": {
+"q": "power",
+"label": "scalars",
+"unit": ""
+},
+"71|demand.arrays": {
+"q": "power",
+"label": "arrays",
+"unit": ""
+},
+"71|demand.series": {
+"q": "power",
+"label": "demand",
+"unit": ""
+},
+"72|energyReliability.pf": {
+"q": "power-factor",
+"label": "pf",
+"unit": ""
+},
+"72|energyReliability.cells[*].value": {
+"q": "duration",
+"label": "MTTR",
+"unit": "h"
+},
+"72|energyReliability.activeMwh": {
+"q": "energy",
+"label": "active mwh",
+"unit": ""
+},
+"72|energyReliability.apparentMvah": {
+"q": "energy",
+"label": "apparent mvah",
+"unit": ""
+},
+"72|energyReliability.reactiveMvarh": {
+"q": "energy",
+"label": "reactive mvarh",
+"unit": ""
+},
+"72|energyReliability.activeFraction": {
+"q": "energy",
+"label": "active fraction",
+"unit": ""
+},
+"72|energyReliability.reactiveFraction": {
+"q": "energy",
+"label": "reactive fraction",
+"unit": ""
+},
+"72|metadata_leaf_count": {
+"q": "count",
+"label": "metadata leaf count",
+"unit": ""
+},
+"72|demand.scalars": {
+"q": "power",
+"label": "scalars",
+"unit": ""
+},
+"72|demand.arrays": {
+"q": "power",
+"label": "arrays",
+"unit": ""
+},
+"72|demand.series": {
+"q": "power",
+"label": "demand",
+"unit": ""
+},
+"74|thermalLife.metrics[*].value": {
+"q": "power",
+"label": "Loss",
+"unit": "kW"
+},
+"74|thermalLife.stressPct": {
+"q": "lifetime",
+"label": "stress pct",
+"unit": ""
+},
+"74|thermalLife.stressBorderPct": {
+"q": "lifetime",
+"label": "stress border pct",
+"unit": ""
+},
+"74|metadata_leaf_count": {
+"q": "count",
+"label": "metadata leaf count",
+"unit": ""
+},
+"74|demand.scalars": {
+"q": "power",
+"label": "scalars",
+"unit": ""
+},
+"74|demand.arrays": {
+"q": "power",
+"label": "arrays",
+"unit": ""
+},
+"74|demand.series": {
+"q": "power",
+"label": "demand",
+"unit": ""
+},
+"75|lifeCapacity.deratedKva": {
+"q": "power",
+"label": "derated kva",
+"unit": ""
+},
+"75|lifeCapacity.lifeFillPct": {
+"q": "lifetime",
+"label": "life fill pct",
+"unit": ""
+},
+"75|lifeCapacity.lifeBaseYears": {
+"q": "lifetime",
+"label": "life base years",
+"unit": ""
+},
+"75|lifeCapacity.deratedFillPct": {
+"q": "lifetime",
+"label": "derated fill pct",
+"unit": ""
+},
+"75|lifeCapacity.deratedLoadKva": {
+"q": "power",
+"label": "derated load kva",
+"unit": ""
+},
+"75|lifeCapacity.lifeRemainingYears": {
+"q": "lifetime",
+"label": "life remaining years",
+"unit": ""
+},
+"75|metadata_leaf_count": {
+"q": "count",
+"label": "metadata leaf count",
+"unit": ""
+},
+"75|demand.scalars": {
+"q": "power",
+"label": "scalars",
+"unit": ""
+},
+"75|demand.arrays": {
+"q": "power",
+"label": "arrays",
+"unit": ""
+},
+"75|demand.series": {
+"q": "power",
+"label": "demand",
+"unit": ""
+},
+"76|timeline.legend[*].value": {
+"q": "percent",
+"label": "Efficiency",
+"unit": "%"
+},
+"76|timeline.points[*].oilC": {
+"q": "temperature",
+"label": "oil c",
+"unit": ""
+},
+"76|timeline.points[*].slot": {
+"q": "timestamp",
+"label": "slot",
+"unit": ""
+},
+"76|timeline.points[*].loadPct": {
+"q": "load-factor",
+"label": "load pct",
+"unit": ""
+},
+"76|timeline.points[*].hotspotC": {
+"q": "temperature",
+"label": "hotspot c",
+"unit": ""
+},
+"76|timeline.points[*].windingC": {
+"q": "temperature",
+"label": "winding c",
+"unit": ""
+},
+"76|timeline.points[*].efficiencyPct": {
+"q": "efficiency",
+"label": "efficiency pct",
+"unit": ""
+},
+"76|timeline.tempAxis.max": {
+"q": "temperature",
+"label": "max",
+"unit": ""
+},
+"76|timeline.tempAxis.min": {
+"q": "temperature",
+"label": "min",
+"unit": ""
+},
+"76|timeline.tempAxis.ticks": {
+"q": "temperature",
+"label": "ticks",
+"unit": ""
+},
+"76|timeline.hotspotWarnC": {
+"q": "temperature",
+"label": "hotspot warn c",
+"unit": ""
+},
+"76|metadata_leaf_count": {
+"q": "count",
+"label": "metadata leaf count",
+"unit": ""
+},
+"76|demand.scalars": {
+"q": "power",
+"label": "scalars",
+"unit": ""
+},
+"76|demand.arrays": {
+"q": "power",
+"label": "arrays",
+"unit": ""
+},
+"76|demand.series": {
+"q": "power",
+"label": "demand",
+"unit": ""
+},
+"77|aging.kpis.agingFactor": {
+"q": "aging-factor",
+"label": "aging factor",
+"unit": ""
+},
+"77|aging.kpis.deltaLolPct": {
+"q": "lifetime",
+"label": "delta lol pct",
+"unit": ""
+},
+"77|aging.kpis.lifeUsedPct": {
+"q": "lifetime",
+"label": "life used pct",
+"unit": ""
+},
+"77|aging.legend[*].value": {
+"q": "aging-factor",
+"label": "Daily Aging Factor",
+"unit": "×"
+},
+"77|aging.points[*].faa": {
+"q": "aging-factor",
+"label": "faa",
+"unit": ""
+},
+"77|aging.points[*].lolPct": {
+"q": "lifetime",
+"label": "lol pct",
+"unit": ""
+},
+"77|aging.points[*].hotspotPeakC": {
+"q": "temperature",
+"label": "hotspot peak c",
+"unit": ""
+},
+"77|aging.faaAxis.max": {
+"q": "aging-factor",
+"label": "max",
+"unit": ""
+},
+"77|aging.faaAxis.min": {
+"q": "aging-factor",
+"label": "min",
+"unit": ""
+},
+"77|aging.faaAxis.ticks": {
+"q": "aging-factor",
+"label": "ticks",
+"unit": ""
+},
+"77|aging.lolAxis.max": {
+"q": "lifetime",
+"label": "max",
+"unit": ""
+},
+"77|aging.lolAxis.min": {
+"q": "lifetime",
+"label": "min",
+"unit": ""
+},
+"77|aging.lolAxis.ticks": {
+"q": "lifetime",
+"label": "ticks",
+"unit": ""
+},
+"77|aging.windowDays": {
+"q": "aging-factor",
+"label": "window days",
+"unit": ""
+},
+"77|metadata_leaf_count": {
+"q": "count",
+"label": "metadata leaf count",
+"unit": ""
+},
+"77|demand.scalars": {
+"q": "power",
+"label": "scalars",
+"unit": ""
+},
+"77|demand.arrays": {
+"q": "power",
+"label": "arrays",
+"unit": ""
+},
+"77|demand.series": {
+"q": "power",
+"label": "demand",
+"unit": ""
+},
+"78|tapPosition.kpis[*].value": {
+"q": null,
+"label": "RTCC mode",
+"unit": ""
+},
+"78|tapPosition.gauge.count": {
+"q": "count",
+"label": "count",
+"unit": ""
+},
+"78|tapPosition.gauge.value": {
+"q": null,
+"label": "gauge",
+"unit": ""
+},
+"78|tapPosition.gauge.optimal": {
+"q": null,
+"label": "optimal",
+"unit": ""
+},
+"78|metadata_leaf_count": {
+"q": "count",
+"label": "metadata leaf count",
+"unit": ""
+},
+"78|demand.scalars": {
+"q": "power",
+"label": "scalars",
+"unit": ""
+},
+"78|demand.arrays": {
+"q": "power",
+"label": "arrays",
+"unit": ""
+},
+"78|demand.series": {
+"q": "power",
+"label": "demand",
+"unit": ""
+},
+"79|regulation.kpis[*].value": {
+"q": "percent",
+"label": "In-Range time",
+"unit": "%"
+},
+"79|regulation.legend[*].value": {
+"q": null,
+"label": "Tap position",
+"unit": ""
+},
+"79|regulation.points[*].tap": {
+"q": null,
+"label": "tap",
+"unit": ""
+},
+"79|regulation.points[*].label": {
+"q": null,
+"label": "00:00",
+"unit": ""
+},
+"79|regulation.points[*].voltageKv": {
+"q": "voltage",
+"label": "voltage kv",
+"unit": ""
+},
+"79|regulation.tapAxis.max": {
+"q": null,
+"label": "max",
+"unit": ""
+},
+"79|regulation.tapAxis.min": {
+"q": null,
+"label": "min",
+"unit": ""
+},
+"79|regulation.tapAxis.ticks": {
+"q": null,
+"label": "ticks",
+"unit": ""
+},
+"79|regulation.bandLowKv": {
+"q": null,
+"label": "band low kv",
+"unit": ""
+},
+"79|regulation.bandHighKv": {
+"q": null,
+"label": "band high kv",
+"unit": ""
+},
+"79|regulation.setpointKv": {
+"q": null,
+"label": "setpoint kv",
+"unit": ""
+},
+"79|regulation.voltageAxis.max": {
+"q": "voltage",
+"label": "max",
+"unit": ""
+},
+"79|regulation.voltageAxis.min": {
+"q": "voltage",
+"label": "min",
+"unit": ""
+},
+"79|regulation.voltageAxis.ticks": {
+"q": "voltage",
+"label": "ticks",
+"unit": ""
+},
+"79|metadata_leaf_count": {
+"q": "count",
+"label": "metadata leaf count",
+"unit": ""
+},
+"79|demand.scalars": {
+"q": "power",
+"label": "scalars",
+"unit": ""
+},
+"79|demand.arrays": {
+"q": "power",
+"label": "arrays",
+"unit": ""
+},
+"79|demand.series": {
+"q": "power",
+"label": "demand",
+"unit": ""
+},
+"80|changes.rows[*].time": {
+"q": null,
+"label": "time",
+"unit": ""
+},
+"80|changes.rows[*].toTap": {
+"q": null,
+"label": "to tap",
+"unit": ""
+},
+"80|changes.rows[*].fromTap": {
+"q": null,
+"label": "from tap",
+"unit": ""
+},
+"80|metadata_leaf_count": {
+"q": "count",
+"label": "metadata leaf count",
+"unit": ""
+},
+"80|demand.scalars": {
+"q": "power",
+"label": "scalars",
+"unit": ""
+},
+"80|demand.arrays": {
+"q": "power",
+"label": "arrays",
+"unit": ""
+},
+"80|demand.series": {
+"q": "power",
+"label": "demand",
+"unit": ""
+},
+"81|activity.kpis[*].value": {
+"q": null,
+"label": "Average",
+"unit": "/hrs"
+},
+"81|activity.legend[*].value": {
+"q": "count",
+"label": "Total tap count",
+"unit": ""
+},
+"81|activity.points[*].count": {
+"q": "count",
+"label": "count",
+"unit": ""
+},
+"81|activity.cumAxis.max": {
+"q": null,
+"label": "max",
+"unit": ""
+},
+"81|activity.cumAxis.min": {
+"q": null,
+"label": "min",
+"unit": ""
+},
+"81|activity.cumAxis.ticks": {
+"q": null,
+"label": "ticks",
+"unit": ""
+},
+"81|activity.countAxis.max": {
+"q": "count",
+"label": "max",
+"unit": ""
+},
+"81|activity.countAxis.min": {
+"q": "count",
+"label": "min",
+"unit": ""
+},
+"81|activity.countAxis.ticks": {
+"q": "count",
+"label": "ticks",
+"unit": ""
+},
+"81|metadata_leaf_count": {
+"q": "count",
+"label": "metadata leaf count",
+"unit": ""
+},
+"81|demand.scalars": {
+"q": "power",
+"label": "scalars",
+"unit": ""
+},
+"81|demand.arrays": {
+"q": "power",
+"label": "arrays",
+"unit": ""
+},
+"81|demand.series": {
+"q": "power",
+"label": "demand",
+"unit": ""
+}
+}

@@ -8,6 +8,7 @@ LAYER 3 IS RETIRED (archived at archive/layer3_archive_20260702.tar.gz — do NO
 Layer 2: it produces {1a, 1b, layer2} and passes them through. The per-card DATA fill happens at the HOST via
 ems_exec.serve.run.run_card (host/server.py) — real neuract leaves + honest-blank else, NO ws/mfm frame-fetch,
 NO Layer 3 payload-cleaner. `V48_SKIP_LAYER3` is gone (L3 is always-off / removed). [ems_exec swap]"""
+import copy
 import os
 import obs.ai_log as ai_log
 from run.parallel import run_parallel
@@ -180,14 +181,19 @@ def _reflect_loop(out, prompt, db, run_id, no_reroute=False):
             stage(rid, "reflect", loop=attempt, gaps=len(gaps), unresolved=True)  # host still fills best-effort layout
 
 
-def run_pipeline(prompt, *, asset_id=None, db=None, run_id=None):
+def run_pipeline(prompt, *, asset_id=None, db=None, run_id=None, layer1a=None):
     db = db or CMD_CATALOG
     run_id = run_id or make_run_id(prompt)
     ai_log.set_run_id(run_id)
     stage(run_id, "PROMPT", text=repr(prompt), asset_id=asset_id)
 
+    # SHARED-TEMPLATE LANE [multi-asset author-once-per-class]: a compare lane (run_pipeline_multi) INJECTS the already-
+    # routed 1a so the template is chosen ONCE for the whole compare. The lane then runs 1b ALONE against that shared page
+    # and the page is LOCKED — reconcile / preflight / reflect re-routes are suppressed below so EVERY asset renders the
+    # SAME template. layer1a=None (the single-asset path) is byte-identical: 1a routes normally + every re-route runs.
+    _shared_template = layer1a is not None
     results = run_parallel({
-        "layer1a": lambda: run_1a(prompt, db),
+        "layer1a": (lambda: layer1a) if _shared_template else (lambda: run_1a(prompt, db)),
         "layer1b": lambda: run_1b(prompt, asset_id=asset_id),
     })
 
@@ -229,7 +235,8 @@ def run_pipeline(prompt, *, asset_id=None, db=None, run_id=None):
         # has_feeders; if the routed page's granularity contradicts the resolved asset (single meter on a panel-aggregate
         # shell, or vice versa), re-route to the correct-granularity MIRROR page BEFORE validate/Layer 2. [routing #07]
         from run.reconcile_granularity import apply as _reconcile_granularity
-        _reconcile_granularity(out, prompt, db, run_id)   # may swap out["layer1a"] to the correct-granularity mirror
+        if not _shared_template:                          # shared-template lane keeps the ONE routed page (locked)
+            _reconcile_granularity(out, prompt, db, run_id)   # may swap out["layer1a"] to the correct-granularity mirror
 
         _validate(out, db, run_id)
 
@@ -245,7 +252,8 @@ def run_pipeline(prompt, *, asset_id=None, db=None, run_id=None):
         # PRE-L2 EXPECTED-GAP RE-ROUTE — the deterministic topology-infeasibility roll-up from run_validate re-routes
         # BEFORE the Layer-2 fan-out (was discovered post-emit in reflect, burning a full N-emit pass). [audit HIGH]
         out["asset_no_data"] = ((out["layer1b"] or {}).get("how") == "no_data")
-        _preflight_reroute(out, prompt, db, run_id)       # may swap out["layer1a"] + re-validate
+        if not _shared_template:                          # shared-template lane: never re-route (the page is locked)
+            _preflight_reroute(out, prompt, db, run_id)   # may swap out["layer1a"] + re-validate
 
         # VALIDATION GATE (CHILLED) — validation SURFACES (FE dot/pill) but does NOT block on incidental gaps. It gates
         # ONLY when the page has ZERO usable data (the basket had real columns but EVERY one failed) — a genuine can't-
@@ -279,7 +287,7 @@ def run_pipeline(prompt, *, asset_id=None, db=None, run_id=None):
         # exists to find a page this asset's data CAN answer) is pointless: there is no data on any page. Suppress the
         # re-route for a no_data asset so it lands on the requested page's honest empty skeleton instead of thrashing.
         if asset_pinned and os.environ.get("V48_SKIP_LAYER2") != "1":
-            _reflect_loop(out, prompt, db, run_id, no_reroute=out["asset_no_data"])
+            _reflect_loop(out, prompt, db, run_id, no_reroute=(out["asset_no_data"] or _shared_template))
             # POST-SETTLE PAYLOAD REFRESH [report-staleness, annotate-only]: swaps can change the FINAL card set after
             # the pre-L2 report scored the 1a selection — re-score payload supply-vs-demand keyed by final render id.
             if out.get("layer2") and out.get("validation"):
@@ -302,3 +310,29 @@ def run_pipeline(prompt, *, asset_id=None, db=None, run_id=None):
 
     record_notes(run_id, out["notes"])                          # persist loop1/loop2 notes for later user-facing explain
     return out
+
+
+def run_pipeline_multi(prompt, assets, *, db=None):
+    """MULTI-ASSET COMPARE [author-once-per-class]: resolve N assets → N groups of cards in ONE run. 1a routes the
+    template ONCE (the first class establishes it; every later class LOCKS to it via the layer1a injection); Layer 2
+    authors the card recipe ONCE PER DISTINCT CLASS — a same-class compare ("UPS-01 vs UPS-02") is ONE authoring, and
+    every same-class asset reuses that recipe (it binds by column NAME, portable across sibling meters). The per-asset
+    DATA fill + honest-blank happen at the HOST executor (host/assemble.assemble_cards) reusing the class recipe — NOT
+    per-asset Layer 2. `assets` = the resolved as_asset dicts (host resolves the picker's asset_ids). Returns
+    {layer1a, run_id, groups:[{class, lane, assets}]}: `lane` is a full run_pipeline result whose layer2 IS the class
+    recipe, `assets` the same-class members that reuse it. ONE asset → ONE group == the single-asset pipeline verbatim."""
+    db = db or CMD_CATALOG
+    run_id = make_run_id(prompt)
+    by_class = {}
+    for a in (assets or []):
+        by_class.setdefault((a or {}).get("class") or "?", []).append(a)
+    groups, shared_1a = [], None
+    for cls, members in by_class.items():
+        rep = members[0] or {}
+        lane = run_pipeline(prompt, asset_id=rep.get("mfm_id"), db=db,
+                            run_id=make_run_id(prompt, salt=f"class:{cls}"),
+                            layer1a=(copy.deepcopy(shared_1a) if shared_1a is not None else None))
+        if shared_1a is None:
+            shared_1a = lane.get("layer1a")                     # the FIRST class ROUTES the template; the rest lock to it
+        groups.append({"class": cls, "lane": lane, "assets": members})
+    return {"layer1a": shared_1a, "run_id": run_id, "groups": groups}

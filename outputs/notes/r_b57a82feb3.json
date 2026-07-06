@@ -5,31 +5,31 @@
    "card_id": 18,
    "title": "Events KPI Strip",
    "answerability": "partial",
-   "note": "Showing panel-level event aggregates for the last 7 days. Some panel members (GIC-01-N9-Solar Incomer-1, GIC-02-N1-Solar Incomer-2, GIC-15-N10-PCC-01 (Transformer-01), GIC-15-N11-PCC-01 (Transformer-02), GIC-02-N6-UPS-05 CL:600KVA, GIC-02-N7-UPS-06 CL:600KVA) have no data and are excluded from the rollup."
+   "note": "Showing aggregate panel event counts; some panel members (GIC-01-N9, GIC-02-N1, GIC-15-N10, GIC-15-N11, GIC-02-N6, GIC-02-N7) are dark and do not report live data."
   },
   {
    "card_id": 19,
    "title": "AI Summary",
    "answerability": "partial",
-   "note": "Per-panel event counts and detailed root-cause metrics are not directly measured by the panel aggregate; the AI narrative is generated from available voltage/current deviation and unbalance columns."
+   "note": "Showing narrative summary for 6 active feeders; 2 supply incomers and 2 UPS feeders are dark (no data) and will render as honest blanks."
   },
   {
    "card_id": 20,
    "title": "Event Timeline at {period}",
    "answerability": "partial",
-   "note": "Panel members GIC-01-N9-Solar Incomer-1, GIC-02-N1-Solar Incomer-2, GIC-15-N10-PCC-01 (Transformer-01), GIC-15-N11-PCC-01 (Transformer-02), and GIC-02-N7-UPS-06 CL:600KVA are dark (has_data=N) and will render honest-blanks for their event slots."
+   "note": "Showing per-member event distribution for 6 active feeders; 2 feeders (GIC-02-N6-UPS-05, GIC-02-N7-UPS-06) are dark and honest-blank their slots."
   },
   {
    "card_id": 21,
    "title": "Current Distribution at {period}",
    "answerability": "partial",
-   "note": "Showing current draw for 6 active feeders; 2 feeders (UPS-05, UPS-06) are dark (no live data) and will render as blank spokes."
+   "note": "Showing current distribution for 6 active feeders; 2 feeders (UPS-05, UPS-06) are dark (no data) and will render as blank spokes."
   },
   {
    "card_id": 22,
    "title": "Other Panels Event at {period}",
    "answerability": "partial",
-   "note": "Showing per-panel event counts and voltage/current metrics for fed feeders; supply-side members (Solar Incomers, Transformers) are dark and honest-blank as they have no data."
+   "note": "Showing per-panel voltage/current events and metrics for active feeders (UPS-01, UPS-02, UPS-03, BPDB-01, BPDB-02, UPS-04); inactive feeders (UPS-05, UPS-06, Solar Incomers, Transformers) are honest-blanked as they have no data."
   }
  ],
  "loop2": null

@@ -351,13 +351,25 @@ def _build(card_in, *, oversize=False):
                 "NEVER fabricated placeholder samples ([{\"label\":\"\"}, …]) or a pretend step state; the page composite "
                 "derives the real cursor from the sibling heatmap's live history at render time.",
             ]
-    parts += [
-        "",
+    # MORPH-MAP MODE [emit.morphmap_mode]: the system prompt (morphmap/prompt.md) asks for a {"morphs":{path:value}}
+    # map instead of a full exact_metadata retype — every default ships byte-identical by construction. Keep the SHAPE
+    # block verbatim (the AI still needs to see the leaf paths + defaults to choose the few morphs), but flip the
+    # instruction wording so the user message agrees with the system prompt.
+    # ★ DP-GATED (SAME decision as emit._system): the morphs-only header is shown ONLY for a card that HAS a stored
+    # skeleton (default_payload.payload_stripped non-null — `dp` truthy here means the shape block above is the STORED
+    # skeleton, not the contract example). A NO-DEFAULT-PAYLOAD card keeps the full-author header even with the flag on,
+    # so the user message and the system prompt AGREE and the card authors exact_metadata (build.py's no-dp path).
+    from layer2.emit.morphmap.mode import use_morphmap_metadata as _use_mm
+    _mm = _use_mm(card_in)
+    _meta_header = (
+        f"METADATA SHAPE + STATIC-CONFIG DEFAULTS — these ship BYTE-IDENTICAL automatically. Return `morphs`: a flat "
+        f"map of ONLY the few story-driven leaf paths you change (dotted+[i], copied verbatim from the shape; `{{}}` is "
+        f"the common case). DATA leaves (typed 0/[] placeholders) are NEVER morphs {shape_note}:"
+        if _mm else
         f"METADATA SHAPE + STATIC-CONFIG DEFAULTS — author EVERY metadata key as exact_metadata, BYTE-IDENTICAL "
         f"unless the story justifies a morph; DATA leaves already show their typed placeholder (0/[]) — copy them "
-        f"as-is, NEVER refill them with a value {shape_note}:",
-        meta_block,
-        ]
+        f"as-is, NEVER refill them with a value {shape_note}:")
+    parts += ["", _meta_header, meta_block]
     _dual = _dual_owned_line(skeleton)          # per-card DUAL-OWNED flag [C4] — '' on every card without those keys
     if _dual:
         parts.append(_dual)
@@ -385,6 +397,12 @@ def _build(card_in, *, oversize=False):
         parts += ["", "SHARED CONTEXT REF (read-only; built once in Move 1; data_instructions.fields[].source points HERE):",
                   f"  $id: {ref.get('$id')}   buffer_keys: {ref.get('buffer_keys')}   interaction_seeds: {ref.get('interaction_seeds')}",
                   "  Your atom holds NO data — fields[].source points at the shared buffer; you STILL author full exact_metadata."]
+    _closing = (
+        "return morphs (flat {path:value} of the story-driven few; {} = all defaults) + data_instructions (resolved "
+        "recipe, real basket columns). JSON:"
+        if _mm else
+        "author exact_metadata (byte-identical default, morph per story) + data_instructions (resolved recipe, real "
+        "basket columns). JSON:")
     parts += ["", "Decide keep/swap (rules 1-3 + interdependency + confidence>=0.9 + named criterion), then MORPH-EMIT:",
-              "author exact_metadata (byte-identical default, morph per story) + data_instructions (resolved recipe, real basket columns). JSON:"]
+              _closing]
     return "\n".join(parts)

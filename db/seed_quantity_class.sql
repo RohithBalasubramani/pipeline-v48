@@ -15,6 +15,15 @@
 --                           same-dimension pun wall ('Efficiency' 5.3 ← loadFactorPct: percent is WEAK so the
 --                           dimensional wall passes it; the FAMILY wall blanks it). Markers are token-exact;
 --                           a multi-word marker matches an adjacent token run.
+--   quantity.source_roles — NAME-level SOURCE roles {role: {markers, dedicated}}: a same-QUANTITY, different-ROLE
+--                           smear the dimensional + reuse walls both miss. A slot naming a DEDICATED-SENSING role
+--                           (bypass) binds ONLY a same-role source; the meter's plain input/line reading of that
+--                           quantity honest-blanks — the card-59 bypassVoltageV ← voltage_avg (no bypass column).
+--                           A non-dedicated role (input) never flags (input* ← voltage_avg is the real reading).
+--   quantity.time_axis_label_tokens — series TIME-AXIS LABEL leaf tokens: a per-element points[*].label / .slot leaf
+--                           fills from the card's OWN bucket timestamps (kind=time), never a measured column — a
+--                           column/fn bound there ships the reading AS a time label (card-59 secondary:
+--                           points[*].label ← active_power_total_kw = negative kW as x-axis labels); it honest-blanks.
 -- These drive BOTH the emit context (qty= per DB SCHEMA line, expected_qty= per slot line) AND the deterministic
 -- QUANTITY-WALL honest-blank in layer2/gates.enforce_honest_blank ('X not measured by this meter (no X column)').
 -- Code-default mirrors live in layer2/quantity_class.py — behavior is identical until a row is edited.
@@ -42,6 +51,14 @@ INSERT INTO app_config (key, value, data_type, section, note) VALUES
   '{"efficiency":{"markers":["efficiency"],"classes":["efficiency"]},"specific-consumption":{"markers":["sfc","specific consumption","specific fuel consumption","specific energy consumption"],"classes":[]},"consumption":{"markers":["consumption","consumed"],"classes":["energy","power"]},"fuel":{"markers":["fuel"],"classes":[]}}',
   'json', 'quantity',
   'NAME-level semantic families — a slot whose name (slot path / metric / sibling label) claims a family binds only a same-family source fn/column or a family-licensed quantity class; blocks the card-65 same-dimension pun (Efficiency ← loadFactorPct passes the WEAK-percent dimensional wall). Token-exact markers, multi-word = adjacent token run (layer2/quantity_class.semantic_family_mismatch)'),
+ ('quantity.source_roles',
+  '{"bypass":{"markers":["bypass"],"dedicated":true},"input":{"markers":["input","line","mains"],"dedicated":false}}',
+  'json', 'quantity',
+  'NAME-level SOURCE roles — a same-QUANTITY, different-ROLE smear the dimensional wall (voltage↔voltage compatible) and the reuse-smear wall (classified bind defers) both miss. A slot naming a DEDICATED-SENSING role (dedicated:true) binds ONLY a source whose name carries that SAME role; the meter''s plain input/line reading of the same quantity is a fabrication and honest-blanks (card-59 bypassVoltageV/bypassFrequencyHz ← voltage_avg/frequency_hz: the gic_* UPS meter has NO bypass column, verified against information_schema). A NON-dedicated role (input/line/mains — the plain reading) never flags: input* slots legitimately bind bare voltage_avg. Token-exact markers, leaf-most first. Seed ONLY the verified bypass role — output/battery/rectifier punned binds are already caught by the score-index/quantity walls (layer2/quantity_class.source_role_mismatch)'),
+ ('quantity.time_axis_label_tokens',
+  '["label","slot","time","ts","tick","axislabel","timestamp","bucket"]',
+  'json', 'quantity',
+  'series TIME-AXIS LABEL leaf tokens — a per-element points[*].label / .slot leaf is the time-axis tick label, filled from the card''s OWN bucket timestamps (kind=time), NEVER a measured column. A raw/bucketed/derived field binding a column/fn into such a leaf ships the reading AS an x-axis time label (card-59 secondary: composite.points[*].label ← active_power_total_kw = negative kW as time labels); it honest-blanks. Only a per-ELEMENT ([*]/indexed) series leaf matches — a bare scalar label (legend/badge) is not a time axis; a kind=time atom (no column) is exempt (layer2/quantity_class.is_time_axis_label_slot, layer2/gates._time_axis_label_bind)'),
  ('quantity.compatible_slot_source_pairs',
   '[["current","deviation-spread"],["voltage","deviation-spread"]]',
   'json', 'quantity',
@@ -50,6 +67,10 @@ INSERT INTO app_config (key, value, data_type, section, note) VALUES
   '["decimals","opacity","index","layout","windowdays"]',
   'json', 'quantity',
   'const metric/slot-leaf name tokens (token-exact / adjacent-pair) that state a pure DISPLAY/FRAME knob, not a measurement — decimals, areaOpacity/dimOpacity, selectedSampleIndex, layout, windowDays — exempt from the const-source guard (~450 corpus FPs of broken formatter/selection chrome); a quantity-named const (131 A / 0.0 kW / 1461 kWh) never matches and stays policed (layer2/quantity_class.structural_const_name)'),
+ ('quantity.axis_chrome_const_slots',
+  '["ymax","ymin","yticks","watchlines"]',
+  'json', 'quantity',
+  'slot path SEGMENTS whose const value is AXIS-GEOMETRY chrome (yMax/yMin/yTicks bounds + watchLines threshold lines) — exempt from the const-source guard (c49 LoadImpactChart false-positive: a design-default axis scale/threshold re-supplied as a const is not a fabricated reading; post-fill yscale recomputes filled views). ANY-SEGMENT match so watchLines[*].value is exempted while stats[*].value (a real KPI reading, no axis segment) stays policed (layer2/gates._axis_chrome_const_segs)'),
  ('quantity.axis_max_source_tokens',
   '["max","peak","worst","highest"]',
   'json', 'quantity',

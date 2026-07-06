@@ -45,6 +45,15 @@ def _gap_of(field, asset_table, present_cols, latest_row, asset_name=None):
     metric = field.get("label") or field.get("metric") or col or field.get("slot") or "value"
     if kind == "derived" and (field.get("fn") or field.get("metric")):
         key = _derived_key(field)
+        # FAB-BY-MISLABEL (Family G, card 72): the leaf blanked because the bound fn MEASURES a different polarity than
+        # the slot means (active-energy fn on a reactive-energy slot). Say so honestly — never 'no valid reading' on a
+        # column that DID have a reading (it was the wrong quantity). Matches the executor's _polarity_conflict guard.
+        try:
+            from ems_exec.executor.verify import _polarity_conflict as _pc
+            if _pc(field, key):
+                return "quantity_mismatch", {"metric": metric}
+        except Exception:
+            pass
         b = _deriv.binding(key) if key else None
         if not b:
             return "derivation_unbound", {"metric": metric, "fn": key or field.get("fn")}

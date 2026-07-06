@@ -4,7 +4,7 @@ import type { PipelineResult } from "./types";
 import { CommandHeader } from "./components/CommandHeader";
 import { SuggestedCommands } from "./components/SuggestedCommands";
 import { CardGrid } from "./components/CardGrid";
-import { KnowledgeAnswer } from "./components/KnowledgeAnswer";
+import { KnowledgeAnswer, type KnowledgeTurn } from "./components/KnowledgeAnswer";
 import { AssetResolution } from "./components/AssetResolution";
 import type { Seed } from "./components/PromptBar";
 
@@ -18,18 +18,31 @@ export function App() {
   const [lastPrompt, setLastPrompt] = useState("");
   const [seed, setSeed] = useState<Seed>({ text: "", n: 0 });
   const [resolving, setResolving] = useState(false);   // asset-resolution popup flow is active
+  // KNOWLEDGE conversation thread — the running Q&A turns (oldest-first). Carried back to the one AI layer as `history`
+  // so a follow-up ("how is it measured") resolves in context; cleared the moment a prompt routes to the card pipeline.
+  const [thread, setThread] = useState<KnowledgeTurn[]>([]);
 
-  const run = async (prompt: string, assetId?: number) => {
+  const run = async (prompt: string, assetId?: number | number[]) => {
     setLoading(true);
     setError(null);
     setLastPrompt(prompt);
+    // A fresh prompt (no pinned asset) carries the knowledge thread as follow-up context; an asset re-pick does not.
+    const history = assetId == null ? thread.map((t) => ({ prompt: t.prompt, answer: t.answer })) : [];
+    const isMulti = Array.isArray(assetId);   // MULTI-ASSET compare: skip the "resolved" popup, reveal the grouped grid
     try {
-      const r = await runPipeline(prompt, assetId);
+      const r = await runPipeline(prompt, assetId, null, history);
       setResult(r);
+      if ((r as any).kind === "knowledge") {
+        // append this turn to the thread (a refused/off-scope turn is shown too, as OUT OF SCOPE)
+        setThread((t) => [...t, { prompt, answer: (r as any).answer, refused: !!(r as any).refused }]);
+      } else {
+        setThread([]);   // routed to the card/asset pipeline → new topic, drop the conversation
+      }
       // open/keep the resolution popup when 1b is ambiguous/empty, while a pinned pick re-runs (→ "resolved" view), OR
       // when the named asset is NO-DATA (the picker opens with it greyed + alternatives; "None of these" → no-data
       // terminal). Everything no-data is resolved AT THE PICKER — it never proceeds to Layer 2. [no_data → picker, hybrid]
-      setResolving((r as any).asset_pending === true || (r as any).asset_no_data === true || assetId != null);
+      // A multi-asset compare pins every asset up-front → go straight to the grouped grid (never the single "resolved" card).
+      setResolving(!isMulti && ((r as any).asset_pending === true || (r as any).asset_no_data === true || assetId != null));
     } catch (e) {
       setError(e instanceof Error ? e.message : String(e));
       setResult(null);
@@ -48,6 +61,9 @@ export function App() {
   // rendered as ONE text panel, never the card grid.
   const knowledge = !!result && (result as any).kind === "knowledge";
   const hasCards = !!result && !knowledge && !(result as any).asset_pending && !noData && !loading && !resolving;
+  // HONEST OUTAGE: a data_unavailable terminal (e.g. the neuract tunnel dropped) OR a resolved run that produced ZERO
+  // cards must show a clear notice — NOT a silent blank grid. Covers the single AND the multi-asset response.
+  const outage = hasCards && ((result as any).data_unavailable === true || (result!.cards?.length ?? 0) === 0);
 
   return (
     <div className="cc-shell">
@@ -55,7 +71,13 @@ export function App() {
 
       {knowledge && !loading ? (
         <main className="cc-work">
-          <KnowledgeAnswer prompt={lastPrompt} answer={(result as any).answer} refused={(result as any).refused} />
+          <KnowledgeAnswer turns={thread} />
+        </main>
+      ) : outage ? (
+        <main className="cc-work">
+          <div className="cc-work-inner">
+            <DataUnavailable degrade={(result as any).degrade} />
+          </div>
         </main>
       ) : hasCards ? (
         <div className="cc-results">
@@ -131,6 +153,18 @@ function ValidationBar({ validation, cards }: { validation: any; cards: any[] })
       {ds && <span>data {ds.n_pass ?? 0}/{ds.n_columns ?? 0} cols{ds.n_fail ? ` · ${ds.n_fail} fail` : ""}{ds.n_warn ? ` · ${ds.n_warn} warn` : ""}</span>}
       {ps && <span>payload {ps.n_pass ?? 0}/{ps.n_cards ?? 0} cards{ps.n_fail ? ` · ${ps.n_fail} fail` : ""}</span>}
       {(fails || warns) ? <span style={{ marginLeft: "auto" }}>{fails} fail · {warns} warn (cards)</span> : null}
+    </div>
+  );
+}
+
+// HONEST OUTAGE notice — shown when a run resolves but has no data to render (data_unavailable terminal or zero cards),
+// e.g. the neuract live-data tunnel is down. Names the machine reason (degrade.reason) instead of a blank grid.
+function DataUnavailable({ degrade }: { degrade?: { reason?: string; kind?: string } | null }) {
+  const reason = degrade?.reason || "The live-data source is currently unreachable, so there are no readings to render. Try again once the connection is restored.";
+  return (
+    <div className="cc-fatal" style={{ borderColor: "#d9a300", background: "#fbf4e0" }}>
+      <div style={{ fontWeight: 600, color: "#8a6d00", marginBottom: 4 }}>Data unavailable</div>
+      <div style={{ opacity: 0.9 }}>{reason}</div>
     </div>
   );
 }

@@ -1,0 +1,18 @@
+{
+ "run_id": "r_e974862b2d",
+ "loop1": [
+  {
+   "card_id": 41,
+   "title": "Input vs Output Energy",
+   "answerability": "partial",
+   "note": "Showing total active power as a proxy for UPS input/output energy rates; per-phase power is not measured for this asset."
+  },
+  {
+   "card_id": 42,
+   "title": "Load Anomalies",
+   "answerability": "partial",
+   "note": "Showing load factor and present load as percentages of rated capacity (600 kVA). The 'load-anomalies' endpoint is used for trend/anomaly detection, but specific dip/surge event counts are not available for this UPS asset."
+  }
+ ],
+ "loop2": null
+}

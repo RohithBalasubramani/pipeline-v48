@@ -70,6 +70,7 @@ export interface Card {
   frame_status?: FrameStatus | null;            // per-endpoint {ok, why} reason channel
   data_note?: string | null;                    // B1: Layer 2's plain-words proxy/substitution disclosure (additive)
   l2_answerability?: "full" | "partial" | "none" | null; // B1: L2's OWN claim (telemetry; render.answerability is the derived truth)
+  asset?: { id?: number | null; name?: string | null; class?: string | null } | null; // MULTI-ASSET: the asset this card belongs to (present only on a compare run; FE groups + labels by it)
 }
 
 export interface Candidate {
@@ -111,6 +112,8 @@ export interface PipelineResult {
     payload_summary: unknown;
   };
   cards: Card[];
+  multi_asset?: boolean;                         // MULTI-ASSET compare: cards are tagged by `card.asset` → the FE renders a per-asset grouped grid
+  assets?: Array<{ mfm_id?: number; name?: string; class?: string; table?: string }>; // the compared assets (order = card groups)
   frames?: Record<string, unknown>;             // {endpoint: ems_backend frame} — FE feeds frames[card.endpoint] to the card's CMD V2 mapper
   frame_status?: Record<string, FrameStatus>;   // {endpoint: {ok, why}} — the reason channel (ER-6)
   live_frame?: unknown;                          // back-compat: the page-endpoint frame

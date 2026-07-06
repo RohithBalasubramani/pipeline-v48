@@ -98,7 +98,15 @@ def test_assemble_fail_only_when_zero_usable():
 
 
 # ---------- Layer 2 consumes the folded verdicts ----------
-def test_gate_treats_validate_fail_column_as_unbindable():
+def test_gate_treats_validate_fail_column_as_honest_blank_not_card_block():
+    """A validate-FAIL column is UNBINDABLE (stays out of `real`, carries its validate reason) — but binding one is a
+    PER-LEAF honest-blank, NOT a card-blocking payload_error. [contract update 2026-07-06, card 47] The gate used to
+    hard-fail (ok=False) so the emit could be re-prompted; but validation now runs PRE-L2 (the AI already sees the fail
+    verdict in the basket before binding), the reflect loop reroutes on answerability='none' not on one field, and the
+    mandate is 'verdicts are telemetry, never a card gate — honest-blank+reason is a PASS'. So a field bound to a
+    real-but-dead column records honest-blank telemetry and is KEPT (the executor fills any live rows and blanks the
+    null rest per-leaf); conforms stays True. A genuinely HALLUCINATED column is the separate hard path (dropped by the
+    enforce_honest_blank pre-pass)."""
     basket = {"columns": [
         {"column": "kw", "verdict": "pass", "usable": True},
         {"column": "dead_kwh", "verdict": "fail", "usable": False, "validate_reasons": ["null_rate 1.00 > 0.5"]},
@@ -107,7 +115,9 @@ def test_gate_treats_validate_fail_column_as_unbindable():
     assert real == {"kw"} and "dead_kwh" in failed
     di = {"fields": [{"slot": "a", "kind": "raw", "source": "live", "column": "dead_kwh"}]}
     ok, issues = gate_data_instructions(di, basket)
-    assert not ok and any("failed pre-L2 data validation" in i for i in issues)
+    assert ok and not issues                                       # conforms — never a payload_error
+    assert any("failed pre-L2 data validation" in r for r in (di.get("_honest_blanked") or []))
+    assert len(di["fields"]) == 1                                  # field KEPT (executor fills live rows, blanks nulls)
     di2 = {"fields": [{"slot": "a", "kind": "raw", "source": "live", "column": "kw"}]}
     ok2, issues2 = gate_data_instructions(di2, basket)
     assert ok2 and not issues2

@@ -1,0 +1,42 @@
+{
+ "run_id": "r_e00a8449d2",
+ "loop1": [
+  {
+   "card_id": 7,
+   "title": "Context Rail Header (Overview / Section / Feeder)",
+   "answerability": "partial",
+   "note": "Supply-side members (Solar Incomers, Transformers) are dark (has_data=N) and will render as honest-blanks; only fed feeders (UPS, BPDB) report live data."
+  },
+  {
+   "card_id": 5,
+   "title": "Real Time Monitoring (Feeder Heatmap)",
+   "answerability": "partial",
+   "note": "Showing live power distribution for 6 active feeders; 2 incomers and 2 UPS feeders are dark (no data) and render as blank rows per roster spec."
+  },
+  {
+   "card_id": 8,
+   "title": "AI Summary",
+   "answerability": "partial",
+   "note": "Narrative text is generated from the panel's active power and voltage rollup; per-member roster slots are bound to the panel aggregate as individual member tables are not queried for narrative generation."
+  },
+  {
+   "card_id": 9,
+   "title": "Total Feeder Consumption / Supply",
+   "answerability": "partial",
+   "note": "Showing live total feeder consumption and per-feeder breakdown. Contracted capacity (denominator) is unknown for this asset, so the consumed percentage is not calculated."
+  },
+  {
+   "card_id": 10,
+   "title": "Consumption Trend / Supply Trend",
+   "answerability": "partial",
+   "note": "Showing panel aggregate consumption trend; per-member breakdown is not measured for this asset (member tables are stubs)."
+  },
+  {
+   "card_id": 11,
+   "title": "Quick Stats",
+   "answerability": "partial",
+   "note": "Panel aggregate stats are computed from 6 active feeders (GIC-01-N3 to GIC-02-N5); 2 feeders (GIC-02-N6, GIC-02-N7) are dark and honest-blank their per-member contributions."
+  }
+ ],
+ "loop2": null
+}

@@ -1,0 +1,42 @@
+{
+ "run_id": "r_aa40f60f76",
+ "loop1": [
+  {
+   "card_id": 7,
+   "title": "Context Rail Header (Overview / Section / Feeder)",
+   "answerability": "partial",
+   "note": "Supply-side members (Solar Incomers, Transformers) are dark (has_data=N) and will render as honest-blanks; only fed feeders (UPS, BPDB) report live data."
+  },
+  {
+   "card_id": 5,
+   "title": "Real Time Monitoring (Feeder Heatmap)",
+   "answerability": "partial",
+   "note": "Showing live power flows for active feeders (UPS-01/02/03, BPDB-01/02, UPS-04). Incomers (Solar 1/2, Transformer 01/02) and UPS-05/06 are dark (no data) and render as honest blanks."
+  },
+  {
+   "card_id": 8,
+   "title": "AI Summary",
+   "answerability": "partial",
+   "note": "Narrative is generated from the panel rollup; per-member narrative slots are honest-blank for offline feeders (GIC-01-N9, GIC-02-N1, GIC-15-N10, GIC-15-N11, GIC-02-N6, GIC-02-N7)."
+  },
+  {
+   "card_id": 9,
+   "title": "Total Feeder Consumption / Supply",
+   "answerability": "partial",
+   "note": "Showing total feeder consumption (active_power_total_kw) for live feeders; contracted supply (denominator) is unknown for this asset and honest-blanked. Per-member breakdowns are rendered for live feeders (UPS-01, UPS-02, UPS-03, BPDB-01, BPDB-02, UPS-04); dark feeders (UPS-05, UPS-06, Solar, Transformers) are omitted from the live rollup."
+  },
+  {
+   "card_id": 10,
+   "title": "Consumption Trend / Supply Trend",
+   "answerability": "partial",
+   "note": "Showing panel aggregate trend from 6 active feeders; 2 feeders (UPS-05, UPS-06) are dark and honest-blank their series segments."
+  },
+  {
+   "card_id": 11,
+   "title": "Quick Stats",
+   "answerability": "partial",
+   "note": "Showing panel aggregate stats (Voltage, Current Unbalance, Electrical Load) from active feeders; 2 of 8 feeders (UPS-05, UPS-06) are dark and honest-blank their slots."
+  }
+ ],
+ "loop2": null
+}

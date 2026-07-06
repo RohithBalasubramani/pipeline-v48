@@ -74,34 +74,16 @@ def build_response(prompt, asset_id=None, date_window=None):
     l1b = out.get("layer1b") or {}
     val = out.get("validation") or {}
 
-    vcards = (val.get("payload") or {}).get("cards") or []
-    val_by_id = {c.get("card_id"): c for c in vcards if isinstance(c, dict) and "card_id" in c}
-
     page_key = l1a.get("page_key")
     l2 = out.get("layer2") or {}                              # {card_id: Layer2CardOutput} — the payload source
 
-    # PER-CARD NEURACT EXECUTOR — the ONE data path (ems_exec). Every Layer-2 card (feeder / asset / panel alike) has its
-    # payload COMPLETED by ems_exec.run_card straight from neuract: real where the AI named a column/fn, honest None/'—'
-    # everywhere else, every seed number stripped. No ws/mfm frame-fetch, no asset-dashboard socket, no Layer 3. Panel-
-    # aggregate leaves simply honest-blank per-card (aggregation deferred). `frames` is emitted EMPTY for FE back-compat.
-    asset_table = (l1b.get("asset") or {}).get("table")
-    db_link = _neuract_dsn.dsn()                              # DB-driven neuract DSN (config accessor + code-default)
+    # PER-CARD NEURACT EXECUTOR (host/assemble.assemble_cards) — the ONE data path (ems_exec): every Layer-2 card (feeder
+    # / asset / panel alike) has its payload COMPLETED from neuract for the RESOLVED asset — real where the AI named a
+    # column/fn, honest None/'—' else, every seed number stripped. No ws/mfm frame-fetch, no Layer 3. The SAME per-asset
+    # assembly each multi-asset compare lane reuses (host/multi_asset). `frames` stays EMPTY for FE back-compat.
+    from host.assemble import assemble_cards
     frames, frame_status = {}, {}                             # data no longer flows through endpoint frames
-    if out.get("data_unavailable") or not asset_table:
-        # INFRA-OUTAGE / no resolved table — 1a/1b never reached ground truth so Layer 2 never ran (or has no meter to
-        # read). Emit ZERO cards (honest page-level terminal via data_unavailable + degrade.reason) rather than bare 1a
-        # shells carrying no verdict — the silent verdict-less dead-end the guarantee forbids.
-        completed_by_id, status_by_id, cards = {}, {}, []
-    else:
-        completed_by_id, status_by_id = _run_cards(l2, asset_table, db_link=db_link,
-                                                    date_window=date_window, run_id=out.get("run_id"),
-                                                    asset=(l1b.get("asset") or {}), page_key=page_key)
-        cards = [_enrich_card(c, page_key, val_by_id, l2.get(c.get("card_id")),
-                              completed=completed_by_id.get(c.get("card_id")),
-                              run_ok=(status_by_id.get(c.get("card_id")) or {}).get("ok", True),
-                              run_why=(status_by_id.get(c.get("card_id")) or {}).get("why"),
-                              asset_table=asset_table)
-                 for c in (l1a.get("cards") or [])]
+    cards = assemble_cards(out, l1b.get("asset"), date_window)
     _attach_l2_notes(cards, l2)   # B1: serve data_note + l2_answerability per card (additive; see the helper)
     from obs.stage import stage
     stage(out.get("run_id") or "-", "RESPONSE", page=page_key, cards=len(cards),
@@ -257,24 +239,32 @@ class Handler(BaseHTTPRequestHandler):
             if not prompt:
                 return self._send(400, {"ok": False, "error": "prompt required"})
             asset_id = req.get("asset_id")
+            # MULTI-ASSET compare [author-once-per-class]: the picker returned 2+ ids → resolve them ALL in ONE run
+            # (host/multi_asset.build_response_multi). Gated by the DB knob multi_asset.enabled (code default on); a
+            # single-id (or absent) request stays on the untouched single-asset build_response path.
+            _raw_ids = req.get("asset_ids")
+            asset_ids = [a for a in _raw_ids if a is not None] if isinstance(_raw_ids, list) else []
+            multi = len(asset_ids) >= 2 and bool(cfg("multi_asset.enabled", True))
             date_window = req.get("date_window")              # {range,start,end,sampling} from the FE date control (or None)
-            # KNOWLEDGE PRE-ROUTE [separate pipeline, 2026-07-06]: a CONCEPTUAL electrical/mechanical question
-            # ("what is voltage", "what are transformers") gets ONE restricted educator answer; off-domain prompts
-            # ("who is George Bush") are refused; asset/data prompts fall through UNCHANGED to the card pipeline.
-            # Skipped when the FE re-POSTs with a pinned asset_id (that is always a dashboard flow). Fail-open.
-            if asset_id is None:
-                from knowledge.route import classify as _kclassify
-                from knowledge import answer as _kanswer
-                _kind = _kclassify(prompt)
-                if _kind == "knowledge":
-                    resp = {"ok": True, "prompt": prompt, **_kanswer.answer(prompt)}
+            history = req.get("history") or None              # prior knowledge turns (oldest-first) for follow-up context
+            # KNOWLEDGE LAYER [separate pipeline, 2026-07-06]: ONE AI call routes + answers + rejects. A conceptual
+            # electrical/mechanical question ("what is voltage") comes back answered; an off-scope prompt ("who is
+            # George Bush") comes back refused; an asset/data prompt returns kind='dashboard' and falls through
+            # UNCHANGED to the card pipeline. Skipped when the FE re-POSTs a pinned asset_id. Fail-open to dashboard.
+            # `history` carries the earlier conceptual turns so a follow-up ("how is it measured") keeps context.
+            if asset_id is None and not asset_ids:
+                from knowledge.ems import ask as _ems_ask
+                _k = _ems_ask(prompt, history)
+                if _k["kind"] in ("knowledge", "off_scope"):
+                    resp = {"ok": True, "prompt": prompt, "kind": "knowledge",
+                            "answer": _k["answer"], "refused": _k["refused"]}
                     _dump_response(resp)
                     return self._send(200, resp)
-                if _kind == "off_domain":
-                    resp = {"ok": True, "prompt": prompt, **_kanswer.refuse()}
-                    _dump_response(resp)
-                    return self._send(200, resp)
-            resp = build_response(prompt, asset_id=asset_id, date_window=date_window)
+            if multi:
+                from host.multi_asset import build_response_multi
+                resp = build_response_multi(prompt, asset_ids, date_window=date_window)
+            else:
+                resp = build_response(prompt, asset_id=asset_id, date_window=date_window)
             _dump_response(resp)                              # persist server-side FIRST (robust to a client-side curl timeout)
             return self._send(200, resp)
         except Exception as e:

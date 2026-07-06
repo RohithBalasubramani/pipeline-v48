@@ -5,13 +5,25 @@
    "card_id": 70,
    "title": "Live Operations & Runtime",
    "answerability": "partial",
-   "note": "Showing today's total energy (kWh) as a proxy for run-hours, and load factor (kW) as a proxy for availability, as the meter does not log dedicated runtime counters or availability scores."
+   "note": "Showing operational status (control, breaker) and health indicators (power, frequency, voltage) from live data; runtime-specific metrics (service hours, starts, total runs, availability) are not measured by this meter and are shown as placeholders."
+  },
+  {
+   "card_id": 71,
+   "title": "Runtime & Duty",
+   "answerability": "partial",
+   "note": "Showing total run-hours as accumulated energy (kWh) and average load as load factor (%), because the meter does not log dedicated run-hours or start-count columns."
   },
   {
    "card_id": 72,
    "title": "Energy & Reliability",
    "answerability": "partial",
-   "note": "Showing today's active/reactive/apparent energy and power factor; MTBF and MTTR are not measured by this meter and are left blank."
+   "note": "Showing total active/reactive/apparent energy for the last 7 days. MTBF, MTTR, and energy fractions are not directly measured by this meter and are omitted (honest-blank)."
+  },
+  {
+   "card_id": 73,
+   "title": "Power Energy Analysis",
+   "answerability": "partial",
+   "note": "Showing Active, Reactive, and Apparent Power trends plus Energy Delivered. The card's native 'Autonomy/Readiness' score slots are honest-blanked as they require battery/UPS data not measured by this DG meter; the series labels have been morphed to reflect the actual power/energy metrics being plotted."
   }
  ],
  "loop2": null

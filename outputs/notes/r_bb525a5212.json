@@ -2,10 +2,16 @@
  "run_id": "r_bb525a5212",
  "loop1": [
   {
+   "card_id": 41,
+   "title": "Input vs Output Energy",
+   "answerability": "partial",
+   "note": "Showing UPS input/output power and energy deltas; 'Expected Loss' is a placeholder as no specific UPS loss model is available for this asset."
+  },
+  {
    "card_id": 42,
    "title": "Load Anomalies",
    "answerability": "partial",
-   "note": "Showing load factor as a proxy for load anomalies; the 'load-anomalies' endpoint is a live-only screen and does not provide historical time-series data for the 'Today' window, so the chart will render with current snapshot data."
+   "note": "Showing load factor and present load as percentages of rated capacity; expected load and anomaly events are derived from shared context and may not be fully populated for this UPS asset."
   }
  ],
  "loop2": null

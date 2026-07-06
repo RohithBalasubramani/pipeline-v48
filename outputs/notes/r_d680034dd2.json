@@ -1,0 +1,36 @@
+{
+ "run_id": "r_d680034dd2",
+ "loop1": [
+  {
+   "card_id": 23,
+   "title": "PQ Issues KPI Strip (Total Issues / I-THD Events / V-THD Events / PF Gap Feeders / Neutral Stress / Worst I-THD / Worst V-THD)",
+   "answerability": "partial",
+   "note": "Showing panel-level PQ breach counts and worst-case metrics aggregated from 6 active feeders; 2 feeders (UPS-05, UPS-06) are dark and honest-blanked."
+  },
+  {
+   "card_id": 24,
+   "title": "Harmonics & PQ Timeline",
+   "answerability": "partial",
+   "note": "Showing event timeline for 6 active feeders; 2 feeders (GIC-02-N6-UPS-05, GIC-02-N7-UPS-06) are dark and honest-blank."
+  },
+  {
+   "card_id": 25,
+   "title": "AI Summary",
+   "answerability": "partial",
+   "note": "Showing active power (kW) for the 6 live feeders; harmonic (THD) and power factor metrics are consumed from the shared PQ buffer by the AI narrative engine, not bound as individual scalar fields in this roster."
+  },
+  {
+   "card_id": 26,
+   "title": "Feeder PQ At {period}",
+   "answerability": "partial",
+   "note": "Voltage THD (vThd) columns (thd_voltage_r/y/b_pct) failed validation on this meter; showing Current THD (iThd) and PF only. Some panel members (UPS-06, UPS-07) have no data and will render blank."
+  },
+  {
+   "card_id": 27,
+   "title": "Signature",
+   "answerability": "partial",
+   "note": "Showing harmonic signature for feeders with data (UPS-01 to UPS-04, BPDB-01, BPDB-02); UPS-05 and UPS-06 are dark (no data) and will render as honest blanks."
+  }
+ ],
+ "loop2": null
+}

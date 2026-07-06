@@ -2,10 +2,28 @@
  "run_id": "r_d06f6da969",
  "loop1": [
   {
+   "card_id": 78,
+   "title": "Tap Position Optimization",
+   "answerability": "partial",
+   "note": "Showing voltage average as a proxy for tap position, as a dedicated tap position column is not measured by this meter."
+  },
+  {
+   "card_id": 79,
+   "title": "Voltage Regulation Timeline",
+   "answerability": "partial",
+   "note": "Showing average bus voltage and tap position history. Tap position is not directly measured by this meter; the voltage axis is used as a proxy for the regulator's state. Band limits and setpoints are derived from statutory voltage deviation parameters."
+  },
+  {
+   "card_id": 80,
+   "title": "Recent Tap Changes",
+   "answerability": "partial",
+   "note": "Showing active power as a proxy for tap position \u2014 tap position is not directly measured by this meter."
+  },
+  {
    "card_id": 81,
    "title": "Tap Activity & Wear",
    "answerability": "partial",
-   "note": "Showing total active power as a proxy for tap activity \u2014 the meter does not log a dedicated 'tap_count' column, so active_power_total_kw is used to infer operational frequency."
+   "note": "Showing active power total as a proxy for tap activity counts \u2014 the meter does not log a dedicated tap counter column."
   }
  ],
  "loop2": null

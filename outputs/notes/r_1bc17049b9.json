@@ -5,19 +5,13 @@
    "card_id": 47,
    "title": "Power Quality",
    "answerability": "partial",
-   "note": "Showing current THD (thd_compliance_i_avg) as a proxy for both I-THD and V-THD, as specific voltage THD columns are not logged for this asset. H5 and H7 values are bound to R-phase current THD as the closest available harmonic distortion proxy."
+   "note": "Showing current THD (thd_compliance_i_avg) and voltage THD (thd_compliance_v_avg) as proxies for harmonic distortion; voltage THD columns failed validation so compliance average is used. Flicker, Crest Factor, and H5/H7 specific values are not directly measured by this meter's validated columns, so they are left blank or proxied where possible."
   },
   {
    "card_id": 48,
    "title": "Distortion & Harmonic Profile",
    "answerability": "partial",
-   "note": "Showing Current THD (I-THD) time-series trends; Voltage THD (V-THD) and specific harmonic orders (H5/H7) are not measured by this meter and are left blank."
-  },
-  {
-   "card_id": 49,
-   "title": "Load Impact & Transformer Stress",
-   "answerability": "partial",
-   "note": "K-Factor is not directly measured; showing Load Factor (active power / rated capacity) as a proxy for harmonic-driven transformer stress. True PF and PF Gap are derived from active and apparent power."
+   "note": "Showing current THD trends; voltage THD columns (thd_voltage_*) failed validation on this meter and are omitted."
   }
  ],
  "loop2": null

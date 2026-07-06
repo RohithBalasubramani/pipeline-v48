@@ -1,0 +1,18 @@
+{
+ "run_id": "r_5925021f9c",
+ "loop1": [
+  {
+   "card_id": 47,
+   "title": "Power Quality",
+   "answerability": "partial",
+   "note": "Showing current THD (thd_compliance_i_avg) and individual phase harmonics (R, Y) as proxies for voltage harmonics (H5, H7) and crest factor, as voltage THD and crest factor columns are not logged for this asset."
+  },
+  {
+   "card_id": 48,
+   "title": "Distortion & Harmonic Profile",
+   "answerability": "partial",
+   "note": "Showing current THD evolution \u2014 voltage THD data is not currently measured for this meter (voltage THD leaves will be blank)."
+  }
+ ],
+ "loop2": null
+}

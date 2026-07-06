@@ -5,13 +5,13 @@
    "card_id": 61,
    "title": "Thermal Timeline",
    "answerability": "partial",
-   "note": "Showing active power and frequency as proxies for thermal state \u2014 no temperature columns are measured by this meter."
+   "note": "Showing electrical metrics (active power, frequency, current, voltage) as proxies for thermal history \u2014 the DG-1 MFM does not log specific temperature columns (coolant, oil, intake, exhaust)."
   },
   {
    "card_id": 62,
    "title": "Pressure \u00b7 Speed \u00b7 Load",
    "answerability": "partial",
-   "note": "Showing active power load percentage as a proxy for engine load; oil pressure and engine speed are not measured by this meter's electrical data."
+   "note": "Showing active power as a proxy for load percentage and frequency as a proxy for engine speed, as specific DG oil pressure, speed, and load columns are not present in the meter's schema. Min Oil Pressure and Oil Pressure Event Count are honest-blanked as no pressure data is measured."
   }
  ],
  "loop2": null

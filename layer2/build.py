@@ -7,6 +7,7 @@ import re
 from layer2.card_input import build_card_input, build_swap_target_input
 from layer2.emit.emit import emit
 from layer2.emit.metadata.producer import produce, metadata_reference, undeclared_morphs
+from layer2.emit.morphmap.producer import apply as morphmap_apply
 from layer2.emit.data.consumer_binding import build as consumer_build
 from layer2.resolve.column_override import apply as override_columns
 from layer2.swap.decide import gate as swap_gate
@@ -324,6 +325,12 @@ def _finalize(ci, raw, swap, *, reemit_of=None):
     # metadata frame (per-leaf degradation), but answerability NEVER defaults to "full", conforms=False, and the
     # failure stage is 'llm' so sweeps bucket it apart from emit quality.
     llm_err = raw.get("_llm_error") if isinstance(raw, dict) else None
+    # MORPH-MAP RETURN SHAPE [emit.morphmap_mode]: under the morph-map contract the emit returns a flat
+    # {"morphs":{path:value}} map instead of exact_metadata+_morphed. Key off the OUTPUT shape (robust to a stray flag):
+    # a dict carrying 'morphs' and no 'exact_metadata' is a morph-map emit. morphmap_apply() is a THIN wrapper over the
+    # SAME produce→gate→enforce machinery (byte-equivalent — offline-proven 5831/5831), so everything downstream is
+    # identical; naming a path IS declaring, so the A1 undeclared-morph silent-revert class cannot exist here.
+    _mm_raw = isinstance(raw, dict) and isinstance(raw.get("morphs"), dict) and not raw.get("exact_metadata")
     ai_meta = raw.get("exact_metadata") or {}
     morphed = ai_meta.pop("_morphed", []) if isinstance(ai_meta, dict) else []
     failures = []
@@ -338,21 +345,33 @@ def _finalize(ci, raw, swap, *, reemit_of=None):
         # inspectable DB row; NULL (un-built) → producer falls back to the identical on-the-fly strip.
         _stored = dp.get("payload_stripped")
         ref = metadata_reference(dp["payload"], stored=_stored)
-        exact_metadata, applied, rejected = produce(dp["payload"], ai_meta, morphed, stored=_stored)
-        # UNDECLARED-MORPH TELEMETRY [A1]: metadata paths the AI authored off-default WITHOUT declaring in _morphed —
-        # produce() silently reverts those to the byte-identical default (2-of-6812 _morphed compliance made ALL
-        # authoring a silent no-op). Telemetry only, NO auto-promote (the byte-identity seam stays closed).
-        _undeclared = undeclared_morphs(dp["payload"], ai_meta, morphed, stored=_stored)
-        failures += [f"morph rejected: {r}" for r in rejected]
-        ok_m, m_issues = gate_exact_metadata(exact_metadata, ref, morphed=applied)
-        # LOAD-BEARING byte-identity enforcement [META-02]: if the gate flags a metadata byte-identity/chrome/shape
-        # violation, REVERT the offending METADATA leaf to its byte-identical default (the stripped ref) so the resting
-        # render is guaranteed conforming — WITHOUT re-introducing a seed data value.
-        if not ok_m:
-            exact_metadata, reverted = enforce_exact_metadata(exact_metadata, ref, morphed=applied)
-            failures += [f"reverted to default: {p}" for p in reverted]
+        if _mm_raw and _stored is not None:
+            # MORPH-MAP PATH: apply() does the same produce→gate→enforce internally and returns the SAME exact_metadata
+            # bytes + a report with the SAME telemetry keys the full path emits. No undeclared-morph class (naming =
+            # declaring). _stored None → fall through to the full path (the AI sent no exact_metadata → full default).
+            exact_metadata, _rep = morphmap_apply(raw.get("morphs") or {}, _stored, default_payload=dp["payload"])
+            applied = _rep["applied"]
+            failures += [f"morph rejected: {r}" for r in _rep["rejected"]]
+            failures += [f"reverted to default: {p}" for p in _rep["reverted"]]
+            ok_m, m_issues = _rep["conforms"], _rep["gate_issues"]
+            failures += m_issues
+            _undeclared = []
+        else:
+            exact_metadata, applied, rejected = produce(dp["payload"], ai_meta, morphed, stored=_stored)
+            # UNDECLARED-MORPH TELEMETRY [A1]: metadata paths the AI authored off-default WITHOUT declaring in _morphed —
+            # produce() silently reverts those to the byte-identical default (2-of-6812 _morphed compliance made ALL
+            # authoring a silent no-op). Telemetry only, NO auto-promote (the byte-identity seam stays closed).
+            _undeclared = undeclared_morphs(dp["payload"], ai_meta, morphed, stored=_stored)
+            failures += [f"morph rejected: {r}" for r in rejected]
             ok_m, m_issues = gate_exact_metadata(exact_metadata, ref, morphed=applied)
-        failures += m_issues
+            # LOAD-BEARING byte-identity enforcement [META-02]: if the gate flags a metadata byte-identity/chrome/shape
+            # violation, REVERT the offending METADATA leaf to its byte-identical default (the stripped ref) so the resting
+            # render is guaranteed conforming — WITHOUT re-introducing a seed data value.
+            if not ok_m:
+                exact_metadata, reverted = enforce_exact_metadata(exact_metadata, ref, morphed=applied)
+                failures += [f"reverted to default: {p}" for p in reverted]
+                ok_m, m_issues = gate_exact_metadata(exact_metadata, ref, morphed=applied)
+            failures += m_issues
     else:
         # NO harvested default (no stored payload_stripped): the AI authors exact_metadata off the CONTRACT EXAMPLE,
         # which carries demo numbers and clock labels ('13:14:10') — shipped verbatim they render a FABRICATED live
@@ -376,7 +395,8 @@ def _finalize(ci, raw, swap, *, reemit_of=None):
     _declared_note = raw.get("data_note") or _nested_note
     # NORMALIZATION TELEMETRY [silent-normalization defect]: override notes ride di._normalized (visible in traces /
     # sweeps — hallucination counts feed the prompt-steer loop) and NEVER gate conforms — per-leaf degradation.
-    di, ov_notes = override_columns(di, basket, data_note=raw.get("data_note"), applied_morphs=applied)
+    di, ov_notes = override_columns(di, basket, data_note=raw.get("data_note"), applied_morphs=applied,
+                                    is_group_card=ci["is_group_card"])
     if ov_notes:
         di["_normalized"] = ov_notes
     # DETERMINISTIC ENVELOPE COMPLETION [META-08]: backfill payload_shape/orientation/entity_dim from the catalog

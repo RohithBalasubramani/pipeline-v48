@@ -173,16 +173,17 @@ def test_c58_neg_power_sparkline_blanks_but_real_kw_pf_and_loadfactor_keep():
     assert len(blanked) == 1 and "load-factor not measured" in blanked[0]
 
 
-def test_c59_real_relabeled_series_keep():
-    """c59 negatives: real current/voltage/frequency series + kpi and the frame ts labels keep — the disclosed
-    relabel is build.py's cross-domain note territory, not a gate blank (values are REAL same-quantity readings)."""
+def test_c59_input_series_kpi_and_time_atom_keep():
+    """c59 POSITIVES: the meter's REAL input/line readings keep — inputCurrentA ← current_avg, inputVoltageV ←
+    voltage_avg (input is a NON-dedicated role: the plain meter reading legitimately fills an input* slot), the
+    kpi ← voltage_avg, the frame-ts label (no column) and the kind=time axis atom. Nothing here is a role smear."""
     di = {"fields": [
         {"slot": "composite.points[*].label", "kind": "bucketed", "source": "frame", "metric": "ts", "unit": ""},
         {"slot": "composite.points[*].inputCurrentA", "kind": "bucketed", "source": "live",
          "column": "current_avg", "metric": "current_avg", "unit": "A"},
         {"slot": "composite.points[*].inputVoltageV", "kind": "bucketed", "source": "live",
          "column": "voltage_avg", "metric": "voltage_avg", "unit": "V"},
-        {"slot": "composite.points[*].bypassFrequencyHz", "kind": "bucketed", "source": "live",
+        {"slot": "composite.points[*].inputFrequencyHz", "kind": "bucketed", "source": "live",
          "column": "frequency_hz", "metric": "frequency_hz", "unit": "Hz"},
         {"slot": "composite.kpiCells[0].value", "kind": "raw", "source": "live",
          "column": "voltage_avg", "metric": "voltage_avg", "unit": "V"},
@@ -190,6 +191,31 @@ def test_c59_real_relabeled_series_keep():
     ]}
     assert enforce_honest_blank(di, _UPS_BASKET) == []
     assert len(di["fields"]) == 6
+
+
+def test_c59_bypass_role_smear_and_power_time_label_blank():
+    """c59 DEFECT (Family G same-quantity, different-role): bypassVoltageV ← voltage_avg and bypassFrequencyHz ←
+    frequency_hz present the INPUT/line reading AS the bypass reading — the gic_* UPS meter has NO bypass column
+    (verified against information_schema), so both HONEST-BLANK via the source-role wall while the same-column
+    inputVoltageV KEEPS. Secondary: composite.points[*].label ← active_power_total_kw (negative kW rendered as
+    x-axis TIME labels) blanks via the time-axis-label wall — a series time label fills from bucket timestamps."""
+    di = {"fields": [
+        {"slot": "composite.points[*].label", "kind": "bucketed", "source": "live",
+         "column": "active_power_total_kw", "metric": "active_power_total_kw", "unit": "kW"},
+        {"slot": "composite.points[*].inputVoltageV", "kind": "bucketed", "source": "live",
+         "column": "voltage_avg", "metric": "voltage_avg", "unit": "V"},
+        {"slot": "composite.points[*].bypassVoltageV", "kind": "bucketed", "source": "live",
+         "column": "voltage_avg", "metric": "voltage_avg", "unit": "V"},
+        {"slot": "composite.points[*].bypassFrequencyHz", "kind": "bucketed", "source": "live",
+         "column": "frequency_hz", "metric": "frequency_hz", "unit": "Hz"},
+    ]}
+    blanked = enforce_honest_blank(di, _UPS_BASKET)
+    kept = [f["slot"] for f in di["fields"]]
+    assert kept == ["composite.points[*].inputVoltageV"]        # the real input reading KEEPS
+    assert any("bypassVoltageV" in b and "bypass source role" in b for b in blanked)
+    assert any("bypassFrequencyHz" in b and "bypass source role" in b for b in blanked)
+    assert any("points[*].label" in b and "time-axis label" in b for b in blanked)
+    assert len(blanked) == 3
 
 
 # ── page 08 (v18_08, DEFECT D/G) — % fn shipped as kW tiles on a $ctx group page ────────────────────────────────────

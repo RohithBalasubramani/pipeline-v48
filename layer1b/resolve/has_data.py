@@ -35,7 +35,15 @@ def value_counts(tables, chunk=40):
                 for t in part)
             for r in q(DATA_DB, union):
                 counts[r[0]] = int(r[1])
-        except Exception as e:  # fail-open: keep the chunk as data-bearing rather than silently drop real assets
+        except Exception as e:
+            # OUTAGE ≠ bad chunk [render-guarantee I2]: a connection/transport failure means the DATA DB itself is
+            # unreachable — every chunk would "fail open" and resolution would proceed on FABRICATED has_data=True
+            # signals (→ ambiguous picker) instead of the honest data_unavailable terminal. Re-raise so run_1b's
+            # layer-exception reaches the degrade gate (the ONE outage-fingerprint home). A NON-outage error (bad
+            # table, SQL logic) keeps the fail-open: one bad chunk must not drop real assets.
+            from run.degrade_gate import is_outage_error
+            if is_outage_error(e):
+                raise
             import sys
             sys.stderr.write(f"[value_counts] chunk failed ({str(e)[:80]}) — keeping {len(part)} assets\n")
             for t in part:
@@ -96,7 +104,12 @@ def tables_with_data(tables, chunk=60):
                 for t in part)
             rows = q(DATA_DB, union)
             live |= {r[0] for r in rows if len(r) > 1 and str(r[1]).strip().lower() in ("t", "true", "1")}
-        except Exception as e:  # fail-open: a bad table name shouldn't drop the whole chunk's assets
+        except Exception as e:
+            # same outage-vs-bad-chunk split as value_counts (see above): connection failure → honest raise; a bad
+            # table name keeps the fail-open so one ghost table can't drop the whole chunk's real assets.
+            from run.degrade_gate import is_outage_error
+            if is_outage_error(e):
+                raise
             import sys
             sys.stderr.write(f"[has_data] chunk failed ({str(e)[:80]}) — keeping {len(part)} assets\n")
             live |= set(part)

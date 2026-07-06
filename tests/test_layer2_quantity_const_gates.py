@@ -108,6 +108,39 @@ def test_matching_quantity_bind_is_untouched():
     assert [f["slot"] for f in di["fields"]] == ["voltage.phases[0].value"]
 
 
+def test_c49_axis_chrome_const_kept_stats_const_still_gated():
+    """c49 LoadImpactChart: an axis-geometry const (yMax/yMin/yTicks bound + a watchLines[*].value threshold line) is
+    display chrome re-supplied from the design default — KEPT, not blanked; a real KPI reading const (stats[*].value)
+    with no axis segment stays gated as a sourceless literal. Any-SEGMENT match catches watchLines[0].value while
+    stats[3].value is untouched by the carve-out."""
+    basket = {"columns": []}                                   # empty basket: only the const-source guard fires here
+    di = {"fields": [
+        {"slot": "loadImpact.views.pf-health.yTicks", "kind": "const", "value": [0.0, 0.5, 1.0], "metric": "yTicks"},
+        {"slot": "loadImpact.views.pf-health.yMax", "kind": "const", "value": 1.0, "metric": "yMax"},
+        {"slot": "loadImpact.views.pf-health.watchLines[0].value", "kind": "const", "value": 0.95, "metric": "value"},
+        {"slot": "loadImpact.views.pf-health.stats[3].value", "kind": "const", "value": 0.95, "metric": "value"},
+    ]}
+    blanked = enforce_honest_blank(di, basket)
+    kept = [f["slot"] for f in di["fields"]]
+    # the 3 axis-chrome consts survive; the sourceless stats reading is blanked
+    assert "loadImpact.views.pf-health.yTicks" in kept
+    assert "loadImpact.views.pf-health.yMax" in kept
+    assert "loadImpact.views.pf-health.watchLines[0].value" in kept
+    assert "loadImpact.views.pf-health.stats[3].value" not in kept
+    assert any("stats[3].value" in b and "no real DB source" in b for b in blanked)
+    assert not any("yTicks" in b or "watchLines" in b for b in blanked)
+
+
+def test_c49_carveout_does_not_exempt_nonaxis_fabricated_const():
+    """A fabricated numeric const on a NON-axis slot (a guessed 131 A rating in a kpi cell) must STILL blank — the
+    axis carve-out fires only when a slot segment is literally ymax/ymin/yticks/watchlines."""
+    basket = {"columns": []}
+    di = {"fields": [{"slot": "someCard.kpis[0].value", "kind": "const", "value": 131, "metric": "ratedCurrent"}]}
+    blanked = enforce_honest_blank(di, basket)
+    assert di["fields"] == []
+    assert len(blanked) == 1 and "no real DB source" in blanked[0]
+
+
 def test_unclassified_slot_or_column_never_flags():
     """A generic container slot (chart.series[0].values) and an unclassifiable column never flag — None on either
     side means 'don't know', not 'mismatch'. A load/score container word is deliberately NOT in the vocab
@@ -123,12 +156,27 @@ def test_unclassified_slot_or_column_never_flags():
 
 
 def test_weak_percent_class_never_blanks_on_dimension_alone():
-    """A column classified only by its '%' unit (name tokens unknown) is dimension-only ('percent' = weak class) —
-    cautious keep even under a classified slot."""
+    """A column classified only by its '%' unit (name tokens unknown) is dimension-only ('percent' = weak class): the
+    DIMENSIONAL wall never blanks it under a merely dimensionally-classified slot (the weak side never flags). A slot
+    that NAMES a semantic family (unbalance/efficiency) is stricter — that name-level family wall is a separate rule
+    (test_unbalance_family_slot_blanks_a_non_unbalance_percent_source)."""
+    basket = {"columns": [{"column": "kpi_some_ratio_pct", "unit": "%"}]}
+    di = {"fields": [{"slot": "voltage.somePct", "kind": "raw", "column": "kpi_some_ratio_pct", "source": "live"}]}
+    assert enforce_honest_blank(di, basket) == []
+    assert [f["slot"] for f in di["fields"]] == ["voltage.somePct"]
+
+
+def test_unbalance_family_slot_blanks_a_non_unbalance_percent_source():
+    """[33cddcd unbalance %-pun wall] An 'unbalance' NAME-family slot binds ONLY an unbalance-class source. A
+    neutral-to-phase RATIO (`kpi_neutral_to_phase_ratio_pct`) is a DIFFERENT metric from NEMA current-unbalance %
+    (max-phase-deviation/avg) — however related; rendered under an 'Unbalance %' slot it mislabels one metric as
+    another, so it honest-blanks (same rule that blanks loadFactorPct→unbalance; a real current-unbalance column
+    would pass)."""
     basket = {"columns": [{"column": "kpi_neutral_to_phase_ratio_pct", "unit": "%"}]}
     di = {"fields": [{"slot": "current.unbalancePct", "kind": "raw",
                       "column": "kpi_neutral_to_phase_ratio_pct", "source": "live"}]}
-    assert enforce_honest_blank(di, basket) == []
+    reasons = enforce_honest_blank(di, basket)
+    assert di["fields"] == [] and any("unbalance" in r for r in reasons)
 
 
 def test_group_ctx_atom_no_longer_bypasses_quantity_wall():
@@ -153,17 +201,29 @@ def test_group_ctx_atom_no_longer_bypasses_quantity_wall():
 
 def test_const_131_with_no_real_source_is_blanked():
     """Card-69 class: const 131 stamped metric=I_RATED (not a nameplate slot-map name, no consts.* row) — a guessed
-    rated current with the asset nameplate unknown/None. Blanked; same for the derated 1000 kVA and the 131-tick axis."""
+    rated current with the asset nameplate unknown/None. Blanked; same for the derated 1000 kVA. These are claimed
+    READINGS (a rated current / a rated capacity), not axis chrome, so the c49 axis carve-out does NOT reach them
+    (slots maxLine.value / deratedKva have no ymax/ymin/yticks/watchlines segment)."""
     basket = {"columns": [{"column": "current_avg", "unit": "A"}]}
     di = {"fields": [
         {"slot": "data.maxLine.value", "kind": "const", "value": 131, "metric": "I_RATED", "source": "const"},
         {"slot": "lifeCapacity.deratedKva", "kind": "const", "value": 1000.0, "metric": "deratedKva", "source": "const"},
-        {"slot": "data.yTicks", "kind": "const", "value": [0, 30, 60, 90, 120, 131], "metric": None, "source": "const"},
     ]}
     blanked = enforce_honest_blank(di, basket)
     assert di["fields"] == []
-    assert len(blanked) == 3
+    assert len(blanked) == 2
     assert all("no real DB source" in b for b in blanked)
+
+
+def test_c49_yticks_is_axis_chrome_even_when_a_tick_resembles_a_rating():
+    """A yTicks array whose top tick happens to equal a rating (…,120,131]) is STILL axis chrome — it sets the scale,
+    it does not render a claimed reading (yscale recomputes filled views; empty views keep the design scale). Kept by
+    the c49 carve-out, unlike the sibling maxLine.value=131 (a claimed rated current) which stays blanked above."""
+    basket = {"columns": []}
+    di = {"fields": [{"slot": "data.yTicks", "kind": "const", "value": [0, 30, 60, 90, 120, 131], "metric": None,
+                      "source": "const"}]}
+    assert enforce_honest_blank(di, basket) == []
+    assert [f["slot"] for f in di["fields"]] == ["data.yTicks"]
 
 
 def test_const_from_real_app_config_row_is_kept():

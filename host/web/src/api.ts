@@ -1,10 +1,13 @@
 import type { PipelineResult, DateWindow } from "./types";
 
-export async function runPipeline(prompt: string, assetId?: number | string | null, dateWindow?: DateWindow | null): Promise<PipelineResult> {
+export async function runPipeline(prompt: string, assetId?: number | string | Array<number | string> | null, dateWindow?: DateWindow | null, history?: Array<{ prompt: string; answer: string }> | null): Promise<PipelineResult> {
+  // MULTI-ASSET: an ARRAY of ids → compare them in one run (asset_ids[]); a single id/none stays on asset_id.
+  const ids = Array.isArray(assetId) ? assetId : null;
   const res = await fetch("/api/run", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ prompt, asset_id: assetId ?? null, date_window: dateWindow ?? null }),
+    // `history` = prior knowledge turns (oldest-first) so the one AI layer resolves follow-up questions in context.
+    body: JSON.stringify({ prompt, asset_id: ids ? null : (assetId ?? null), asset_ids: ids, date_window: dateWindow ?? null, history: history ?? null }),
   });
   const body = await res.json();
   if (!res.ok) throw new Error(body?.error || `HTTP ${res.status}`);

@@ -1,0 +1,18 @@
+{
+ "run_id": "r_92361240de",
+ "loop1": [
+  {
+   "card_id": 70,
+   "title": "Live Operations & Runtime",
+   "answerability": "partial",
+   "note": "Showing load factor as a proxy for runtime/service metrics because the UPS meter does not log dedicated run-hours, starts, or transfer counts (FIVE PHYSICAL WALLS). Availability and service intervals are estimated from load factor."
+  },
+  {
+   "card_id": 71,
+   "title": "Runtime & Duty",
+   "answerability": "partial",
+   "note": "Showing active power as a proxy for run hours and load percentage, as the UPS meter does not log dedicated runtime or start-count fields."
+  }
+ ],
+ "loop2": null
+}

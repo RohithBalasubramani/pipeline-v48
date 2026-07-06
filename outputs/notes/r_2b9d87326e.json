@@ -1,0 +1,12 @@
+{
+ "run_id": "r_2b9d87326e",
+ "loop1": [
+  {
+   "card_id": 41,
+   "title": "Input vs Output Energy",
+   "answerability": "partial",
+   "note": "Showing total active power as a proxy for both HV Input and LV Output (per-phase breakdown not available for this DG asset). Efficiency and Loss metrics are derived from total power/energy aggregates."
+  }
+ ],
+ "loop2": null
+}

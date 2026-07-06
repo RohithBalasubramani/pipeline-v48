@@ -42,7 +42,7 @@ export function AssetResolution({
   candidates: Candidate[];
   prompt: string;
   loading: boolean;            // App is re-running pinned after a pick
-  onPick: (mfmId: number) => void;
+  onPick: (mfmId: number | number[]) => void;   // one id → pin; an ARRAY → MULTI-ASSET compare (asset_ids[])
   onOpenDashboard: () => void;
   onDismiss: () => void;
   noDataAsset?: { name?: string; class?: string } | null;   // set when the picker opened because the NAMED asset can't
@@ -53,7 +53,9 @@ export function AssetResolution({
   // the full list). The named-but-empty asset is named in the header; "None of these" → the NoDataNotice terminal.
   const base: View = candidates.length ? "ambiguous" : "empty";
   const [view, setView] = useState<View>(base);
-  const [picked, setPicked] = useState<Candidate | null>(null);
+  // ONE selection model: `selected` holds every asset the user has clicked. The Run button fires ONCE — 1 → open that
+  // asset, 2+ → compare them (asset_ids[]). Clicking a row NEVER runs; nothing is submitted until Run. [single logic]
+  const [selected, setSelected] = useState<Candidate[]>([]);
   const [filter, setFilter] = useState("");
   const [active, setActive] = useState(-1);
   const [hover, setHover] = useState(-1);
@@ -90,17 +92,25 @@ export function AssetResolution({
     return candidates;
   }, [view, filter, allAssets, candidates]);
 
-  const select = (a: Candidate | undefined) => {
-    if (!a || !a.has_data) return;
-    setPicked(a);
+  // click a row → TOGGLE it in/out of the selection (data-bearing only, never while a run is in flight). Nothing runs.
+  const isSel = (a: Candidate) => selected.some((x) => idOf(x) === idOf(a));
+  const toggle = (a: Candidate | undefined) => {
+    if (!a || !a.has_data || loading) return;
+    setSelected((s) => (isSel(a) ? s.filter((x) => idOf(x) !== idOf(a)) : [...s, a]));
+  };
+  // the ONE submit: fires exactly once. 1 selected → open that asset (asset_id); 2+ → compare (asset_ids[]). Disabled
+  // while loading so a click can't stack a second pipeline run on the backend.
+  const runSelection = () => {
+    if (!selected.length || loading) return;
     setView("resolved");
-    onPick(idOf(a));
+    onPick(selected.length === 1 ? idOf(selected[0]) : selected.map(idOf));
   };
 
   const onKey = (e: React.KeyboardEvent) => {
     if (e.key === "ArrowDown") { e.preventDefault(); setActive((i) => Math.min(i + 1, rows.length - 1)); }
     else if (e.key === "ArrowUp") { e.preventDefault(); setActive((i) => Math.max(i - 1, 0)); }
-    else if (e.key === "Enter") { select(rows[active]); }
+    else if (e.key === " ") { e.preventDefault(); toggle(rows[active]); }   // Space toggles the active row into the selection
+    else if (e.key === "Enter") { e.preventDefault(); runSelection(); }     // Enter runs the current selection (once)
     else if (e.key === "Escape") { e.preventDefault(); onDismiss(); }
   };
 
@@ -108,16 +118,28 @@ export function AssetResolution({
 
   const renderRow = (a: Candidate, i: number) => {
     const disabled = !a.has_data;
+    const sel = isSel(a);
     const isActive = (i === active || i === hover) && !disabled;
     return (
       <div
         key={`${idOf(a)}-${i}`}
         className="cc-ar-row"
-        style={{ background: isActive ? "var(--brown-100)" : "transparent", opacity: disabled ? 0.62 : 1, cursor: disabled ? "default" : "pointer" }}
-        onClick={() => select(a)}
+        style={{ background: sel ? "var(--brown-100)" : (isActive ? "var(--brown-050, #f3ece3)" : "transparent"),
+                 opacity: disabled ? 0.62 : 1, cursor: disabled ? "default" : "pointer" }}
+        onClick={() => toggle(a)}
         onMouseEnter={() => { if (!disabled) setHover(i); }}
         onMouseLeave={() => setHover(-1)}
       >
+        {/* the selection checkbox mirrors the row's selected state; clicking anywhere on the row toggles it. */}
+        <input
+          type="checkbox"
+          checked={sel}
+          disabled={disabled}
+          onClick={(e) => e.stopPropagation()}
+          onChange={() => toggle(a)}
+          title="Select"
+          style={{ marginRight: 10, accentColor: "var(--brown-600)", cursor: disabled ? "default" : "pointer" }}
+        />
         <span className="cc-ar-dot" style={{ background: a.has_data ? "var(--sage-400)" : "transparent", border: a.has_data ? "none" : "1.5px solid var(--slate-soft)" }} />
         <div className="cc-ar-rowmid">
           <div className="cc-ar-name" style={{ color: disabled ? "var(--slate-soft)" : "var(--teal-900)" }}>{a.name || `#${idOf(a)}`}</div>
@@ -133,10 +155,22 @@ export function AssetResolution({
 
   const footer = (
     <>
+      {selected.length > 0 && (
+        // THE ONE submit — label adapts: 1 selected → open that asset, 2+ → compare. Disabled while a run is in flight.
+        <div style={{ display: "flex", alignItems: "center", gap: 12, padding: "10px 4px 2px" }}>
+          <button className="cc-ar-btn" style={{ padding: "8px 16px", opacity: loading ? 0.6 : 1 }}
+                  disabled={loading} onClick={runSelection}>
+            {selected.length === 1 ? `Open ${selected[0].name || "asset"}` : `Compare ${selected.length} assets`}
+          </button>
+          <span style={{ fontFamily: "var(--font-sans)", fontSize: 12, color: "var(--slate-500)" }}>
+            {selected.map((a) => a.name).filter(Boolean).join(" · ")}
+          </span>
+        </div>
+      )}
       <div className="cc-ar-rule" />
       <div className="cc-ar-foot">
         <button className="cc-ar-none" onClick={() => setView("terminal")}><Ban />None of these</button>
-        <div className="cc-ar-keys"><span>↑↓ navigate</span><span>↵ select</span><span>esc dismiss</span></div>
+        <div className="cc-ar-keys"><span>click select</span><span>↵ run</span><span>esc dismiss</span></div>
       </div>
     </>
   );
@@ -158,7 +192,7 @@ export function AssetResolution({
                 <div className="cc-ar-title">WHICH ASSET?</div>
                 <button className="cc-ar-x" onClick={onDismiss} aria-label="Dismiss"><XIcon /></button>
               </div>
-              <div className="cc-ar-sub"><span className="cc-ar-echo">"{echo}"</span> matches {candidates.length} assets — pick one.</div>
+              <div className="cc-ar-sub"><span className="cc-ar-echo">"{echo}"</span> matches {candidates.length} assets — click to select one (or several to compare), then Run.</div>
             </div>
             <div className="cc-ar-rule" />
             <div className="cc-ar-list">{candidates.map(renderRow)}</div>
@@ -216,18 +250,23 @@ export function AssetResolution({
             <div className="cc-ar-resolved">
               <div className="cc-ar-titlerow">
                 <span className="cc-ar-spark"><Spark /></span>
-                <div className="cc-ar-title">ASSET RESOLVED</div>
+                {/* the build view shows ALL selected assets (1 → open, 2+ → compare). */}
+                <div className="cc-ar-title">{selected.length >= 2 ? `COMPARING ${selected.length} ASSETS` : "ASSET RESOLVED"}</div>
               </div>
-              <div className="cc-ar-resolved-row">
-                <span className="cc-ar-resolved-dot" />
-                <div>
-                  <div className="cc-ar-resolved-name">{picked?.name || `#${picked ? idOf(picked) : ""}`}</div>
-                  <div className="cc-ar-resolved-meta">{(picked?.class as string) || ""}{picked?.load_group ? `  ·  ${picked.load_group}` : ""}</div>
+              {(selected.length ? selected : []).map((a) => (
+                <div className="cc-ar-resolved-row" key={idOf(a)}>
+                  <span className="cc-ar-resolved-dot" />
+                  <div>
+                    <div className="cc-ar-resolved-name">{a.name || `#${idOf(a)}`}</div>
+                    <div className="cc-ar-resolved-meta">{(a.class as string) || ""}{a.load_group ? `  ·  ${a.load_group}` : ""}</div>
+                  </div>
                 </div>
-              </div>
+              ))}
               <div className="cc-ar-resolved-note">
                 {loading && <span className="spinner" />}
-                {loading ? "Pinned · building real-time view…" : "Pinned · real-time view ready"}
+                {loading
+                  ? (selected.length >= 2 ? `Building compare · ${selected.length} assets…` : "Pinned · building real-time view…")
+                  : (selected.length >= 2 ? "Compare ready" : "Pinned · real-time view ready")}
               </div>
             </div>
             <div className="cc-ar-rule" />

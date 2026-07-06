@@ -5,25 +5,25 @@
    "card_id": 74,
    "title": "Thermal Life",
    "answerability": "partial",
-   "note": "Showing active power as a proxy for thermal stress and loss, as direct temperature columns are not present in the meter's schema."
+   "note": "Showing active power total as a proxy for thermal stress and loss, as direct temperature columns are not measured by this meter."
   },
   {
    "card_id": 76,
    "title": "Thermal Timeline",
    "answerability": "partial",
-   "note": "Showing load factor and efficiency trends from active/apparent power; thermal temperatures (hotspot, oil, winding) are not measured by this meter and are honestly blanked."
+   "note": "Showing Load trend (active_power_total_kw) \u2014 thermal temperatures (hotspot, oil, winding) are not measured by this meter and are omitted."
   },
   {
    "card_id": 75,
    "title": "Life & Capacity",
    "answerability": "partial",
-   "note": "Showing load factor and apparent power as proxies for thermal aging and capacity utilization; specific insulation aging (hotspot temp) is not measured by this meter."
+   "note": "Showing load factor as a proxy for insulation aging (thermal stress); per-phase temperature is not measured by this meter, so true thermal aging cannot be calculated directly."
   },
   {
    "card_id": 77,
    "title": "Insulation Aging & Loss of Life",
    "answerability": "partial",
-   "note": "Showing load factor as a proxy for thermal aging stress \u2014 true FAA (Hotspot Temperature) is not measured by this meter."
+   "note": "Showing active power as a proxy for aging factor and loss of life, as dedicated thermal/aging columns are not measured by this meter. The aging factor and LOL values are derived from the load factor (active power) using standard transformer aging models."
   }
  ],
  "loop2": null

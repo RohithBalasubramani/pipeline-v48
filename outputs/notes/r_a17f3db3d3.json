@@ -1,0 +1,30 @@
+{
+ "run_id": "r_a17f3db3d3",
+ "loop1": [
+  {
+   "card_id": 70,
+   "title": "Live Operations & Runtime",
+   "answerability": "partial",
+   "note": "Showing load factor as a proxy for run hours and availability, as specific runtime counters are not measured by this meter. Service interval and status are static defaults."
+  },
+  {
+   "card_id": 71,
+   "title": "Runtime & Duty",
+   "answerability": "partial",
+   "note": "Showing load factor as a proxy for run-hours and starts, as the meter does not log dedicated run-hours or start-count columns. Average load is derived from active power."
+  },
+  {
+   "card_id": 72,
+   "title": "Energy & Reliability",
+   "answerability": "partial",
+   "note": "Showing total active and reactive energy for this month; MTBF and MTTR are not measured by this meter."
+  },
+  {
+   "card_id": 73,
+   "title": "Power Energy Analysis",
+   "answerability": "partial",
+   "note": "Showing active and reactive energy history. Apparent energy is derived from active/reactive. Power factor is included as a secondary metric. The card's native 'Backup Readiness' schema is repurposed for energy breakdown."
+  }
+ ],
+ "loop2": null
+}

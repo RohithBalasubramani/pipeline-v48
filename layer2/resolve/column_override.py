@@ -95,10 +95,11 @@ def _display_morphed(slot, applied_morphs):
                for mp in (applied_morphs or []))
 
 
-def apply(data_instructions, basket, data_note=None, applied_morphs=None):
+def apply(data_instructions, basket, data_note=None, applied_morphs=None, is_group_card=False):
     """Return (data_instructions, notes[]). Mutates fields[].column to a real basket column where safe. `data_note`
     (the emission's own degradation note) + `applied_morphs` (the APPLIED metadata morph paths) mark a DECLARED,
-    display-morphed proxy — the slot-quantity guard stands down only for that.
+    display-morphed proxy — the slot-quantity guard stands down only for that. `is_group_card` gates the $ctx repair
+    (source=$ctx is legal ONLY on a group card).
 
     `notes` is NON-GATING TELEMETRY [silent-normalization defect]: every repair this normalizer performs (mislabelled
     const reclass, slot-quantity blank, metric snap, hallucinated-column drop) used to be completely invisible — an
@@ -120,6 +121,22 @@ def apply(data_instructions, basket, data_note=None, applied_morphs=None):
             f["kind"] = "raw"
             src = f["source"] = "frame"
             notes.append(f"slot {f.get('slot')!r}: mislabelled const (source={src}, no value) reclassified to frame")
+        # $ctx-ON-STANDALONE REPAIR [c73 false-blank]: source=$ctx is legal ONLY on a GROUP card (it reads the page's
+        # shared buffer). On a STANDALONE card the AI mis-emitted it — but if the field NAMES A REAL BASKET COLUMN it IS
+        # a live bind on the resolved asset, so reclassify $ctx→live and let the executor fill the measurable series (the
+        # DG power trend rendered EMPTY because a standalone card cannot fill $ctx server-side). A $ctx field naming no
+        # real column drops to the frame/honest-blank path. Generic, no card ids; a real GROUP card keeps $ctx untouched.
+        if src == "$ctx" and not is_group_card:
+            _c = f.get("column")
+            if _c and _c in real and f.get("kind") != "const":
+                src = f["source"] = "live"
+                notes.append(f"slot {f.get('slot')!r}: source=$ctx on a standalone card reclassified to live "
+                             f"(real column {_c!r}) — measurable leaf fills instead of a $ctx false-blank")
+            else:
+                f["column"], f["source"] = None, "frame"
+                notes.append(f"slot {f.get('slot')!r}: source=$ctx on a standalone card names no real column → "
+                             f"frame/honest-blank")
+                continue
         if f.get("kind") == "const" or src == "$ctx" or src == "const":
             continue                                   # const baked / shared-buffer projection: no column needed
         col, metric = f.get("column"), f.get("metric")

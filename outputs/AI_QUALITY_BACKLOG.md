@@ -410,3 +410,48 @@ D6 hygiene (cast-integrity test, role_scrub docstring, parse-hardening, vLLM ser
   (role_scrub 15, quantity 3, validation 10, gates/windows, event_threshold 7, emit oversize knobs, reason_template
   32) — the only true drifts were A6a/A6b/A6c, and the only dead rows were the two display.* rows already re-typed by
   the concurrent fixer.
+
+---
+
+## Cert payload_error triage (2026-07-06 self-run, no workflow)
+
+The two `payload_error` classes surfaced by the 3-concurrent cert sweep were **not code defects** — both were
+execution-environment artifacts, confirmed by clean re-runs against a current-code host.
+
+### RESOLVED-A — c47 "validate-fail honest-blank" mislabel (STALE DUMP)
+- Dump `response_r_1bc17049b9.json` showed c47 (PowerQualityCard, UPS) with `payload_error="fields[0] column
+  'thd_current_r_pct' failed pre-L2 data validation …"`. That message is the `_col_issue` string, which
+  `layer2/gates.py:666-667` already routes to `_honest_blanked` **telemetry**, NOT to card-blocking `issues`/`failure`.
+- The dump was from a host started **before** the gates.py fix (host 22:25 < gates.py mtime 22:33). Fresh run on a
+  restarted host: **`payload_error=None`, verdict=render, answerability=full, 2/2 real leaves** — the AI binds
+  iThd/vThd as declared same-quantity proxies (data_note) and honest-blanks the 3 voltage-harmonic leaves it can't
+  measure. SSR: cards 47/48/49 all render OK. **No fix needed; code was already correct.**
+
+### RESOLVED-B — c24 / c58 "llm timeout" (vLLM CONTENTION, not output size)
+- Root cause: `run/layer2_all.py` fanned ALL page cards' l2_emit calls concurrently (unbounded). Each is a ~22K-tok
+  prompt; N concurrent emits split vLLM decode throughput N ways. The biggest emit (c24 harmonics heatmap) sat at
+  **152s on a solo 5-card page** — right at the `llm.timeout.l2_emit=150` fail-fast edge — and starved past it under
+  the 3-page (~15-concurrent) sweep. Skeleton sizes are small (c24=3527c); the completion bulk is data_instructions
+  (per-feeder×metric bindings), so this is throughput-bound, not output-size-bound.
+- Clean re-runs: c24 → `payload_error=None`, verdict=partial, **36/56 real leaves**. c58-class same (composite chart).
+- **FIX (durable, DB-driven):** bound the fan-out — `run_parallel(tasks, max_workers=cfg("layer2.emit_concurrency",4))`
+  (`run/parallel.py` + `run/layer2_all.py`; `db/seed_layer2_emit_concurrency.sql`). Excess cards queue; each in-flight
+  emit keeps enough throughput to finish with margin. Generic, no card ids, code-default 4. L1a∥L1b split untouched.
+
+### FOLLOW-UP — c49 const-gate over-blanks LoadImpactChart axis chrome (NOT cert-blocking)
+- On the power-quality page, c49's const-source gate honest-blanks `loadImpact.views.*.yMax/yMin/yTicks/watchLines[].value`
+  as "const has no real DB source". Those are **axis chrome** (scale bounds / tick arrays / threshold lines), not data
+  readings — a false positive that strips the chart's y-axis scale. Card still renders SSR-clean (no crash, no
+  fabrication), so it is a quality follow-up, not a defect: extend the chrome carve-out (chrome_subtree_keys or the
+  const-gate axis exemption) to cover yMax/yMin/yTicks/watchLines while keeping `stats[*].value` (real readings) gated.
+
+**MEASURED (cap=4, host restarted):** the heatmap page (cards 23-27, the 152s-solo worst case) re-fired while a
+second run (browser-triggered "dg voltage and current") ran CONCURRENTLY — a deliberate 2-page contention that used to
+force the c24 timeout. Result: **all 5 cards `payload_error=None`** (c24 = 36/56 real leaves), SSR 5/5 render OK,
+0 fabrication seeds. Every per-emit finished inside its 150s budget under contention that previously starved it.
+Total page wall-clock 203s (page-level, under contention; the 150s budget is per-EMIT not per-page). pytest 565 pass.
+
+**CROSS-PAGE CAVEAT:** the cap bounds concurrency PER page (per run_2_all). A cert sweep that runs many pages at once
+still multiplies (K pages × 4). The cap fixes the single-page robustness gap (a normal heatmap-page request was at the
+150s edge); a multi-page SWEEP should additionally limit page-concurrency (≤2-3) — the 6-page sequential re-fire proved
+that path clean. Knob `layer2.emit_concurrency` drops to 3 for more per-emit margin with no code change.

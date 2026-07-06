@@ -23,8 +23,14 @@ def build_card_input(run_id, card_id, l1a, l1b, *, shared_ctx_ref=None):
         "run_id": run_id,
         "card_id": int(card_id),
         "page_key": page_key,
-        "is_group_card": group is not None,
-        "group_id": group["group_id"] if group else None,
+        # A card is a shared-context GROUP card (emits a lean $ctx atom that reads the page's shared buffer) ONLY when
+        # a shared buffer actually EXISTS for this run (shared_ctx_ref). Approach-B shared_context is DEFERRED — the
+        # fan-out calls run_card with shared_ctx_ref=None — so a mere page COUPLING (esp. a `time-bucket` date-sync
+        # coupling, which is handled by the cross-card date sync, NOT by data sharing) must NOT make a card emit $ctx:
+        # with no buffer to read, its $ctx data leaves false-blank measurable columns (card-73 DG power trend). Until
+        # Approach-B builds the buffer, every card is STANDALONE and fills its OWN data (src=live) — the plan's path.
+        "is_group_card": group is not None and shared_ctx_ref is not None,
+        "group_id": (group["group_id"] if group else None) if shared_ctx_ref is not None else None,
         "shared_ctx_ref": shared_ctx_ref,
         "story": {
             "page_story": l1a.get("story", ""),

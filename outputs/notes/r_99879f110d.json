@@ -5,25 +5,25 @@
    "card_id": 14,
    "title": "Cumulative Energy",
    "answerability": "partial",
-   "note": "Showing total active and reactive energy for load feeders; supply-side members (Solar Incomers, Transformers) are dark (has_data=N) and honest-blank."
+   "note": "Showing total active and reactive energy for the panel's fed feeders (UPS-01/02/03, BPDB-01/02, UPS-04). Solar incomers and transformers are dark (no data) and excluded from the rollup."
   },
   {
    "card_id": 16,
    "title": "Energy Consumption Trend",
    "answerability": "partial",
-   "note": "Showing energy trend for active feeders (UPS, BPDP, HHF); supply-side feeders (Solar Incomers, Transformers) are dark (has_data=N) and honest-blank their slots."
+   "note": "Showing energy trend for 6 active feeders; 2 feeders (UPS-05, UPS-06) are dark (no data) and honest-blank their slots."
   },
   {
    "card_id": 15,
    "title": "Today live power analysis",
    "answerability": "partial",
-   "note": "Showing apparent power (kVA) and active/reactive power (kW/kVAr) from panel members. Capacity (rated kVA) and Load Factor are not measured for this asset, so those slots are blank."
+   "note": "Showing live apparent power and active/reactive breakdown for all fed feeders. Capacity marker (rated kVA) and worst-peak markers are omitted because the asset's nameplate capacity is unknown (rated_kva is '\u2014')."
   },
   {
    "card_id": 17,
    "title": "Daily Power Demand by Feeder",
    "answerability": "partial",
-   "note": "HHF feeder data is not measured on this panel (no HHF members in roster); UPS and BPDP demand are shown."
+   "note": "Showing demand distribution for UPS and BPDB feeders; HHF feeders are not present in this panel's roster and will render as null."
   }
  ],
  "loop2": null

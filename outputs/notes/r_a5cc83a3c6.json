@@ -1,0 +1,18 @@
+{
+ "run_id": "r_a5cc83a3c6",
+ "loop1": [
+  {
+   "card_id": 36,
+   "title": "Power & Energy (Real-Time)",
+   "answerability": "partial",
+   "note": "Showing real-time active and reactive power trends. Energy (kWh/kVARh) and Projected Demand are not measured by this meter and are omitted."
+  },
+  {
+   "card_id": 38,
+   "title": "Current Monitor (Real-Time)",
+   "answerability": "partial",
+   "note": "Showing total active power \u2014 per-phase power isn't measured for this asset."
+  }
+ ],
+ "loop2": null
+}

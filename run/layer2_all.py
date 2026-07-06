@@ -38,7 +38,15 @@ def run_2_all(run_id, l1a, l1b):
     page_key = (l1a or {}).get("page_key")
     template_ids = [c.get("card_id") for c in cards if c.get("card_id") is not None]
     tasks = {c["card_id"]: (lambda cid=c["card_id"]: run_card(run_id, cid, l1a, l1b)) for c in cards}
-    res = run_parallel(tasks)
+    # BOUND THE FAN-OUT [contention fail-fast margin]: each card is a large-prompt (~22K-tok) l2_emit; an UNBOUNDED
+    # per-card pool put N concurrent emits on the vLLM at once, splitting decode throughput N ways so the biggest emit
+    # (harmonics heatmap) sat at the 150s l2_emit fail-fast edge even on a solo page — and starved to a false timeout
+    # under a multi-page sweep. Cap concurrency (DB knob layer2.emit_concurrency, code-default 4): excess cards queue,
+    # each in-flight emit keeps enough throughput to finish with margin. Generic, no card ids; the code default holds on
+    # a config outage. (run_parallel still fans the 2-thunk L1a∥L1b split fully — 2 < cap.)
+    from config.app_config import cfg
+    _cap = int(cfg("layer2.emit_concurrency", 4) or 4)
+    res = run_parallel(tasks, max_workers=_cap)
     out = {}
     for cid, r in res.items():
         o = _err(cid, r) if isinstance(r, Exception) else _fill(r)

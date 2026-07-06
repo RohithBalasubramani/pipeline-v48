@@ -41,7 +41,7 @@ from config import neuract_dsn as _dsn
 # ── the atomic executor seams, re-exported byte-compatibly (the facade contract) ──────────────────────────────────────
 from ems_exec.executor.paths import (                                                        # noqa: F401
     _toks, _leaf_at, _set_path, _has_path, _set_leaf_typed, _leaf_path_for)
-from ems_exec.executor.verify import _verify, _quantity_of                                    # noqa: F401
+from ems_exec.executor.verify import _verify, _quantity_of, _polarity_conflict                # noqa: F401
 from ems_exec.executor.derived import (                                                       # noqa: F401
     _INTEGRATION_POWER_COLS, _PERIOD_COUNTER_COLS, _site_calendar_start, _period_starts, _period_deltas,
     _derived_key, _run_derived)
@@ -108,7 +108,14 @@ def _field_value(field, asset_table, present_cols, *, latest_row, ratings, windo
     quantity = _quantity_of(field)
 
     if kind == "derived" and (field.get("fn") or field.get("metric")):
-        raw, _fid = _run_derived(_derived_key(field), asset_table, window)
+        fn_key = _derived_key(field)
+        # FAB-BY-MISLABEL GUARD (Family G, card 72): refuse an active-energy fn bound to a reactive-energy slot (and any
+        # active↔reactive↔apparent polarity mismatch). The registry _QUANTITY table is authoritative on what the fn
+        # MEASURES; the slot's unit/label declares what it MEANS. When they disagree the leaf honest-blanks rather than
+        # rendering the real active delta under an MVARh label. Same-polarity / undisambiguated slots pass through.
+        if _polarity_conflict(field, fn_key):
+            return None
+        raw, _fid = _run_derived(fn_key, asset_table, window)
         return _verify(raw, quantity=quantity)
 
     if kind in ("const", "text"):
@@ -219,6 +226,30 @@ def fill(payload, data_instructions, ctx, default_payload=None, shape_ref=None):
         sp = _split_wildcard(f.get("slot"))
         if sp:
             wild_fields.append((f, sp[0], sp[1]))
+    # SINGLE-INDEX SERIES PROMOTION [card 73 false-blank, Family C]: Layer 2 sometimes fans a per-bucket trend into
+    # `<array>[0].<key>` fields — several DISTINCT keys ALL at index 0 (buckets[0].active/reactive/apparent/pf) — meaning
+    # "grow this array across the bucket axis; each bucket's <key> ← its column's bucketed value". A `kind='bucketed'`
+    # (series) field pointed at a SCALAR per-bucket element is a series, not a scalar. The per-index family pre-pass below
+    # only fires on ≥2 SAME-key fields (sparkline[0..29].loadPct — point i ← series i); DISTINCT-key SOLO fields fall to
+    # the scalar loop, which crams the WHOLE ordered series into element[0].<key> (chart geometry destroyed) or blanks it
+    # when the array is empty — yet maxY still computes from the same column (proving the frame carried data), so the trend
+    # FALSE-BLANKS. Route ONLY the SOLO single-index fields (their (array,key) group has exactly one member — NOT a
+    # same-key sparkline family) through the SAME wildcard array-grow as `[*]`, so the array grows to the full per-bucket
+    # series. Generic — array/key from the slot, no card ids; a genuinely null bucket → honest None.
+    _idx_by_key: dict = {}
+    for f in fields:
+        if (f.get("kind") or "").lower() != "bucketed" or _split_wildcard(f.get("slot")):
+            continue
+        sp = _split_indexed(f.get("slot"))
+        if sp and _scalar_point_slot(out, default_payload, f.get("slot")):
+            _idx_by_key.setdefault((sp[0], sp[2]), []).append(f)   # group by (array_path, elem_key)
+    promoted_ids = set()
+    for (array_path, elem_key), grp in _idx_by_key.items():
+        if len(grp) != 1:
+            continue                                           # ≥2 SAME-key indices = a sparkline family → indexed-fill
+        f = grp[0]
+        wild_fields.append((f, array_path, elem_key))          # (field, array_path, elem_key) — a wildcard-grow member
+        promoted_ids.add(id(f))
     wild_paths = set()
     if wild_fields:
         wild_paths = _fill_wildcard_arrays(out, default_payload, wild_fields, asset_table, present_cols, window,
@@ -228,10 +259,13 @@ def fill(payload, data_instructions, ctx, default_payload=None, shape_ref=None):
             written_value_paths.add(f"data.{p}")               # (both address forms _leaf_path_for resolves)
     # PER-INDEX SERIES FAMILY pre-pass [card 58 sparkline]: group `<array>[i].<key>` bucketed fields per (array, key)
     # and fill each family from ONE shared series (point i ← bucket i, end-aligned). The scalar loop below would hand
-    # EACH such slot the whole series — or [] when the field is column-less (the all-empty sparkline).
+    # EACH such slot the whole series — or [] when the field is column-less (the all-empty sparkline). Fields already
+    # PROMOTED to the wildcard array-grow above (single-index per-bucket series) are excluded — they are grown, not indexed.
     idx_groups = {}
     for f in fields:
         if (f.get("kind") or "").lower() != "bucketed" or _split_wildcard(f.get("slot")):
+            continue
+        if id(f) in promoted_ids:
             continue
         sp = _split_indexed(f.get("slot"))
         if sp and _scalar_point_slot(out, default_payload, f.get("slot")):
@@ -243,7 +277,7 @@ def fill(payload, data_instructions, ctx, default_payload=None, shape_ref=None):
                                               gaps, ratings=ratings, asset_name=asset_name,
                                               written_paths=written_value_paths)
     for f in fields:
-        if _split_wildcard(f.get("slot")):
+        if _split_wildcard(f.get("slot")) or id(f) in promoted_ids:
             continue                                            # handled by the wildcard array-grow pre-pass above
         if id(f) in consumed_ids:
             continue                                            # handled by the per-index series-family pre-pass above
