@@ -1,18 +1,18 @@
 # Wall corpus-replay baseline
 
-Generated 2026-07-06T21:20:12+00:00 by `tools/wall_corpus_replay.py` — gates sha 950ce138c77ec68b, quantity_class sha c63f93745299b725.
+Generated 2026-07-06T22:12:15+00:00 by `tools/wall_corpus_replay.py` — gates sha 022c25569ebe6474, quantity_class sha c63f93745299b725.
 
 **Acceptance standard:** all fabrications caught, zero legit binds harmed — diff per_rule + false_positive_suspects against this baseline after every wall change.
 
 ## Corpus
 
-- files: 609  ·  records: 16328  ·  L2 emit calls: 6934 (dupes 135)
-- emits replayed: 6101  ·  response unparseable (skipped): 8  ·  other skips: 690
+- files: 609  ·  records: 16337  ·  L2 emit calls: 6939 (dupes 135)
+- emits replayed: 6101  ·  response unparseable (skipped): 8  ·  other skips: 695
 - emits with a TRUNCATED prompt basket (rule-(i) blanks are replay artifacts there): 19
 
 ## Totals
 
-- fields seen: 44822  ·  fields blanked: 14675 (rate 0.3274)
+- fields seen: 44822  ·  fields blanked: 14584 (rate 0.3254)
 - suspected false positives: 1678 (of which 0 are truncated-basket replay artifacts)
 
 ## Per-rule blanks
@@ -21,7 +21,7 @@ Generated 2026-07-06T21:20:12+00:00 by `tools/wall_corpus_replay.py` — gates s
 |---|---|---|
 | rule_i_membership | 2120 | 386 |
 | rule_ii_reuse_smear | 212 | 57 |
-| rule_iii_quantity_wall | 5923 | 1955 |
+| rule_iii_quantity_wall | 5832 | 1939 |
 | rule_iiib_axis_coherence | 141 | 79 |
 | rule_iiic_expectation | 37 | 8 |
 | rule_iiid_boundary | 258 | 129 |
@@ -35,6 +35,7 @@ Generated 2026-07-06T21:20:12+00:00 by `tools/wall_corpus_replay.py` — gates s
 | const_without_value | 51 |
 | derived_without_base_columns | 68 |
 | derived_without_fn | 233 |
+| event_without_edge | 1 |
 | fields_empty | 5 |
 | missing_column | 137 |
 
@@ -55,10 +56,10 @@ Generated 2026-07-06T21:20:12+00:00 by `tools/wall_corpus_replay.py` — gates s
 | bypass | count |
 |---|---|
 | ctx_fields | 26097 |
-| ctx_fields_blanked | 6566 |
-| ctx_fields_kept | 19531 |
+| ctx_fields_blanked | 6483 |
+| ctx_fields_kept | 19614 |
 | ctx_fields_with_measured_bind | 20599 |
-| ctx_kept_with_offbasket_column | 2801 |
+| ctx_kept_with_offbasket_column | 2855 |
 | group_card_emits | 4781 |
 | group_card_fields | 34358 |
 | rule_i_exempt_fields | 32309 |

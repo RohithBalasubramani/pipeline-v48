@@ -161,9 +161,10 @@ def test_weak_percent_class_never_blanks_on_dimension_alone():
     that NAMES a semantic family (unbalance/efficiency) is stricter — that name-level family wall is a separate rule
     (test_unbalance_family_slot_blanks_a_non_unbalance_percent_source)."""
     basket = {"columns": [{"column": "kpi_some_ratio_pct", "unit": "%"}]}
-    di = {"fields": [{"slot": "voltage.somePct", "kind": "raw", "column": "kpi_some_ratio_pct", "source": "live"}]}
+    di = {"fields": [{"slot": "distortionProfile.kpis[0].value", "kind": "raw",
+                      "column": "kpi_some_ratio_pct", "source": "live"}]}
     assert enforce_honest_blank(di, basket) == []
-    assert [f["slot"] for f in di["fields"]] == ["voltage.somePct"]
+    assert [f["slot"] for f in di["fields"]] == ["distortionProfile.kpis[0].value"]
 
 
 def test_unbalance_family_slot_blanks_a_non_unbalance_percent_source():
