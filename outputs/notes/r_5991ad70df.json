@@ -1,0 +1,30 @@
+{
+ "run_id": "r_5991ad70df",
+ "loop1": [
+  {
+   "card_id": 39,
+   "title": "Today's Energy",
+   "answerability": "partial",
+   "note": "Showing monthly active and reactive energy consumption; subsidy limits and progress targets are not configured for this asset."
+  },
+  {
+   "card_id": 40,
+   "title": "Power Energy Analysis",
+   "answerability": "partial",
+   "note": "one or more leaves could not be bound for this card on this asset \u2014 those leaves render an honest blank (per-leaf reasons attached), every other leaf fills"
+  },
+  {
+   "card_id": 41,
+   "title": "Input vs Output Energy",
+   "answerability": "partial",
+   "note": "Showing HV input and LV output power and total loss energy \u2014 the specific 'loss pct of input' ratio is not measured by this asset's columns."
+  },
+  {
+   "card_id": 42,
+   "title": "Load Anomalies",
+   "answerability": "partial",
+   "note": "Showing actual load trend and load factor \u2014 expected load, ranges, and anomaly events are not measured for this asset."
+  }
+ ],
+ "loop2": null
+}

@@ -22,7 +22,7 @@ from layer1b.resolve.pinned_skip import pinned_skip
 from layer1b.resolve.class_from_subject import class_from_subject, candidates_of_class
 from layer1b.resolve.confident_pin import confident_pin
 from layer1b.resolve.ambiguous_candidates import ambiguous_candidates
-from layer1b.resolve.name_collision import is_collision, colliding_rows, uniquely_named
+from layer1b.resolve.member_scope import member_scope
 from layer1b.resolve.empty_fallback import empty_fallback
 from layer1b.resolve.answer_schema import asset_answer_schema
 from layer1b.guardrail.retry_one import retry_once
@@ -42,6 +42,28 @@ def _norm(s):
     return re.sub(r"[^a-z0-9]+", "", str(s).lower())
 
 
+def _is_ghost(row):
+    """A candidate that can NEVER render — a `_sch`/dead disambiguation stub (table_exists flag, index 9, is False;
+    fail-open to renderable when the column is absent). Such a row is never a confident pin; the caller falls through to
+    the model's candidate list / no-data handling. [P03]"""
+    return len(row) > 9 and not row[9]
+
+
+def _pcc_alias_index():
+    """{normalized_alias: canonical_panel_name} from cmd_catalog.pcc_panel_alias (the CMD_V2 PCC panel naming brought
+    into our DB — PCC-1A/1B/2A…/Panel-N → PCC-Panel-N). {} on the equipment.alias knob being off or any outage — a
+    dictionary of facts, not a heuristic; the canonical name stays the return contract. [#3]"""
+    try:
+        from config.app_config import cfg
+        if str(cfg("equipment.alias.enabled", "on")).strip().lower() in ("off", "", "0", "false", "no", "none"):
+            return {}
+        from data.db_client import q
+        return {_norm(a): pn for a, pn in q("cmd_catalog", "SELECT alias, panel_name FROM pcc_panel_alias")
+                if a and pn}
+    except Exception:
+        return {}
+
+
 def resolve_asset(prompt, asset_id_override=None):
     cands = asset_candidates()
     by_id = {str(c[0]): c for c in cands}
@@ -50,6 +72,12 @@ def resolve_asset(prompt, asset_id_override=None):
     # exact pin, no de-dup, but still runs the no_data gate so an empty pick surfaces NO-DATA not a blank card). [#14]
     pinned = pinned_skip(asset_id_override, by_id)
     if pinned is not None:
+        # the pinned path returns BEFORE _finish, so stamp the PANEL READING DIRECTION here too — the ORIGINAL prompt
+        # ('incomer PCC-1A') still drives member_scope on the picker-repick, so a picked panel honors incomer vs
+        # outgoing instead of silently defaulting to outgoing. [panel_overview — pinned-path parity]
+        _pa = pinned.get("asset")
+        if isinstance(_pa, dict):
+            _pa["member_scope"] = member_scope(prompt)
         return pinned
 
     # CLASS PRIOR: infer the equipment class from the prompt subject/metric and narrow the listing shown to the AI, so
@@ -61,16 +89,34 @@ def resolve_asset(prompt, asset_id_override=None):
     # NAME -> registry row (deterministic). by_norm carries ALL rows for a normalized key, so a name that collides
     # across rows surfaces as ambiguous rather than an arbitrary pick. Resolution maps against the FULL registry (not
     # just the class-narrowed listing) so a verbatim name the AI copies always maps back even if the prior mis-narrowed.
+    # by_alias [stream C]: the equipment-registry HUMAN aliases (row idx 10) resolve too — canonical wins first, a
+    # UNIQUE normalized alias resolves last, an alias collision NEVER pins (falls to the ambiguous path).
     by_name = {c[1]: c for c in cands}
-    by_norm = {}
+    by_norm, by_alias = {}, {}
     for c in cands:
         by_norm.setdefault(_norm(c[1]), []).append(c)
+        if len(c) > 10 and c[10]:
+            by_alias.setdefault(_norm(c[10]), []).append(c)
+    # PCC PANEL alias index [#3, cmd_catalog.pcc_panel_alias]: EVERY CMD_V2 panel alias (PCC-1A/1B/2A/…/Panel-1) →
+    # its canonical PCC-Panel-N row, so a prompt spelling any of them resolves the panel even when the AI echoes the
+    # alias rather than the canonical name. Fail-open ({} on outage/knob-off) — the equipment.alias knob gates it.
+    for _al, _pn in _pcc_alias_index().items():
+        _row = by_name.get(_pn)
+        if _row is not None:
+            by_alias.setdefault(_al, []).append(_row)
 
     def resolve_name(name):
         if name in by_name:                                            # exact verbatim copy
             return by_name[name]
-        rows = by_norm.get(_norm(name))                                # space/punct/case-insensitive
-        return rows[0] if rows and len(rows) == 1 else None            # unique-or-None (collisions -> ambiguous)
+        rows = by_norm.get(_norm(name))                                # space/punct/case-insensitive canonical
+        if rows:
+            return rows[0] if len(rows) == 1 else None                 # unique-or-None (collisions -> ambiguous)
+        arows = by_alias.get(_norm(name))                              # equipment/PCC alias (hint) [stream C, #3]
+        if not arows:
+            return None
+        ids = {r[0] for r in arows}                                    # dedup by registry id: the SAME row reached via
+        return arows[0] if len(ids) == 1 else None                    # two alias sources (display aka + pcc index) is
+        #                                                               NOT a collision; only DISTINCT rows are ambiguous
 
     def _class_rows():
         """The prior-class listing, data-bearing first (dead-meter-honest picker default)."""
@@ -81,18 +127,24 @@ def resolve_asset(prompt, asset_id_override=None):
         outcome["class_prior"] = prior
         outcome["llm_failed"] = llm_failed
         outcome["class_mismatch"] = class_mismatch(prior, outcome.get("asset"), outcome.get("candidates"))
+        # PANEL READING DIRECTION [panel_overview]: stamp the prompt's incomer-vs-outgoing choice on the resolved asset
+        # so the Layer-2 PANEL MEMBERS facts + the panel-aggregate fill read ONE decision. Default 'outgoing' (the fed
+        # feeders/bays) — the single-asset render is byte-identical (the flag is consulted only for has_feeders panels).
+        asset = outcome.get("asset")
+        if isinstance(asset, dict):
+            asset["member_scope"] = member_scope(prompt)
         return outcome
 
     # listing has NO id column: the model must reason over name/class/load_group only, never registry ids. The
     # NO-DATA flag marks empty/never-wired meters: the model should PREFER data-bearing assets and only resolve to a
     # NO-DATA one when the prompt explicitly names it (we then return the no_data outcome).
     listing = "\n".join(
-        f"{c[1]}\t{c[5]}\t{c[4]}\t{'NO-DATA' if not c[6] else ''}" for c in listed
+        f"{c[1]}\t{c[5]}\t{c[4]}\t{'NO-DATA' if not c[6] else ''}\t{c[10] if len(c) > 10 else ''}" for c in listed
     )
     # the LIVE class vocabulary is injected verbatim so the prompt's class rule can never drift from the registry
     classes_present = ", ".join(sorted({c[5] for c in cands if c[5]}))
     system = _load_prompt("asset_system.md")
-    user = (f"CANDIDATES (name<TAB>class<TAB>load_group<TAB>flag):\n{listing}\n\n"
+    user = (f"CANDIDATES (name<TAB>class<TAB>load_group<TAB>flag<TAB>aka):\n{listing}\n\n"
             f"CLASSES PRESENT IN THE REGISTRY: {classes_present}\n"
             f"PROMPT: {prompt!r}\nJSON:")
     # stage='asset_resolve' names this call site in llm/obs failure telemetry (before: outage entries bucketed
@@ -116,36 +168,20 @@ def resolve_asset(prompt, asset_id_override=None):
     picks = [r for r in (resolve_name(n) for n in names) if r]
     cand_rows = [r for r in (resolve_name(n) for n in cand_names) if r]
 
-    # NAME-COLLISION GATE [F5/F6] — deterministic on the PROMPT, ahead of every AI-driven branch. When the prompt's
-    # asset token (class+unit) maps to >1 distinct RENDERABLE registry row (DG-3 legacy meter vs DG-03 [Jackson]; the
-    # three real UPS-04s across GIC nodes; the five UPS-01s), the user's intent is genuinely ambiguous:
-    #   · a confident single pin would be a fabrication of certainty (F5 — the AI picked the Jackson genset / a Laminator
-    #     feeder for a legacy meter / a real UPS);
-    #   · the AI's own ambiguous candidate list has BROKEN RECALL (F6 — it dropped the correctly-named GIC-01-N3-UPS-01
-    #     and leaked a UPS-07). The colliding set is computed registry-wide from the token, so the right-named asset is
-    #     ALWAYS present and wrong-unit rows never leak, regardless of what the AI emitted. Ghost rows are already
-    #     excluded by colliding_rows, which also drops the P03 `_sch` ghost.
-    crows_tok = colliding_rows(prompt, cands)
-    if len(crows_tok) > 1:
-        named = uniquely_named(prompt, crows_tok)                    # the prompt spelled ONE colliding row out in full?
-        if named is not None:
-            # the user typed the whole discriminating name ('GIC-01-N3-UPS-01') — deterministic pin, no picker. Skip the
-            # collision gate AND the AI's (possibly wrong) pick; the full name is authoritative.
-            asset = confident_pin(named, cands)
-            return _finish(no_data_outcome(asset, cands) or {"asset": asset, "how": "AI", "candidates": []})
-        return _finish(ambiguous_candidates(crows_tok, cands))       # genuine homonym → picker (F5/F6)
-
-    if confident and picks:                                          # asked asset resolved (non-colliding token)...
-        # GHOST-PIN GUARD [P03]: the AI may confidently name a `_sch`/dead disambiguation ghost (table_exists=False —
-        # physically no neuract table, e.g. a lone Transformer with only a ghost row). A ghost can never render, so it is
-        # NEVER a confident pin: re-point to renderable same-token rows if any exist (picker), else fall to no_data.
-        if len(picks[0]) > 9 and not picks[0][9]:
-            renderable = colliding_rows(prompt, cands)
-            if renderable:
-                return _finish(ambiguous_candidates(renderable, cands))
+    # AI-FIRST RESOLUTION [deterministic name-collision override REMOVED 2026-07-09]: the lexical token-match gate that
+    # used to pre-empt the model — forcing a deterministic homonym picker AHEAD of the AI — is deleted. It OVERRODE
+    # CORRECT AI ANSWERS: 'PCC-1A' collides lexically with the four PCC-01 transformer meters, yet the model resolves it
+    # to PCC-Panel-1 CONFIDENTLY (empirically verified) — the gate threw that away and showed 4 wrong transformers. The
+    # MODEL now OWNS the end-user outcome: a confident pin stands; genuine ambiguity surfaces the MODEL'S OWN candidate
+    # list (the ambiguous branch below). Homonym recall/precision is an AI-GROUNDING concern (candidate context + the
+    # asset_system.md confident-vs-ambiguous contract), never a lexical override. colliding_rows/uniquely_named are no
+    # longer consulted here. [AI-first: no deterministic list to the end user]
+    if confident and picks and not _is_ghost(picks[0]):             # the model confidently pinned a RENDERABLE asset...
         asset = confident_pin(picks[0], cands)
         # ...has data? render. else NO-DATA (carrying onward-pick alternatives so the picker is never a dead end).
         return _finish(no_data_outcome(asset, cands) or {"asset": asset, "how": "AI", "candidates": []})
+    # a confident pin on a GHOST (table_exists=False, `_sch`/dead stub) can never render → NOT a pin; falls through to
+    # the model's candidate list / no-data handling below (honest, no deterministic re-point). [P03]
 
     unresolved = [n for n in names + cand_names if resolve_name(n) is None]
     if not picks and not cand_rows and unresolved:

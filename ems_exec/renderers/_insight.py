@@ -17,7 +17,6 @@ Ported verbatim (behaviour-identical) from /home/rohith/CMD/backend2/panels/insi
 `import obs.ai_log` side-effect to route :8200 traffic through the run logger and (2) DB-driven knob fallbacks via
 config.app_config (identical defaults, so behaviour is unchanged until a row exists). [atomic; DB-driven; honest-degrade]
 """
-import asyncio
 import hashlib
 import json
 import os
@@ -82,7 +81,9 @@ _SYSTEM = (
     "number, name, or status that is not present in the story.\n"
     "- Return STRICT JSON only, with EXACTLY these keys: {fields}. Each value is ONE tight, "
     "factual sentence — plain prose, no markdown, no preamble.\n"
-    "- Lead with the most decision-relevant fact and cite the actual values (with units) that matter."
+    "- Lead with the most decision-relevant fact and cite the actual values (with units) that matter.\n"
+    "- If the story carries an 'asked_about' quantity, LEAD with THAT quantity's status/value first, "
+    "then any more-critical event."
 )
 
 
@@ -147,24 +148,6 @@ def _store(key, result):
     if len(_CACHE) >= _CACHE_MAX:
         _CACHE.clear()
     _CACHE[key] = result
-
-
-async def summary(story, *, fields, fallback, timeout=None):
-    """Async, cached, fallback-guarded. Returns a dict carrying `fields`.
-
-    Cache hit -> instant. Miss -> one model call off the event loop (via a worker
-    thread), bounded by `timeout`; any failure returns a copy of `fallback` and is
-    NOT cached (so the next change retries). Never raises, never blocks the loop."""
-    timeout = LLM_TIMEOUT if timeout is None else timeout
-    key = _key(story, fields)
-    hit = _CACHE.get(key)
-    if hit is not None:
-        return hit
-    result = await asyncio.to_thread(_narrate_sync, story, list(fields), timeout)
-    if result is None:
-        return dict(fallback)
-    _store(key, result)
-    return result
 
 
 def summary_sync(story, *, fields, fallback, timeout=None):

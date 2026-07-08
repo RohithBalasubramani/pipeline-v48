@@ -1,15 +1,17 @@
 """layer2/swap/decide.py — the deterministic swap gate (ported from v47 layer2_swap.run). KEEP unless EVERY rule holds.
 Resolves swap_decision.origin (kept|swapped|must_swap). [spec §2 L2, contract 5 swap_decision]
 
-RENDERABILITY ENFORCER (user rule 1): after the normal AI/gate resolution, if the CURRENT card is UNRENDERABLE
-(card_feasibility.verdict IN drop/no_data) it is FORCE-swapped to a render_real pool candidate — deterministically,
-overriding whatever the AI wanted. static_chrome/render_real cards are untouched. [gate_force_renderable]"""
+RENDERABILITY ENFORCER (user rule 1): after the normal AI/gate resolution, if the CURRENT card CANNOT render REAL DATA
+it is FORCE-swapped to a render_real pool candidate — deterministically, overriding whatever the AI wanted. Two triggers:
+(a) the STATIC card_feasibility.verdict IN drop/no_data (this KIND of card never renders); (b) the AI's own per-asset
+verdict answerability='none' (`answerability` kwarg) — a catalog-renderable card WHOLLY unfillable for THIS asset (every
+leaf honest-blanks: Fuel Tank on a fuel-less DG). No unclaimed candidate → honest KEEP. [gate_force_renderable, #1]"""
 from layer2.swap import (gate_confidence, gate_vague_reject, gate_pool_valid,
                          gate_no_dup, gate_template_dedup, combo_cascade, gate_force_renderable)
 
 
 def gate(decision, *, pool_ids, template_card_ids, already_chosen, page_card_ids, current_card_id,
-         current_verdict=None, pool=None):
+         current_verdict=None, pool=None, answerability=None):
     """Return the resolved swap_decision (action/origin/swap_to_id). Default KEEP; honor SWAP only if all gates pass.
 
     When `current_verdict` marks the current card UNRENDERABLE (config.feasibility.UNRENDERABLE_VERDICTS), the
@@ -33,5 +35,5 @@ def gate(decision, *, pool_ids, template_card_ids, already_chosen, page_card_ids
     # RENDERABILITY ENFORCER — runs last, overrides the above only when the current card CANNOT render. [user rule 1]
     # already_chosen is threaded so a forced swap never lands on a target another slot already claimed. [META-04]
     d, forced_kept = gate_force_renderable.enforce(d, verdict=current_verdict, pool=pool,
-                                                   already_chosen=already_chosen)
+                                                   already_chosen=already_chosen, answerability=answerability)
     return d

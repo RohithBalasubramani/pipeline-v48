@@ -1,0 +1,36 @@
+{
+ "run_id": "r_190ec2bbf3",
+ "loop1": [
+  {
+   "card_id": 7,
+   "title": "Context Rail Header (Overview / Section / Feeder)",
+   "answerability": "partial",
+   "note": "Showing PCC Panel 2 aggregate data; some feeders (GIC-01-N9, GIC-02-N1, GIC-15-N12, GIC-15-N13, GIC-03-N2, GIC-05-N11, GIC-05-N12) are dark (no data) and will render as blanks."
+  },
+  {
+   "card_id": 5,
+   "title": "Real Time Monitoring (Feeder Heatmap)",
+   "answerability": "partial",
+   "note": "Showing real-time power distribution for active feeders (AHU-8, Curing Line, Utility Panel, Canteen, STP, AHU-5, MRPDB, AHU-6, AHU-7, MLDB, BPDB-03, BPDB-04, Elec Room N, Air Washer-4, FCBC, Air Washer Exhaust-04/05/06). Incomer, UPS, BPDB, and HHF sections are blank as their member meters report no data (has_data=N)."
+  },
+  {
+   "card_id": 9,
+   "title": "Total Feeder Consumption / Supply",
+   "answerability": "partial",
+   "note": "Showing total active power (active_power_total_kw) \u2014 per-member breakdowns are rendered by the panel-aggregate from member meters; contracted capacity is unknown, so the demand-vs-capacity ratio cannot be computed."
+  },
+  {
+   "card_id": 10,
+   "title": "Consumption Trend / Supply Trend",
+   "answerability": "partial",
+   "note": "Showing panel aggregate consumption trend; some feeders (GIC-03-N2, GIC-05-N11, GIC-05-N12) are dark and honest-blanked."
+  },
+  {
+   "card_id": 11,
+   "title": "Quick Stats",
+   "answerability": "partial",
+   "note": "Showing per-member panel rollups (voltage, current unbalance, average current) \u2014 supply-side feeders have no data."
+  }
+ ],
+ "loop2": null
+}

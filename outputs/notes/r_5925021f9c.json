@@ -5,13 +5,13 @@
    "card_id": 47,
    "title": "Power Quality",
    "answerability": "partial",
-   "note": "Showing current THD (thd_compliance_i_avg) and individual phase harmonics (R, Y) as proxies for voltage harmonics (H5, H7) and crest factor, as voltage THD and crest factor columns are not logged for this asset."
+   "note": "Showing current THD compliance and H5/H7 current harmonics \u2014 voltage THD, flicker, and crest factor are not measured by this meter."
   },
   {
    "card_id": 48,
    "title": "Distortion & Harmonic Profile",
    "answerability": "partial",
-   "note": "Showing current THD evolution \u2014 voltage THD data is not currently measured for this meter (voltage THD leaves will be blank)."
+   "note": "Showing I-THD and V-THD historical trajectories \u2014 per-phase voltage harmonics (h5/h7) and scalar axis limits are not measured by this meter."
   }
  ],
  "loop2": null

@@ -1,0 +1,30 @@
+{
+ "run_id": "r_914fdb1edb",
+ "loop1": [
+  {
+   "card_id": 14,
+   "title": "Cumulative Energy",
+   "answerability": "partial",
+   "note": "Showing total active and reactive energy for this month \u2014 per-phase breakdown is not measured for this aggregate panel."
+  },
+  {
+   "card_id": 16,
+   "title": "Energy Consumption Trend",
+   "answerability": "partial",
+   "note": "Showing total active energy trend for 23 PRIMARY feeders; rated/contracted reference lines omitted (nameplate unknown); UPS/BPDP/HHF sub-legend slots omitted (no matching members)."
+  },
+  {
+   "card_id": 15,
+   "title": "Today live power analysis",
+   "answerability": "partial",
+   "note": "Showing live apparent power and active/reactive breakdown for the panel's outgoing feeders; capacity and peak markers are omitted because the panel's rated kVA is unknown."
+  },
+  {
+   "card_id": 17,
+   "title": "Daily Power Demand by Feeder",
+   "answerability": "partial",
+   "note": "Showing aggregated power demand by feeder group (UPS, FCBC, AHU) \u2014 per-group breakdown is not measured by a single column, resolved via panel member fan-out."
+  }
+ ],
+ "loop2": null
+}

@@ -1,0 +1,30 @@
+{
+ "run_id": "r_29b02e1d8f",
+ "loop1": [
+  {
+   "card_id": 39,
+   "title": "Today's Energy",
+   "answerability": "partial",
+   "note": "Showing total active and reactive energy for the month \u2014 subsidy limits and progress targets are not configured for this asset."
+  },
+  {
+   "card_id": 40,
+   "title": "Power Energy Analysis",
+   "answerability": "partial",
+   "note": "Showing total active/reactive power \u2014 per-phase breakdown and rated/contracted limits are not measured for this asset."
+  },
+  {
+   "card_id": 41,
+   "title": "Input vs Output Energy",
+   "answerability": "partial",
+   "note": "Showing total energy flow and derived loss/efficiency metrics from main_flow_meter; expected loss is omitted as no nameplate rating is available for this asset."
+  },
+  {
+   "card_id": 42,
+   "title": "Load Anomalies",
+   "answerability": "partial",
+   "note": "Showing load factor % and anomaly counts \u2014 absolute power (kW) and voltage events (dips/surges) are not measured by this asset."
+  }
+ ],
+ "loop2": null
+}

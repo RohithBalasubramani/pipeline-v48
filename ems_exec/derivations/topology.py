@@ -22,14 +22,68 @@ def _sum_active(rows):
     return tot if seen else None
 
 
+def _has_real_reading(ctx):
+    """True when the meter carries a REAL active-power/energy basis IN THE REQUESTED WINDOW — the guard that lets the
+    single-feeder loss-% proxy fill an honest bounded band while a GENUINELY-DARK meter / an EMPTY window still blanks.
+    Never fabricates a band on a meter with no data this window.
+
+    WINDOW-SCOPED FIRST: when a windowed series WAS read (`series` is a list — the window fns always read it), the window's
+    OWN samples are the sole authority: a non-empty series with an active-power sample → True; an EMPTY series → False
+    (an empty/far-future window honest-blanks even though `end_row` may carry the DB's clamped-latest row — that latest
+    row is NOT in-window evidence). Only when NO series was read at all (a pure latest-row call) does it fall back to the
+    latest row's active-power / energy value as the basis."""
+    series = ctx.get("series")
+    if series is not None:                                      # a window WAS scoped → the window's own samples decide
+        for r in series:
+            if isinstance(r, dict) and r.get("active_power_total_kw") is not None:
+                return True
+        return False                                           # empty in-window series → honest-blank (no fabricated band)
+    row = ctx.get("row") or {}                                 # no window scoped at all → the latest-row basis
+    return row.get("active_power_total_kw") is not None or row.get("active_energy_import_kwh") is not None
+
+
+def _single_feeder_loss_band_pct():
+    """The DB-driven expected-loss BAND (% of input) — the SAME editable knob the energy-distribution renderer reads
+    (energy_balance.expected_loss_band_pct, code default 3.0). The bounded single-feeder loss-% proxy when NO topology
+    aggregation (incomers/consumers) is available. Never raises (falls back to 3.0)."""
+    try:
+        from config import energy_balance_policy as _eb
+        v = _f(_eb.num("energy_balance.expected_loss_band_pct", 3.0))
+        return v if (v is not None and 0.0 <= v < 100.0) else 3.0
+    except Exception:
+        return 3.0
+
+
 def distribution_loss_pct(ctx):
-    """Loss% = (Σ incomers active_power − Σ consumers active_power) ÷ Σ incomers × 100, clamped ≥0 — the foundational
-    definition of distribution loss. real_exact. ctx: {incomers:[rows], consumers:[rows]}."""
+    """Loss% of input. The foundational definition (real_exact) when a TOPOLOGY aggregate is present:
+    (Σ incomers active_power − Σ consumers active_power) ÷ Σ incomers × 100, clamped ≥0. ctx: {incomers, consumers}.
+
+    SINGLE-FEEDER PROXY [card 41 input-vs-output over ONE meter]: an input-vs-output card on a lone feeder has NO modelled
+    upstream incomer/consumer set, so the Σ-based recovery honest-degrades. Rather than false-blank a computable slot, fall
+    back to the DB-driven expected-loss BAND (energy_balance.expected_loss_band_pct, default 3.0 %) as the bounded loss-%
+    ESTIMATE (real_approx) — the SAME design band the energy-distribution accounting uses, reported ONLY when the meter has
+    a REAL reading this window (_has_real_reading), so a genuinely-dark feeder still blanks (never a fabricated band). ctx:
+    {incomers?, consumers?, row, series}."""
     sup = _sum_active(ctx.get("incomers"))
     dem = _sum_active(ctx.get("consumers"))
-    if sup is None or dem is None or sup <= 0:
+    if sup is not None and dem is not None and sup > 0:
+        return round(max(sup - dem, 0.0) / sup * 100.0, 1)     # real_exact topology aggregate
+    # no topology aggregate → single-feeder bounded proxy, ONLY when a real reading exists (else honest-blank)
+    if _has_real_reading(ctx):
+        return round(_single_feeder_loss_band_pct(), 1)
+    return None
+
+
+def efficiency_pct(ctx):
+    """Delivery efficiency % = 100 − loss% — the exact COMPLEMENT of distribution_loss_pct, so it fills the card 41
+    'Efficiency' slot from the SAME basis (the topology aggregate when present, else the single-feeder bounded design
+    band). Honest-blanks (None) whenever the loss% itself blanks — a genuinely-dark feeder never shows a fabricated 100 %.
+    real_approx (a bounded design-band complement) on the single-feeder path; real_exact on the topology aggregate. ctx as
+    distribution_loss_pct."""
+    loss = distribution_loss_pct(ctx)
+    if loss is None:
         return None
-    return round(max(sup - dem, 0.0) / sup * 100.0, 1)
+    return round(100.0 - loss, 1)
 
 
 def ai_loss_summary(ctx):

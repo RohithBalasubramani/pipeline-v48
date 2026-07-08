@@ -1,0 +1,30 @@
+{
+ "run_id": "r_bc7c9f27c8",
+ "loop1": [
+  {
+   "card_id": 39,
+   "title": "Today's Energy",
+   "answerability": "partial",
+   "note": "Showing today's active and reactive energy; subsidy/target/SEC are unconfigured constants (nameplate unknown)."
+  },
+  {
+   "card_id": 40,
+   "title": "Power Energy Analysis",
+   "answerability": "partial",
+   "note": "Showing active and reactive energy trends over the last 7 days. Rated and Contracted power lines are omitted because the asset's nameplate ratings are unknown. Average metrics are derived from total power using load factor approximations."
+  },
+  {
+   "card_id": 41,
+   "title": "Input vs Output Energy",
+   "answerability": "partial",
+   "note": "Showing total active power for Input/Output and derived loss/efficiency metrics; per-phase energy is not measured for this asset."
+  },
+  {
+   "card_id": 42,
+   "title": "Load Anomalies",
+   "answerability": "partial",
+   "note": "Showing active power load factor as a proxy for load anomaly deviation \u2014 the meter does not log a dedicated 'load anomaly' or 'expected load' metric, so the load factor (actual vs rated) is used to highlight deviations from expected behavior."
+  }
+ ],
+ "loop2": "1 of 4 cards hard-failed their emit (frac 0.25 < reflect.min_gap_frac 0.34); left honest-blank per-leaf, page NOT re-routed."
+}

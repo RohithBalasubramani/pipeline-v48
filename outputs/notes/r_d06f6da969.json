@@ -5,25 +5,25 @@
    "card_id": 78,
    "title": "Tap Position Optimization",
    "answerability": "partial",
-   "note": "Showing voltage average as a proxy for tap position, as a dedicated tap position column is not measured by this meter."
+   "note": "Showing voltage_avg as a proxy for tap position \u2014 the asset does not log a dedicated tap position column."
   },
   {
    "card_id": 79,
    "title": "Voltage Regulation Timeline",
    "answerability": "partial",
-   "note": "Showing average bus voltage and tap position history. Tap position is not directly measured by this meter; the voltage axis is used as a proxy for the regulator's state. Band limits and setpoints are derived from statutory voltage deviation parameters."
+   "note": "Showing voltage regulation activity and inferred tap position via voltage deviation (voltageStatutoryBand) \u2014 direct tap position is not measured for this asset."
   },
   {
    "card_id": 80,
    "title": "Recent Tap Changes",
    "answerability": "partial",
-   "note": "Showing active power as a proxy for tap position \u2014 tap position is not directly measured by this meter."
+   "note": "Showing voltage deviation as a proxy for tap position \u2014 tap position is not directly measured for this asset."
   },
   {
    "card_id": 81,
    "title": "Tap Activity & Wear",
    "answerability": "partial",
-   "note": "Showing active power total as a proxy for tap activity counts \u2014 the meter does not log a dedicated tap counter column."
+   "note": "Showing voltage deviation as a proxy for tap activity \u2014 the meter does not log a dedicated tap-change counter, so voltage deviation is used to infer tap status."
   }
  ],
  "loop2": null

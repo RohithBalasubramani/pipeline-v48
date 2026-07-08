@@ -1,0 +1,36 @@
+{
+ "run_id": "r_e3b502a6f1",
+ "loop1": [
+  {
+   "card_id": 23,
+   "title": "PQ Issues KPI Strip (Total Issues / I-THD Events / V-THD Events / PF Gap Feeders / Neutral Stress / Worst I-THD / Worst V-THD)",
+   "answerability": "partial",
+   "note": "Showing panel aggregate event counts and worst-case THD from outgoing feeders; per-phase THD columns (thd_current_*, thd_voltage_*) are not logged on the panel stub table, so per-phase breakdowns are honest-blanked."
+  },
+  {
+   "card_id": 24,
+   "title": "Harmonics & PQ Timeline",
+   "answerability": "partial",
+   "note": "Showing per-panel THD and power metrics from outgoing feeders; some feeders (Axial Fan Panel-1, Axial Fan Panel-2, Frisking+Security) are dark (no data) and will render as blanks."
+  },
+  {
+   "card_id": 25,
+   "title": "AI Summary",
+   "answerability": "partial",
+   "note": "Showing AI narrative summary for PCC-2A outgoing feeders; per-member THD/power stats are populated from member meters where available (some members have no data and are omitted from the narrative)."
+  },
+  {
+   "card_id": 26,
+   "title": "Feeder PQ At {period}",
+   "answerability": "partial",
+   "note": "Showing per-feeder PQ metrics (iThd, vThd, pf) from the 21 outgoing feeders; panel-level aggregate columns are not directly logged on the stub table, so values are resolved via member fan-out. Some feeders (Axial Fan Panel-1, Axial Fan Panel-2, Frisking+Security) have no recent data and will render blank."
+  },
+  {
+   "card_id": 27,
+   "title": "Signature",
+   "answerability": "partial",
+   "note": "Showing harmonic distribution (H5, H7, I-THD, V-THD) and power for panel feeders; 3rd harmonic, K-factor, and peak-THD columns are not measured by this meter's member tables."
+  }
+ ],
+ "loop2": null
+}

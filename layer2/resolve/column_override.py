@@ -61,9 +61,61 @@ def _units_compatible(declared_unit, target_col, basket_unit_by_col):
 _SLOT_QTY_SUFFIXES = ("kvarh", "kvah", "kwh", "kvar", "kva", "kw", "pct")
 
 
-def _slot_quantity(slot):
-    """The display quantity a slot KEY itself names (…Kw → 'kw', …Kwh → 'kwh', …Pct → '%'), or None (no claim —
-    unsuffixed keys carry no unit claim, so no guard)."""
+def _sibling_display_unit(slot, payload):
+    """The AUTHORITATIVE display unit for a slot from the payload's OWN sibling `*unit`/`*Unit` leaf, normalized via
+    _unit_of — or None. The slot KEY suffix (`…Kw`) is only a WEAK hint (a CMD_V2 payload key is a JS identifier, not a
+    unit claim: `reactivePowerAvgKw` is a REACTIVE value whose sibling `reactiveLegendUnit`='kVAr' names the TRUE unit).
+    So before trusting the key suffix, look for a sibling leaf whose key ends in 'unit' and holds a string unit at the
+    slot's own parent block: the value KEY's stem prefixes the unit key (`reactivePowerAvgKw`→`reactiveLegendUnit`,
+    `sourceInputKw`→`unit`). Prefer a STEM-MATCHED unit sibling; else the block's lone/first `*unit` leaf. None when no
+    sibling unit leaf exists (the key suffix decides). Pure path arithmetic + the shared _unit_of — no card vocab."""
+    if not isinstance(payload, dict):
+        return None
+    toks = [t for t in str(slot or "").replace("[", ".").replace("]", "").split(".") if t]
+    if not toks:
+        return None
+    # descend to the slot's PARENT block (skip a leading 'data.' the same way the executor addresses)
+    node = payload
+    for t in toks[:-1]:
+        if t == "data" and not (isinstance(node, dict) and "data" in node):
+            continue
+        if isinstance(node, dict) and t in node:
+            node = node[t]
+        elif isinstance(node, list) and t.isdigit() and int(t) < len(node):
+            node = node[int(t)]
+        else:
+            return None
+    if not isinstance(node, dict):
+        return None
+    key = toks[-1]
+    # the value key's stem = its text with any trailing quantity suffix stripped ('reactivePowerAvgKw'→'reactivepoweravg')
+    stem = key.lower()
+    for suf in _SLOT_QTY_SUFFIXES:
+        if stem.endswith(suf) and stem != suf:
+            stem = stem[: -len(suf)]
+            break
+    unit_leaves = [(k, v) for k, v in node.items()
+                   if str(k).lower().endswith("unit") and isinstance(v, str) and v.strip()]
+    if not unit_leaves:
+        return None
+    # STEM-MATCH: prefer a unit leaf whose key shares the value key's leading stem (reactive* value ↔ reactive* unit)
+    stem_head = stem[:6] if len(stem) >= 4 else stem
+    for k, v in unit_leaves:
+        if stem_head and str(k).lower().startswith(stem_head):
+            return _unit_of(v)
+    return _unit_of(unit_leaves[0][1])                      # the block's lone/first declared display unit
+
+
+def _slot_quantity(slot, payload=None):
+    """The display quantity a slot names — the AUTHORITATIVE payload sibling `*unit` leaf FIRST (a CMD_V2 payload KEY is
+    an identifier, not a unit: `reactivePowerAvgKw` displays in kVAr per its `reactiveLegendUnit` sibling — c40 false-
+    blank), then the KEY suffix as a weak fallback (…Kw → 'kw', …Kwh → 'kwh', …Pct → '%'). None (no claim) when neither
+    a sibling unit nor a suffix names one. Passing the default `payload` enables the sibling-unit read; without it the
+    behavior is the legacy key-suffix rule (byte-identical to before). Preserves PCC-4 defect E: a genuine `…Kw`
+    display slot whose sibling `…unit` reads 'kW' still returns 'kw', so a kWh counter bound there still honest-blanks."""
+    sib = _sibling_display_unit(slot, payload)
+    if sib is not None:
+        return sib
     last = str(slot or "").split(".")[-1].split("[")[0].strip().lower()
     for suf in _SLOT_QTY_SUFFIXES:
         if last.endswith(suf) and last != suf or last == suf:
@@ -85,6 +137,29 @@ def _basket_index(basket):
     return by_metric, real, unit_by_col
 
 
+def _resolve_metric_column(f, by_metric, real, unit_by_col):
+    """The REAL basket column a column-less measurable field's OWN metric names, or None. Used by the $ctx-on-standalone
+    repair (a `$ctx` field can carry a metric that IS a real column but omit the redundant `column`, so the c73 repair's
+    direct-column check misses it and the measurable leaf false-blanks). Two GENERIC, unit-guarded mechanisms:
+      1) METRIC-TAG snap — the field's metric maps to exactly ONE real basket column (by_metric; the neuract meter basket
+         carries no metric tag today, so this is a no-op there but stays correct if columns are ever tagged);
+      2) METRIC-NAMES-COLUMN — the metric STRING itself is a real basket column name (the emit's `metric:'phase_angle_deg'`
+         == the column). This is how a $ctx field omits `column` yet still names a measurable series.
+    Both are GUARDED by unit compatibility [DID-06] — a metric that resolves to a wrong-quantity column does NOT snap.
+    None when nothing real+compatible resolves (a genuinely-unmeasurable leaf still honest-blanks — never over-reach)."""
+    m = f.get("metric")
+    if not m:
+        return None
+    cands = by_metric.get(m) or []
+    if len(cands) == 1 and cands[0] in real:
+        target = cands[0]
+    elif m in real:
+        target = m
+    else:
+        return None
+    return target if _units_compatible(f.get("unit"), target, unit_by_col) else None
+
+
 def _display_morphed(slot, applied_morphs):
     """Did the emission morph any metadata leaf in the slot's OWN parent block (the mandated proxy unit/caption
     morph)? Path arithmetic only — no key names, no card knowledge."""
@@ -95,8 +170,12 @@ def _display_morphed(slot, applied_morphs):
                for mp in (applied_morphs or []))
 
 
-def apply(data_instructions, basket, data_note=None, applied_morphs=None, is_group_card=False):
-    """Return (data_instructions, notes[]). Mutates fields[].column to a real basket column where safe. `data_note`
+def apply(data_instructions, basket, data_note=None, applied_morphs=None, is_group_card=False, default_payload=None):
+    """Return (data_instructions, notes[]). Mutates fields[].column to a real basket column where safe. `default_payload`
+    (the card's harvested default) lets the slot-quantity guard read a slot's AUTHORITATIVE sibling `*unit` leaf (a
+    CMD_V2 payload KEY is a JS identifier, not a unit claim — c40 `reactivePowerAvgKw` displays kVAr per its
+    `reactiveLegendUnit` sibling); absent → the guard falls back to the key-suffix rule (byte-identical to before).
+    `data_note`
     (the emission's own degradation note) + `applied_morphs` (the APPLIED metadata morph paths) mark a DECLARED,
     display-morphed proxy — the slot-quantity guard stands down only for that. `is_group_card` gates the $ctx repair
     (source=$ctx is legal ONLY on a group card).
@@ -132,6 +211,15 @@ def apply(data_instructions, basket, data_note=None, applied_morphs=None, is_gro
                 src = f["source"] = "live"
                 notes.append(f"slot {f.get('slot')!r}: source=$ctx on a standalone card reclassified to live "
                              f"(real column {_c!r}) — measurable leaf fills instead of a $ctx false-blank")
+            elif f.get("kind") != "const" and _resolve_metric_column(f, by_metric, real, unit_by_col):
+                # NO redundant `column` but the field's own METRIC names a real, unit-compatible basket column — snap it
+                # and reclassify $ctx→live so the measurable series/stat FILLS (the pf-angle phase_angle_deg leaf false-
+                # blanked because a $ctx field that omits the redundant column dropped straight to frame). Guarded: a
+                # metric with no real+compatible column still honest-blanks below (never over-reach).
+                _t = _resolve_metric_column(f, by_metric, real, unit_by_col)
+                f["column"], src, f["source"] = _t, "live", "live"
+                notes.append(f"slot {f.get('slot')!r}: source=$ctx on a standalone card resolved to live via its metric "
+                             f"{f.get('metric')!r} → real column {_t!r} — measurable leaf fills instead of a $ctx false-blank")
             else:
                 f["column"], f["source"] = None, "frame"
                 notes.append(f"slot {f.get('slot')!r}: source=$ctx on a standalone card names no real column → "
@@ -143,7 +231,7 @@ def apply(data_instructions, basket, data_note=None, applied_morphs=None, is_gro
         # SLOT-QUANTITY GUARD — a unit-crossing binding (a kWh counter bound into a `…Kw` slot) honest-blanks the
         # leaf unless it is a DECLARED proxy WHOSE display metadata was morphed [PCC-4 defect E].
         if col and col in real and f.get("kind") not in ("derived", "time"):
-            sq = _slot_quantity(f.get("slot"))
+            sq = _slot_quantity(f.get("slot"), payload=default_payload)
             cq = _unit_of(unit_by_col.get(col)) or _col_unit(col)
             if sq is not None and cq is not None and sq != cq \
                     and not (proxy_declared and _display_morphed(f.get("slot"), applied_morphs)):

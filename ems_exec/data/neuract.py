@@ -288,6 +288,46 @@ def bucketed(table, col, start, end, sampling="hourly"):
     return [{"t": (r[0].isoformat() if hasattr(r[0], "isoformat") else r[0]), "value": _num(r[1])} for r in rows]
 
 
+def bucketed_raw_series(table, columns, start, end, sampling="day"):
+    """Per-COARSE-bucket RAW rows: `[(bucket_ts_iso, [{col: value, …}, …]), …]` ascending — every real sample of the
+    requested present columns tagged with its `date_trunc(sampling)` bucket, NOT down-sampled. One row per REAL reading
+    (no AVG), grouped by the coarse bucket. This is the read a per-bucket WINDOW/SERIES-scoped derivation (load factor =
+    mean(|p|)/peak(|p|)) needs so each bucket's fn runs over that bucket's OWN intra-bucket distribution — an AVG-per-bucket
+    read (`series`/`bucketed`) collapses the bucket to ONE point whose mean==peak (a degenerate 100 %), and the hourly-AVG
+    the scalar window fn reads smooths the peak away (a per-day mean/peak over hourly-avgs reads ~96 % vs the real ~85 %).
+    Only existing columns are read; a fully-NULL sample (every requested col None) is dropped. [] when the table/window is
+    empty / no column exists — honest-degrade, never a fabricated bucket. PER-CARD (one table); no fan-out."""
+    got, _missing = _existing(table, columns)
+    if not table or not got:
+        return []
+    gran = _SAMPLING.get((sampling or "day").lower(), "day")
+    tsx = _tsexpr()
+    bucket = f"date_trunc('{gran}', {tsx})"
+    sel = ", ".join(f"{_qcol(c)}::double precision AS {_qcol(c)}" for c in got)
+    conds, params = [], []
+    if start:
+        conds.append(f"{tsx} >= %s::timestamptz")
+        params.append(str(start))
+    if end:
+        conds.append(f"{tsx} <= %s::timestamptz")
+        params.append(str(end))
+    where = (" WHERE " + " AND ".join(conds)) if conds else ""
+    sql = (f"SELECT {bucket} AS b, {sel} FROM {_qtbl(table)}{where} ORDER BY b ASC, {tsx} ASC")
+    rows = _run(sql, params)
+    out, cur_key, cur_rows = [], object(), None
+    for r in rows:
+        b = r[0]
+        vals = {c: _num(v) for c, v in zip(got, r[1:])}
+        if all(vals[c] is None for c in got):
+            continue                                        # a fully-dead sample → dropped (no fabricated point)
+        key = b.isoformat() if hasattr(b, "isoformat") else b
+        if key != cur_key:
+            cur_key, cur_rows = key, []
+            out.append((key, cur_rows))
+        cur_rows.append(vals)
+    return [(k, rs) for k, rs in out if rs]
+
+
 def edge_count(table, col, start, end):
     """The TOTAL rising-edge count of a boolean/flag column over [start, end] — counted on the RAW rows (LAG window
     function), so a register that flaps dozens of times inside one hour reports every real edge. The old approach

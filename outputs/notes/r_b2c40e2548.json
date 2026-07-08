@@ -1,0 +1,30 @@
+{
+ "run_id": "r_b2c40e2548",
+ "loop1": [
+  {
+   "card_id": 39,
+   "title": "Today's Energy",
+   "answerability": "partial",
+   "note": "Showing active and reactive energy consumption for the current day; per-phase energy, subsidy limits, and progress targets are not measured or configured for this UPS asset."
+  },
+  {
+   "card_id": 40,
+   "title": "Power Energy Analysis",
+   "answerability": "partial",
+   "note": "one or more leaves could not be bound for this card on this asset \u2014 those leaves render an honest blank (per-leaf reasons attached), every other leaf fills"
+  },
+  {
+   "card_id": 41,
+   "title": "Input vs Output Energy",
+   "answerability": "partial",
+   "note": "Showing total active power and energy loss \u2014 per-phase power isn't measured for this asset; 'lossPct' is computed against total active power, not energy input."
+  },
+  {
+   "card_id": 42,
+   "title": "Load Anomalies",
+   "answerability": "partial",
+   "note": "Showing actual load and load factor \u2014 expected load patterns and anomaly event details are not measured for this asset."
+  }
+ ],
+ "loop2": null
+}

@@ -85,6 +85,8 @@ def build(asset, card, ctx, members):
     badge = "review" if (v_sev in ("warning", "critical") or i_sev in ("warning", "critical")
                          or v_events or i_events) else "accounting"
 
+    asked = (ctx.get("metric") or "").strip().lower()           # the 1a asked-about quantity ('voltage'/'current'/…)
+    period_label = _period_label(ctx.get("window"))             # honest period for the drivers/title prose
     story = {
         "panel": panel_name, "range_window": _window_label(ctx.get("window")),
         "reporting_members": coverage["reporting_count"], "expected_members": coverage["expected_count"],
@@ -94,9 +96,28 @@ def build(asset, card, ctx, members):
         "worst_current": ({"member": i_worst["name"], "unbalance_pct": i_worst["mag"],
                            "severity": i_sev} if i_worst else None),
         "likely_driver": driver,
+        # LEAF BINDS [F5 unaudited-side-channel]: the very facts the blank stat leaves want are ALREADY computed here —
+        # bind ONLY what we truly know (worst-V/I member + magnitude, the honest period label) into the card's REAL
+        # payload leaves so they render REAL not unbound. narrative_ai applies + strips this private key; zero fabrication
+        # (a fact we did not compute — vMax/vMin/neutralA/per-type splits — stays honest-blank, never invented).
+        "_leaf_binds": _leaf_binds(v_worst, i_worst, period_label),
     }
-    fb = {"text": _fallback_text(v_events, i_events, v_worst, v_sev, i_worst, i_sev, driver)}
+    fb = {"text": _fallback_text(v_events, i_events, v_worst, v_sev, i_worst, i_sev, driver, asked)}
     return story, fb, badge
+
+
+def _leaf_binds(v_worst, i_worst, period_label):
+    """{payload_leaf_path: real_value} for the facts THIS builder truly computed → the card-19/25 V&C summary leaves.
+    Only present facts are bound (a None worst → its leaves stay honest-blank). Paths are the V&C summary shape this
+    page owns; narrative_ai writes ONLY leaves the skeleton already carries (no shape growth)."""
+    binds = {"summary.period.label": period_label}
+    if v_worst:
+        binds["summary.stats.worstVoltage.vDeviation"] = v_worst["signed"]
+        binds["summary.stats.worstVoltage.panel"] = v_worst["name"]
+    if i_worst:
+        binds["summary.stats.worstCurrent.iUnbalance"] = i_worst["mag"]
+        binds["summary.stats.worstCurrent.panel"] = i_worst["name"]
+    return binds
 
 
 def _likely_driver(v_worst, v_sev, i_worst, i_sev, sag_pct, swell_pct, i_unbal_limit):
@@ -117,23 +138,54 @@ def _likely_driver(v_worst, v_sev, i_worst, i_sev, sag_pct, swell_pct, i_unbal_l
     return "no dominant driver — voltage and current within their statutory bands"
 
 
-def _fallback_text(v_events, i_events, v_worst, v_sev, i_worst, i_sev, driver):
-    parts = []
+def _fallback_text(v_events, i_events, v_worst, v_sev, i_worst, i_sev, driver, asked=None):
+    """The deterministic fallback sentence (used verbatim on any model failure). LEADS with the ASKED-ABOUT quantity
+    [c19 voltage-question→current-led defect]: a voltage question opens with the voltage fact, a current question with
+    the current fact; the band-crossing count and the other quantity follow. No `asked` → the original order stands."""
     total = (v_events or 0) + (i_events or 0)
-    parts.append("%d V/I band-crossing%s detected (%d voltage, %d current)."
-                 % (total, "" if total == 1 else "s", v_events or 0, i_events or 0))
-    if v_worst:
-        parts.append("Worst voltage %s %+.1f%% at %s (%s)."
-                     % (v_worst["kind"], v_worst["signed"], v_worst["name"], v_sev or "normal"))
-    if i_worst:
-        parts.append("Worst current unbalance %.1f%% at %s (%s)."
-                     % (i_worst["mag"], i_worst["name"], i_sev or "normal"))
-    if driver:
-        parts.append("Likely driver: %s." % driver)
-    return " ".join(parts)
+    count = ("%d V/I band-crossing%s detected (%d voltage, %d current)."
+             % (total, "" if total == 1 else "s", v_events or 0, i_events or 0))
+    v_part = ("Worst voltage %s %+.1f%% at %s (%s)."
+              % (v_worst["kind"], v_worst["signed"], v_worst["name"], v_sev or "normal")) if v_worst else None
+    i_part = ("Worst current unbalance %.1f%% at %s (%s)."
+              % (i_worst["mag"], i_worst["name"], i_sev or "normal")) if i_worst else None
+    d_part = ("Likely driver: %s." % driver) if driver else None
+    a = (asked or "").strip().lower()
+    if a == "voltage" and v_part:
+        ordered = [v_part, count, i_part, d_part]
+    elif a == "current" and i_part:
+        ordered = [i_part, count, v_part, d_part]
+    else:
+        ordered = [count, v_part, i_part, d_part]
+    return " ".join(p for p in ordered if p)
+
+
+def _norm_window(window):
+    """Normalise the accepted window shapes → {start, end[, range]} or None. DICT-AWARE: the FE threads a
+    {range,start,end,sampling} dict (not just a 2-tuple), which the old 2-tuple-only test treated as no-window."""
+    if isinstance(window, dict):
+        s, e = window.get("start"), window.get("end")
+        if s or e:
+            return {"start": s, "end": e, "range": window.get("range")}
+        return None
+    if isinstance(window, (list, tuple)) and len(window) == 2 and (window[0] or window[1]):
+        return {"start": window[0], "end": window[1]}
+    return None
 
 
 def _window_label(window):
-    if isinstance(window, (list, tuple)) and len(window) == 2 and (window[0] or window[1]):
-        return {"start": window[0], "end": window[1]}
+    """The honest FACTS-BASIS label for the story. This builder judges severities over the LATEST snapshot per member
+    (_facts.live_snapshot → latest row), so the honest basis is 'latest' REGARDLESS of any FE date window — returning
+    the window span here would MISLABEL a latest-snapshot analysis as a windowed one [never mislabel]. `_norm_window`
+    makes the accepted shapes dict-aware so a future WINDOWED-facts path can light this up (return the span) without a
+    dict-blind crash; until that read exists, the label stays the honest 'latest'."""
+    _norm_window(window)                                        # dict-aware (validated; a windowed read would use it)
     return "latest"
+
+
+def _period_label(window):
+    """The honest PERIOD label for the drivers/title prose ('Redistribution at <label>; …' / '… · <label>'). The
+    severities are the LATEST snapshot, so the honest period is the latest reading — NEVER a windowed claim over
+    snapshot facts. A blank label leaves the FE prose dangling ('Redistribution at ;'), so it must always be real."""
+    _norm_window(window)                                        # dict-aware; a windowed-facts path would name the span
+    return "the latest reading"

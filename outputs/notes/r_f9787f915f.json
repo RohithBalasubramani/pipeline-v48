@@ -5,37 +5,37 @@
    "card_id": 7,
    "title": "Context Rail Header (Overview / Section / Feeder)",
    "answerability": "partial",
-   "note": "Supply-side members (Solar Incomers, Transformers) are dark (has_data=N) and will render as honest-blanks; only fed feeders (UPS, BPDB) report live data."
+   "note": "Showing PCC Panel 1 aggregate data; 2 of 8 supply-side members (Solar Incomers, Transformers) are offline (has_data=N) and render as blanks."
   },
   {
    "card_id": 5,
    "title": "Real Time Monitoring (Feeder Heatmap)",
    "answerability": "partial",
-   "note": "Showing live power status for all feeders; 4 of 10 members (Solar Incomers, Transformers) are dark (has_data=N) and render as blank rows per roster policy."
+   "note": "Showing live power states across all LT-PCC feeders; incomers are dark (no data) and render as blank rows per roster policy."
   },
   {
    "card_id": 8,
    "title": "AI Summary",
    "answerability": "partial",
-   "note": "Panel members GIC-01-N9-Solar Incomer-1, GIC-02-N1-Solar Incomer-2, GIC-15-N10-PCC-01 (Transformer-01), GIC-15-N11-PCC-01 (Transformer-02), GIC-02-N6-UPS-05 CL:600KVA, and GIC-02-N7-UPS-06 CL:600KVA are dark (no data); narrative is generated from active feeders only."
+   "note": "AI narrative is generated from panel rollup data; some panel members (GIC-01-N9, GIC-02-N1, GIC-15-N10, GIC-15-N11, GIC-02-N6, GIC-02-N7) have no live data and are excluded from the narrative."
   },
   {
    "card_id": 9,
    "title": "Total Feeder Consumption / Supply",
    "answerability": "partial",
-   "note": "Showing total active power for live feeders (UPS-01/02/03, BPDB-01/02, UPS-04); 2 feeders (UPS-05/06) are dark and honest-blank. Contracted capacity is unknown for this asset, so the denominator and consumed percentage are left blank."
+   "note": "Showing total active power (active_power_total_kw) \u2014 contracted capacity is unknown, so load utilization % and breakdown are omitted."
   },
   {
    "card_id": 10,
    "title": "Consumption Trend / Supply Trend",
    "answerability": "partial",
-   "note": "Showing panel aggregate consumption trend; 2 of 8 feeders (UPS-05, UPS-06) are dark and honest-blank their per-member leaves."
+   "note": "Showing panel aggregate consumption trend and peak; per-member breakdown is rendered by the panel-aggregate renderer from member meters (GIC-01-N3, GIC-01-N4, GIC-01-N5, GIC-01-N8, GIC-02-N2, GIC-02-N5 have data; GIC-01-N9, GIC-02-N1, GIC-15-N10, GIC-15-N11, GIC-02-N6, GIC-02-N7 are dark)."
   },
   {
    "card_id": 11,
    "title": "Quick Stats",
    "answerability": "partial",
-   "note": "Showing panel aggregate stats from 6 active feeders; 2 feeders (UPS-05, UPS-06) are dark and honest-blank their slots."
+   "note": "Showing panel aggregate stats from 6 live feeders; 2 feeders (UPS-05, UPS-06) are dark and honest-blank their slots."
   }
  ],
  "loop2": null

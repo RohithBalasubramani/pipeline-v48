@@ -1,0 +1,12 @@
+{
+ "run_id": "r_65354558bb",
+ "loop1": [
+  {
+   "card_id": 9,
+   "title": "Total Feeder Consumption / Supply",
+   "answerability": "partial",
+   "note": "Showing total active power consumption from outgoing feeders \u2014 panel capacity limit (denominator) is unknown for this asset, so consumption percentage cannot be computed."
+  }
+ ],
+ "loop2": null
+}

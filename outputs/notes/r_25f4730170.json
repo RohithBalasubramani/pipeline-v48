@@ -1,0 +1,24 @@
+{
+ "run_id": "r_25f4730170",
+ "loop1": [
+  {
+   "card_id": 39,
+   "title": "Today's Energy",
+   "answerability": "partial",
+   "note": "Showing total active and reactive energy for the current month; subsidy and target metrics are not measured for this asset."
+  },
+  {
+   "card_id": 41,
+   "title": "Input vs Output Energy",
+   "answerability": "partial",
+   "note": "Showing input power and energy delta \u2014 UPS efficiency and loss are derived from total active power and energy imports, as specific output energy and loss-ratio metrics are not directly logged for this asset."
+  },
+  {
+   "card_id": 42,
+   "title": "Load Anomalies",
+   "answerability": "partial",
+   "note": "Showing actual load trend and load factor \u2014 expected load profiles, anomaly events, and threshold ratings are not measured by this UPS meter."
+  }
+ ],
+ "loop2": null
+}

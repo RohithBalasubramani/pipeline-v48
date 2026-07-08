@@ -5,31 +5,31 @@
    "card_id": 18,
    "title": "Events KPI Strip",
    "answerability": "partial",
-   "note": "Showing panel-level event aggregates; per-member breakdowns are honest-blank for members with no data (GIC-01-N9-Solar Incomer-1, GIC-02-N1-Solar Incomer-2, GIC-15-N10-PCC-01 (Transformer-01), GIC-15-N11-PCC-01 (Transformer-02), GIC-02-N6-UPS-05 CL:600KVA, GIC-02-N7-UPS-06 CL:600KVA)."
+   "note": "Showing total event counts and worst deviations per panel member; aggregate current (amps) and voltage stats (vAvg/vMax/vMin) are not measured by this panel's aggregate table."
   },
   {
    "card_id": 19,
    "title": "AI Summary",
    "answerability": "partial",
-   "note": "Showing aggregate panel event statistics; per-member breakdowns are populated from member meters where available (UPS-01 to UPS-06, BPDB-01, BPDB-02). Solar incomers and Transformer-01/02 are dark (no data) and will render as honest blanks."
+   "note": "Showing panel aggregate narrative; per-member roster data is populated for live feeders (UPS-01 to UPS-04, BPDB-01/02). Supply feeders (Solar/Transformer) are dark and omitted from the roster."
   },
   {
    "card_id": 20,
    "title": "Event Timeline at {period}",
    "answerability": "partial",
-   "note": "Showing event counts and worst deviations for 6 active feeders (UPS-01 to UPS-06, BPDB-01/02); 2 supply feeders (Solar Incomers, Transformers) are dark and honest-blank."
+   "note": "Showing event counts and worst deviations for 6 active feeders; 2 feeders (UPS-05, UPS-06) are dark (no data) and honest-blank."
   },
   {
    "card_id": 21,
    "title": "Current Distribution at {period}",
    "answerability": "partial",
-   "note": "Showing current draw for 6 active feeders; 2 feeders (UPS-05, UPS-06) are dark (no data) and will render as blank spokes."
+   "note": "Showing current draw per outgoing feeder (current_avg). Per-phase voltage, unbalance, and neutral metrics are not measured for this panel aggregate and are omitted."
   },
   {
    "card_id": 22,
    "title": "Other Panels Event at {period}",
    "answerability": "partial",
-   "note": "Showing event counts and metrics for active feeders (UPS-01, UPS-02, UPS-03, BPDB-01, BPDB-02, UPS-04). Feeders UPS-05 and UPS-06 are dark (no data) and will render as honest blanks."
+   "note": "Showing per-panel event counts and aggregates for 6 active feeders; 2 feeders (UPS-05, UPS-06) are dark and honest-blank."
   }
  ],
  "loop2": null

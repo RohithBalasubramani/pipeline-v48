@@ -21,7 +21,9 @@ Honest: a scale with NO sibling real values is left blank — an empty chart is 
 The expected-band leaves (expectedMax/expectedMin) are DATA (a nameplate/derived band), NOT axis geometry — untouched.
 
 The scale-key vocabulary + tick count are editable app_config rows (config.vocab); code defaults match the CMD_V2
-chart primitives. [atomic; one concern; never fabricates a scale for absent data]
+chart primitives. Every DOMAIN-BAND knob is an app_config row with a code-default mirror (NO magic literals steer the
+axis): chart.const_axis_zero_hi (all-zero top), chart.const_axis_band_halfwidth (non-zero constant ±band),
+chart.yscale_pad_pct (varying-series headroom). [atomic; one concern; never fabricates a scale for absent data]
 """
 from __future__ import annotations
 
@@ -33,6 +35,19 @@ _DEFAULT_VALUES_KEYS = ("values", "data")
 _DEFAULT_TICK_COUNT = 5
 # element keys that are NEVER series values (time axis / identity chrome inside a row object)
 _ELEMENT_SKIP_KEYS = ("time", "t", "ts", "timestamp", "label", "id", "key", "band", "color")
+
+
+def _cfg_num(key, default, positive=False):
+    """A DB-backed numeric knob (cmd_catalog.app_config), else `default` — the code-default mirror. `positive` rejects a
+    non-positive DB value (a mis-typed 0/negative band would collapse the axis) and falls back. Never raises."""
+    try:
+        from config.app_config import cfg
+        v = float(cfg(key, default))
+        if positive:
+            return v if v > 0 else default
+        return v if v >= 0 else default
+    except Exception:
+        return default
 
 
 def _vocab_list(name, default):
@@ -76,6 +91,30 @@ def _tick_count():
         return n if n >= 2 else _DEFAULT_TICK_COUNT
     except Exception:
         return _DEFAULT_TICK_COUNT
+
+
+_DEFAULT_CONST_ZERO_HI = 1.0
+_DEFAULT_CONST_BAND_HALFWIDTH = 1.0
+_DEFAULT_PAD_PCT = 0.05
+
+
+def const_zero_hi():
+    """Axis TOP for an ALL-ZERO constant series — the explicit 0..<this> y-domain the scale passes ship so a zero
+    series (an off DG) never renders on a zero-range / negative-floor axis. DB row chart.const_axis_zero_hi; code
+    default 1.0. Shared by this pass and norm_series (the normalized-strip-chart label axis)."""
+    return _cfg_num("chart.const_axis_zero_hi", _DEFAULT_CONST_ZERO_HI, positive=True)
+
+
+def const_band_halfwidth():
+    """Half-width of the symmetric band around a NON-ZERO CONSTANT series (line mid-axis, never a zero-range axis). DB
+    row chart.const_axis_band_halfwidth; code default 1.0 (±1 → the historical 269..271 band on a 270 constant)."""
+    return _cfg_num("chart.const_axis_band_halfwidth", _DEFAULT_CONST_BAND_HALFWIDTH, positive=True)
+
+
+def pad_pct():
+    """Fractional headroom padded on EACH side of a VARYING series' data range. DB row chart.yscale_pad_pct; code
+    default 0.05 (5% — the historical _nice_bounds headroom)."""
+    return _cfg_num("chart.yscale_pad_pct", _DEFAULT_PAD_PCT)
 
 
 def _numbers(seq):
@@ -164,12 +203,18 @@ def _values_for_prefix(cands, prefix):
 
 
 def _nice_bounds(lo, hi):
-    """A padded (min, max) around the data range — 5% headroom each side. Equal lo/hi (a flat series) gets a ±1 band
-    so the line sits mid-axis, never on a zero-range axis."""
+    """A padded (min, max) around the data range — chart.yscale_pad_pct headroom each side (code default 5%). Equal
+    lo/hi (a CONSTANT series) always gets an explicit sane band: ALL-ZERO → 0..chart.const_axis_zero_hi (a dark/off
+    asset's zero line sits on an honest 0-floor axis, never a negative-floor one), any other constant a
+    ±chart.const_axis_band_halfwidth band so the line sits mid-axis. Never a zero-range axis [DG-1 card-36 family,
+    2026-07-07]. Every band comes from a DB knob with a code-default mirror — no magic literal steers the axis."""
     if lo == hi:
-        return lo - 1.0, hi + 1.0
+        if lo == 0.0:
+            return 0.0, const_zero_hi()
+        hw = const_band_halfwidth()
+        return lo - hw, hi + hw
     span = hi - lo
-    pad = span * 0.05
+    pad = span * pad_pct()
     return lo - pad, hi + pad
 
 

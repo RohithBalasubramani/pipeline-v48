@@ -40,18 +40,23 @@ def test_sparse_but_live_meter_validates_pass():
 
 
 def test_dead_meter_honest_blanks_with_reason():
+    """null-gate 2026-07-07: a dead ELECTRICAL register SURFACES (warn + machine reason) but no longer verdict=fails —
+    per-leaf telemetry, never a page 'N fail' (DB knob validate.null_gate_mode, default warn)."""
     rep = validate_data(_frame(30, dead=[None] * 30), _basket_cols("dead"))
     c = rep["columns"][0]
-    assert c["verdict"] == "fail" and c["reasons"]        # machine reason, never a silent blank
-    assert _roll(rep["summary"]) == "fail"                # zero usable columns → genuine can't-render
+    assert c["verdict"] == "warn" and c["reasons"]        # machine reason, never a silent blank
+    assert not c["event_semantic"]                        # electrical: raw nulls, never coerced to 0
+    assert rep["summary"]["n_fail"] == 0
+    assert _roll(rep["summary"]) == "warn"                # annotate-only — the harness n_pass==0 gate still blocks
 
 
 def test_live_meter_with_dead_registers_is_not_page_fail():
-    """F1: a live meter with dead/spare registers must NOT roll the page to 'fail' (10/25 audit prompts)."""
+    """F1 + null-gate 2026-07-07: a live meter with dead/spare registers must NOT roll the page to 'fail' — and the
+    dead registers themselves are now warns (informational), so the summary carries ZERO fails."""
     df = _frame(40, kw=[400.0] * 40, thd=[None] * 40, spare=[None] * 40)
     rep = validate_data(df, _basket_cols("kw", "thd", "spare"))
-    assert rep["summary"]["n_fail"] == 2 and rep["summary"]["n_pass"] == 1
-    assert _roll(rep["summary"]) == "pass_with_gaps"      # dead columns are telemetry, not the page verdict
+    assert rep["summary"]["n_fail"] == 0 and rep["summary"]["n_pass"] == 1 and rep["summary"]["n_warn"] == 2
+    assert _roll(rep["summary"]) == "warn"                # dead columns are telemetry, not the page verdict
 
 
 def test_unordered_read_makes_no_latest_claim():

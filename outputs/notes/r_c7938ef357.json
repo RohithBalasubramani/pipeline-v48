@@ -2,10 +2,16 @@
  "run_id": "r_c7938ef357",
  "loop1": [
   {
+   "card_id": 67,
+   "title": "Voltage History",
+   "answerability": "partial",
+   "note": "Showing per-phase voltage history and max deviation \u2014 event counts (sag/swell) and narrative text are not measured by this asset."
+  },
+  {
    "card_id": 68,
    "title": "Current Live Health",
    "answerability": "partial",
-   "note": "Showing current unbalance percentage from a column that failed validation (data=N); values may be unreliable or zero."
+   "note": "Showing live per-phase currents, average current, and neutral current; current unbalance percentage is not logged for this asset (data=N), so it is omitted."
   }
  ],
  "loop2": null

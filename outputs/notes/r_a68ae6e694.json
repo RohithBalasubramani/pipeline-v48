@@ -5,31 +5,31 @@
    "card_id": 23,
    "title": "PQ Issues KPI Strip (Total Issues / I-THD Events / V-THD Events / PF Gap Feeders / Neutral Stress / Worst I-THD / Worst V-THD)",
    "answerability": "partial",
-   "note": "Voltage THD columns (thd_voltage_*) failed validation on this asset; V-THD events and worst V-THD tiles will be honest-blank. Showing I-THD events and worst I-THD from valid current THD columns."
+   "note": "Showing per-member roster stats for PQ issues (I-THD, V-THD, PF Gap, Neutral); global scalar KPIs and voltage harmonics are not measured by this panel's member meters."
   },
   {
    "card_id": 24,
    "title": "Harmonics & PQ Timeline",
    "answerability": "partial",
-   "note": "Showing THD and power metrics for feeders with live data (UPS-01 to UPS-06, BPDB-01, BPDB-02). UPS-05, UPS-06, HHF-01, and HHF-02 are dark (no data) and will render as honest blanks."
+   "note": "Showing per-panel THD and event counts over the selected period; limit thresholds are not measured by this meter and are left blank."
   },
   {
    "card_id": 25,
    "title": "AI Summary",
    "answerability": "partial",
-   "note": "Showing active power (kW) for panel members; harmonic distortion (THD) and power factor metrics are not measured by the member meters and are omitted from the roster."
+   "note": "Showing I-THD focus; voltage harmonics (V-THD) are not measured by this meter (voltage-thd columns have no data), so V-THD stats are omitted."
   },
   {
    "card_id": 26,
    "title": "Feeder PQ At {period}",
    "answerability": "partial",
-   "note": "V-THD columns (thd_voltage_r/y/b_pct) failed validation on this meter; showing I-THD and other PQ metrics. UPS-06 and UPS-06 are dark (no data)."
+   "note": "Showing I-THD and V-THD for feeders with live data; V-THD columns (thd_voltage_*) are present in schema but have no logged data (has_data=N) for this asset, so V-THD values will be blank."
   },
   {
    "card_id": 27,
    "title": "Signature",
    "answerability": "partial",
-   "note": "Showing harmonic signatures for 6 active feeders (UPS-01/02/03/04/05/06, BPDB-01/02); 2 feeders (UPS-06, UPS-07) are dark (no data) and will render as honest blanks."
+   "note": "Showing harmonic signatures (I-THD, V-THD) and active power for live feeders; 3rd harmonic, K-factor, and peak-THD columns are not measured on this asset's member meters."
   }
  ],
  "loop2": null

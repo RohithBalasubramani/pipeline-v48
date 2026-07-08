@@ -1,0 +1,30 @@
+{
+ "run_id": "r_ac3a03ff4e",
+ "loop1": [
+  {
+   "card_id": 74,
+   "title": "Thermal Life",
+   "answerability": "partial",
+   "note": "Showing active power as a proxy for thermal loss; winding and oil temperatures are not measured by this meter."
+  },
+  {
+   "card_id": 76,
+   "title": "Thermal Timeline",
+   "answerability": "partial",
+   "note": "Showing load factor trend (active_power_total_kw) \u2014 transformer temperature (hotspot/oil/winding) is not measured by this electrical meter."
+  },
+  {
+   "card_id": 75,
+   "title": "Life & Capacity",
+   "answerability": "partial",
+   "note": "Showing thermal load as a proxy for aging (load factor) and apparent power for capacity; insulation aging factor and status labels are not measured by this asset."
+  },
+  {
+   "card_id": 77,
+   "title": "Insulation Aging & Loss of Life",
+   "answerability": "partial",
+   "note": "Showing aging factor and loss of life based on active power and energy; hotspot temperature is not measured by this electrical meter. lifetime isn't measured for this leaf on this asset \u2014 the only candidate was a energy value (progressActivePct), a different physical quantity, so the leaf is left blank (and 1 other leaf(s)) rather than shown under the wrong unit."
+  }
+ ],
+ "loop2": null
+}

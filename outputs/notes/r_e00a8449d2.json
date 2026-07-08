@@ -5,37 +5,37 @@
    "card_id": 7,
    "title": "Context Rail Header (Overview / Section / Feeder)",
    "answerability": "partial",
-   "note": "Supply-side members (Solar Incomers, Transformers) are dark (has_data=N) and will render as honest-blanks; only fed feeders (UPS, BPDB) report live data."
+   "note": "Showing aggregate panel totals and member breakdowns; 4 of 10 panel members (GIC-01-N9, GIC-02-N1, GIC-15-N10, GIC-15-N11) are dark (no data) and render as honest blanks."
   },
   {
    "card_id": 5,
    "title": "Real Time Monitoring (Feeder Heatmap)",
    "answerability": "partial",
-   "note": "Showing live power distribution for 6 active feeders; 2 incomers and 2 UPS feeders are dark (no data) and render as blank rows per roster spec."
+   "note": "Showing live power distribution across active feeders (UPS-01/02/03, BPDB-01/02, UPS-04); 4 members (Solar Incomers, Transformers, UPS-05/06) are dark and render as blank rows."
   },
   {
    "card_id": 8,
    "title": "AI Summary",
    "answerability": "partial",
-   "note": "Narrative text is generated from the panel's active power and voltage rollup; per-member roster slots are bound to the panel aggregate as individual member tables are not queried for narrative generation."
+   "note": "AI narrative generated from panel rollup; per-member narrative slots are rendered from member meters (GIC-01-N3, GIC-01-N4, GIC-01-N5, GIC-01-N8, GIC-02-N2, GIC-02-N5) which have data; supply-side members (Solar Incomers, Transformers) are dark and do not contribute to the narrative."
   },
   {
    "card_id": 9,
    "title": "Total Feeder Consumption / Supply",
    "answerability": "partial",
-   "note": "Showing live total feeder consumption and per-feeder breakdown. Contracted capacity (denominator) is unknown for this asset, so the consumed percentage is not calculated."
+   "note": "Showing total feeder consumption and per-member breakdown (UPS/BPDB) from live panel members; denominator (contracted capacity) is unknown for this asset and omitted."
   },
   {
    "card_id": 10,
    "title": "Consumption Trend / Supply Trend",
    "answerability": "partial",
-   "note": "Showing panel aggregate consumption trend; per-member breakdown is not measured for this asset (member tables are stubs)."
+   "note": "Showing panel aggregate consumption trend and peak; per-member data is live for UPS-01/02/03, BPDB-01/02, UPS-04, but dark for UPS-05/06 and all supply incomers."
   },
   {
    "card_id": 11,
    "title": "Quick Stats",
    "answerability": "partial",
-   "note": "Panel aggregate stats are computed from 6 active feeders (GIC-01-N3 to GIC-02-N5); 2 feeders (GIC-02-N6, GIC-02-N7) are dark and honest-blank their per-member contributions."
+   "note": "Showing panel aggregate stats from 6 active feeders; 2 feeders (UPS-05, UPS-06) are dark and honest-blank their slots."
   }
  ],
  "loop2": null

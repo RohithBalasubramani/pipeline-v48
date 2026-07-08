@@ -1,0 +1,24 @@
+{
+ "run_id": "r_482a859c3a",
+ "loop1": [
+  {
+   "card_id": 39,
+   "title": "Today's Energy",
+   "answerability": "partial",
+   "note": "Showing monthly energy totals and progress \u2014 per-phase energy breakdown is not measured for this asset."
+  },
+  {
+   "card_id": 41,
+   "title": "Input vs Output Energy",
+   "answerability": "partial",
+   "note": "Showing UPS input power and output power (Phase B) \u2014 per-phase power isn't measured for this asset; efficiency is omitted as no dedicated output energy meter exists."
+  },
+  {
+   "card_id": 42,
+   "title": "Load Anomalies",
+   "answerability": "partial",
+   "note": "Showing load factor as % of rated capacity \u2014 expected load, expected range, and anomaly events are not measured by this UPS meter."
+  }
+ ],
+ "loop2": "1 of 4 cards hard-failed their emit (frac 0.25 < reflect.min_gap_frac 0.34); left honest-blank per-leaf, page NOT re-routed."
+}

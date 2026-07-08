@@ -1,0 +1,12 @@
+{
+ "run_id": "r_eaa7391d90",
+ "loop1": [
+  {
+   "card_id": 36,
+   "title": "Power & Energy (Real-Time)",
+   "answerability": "partial",
+   "note": "Showing active/reactive power and energy \u2014 trend and rate-of-change metrics are not measured by this asset."
+  }
+ ],
+ "loop2": null
+}

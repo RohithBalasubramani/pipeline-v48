@@ -1,0 +1,36 @@
+{
+ "run_id": "r_9c9aede960",
+ "loop1": [
+  {
+   "card_id": 23,
+   "title": "PQ Issues KPI Strip (Total Issues / I-THD Events / V-THD Events / PF Gap Feeders / Neutral Stress / Worst I-THD / Worst V-THD)",
+   "answerability": "partial",
+   "note": "Showing panel aggregate event counts and worst-case feeders; harmonic magnitudes (h3/h5/h7) and peak THD are not measured on this panel's aggregate meter."
+  },
+  {
+   "card_id": 24,
+   "title": "Harmonics & PQ Timeline",
+   "answerability": "partial",
+   "note": "Showing per-panel THD and power metrics from outgoing feeders; some feeders (UPS-05, UPS-06, Solar Incomers) have no live data and are blanked."
+  },
+  {
+   "card_id": 25,
+   "title": "AI Summary",
+   "answerability": "partial",
+   "note": "Showing AI narrative summary \u2014 per-member harmonic stats (h3, h5, h7, iThd, vThd) are not directly measured by this panel's aggregate table and are consumed from sibling member cards."
+  },
+  {
+   "card_id": 26,
+   "title": "Feeder PQ At {period}",
+   "answerability": "partial",
+   "note": "Showing THD and power metrics for 6 active outgoing feeders; 2 feeders (UPS-05, UPS-06) are dark (no data) and honest-blanked."
+  },
+  {
+   "card_id": 27,
+   "title": "Signature",
+   "answerability": "partial",
+   "note": "Showing harmonic distribution (H5, H7, I-THD, V-THD) and power metrics for the 8 primary outgoing feeders; 3rd harmonic, K-factor, and peak-THD columns are not measured by these member meters and are omitted."
+  }
+ ],
+ "loop2": null
+}

@@ -97,6 +97,35 @@ def _valve():
         return "on"
 
 
+def _rescue_false_nulls(roster, member_tables):
+    """Rewrite each roster ELEMENT key whose binding is {"b":"null"} into {"b":"col","c":<real column>} when the leaf
+    key's OWN electrical semantics resolve to a column that is PRESENT AND LOGGED on the member tables — the recipe's
+    false "no such column" claim was wrong (card 18: vAvg/vMax/vMin/amps → voltage_avg/max/min, current_avg). Mutates
+    the normalized roster spec list IN PLACE. Over-reach-safe: no rescue unless a real, non-null column truly measures
+    the key; a genuinely-absent column keeps its honest null. Generic — no card ids, no key literals; the column is
+    derived from the key + verified against the DB. Never raises (a rescue failure leaves the null untouched)."""
+    tabs = [t for t in (member_tables or []) if t]
+    if not tabs:
+        return
+    try:
+        from ems_exec.executor import measurable_resolve as _mr
+    except Exception:
+        return
+    for spec in (roster or []):
+        element = spec.get("element") if isinstance(spec, dict) else None
+        if not isinstance(element, dict):
+            continue
+        for k, b in list(element.items()):
+            if not (isinstance(b, dict) and (b.get("b") or "").strip().lower() == "null"):
+                continue
+            try:
+                col = _mr.resolve_column(k, tabs, unit=b.get("unit"))
+            except Exception:
+                col = None
+            if col:
+                element[k] = {"b": "col", "c": col, "r": b.get("r", 1)}
+
+
 def prepare_ctx(data_instructions, ctx):
     """Activate the roster interpreter for this card run (idempotent, valve-guarded). When active: resolve the panel's
     members ONCE, read every referenced column per member, stash the state under ctx['_roster_state'], and inject the
@@ -115,9 +144,15 @@ def prepare_ctx(data_instructions, ctx):
     sum_cols = set(_cfg("roster.sum_columns", []))
     energy_col = _cfg("roster.energy_column", "active_energy_import_kwh")
     ts = _members.ts_col()
+    mlist, coverage = _members.resolve(ctx.get("mfm_id"))
+    # FALSE-NULL RESCUE [R4 residual, card 18]: a recipe/emission element key declared {"b":"null"} because its `why`
+    # claimed no such column — but the member tables DO carry the measuring column (vAvg/vMax/vMin/amps → voltage_avg/
+    # voltage_max/voltage_min/current_avg). Rebind each such key to {"b":"col","c":<real column>} — ONLY when the
+    # derived column is PRESENT AND LOGGED on the member tables (over-reach-safe; a genuinely-absent column stays null).
+    # Runs BEFORE referenced_columns() so the rescued columns are read into every member row. [generic, no card ids]
+    _rescue_false_nulls(roster, [m.get("table") for m in (mlist or [])])
     columns = sorted(set(member_cols) | _bindings.referenced_columns(roster)
                      | set(policy.pf_cols or []) | {policy.power_col})
-    mlist, coverage = _members.resolve(ctx.get("mfm_id"))
     pairs = _members.rows(mlist, columns, ts_col=ts)
     # the SELF pseudo-member — the run's OWN meter as a roster of one, selected ONLY by an explicit role_filter 'self'
     # in a recipe slot (a single-meter card's windowed series stats — card 46's Peak/Neutral-Peak — reuse the SAME
@@ -141,6 +176,10 @@ def prepare_ctx(data_instructions, ctx):
             ctx["_agg_row"] = row
     ctx["_roster_state"] = {
         "roster": roster,
+        # the AI's emitted DATA fields (di.fields[]) — carried so the post-fill series-label alignment
+        # (_align_series_labels) can rename a per-series LABEL leaf to the metric its OWN values leaf was actually bound
+        # to on a SWAP (card 73/53: real power/frequency values plotted under stale swap-target autonomy labels).
+        "emitted_fields": [f for f in ((data_instructions or {}).get("fields") or []) if isinstance(f, dict)],
         "pairs": pairs,
         "self_pair": self_pair,
         "coverage": coverage,
@@ -163,7 +202,13 @@ def prepare_ctx(data_instructions, ctx):
 def run_roster(payload, roster, ctx, default_payload=None):
     """Fill the member-scope slots of an already-executor-completed payload. `roster` (the raw emission) is only used
     to (re)prepare when the caller skipped prepare_ctx; the NORMALIZED instructions come from ctx['_roster_state'].
-    Returns the payload (mutated in place — fill() hands us its own deep copy). Never raises."""
+    Returns the payload (mutated in place — fill() hands us its own deep copy). Never raises.
+
+    A BLANK const roster slot ('honest-empty' [] / null / '—') no longer clobbers a leaf a real neuract DATA field
+    already FILLED (the const branch's value-based guard): on card 73 the AI both bound the 4 real power/frequency trend
+    columns to backupHistory.series[i].values AND emitted a const-[] roster for those same slots ('autonomy scores not
+    derivable' — a FALSE reason, the electrical trends ARE measurable). The field write wins; the const-blank still lands
+    on genuinely-empty leaves. Signature unchanged — every existing caller/mock stays byte-compatible."""
     if not isinstance(payload, dict):
         return payload
     if not isinstance(ctx, dict):
@@ -179,6 +224,10 @@ def run_roster(payload, roster, ctx, default_payload=None):
         except Exception:
             continue                                            # one broken slot never takes down the card
     try:
+        _align_series_labels(payload, state, default_payload)   # rename a per-series LABEL to the metric its values bound
+    except Exception:
+        pass
+    try:
         _attach_coverage(payload, state)
     except Exception:
         pass
@@ -188,6 +237,26 @@ def run_roster(payload, roster, ctx, default_payload=None):
     except Exception:
         pass
     return payload
+
+
+def _const_is_blank(v):
+    """A const roster VALUE that carries no real data: None / '—' / '' scalars, and an empty or ALL-None list (the
+    'honest-empty' []). A non-blank const (a real literal, a populated list) still overwrites unconditionally."""
+    if isinstance(v, list):
+        return not v or all(x is None for x in v)
+    return v is None or v == "—" or v == ""
+
+
+def _leaf_is_real(container, key):
+    """True when the leaf currently at container[key] already holds REAL data (a non-blank scalar, or a non-empty list
+    with at least one non-None element). Used to protect a field-filled trend from a BLANK const overwrite."""
+    try:
+        v = container[key]
+    except (KeyError, IndexError, TypeError):
+        return False
+    if isinstance(v, list):
+        return bool(v) and any(x is not None for x in v)
+    return v is not None and v != "—" and v != ""
 
 
 def _run_slot(payload, spec, state, default_payload):
@@ -212,9 +281,138 @@ def _run_slot(payload, spec, state, default_payload):
     elif mode == "entries":
         _entries_slot(payload, spec, state, default_payload)
     elif mode == "const":
+        # MEASURABLE-LEAF PROTECT [card 73 false-blank, Family C]: a BLANK const ('honest-empty' [] / null) must not
+        # clobber a leaf a real neuract DATA field already FILLED — the AI relabeled the 4 real power/frequency trend
+        # series as underivable 'autonomy scores' AND const-[]'d their slots, wiping the measured trend. The field write
+        # wins; the const-blank still lands on genuinely-empty leaves and every non-blank const overwrites as before. The
+        # guard is VALUE-based (the leaf currently holds real non-blank data): a const-BLANK overwriting a real value IS
+        # the false-blank pattern we forbid, so no separate written-paths cross-check is needed. Over-reach-safe — a
+        # non-blank const (a real literal / a populated list) still overwrites unconditionally.
+        blank = _const_is_blank(spec.get("v"))
         for container, key, _marker in _targets(payload, default_payload, spec.get("slot")):
+            if blank and _leaf_is_real(container, key):
+                continue                                        # real filled trend survives the honest-empty const
             container[key] = copy.deepcopy(spec.get("v"))
     # unknown mode → honest no-op (closed vocabulary)
+
+
+# ═══════════════════════════════════════════════════════════════════════════════════════════════════════════════════
+#  series-LABEL alignment — a per-series LABEL must name the METRIC its OWN values leaf was actually bound to
+# ═══════════════════════════════════════════════════════════════════════════════════════════════════════════════════
+# SWAP LABEL-MORPH GAP [DEFECT c73/c53]: a swapped-in card renders its swap-TARGET's payload shape (card 53
+# backupHistory.series[i]) but the slot's story bound a DIFFERENT metric family (a DG power/frequency trend). Layer 2's
+# DATA fields correctly bind each `series[i].values` to a real column WITH a declared label ('Active Power (kW)', …),
+# and the real (all-zero-but-honest) power series fills — yet the sibling `series[i].label` kept the swap-target SEED
+# ('Autonomy index' / 'Backup time score' / 'Load Pressure score') the recipe never morphed. Real data plotted under a
+# label that names a quantity this meter does not even measure = a misleading leaf (the card's own data_note declares
+# those score series omitted). The FIX: after the roster fills, align each per-series LABEL to the metric its OWN values
+# leaf was bound to (the emitted field's declared label / humanized metric) — ONLY when the seed label does NOT already
+# name that metric (over-reach-safe: a label that already matches, or a series with no real fill and no bound field, is
+# untouched). Generic — no card ids, no key literals; driven off the emitted fields + the payload's own shape.
+
+# the leaf token a per-series VALUE array carries, and the sibling LABEL leaf token — DB-driven, code-default. A field
+# whose slot ends in a value token has a sibling label at the same series element under the label token.
+_SERIES_VALUE_LEAF_DEFAULT = ["values", "value", "data", "points", "series_data"]
+_SERIES_LABEL_LEAF_DEFAULT = ["label", "name", "legendLabel", "seriesLabel", "title"]
+# tokens dropped when comparing a label to a metric quantity (units / stats / filler) — a label that already NAMES the
+# bound metric's quantity is left alone; only a STALE label naming a different quantity is renamed.
+_LABEL_MATCH_STOP = {"the", "of", "and", "per", "avg", "average", "mean", "max", "min", "peak", "total", "kw", "kwh",
+                     "kva", "kvar", "kvarh", "kvah", "hz", "pct", "percent", "score", "index", "a", "v"}
+
+
+def _series_value_leaves():
+    v = _cfg("roster.series_value_leaf_tokens", _SERIES_VALUE_LEAF_DEFAULT)
+    return [str(t).lower() for t in v] if isinstance(v, (list, tuple)) and v else _SERIES_VALUE_LEAF_DEFAULT
+
+
+def _series_label_leaves():
+    v = _cfg("roster.series_label_leaf_tokens", _SERIES_LABEL_LEAF_DEFAULT)
+    return [str(t).lower() for t in v] if isinstance(v, (list, tuple)) and v else _SERIES_LABEL_LEAF_DEFAULT
+
+
+def _label_tokens(text):
+    """Lowercase content tokens of a label / metric (camelCase + snake_case split, units/stats/filler dropped)."""
+    if not text:
+        return set()
+    import re
+    s = re.sub(r"([a-z0-9])([A-Z])", r"\1 \2", str(text)).replace("_", " ").replace("-", " ")
+    return {t for t in re.split(r"[^a-z0-9]+", s.lower()) if t and t not in _LABEL_MATCH_STOP and not t.isdigit()}
+
+
+def _leaf_slot_swap(slot, want_value_leaves, new_leaf):
+    """Given a field slot whose LAST path segment is one of `want_value_leaves` AND whose value leaf is the child of an
+    ARRAY ELEMENT (a per-series element: '…series[0].values' / '…points[*].values' — an indexed or [*] segment
+    immediately precedes the leaf), return the sibling slot with that last segment replaced by `new_leaf`
+    ('…series[0].label'), else None. The array-element requirement is the OVER-REACH GUARD: a bare scalar
+    '<tile>.value' (no array index parent) is NOT a per-series value and is never touched — only a genuine SERIES
+    element's label is aligned. Preserves every earlier segment/index verbatim (surgery on the final '.<leaf>' only)."""
+    import re
+    s = str(slot or "")
+    m = re.search(r"\.([A-Za-z_][A-Za-z0-9_]*)$", s)
+    if not m or m.group(1).lower() not in want_value_leaves:
+        return None
+    parent = s[:m.start()]                                       # the value leaf's parent path
+    # parent must END in a SPECIFIC INDEXED array element ('…[<int>]') — a per-series element addressed 1:1 by the
+    # field. A bare scalar ('<tile>.value', no array parent) is skipped, AND a wildcard '…[*].values' is skipped too:
+    # a [*] field would smear ONE label onto EVERY series element (the c53 fix binds each series by its own INDEX, so
+    # the per-index path is the only one that carries a distinct metric identity). Over-reach guard.
+    if not re.search(r"\[-?\d+\]$", parent):
+        return None
+    return parent + "." + new_leaf
+
+
+def _humanize_metric(metric):
+    """A readable label for a raw metric/column name when the field declared no label ('active_power_total_kw' →
+    'Active Power Total Kw'). Title-cased content of the split tokens; empty → None."""
+    import re
+    if not metric:
+        return None
+    s = re.sub(r"([a-z0-9])([A-Z])", r"\1 \2", str(metric)).replace("_", " ").replace("-", " ")
+    words = [w for w in re.split(r"\s+", s.strip()) if w]
+    return " ".join(w.capitalize() for w in words) or None
+
+
+def _align_series_labels(payload, state, default_payload):
+    """For each emitted DATA field that binds a per-SERIES value leaf ('…series[i].values') which actually FILLED with
+    real data, rename the sibling '…series[i].label' to the field's declared label (or humanized metric) — but ONLY
+    when the current label is a STALE seed that does NOT already name the bound metric's quantity. Fixes the c73/c53
+    swap label-morph gap (real power/frequency series plotted under stale 'Autonomy index' seeds). Over-reach-safe: a
+    series with no real fill, or a label already naming the bound quantity, or a field with no usable label, is left
+    untouched; never fabricates a label for a genuinely-blank series. Never raises (each field independent)."""
+    if not isinstance(payload, dict):
+        return
+    fields = state.get("emitted_fields") or []
+    if not fields:
+        return
+    value_leaves = _series_value_leaves()
+    label_leaf = (_series_label_leaves() or ["label"])[0]
+    for f in fields:
+        if not isinstance(f, dict):
+            continue
+        slot = f.get("slot")
+        # the metric identity this field bound — its declared label wins, else a humanized metric/column.
+        want_label = (f.get("label") or "").strip() or _humanize_metric(f.get("metric") or f.get("column"))
+        if not want_label:
+            continue
+        label_slot = _leaf_slot_swap(slot, value_leaves, label_leaf)
+        if not label_slot:
+            continue
+        # only rename when the field's OWN value leaf actually holds real data (an honest-blank series is not relabeled)
+        vals = values_at(payload, slot)
+        real = any((isinstance(v, list) and any(x is not None for x in v)) or
+                   (not isinstance(v, list) and v not in (None, "", "—")) for v in vals)
+        if not real:
+            continue
+        want_toks = _label_tokens(want_label)
+        for container, key, _marker in _targets(payload, default_payload, label_slot):
+            cur = container.get(key)
+            # untouched when: no current label (nothing to correct) OR it already names the bound metric's quantity.
+            if not isinstance(cur, str) or not cur.strip():
+                continue
+            cur_toks = _label_tokens(cur)
+            if want_toks and cur_toks and want_toks.issubset(cur_toks):
+                continue                                        # the label already names this quantity — leave it
+            container[key] = want_label                          # align the label to the metric its values bound
 
 
 # ═══════════════════════════════════════════════════════════════════════════════════════════════════════════════════

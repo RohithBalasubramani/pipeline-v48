@@ -142,6 +142,18 @@ def test_build_response_multi_propagates_lane_outage(monkeypatch):
     assert resp["cards"] == []
 
 
+def test_natural_compare_ids_fail_open_on_outage(monkeypatch):
+    # the natural-compare detector is an OPTIONAL pre-flight enhancer running BEFORE the protected pipeline layers —
+    # a registry/DB outage inside it must fail-open to [] (single path → honest data_unavailable terminal), never
+    # escape as a raw 500 (the exact 'Pipeline request failed: RuntimeError: DB error... Connection refused' defect).
+    import layer1b.compare.detect as D
+    def dead(*a, **k):
+        raise RuntimeError('DB error (target_version1): psql: error: connection to server at "127.0.0.1", '
+                           'port 5433 failed: Connection refused')
+    monkeypatch.setattr(D, "asset_candidates", dead)
+    assert M.natural_compare_ids("compare GIC-01-N3-UPS-01 and GIC-01-N4-UPS-02") == []
+
+
 # ── assemble_cards: FAITHFUL extraction of build_response's executor+enrich (single path unchanged) ──────────────────
 
 def test_assemble_cards_faithful_to_inline_executor(monkeypatch):

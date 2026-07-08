@@ -34,10 +34,10 @@ def test_data_validate_verdicts():
                              {"column": "absent", "label": "a", "kind": "k", "unit": "u"}])
     v = {c["column"]: c["verdict"] for c in rep["columns"]}
     assert v["good"] == "pass"
-    assert v["half"] in ("warn", "fail")          # 55% null -> fail (> MAX_NULL_RATE 0.5)
-    assert v["empty"] == "fail"
-    assert v["absent"] == "fail"
-    assert rep["summary"]["n_columns"] == 4
+    assert v["half"] == "warn"                    # 55% null -> informational warn (null_gate_mode default 'warn')
+    assert v["empty"] == "warn"                   # all-null ELECTRICAL column still SURFACES — warn, never silent
+    assert v["absent"] == "fail"                  # a column absent from the meter table is a genuine defect
+    assert rep["summary"]["n_columns"] == 4 and rep["summary"]["n_fail"] == 1
 
 
 # ---------- payload feasibility (demand vs supply) ----------

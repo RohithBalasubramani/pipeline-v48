@@ -89,17 +89,18 @@ _SUM_COLS = {_KW, _KVAR, _KVA, _CURR, _NEUTRAL_A}
 # ═══════════════════════════════════════════════════════════════════════════════════════════════════════════════════
 #  the panel_aggregate.* energy register policy — the ONE local seam members' roster.* config home does not carry
 # ═══════════════════════════════════════════════════════════════════════════════════════════════════════════════════
-def _panel_energy_kwh(member_rows, window):
-    """Σ of per-member windowed energy deltas over the ctx window — REVERSED-CT AWARE (the register fix). For EACH load
-    member the roll-up reads BOTH the import and the export cumulative counter, computes each register's (end−start)
-    delta, and PICKS the register that actually moved (energy.member_energy_delta → _pick_register): a forward feeder
-    keeps import, a reversed-CT feeder (import flat, export moving) keeps its real export magnitude — abs()'d so it shows
-    a POSITIVE kWh. A genuinely dark feeder (neither register present / no rows / no movement) contributes nothing (its
-    delta is None) and is excluded, never fabricated as 0. None when NO member yields a real delta (honest-null). LOAD
-    side only — an incomer's counter measures the same flow (double-count guard). policy!='pick_mover' → import-only."""
+def _panel_energy_kwh(member_rows, window, role_filter="load"):
+    """Σ of per-member windowed energy deltas over the ctx window — REVERSED-CT AWARE (the register fix). For EACH
+    `role_filter`-side member the roll-up reads BOTH the import and the export cumulative counter, computes each
+    register's (end−start) delta, and PICKS the register that actually moved (energy.member_energy_delta → _pick_register):
+    a forward feeder keeps import, a reversed-CT feeder (import flat, export moving) keeps its real export magnitude —
+    abs()'d so it shows a POSITIVE kWh. A genuinely dark feeder (neither register present / no rows / no movement)
+    contributes nothing (its delta is None) and is excluded, never fabricated as 0. None when NO member yields a real
+    delta (honest-null). role_filter defaults to 'load' (fed feeders — an incomer's counter measures the same flow, the
+    double-count guard); 'supply' rolls the incomer side. policy!='pick_mover' → import-only."""
     start, end = window
     total = None
-    for m, _r in _members.select(member_rows, role_filter="load"):
+    for m, _r in _members.select(member_rows, role_filter=role_filter or "load"):
         picked = _member_energy_kwh(m, start, end)
         if picked is not None:
             total = (total or 0.0) + picked
@@ -121,19 +122,21 @@ def _member_energy_kwh(m, start, end):
 # ═══════════════════════════════════════════════════════════════════════════════════════════════════════════════════
 #  bucketed trend series — member fan-out the per-card executor can't do (its single meter is the EMPTY panel device)
 # ═══════════════════════════════════════════════════════════════════════════════════════════════════════════════════
-def _rolled_series(member_rows, col, window, sampling):
+def _rolled_series(member_rows, col, window, sampling, role_filter="load"):
     """The member-rolled [{t, value}] series for one column: per bucket Σ for extensive magnitudes (_SUM_COLS) else
-    mean — the SAME quantity rule as the aggregate row (members.bucketed_rolled, LOAD side). [] when no member reports
-    the column (honest-degrade)."""
+    mean — the SAME quantity rule as the aggregate row (members.bucketed_rolled). role_filter defaults to 'load' (the
+    fed feeders/bays) and is 'supply' for an incomer-side panel prompt. [] when no member reports the column."""
     return _members.bucketed_rolled(member_rows, col, window, sampling=sampling,
-                                    reduce=("sum_magnitude" if col in _SUM_COLS else "mean"))
+                                    reduce=("sum_magnitude" if col in _SUM_COLS else "mean"),
+                                    role_filter=role_filter or "load")
 
 
-def _fill_bucketed_series(out, di, member_rows, window):
+def _fill_bucketed_series(out, di, member_rows, window, role_filter="load"):
     """Fill the card's DECLARED bucketed/time fields by fanning out to the panel MEMBERS (cards 7/10 trend.series). The
     per-card executor honestly returned [] for these — its single meter is the panel's own EMPTY device table — so the
     renderer rolls each declared series up across members per bucket and fills the time-axis leaves from the same
-    buckets. Only a non-empty rolled series overwrites; otherwise the executor's honest [] stands."""
+    buckets. Only a non-empty rolled series overwrites; otherwise the executor's honest [] stands. `role_filter` picks
+    the reading side (default 'load' = fed feeders; 'supply' = incomers)."""
     fields = [f for f in ((di or {}).get("fields") or []) if isinstance(f, dict)]
     axis = None                                              # the shared bucket axis (epoch ms) of the LAST rolled series
     for f in fields:
@@ -147,7 +150,7 @@ def _fill_bucketed_series(out, di, member_rows, window):
             col = f.get("column")
             if not col:
                 continue
-            series = _rolled_series(member_rows, col, window, f.get("sampling") or "hourly")
+            series = _rolled_series(member_rows, col, window, f.get("sampling") or "hourly", role_filter=role_filter)
             if series:
                 _fill._set_leaf_typed(out, leaf_path, [pt["value"] for pt in series])
                 axis = [_fill._epoch_ms(pt["t"]) for pt in series]
@@ -185,8 +188,16 @@ def render(asset, card, ctx):
     payload = _card_payload(card)
     di = card.get("data_instructions") or {}
     default_payload = card.get("_default_payload")
+    # shape_ref = the RAW harvested default (host hands it down). fill() threads it into fab_guards' CLASS-4 raw-vs-
+    # stripped wall so PRESENTATION metadata (stackOrder/lineOrder/columnOrder/tileOrder/layout/palette/preset values)
+    # is KEPT byte-identical instead of over-blanked by the legacy chrome-vocab fallback. None → legacy behaviour.
+    shape_ref = card.get("shape_ref")
     mfm_id = ctx.get("mfm_id") or (asset or {}).get("mfm_id")
     window = _fill._window_of(ctx, None)
+    # PANEL READING DIRECTION [panel_overview]: the prompt's incomer-vs-outgoing choice (stamped on the resolved asset;
+    # threaded via host/exec_cards). 'outgoing' (default) rolls the fed feeders/bays; 'incomer' rolls the supply side.
+    scope = (asset or {}).get("member_scope") or ctx.get("member_scope")
+    role_filter = _members.role_filter_for(scope)
 
     if payload is None:
         return None                                       # no payload skeleton to fill → host falls back (run_special)
@@ -196,7 +207,7 @@ def render(asset, card, ctx):
     # orphan / no-member panel → honest-blank the data leaves (executor strip) + honest coverage badge, never fabricate.
     if not members:
         out = _fill.fill(payload, di, {"asset_table": ctx.get("asset_table"), "window": window, "_agg_row": {}},
-                         default_payload=default_payload)
+                         default_payload=default_payload, shape_ref=shape_ref)
         _attach_coverage(out, coverage)
         return out
 
@@ -204,21 +215,21 @@ def render(asset, card, ctx):
     # the fleet-rolled superset row (Σ/mean per _SUM_COLS + the unsigned true-PF fold), energy per THIS renderer's
     # panel_aggregate.* register policy — never members' roster.* energy home (config homes stay distinct).
     agg = _members.agg_row(member_rows, window, _MEMBER_COLS, _SUM_COLS,
-                           pf_cols=[_PF_TRUE, _PF_SIGNED], power_col=_KW)
-    agg[_ENERGY] = _panel_energy_kwh(member_rows, window)
+                           pf_cols=[_PF_TRUE, _PF_SIGNED], power_col=_KW, role_filter=role_filter)
+    agg[_ENERGY] = _panel_energy_kwh(member_rows, window, role_filter=role_filter)
 
     # (1) KPI / scalar leaves — reuse the per-card executor verbatim, feeding it the aggregated superset row.
     out = _fill.fill(payload, di,
                      {"asset_table": ctx.get("asset_table"), "window": window, "_agg_row": agg},
-                     default_payload=default_payload)
+                     default_payload=default_payload, shape_ref=shape_ref)
 
     # (2) member-rolled BUCKETED trend series + time axis — the fan-out the per-card executor honestly skipped
     # (its single meter is the panel's own EMPTY device table, so declared trend.series came back []).
-    _fill_bucketed_series(out, di, member_rows, window)
+    _fill_bucketed_series(out, di, member_rows, window, role_filter=role_filter)
 
     # (3) member-rolled LOAD-FACTOR — the per-card executor's derived load_factor read the panel's OWN (empty) device
     # power series and blanked; refill it from the SAME rolled member power series the worst-peak tile uses.
-    _fill_rolled_load_factor(out, di, member_rows, window)
+    _fill_rolled_load_factor(out, di, member_rows, window, role_filter=role_filter)
 
     _attach_coverage(out, coverage)
     return out
@@ -231,18 +242,19 @@ _LOAD_FACTOR_FNS = frozenset(str(x).strip().lower()
                                            ["loadfactorpct", "loadfactorwindowpct"]))
 
 
-def _fill_rolled_load_factor(out, di, member_rows, window):
+def _fill_rolled_load_factor(out, di, member_rows, window, role_filter="load"):
     """Fill any DECLARED derived load-factor leaf from the member-rolled power series (not the empty panel device). The
     per-card executor already ran the fn against the panel's own table and honest-blanked; here we roll the members'
     power up ONCE and overwrite each declared load-factor leaf with the fleet trend's mean÷peak. Honest-degrade: an empty
-    rolled series → None (the leaf stays blank), never a fabricated load factor. Only overwrites the declared leaves."""
+    rolled series → None (the leaf stays blank), never a fabricated load factor. Only overwrites the declared leaves.
+    `role_filter` picks the reading side (default 'load' = fed feeders; 'supply' = incomers)."""
     fields = [f for f in ((di or {}).get("fields") or []) if isinstance(f, dict)]
     lf_fields = [f for f in fields
                  if (f.get("kind") or "").lower() == "derived"
                  and str(f.get("fn") or "").strip().lower() in _LOAD_FACTOR_FNS]
     if not lf_fields:
         return
-    series = _rolled_series(member_rows, _KW, window, "hourly")   # the SAME roll-up the worst-peak tile reads
+    series = _rolled_series(member_rows, _KW, window, "hourly", role_filter=role_filter)   # SAME roll-up the peak tile reads
     lf = _power.load_factor_from_series(series)                 # None on an empty rolled series (honest-blank)
     for f in lf_fields:
         slot = f.get("slot") or f.get("target_column") or f.get("metric")

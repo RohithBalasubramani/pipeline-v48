@@ -22,7 +22,7 @@ from __future__ import annotations
 import re
 from urllib.parse import unquote
 
-from . import voltage, energy, power, topology, nameplate, current, power_quality
+from . import voltage, energy, power, topology, nameplate, current, power_quality, breaker
 
 
 def db_key_from_dblink(db_link):
@@ -40,9 +40,14 @@ def db_key_from_dblink(db_link):
 
 
 # ── per-db formula tables ────────────────────────────────────────────────────
-# Each value descriptor: {fn: ctx->value|None, columns:[...], fidelity, recover_class}.
-def _d(fn, columns, fidelity, recover_class):
-    return {"fn": fn, "columns": columns, "fidelity": fidelity, "recover_class": recover_class}
+# Each value descriptor: {fn: ctx->value|None, columns:[...], fidelity, recover_class} (+ optional `note` — a basis
+# caveat the library line must state, e.g. breakerOverloadPct's max-phase basis; absent on every legacy entry so the
+# rendered lines stay byte-identical).
+def _d(fn, columns, fidelity, recover_class, note=None):
+    d = {"fn": fn, "columns": columns, "fidelity": fidelity, "recover_class": recover_class}
+    if note:
+        d["note"] = note
+    return d
 
 
 # Recoverable on EVERY db that kept the base columns (compat kept these). Keyed by the frontend value_key.
@@ -64,13 +69,14 @@ _COMPAT = {
     "activeEnergyMvah":       _d(energy.mvah_active, ["active_energy_import_kwh"], "real_exact", "exact_alt_column"),
     "reactiveEnergyMvarh":    _d(energy.mvah_reactive, ["reactive_energy_import_kvarh"], "real_exact", "exact_alt_column"),
     "cumulativeApparentMvah": _d(energy.cumulative_apparent_mvah, ["active_energy_import_kwh", "reactive_energy_import_kvarh"], "real_exact", "standard_formula"),
-    "expectedLossKwh":        _d(energy.expected_loss_kwh, ["active_energy_import_kwh"], "real_exact", "standard_formula"),
+    "expectedLossKwh":        _d(energy.expected_loss_kwh, ["active_energy_import_kwh"], "real_approx", "standard_formula"),
     "loadFactorPct":          _d(power.load_factor_pct, ["active_power_total_kw"], "real_approx", "standard_formula"),
     "worstPeakKw":            _d(power.worst_peak_kw, ["active_power_total_kw"], "real_exact", "standard_formula"),
     "worstPeakAt":            _d(power.worst_peak_at, ["active_power_total_kw", "ts"], "real_exact", "standard_formula"),
     "apparentPeakKva":        _d(power.apparent_peak_kva, ["apparent_power_total_kva"], "real_approx", "windowed_delta"),
     "activePowerDeltaPerMinute": _d(power.active_power_delta_per_min, ["active_power_total_kw", "ts"], "real_exact", "standard_formula"),
-    "lossPct":                _d(topology.distribution_loss_pct, ["active_power_total_kw"], "real_exact", "topology_aggregation"),
+    "lossPct":                _d(topology.distribution_loss_pct, ["active_power_total_kw"], "real_approx", "topology_aggregation"),
+    "efficiencyPct":          _d(topology.efficiency_pct, ["active_power_total_kw"], "real_approx", "topology_aggregation"),
     "aiSummary":              _d(topology.ai_loss_summary, ["active_power_total_kw"], "real_exact", "topology_aggregation"),
     "sectionTrendSums":       _d(topology.section_trend_sums, ["active_power_total_kw"], "real_exact", "topology_aggregation"),
     "upsRatedKva":            _d(lambda ctx: nameplate.ups_rated_kva(ctx.get("name")), ["<asset name>"], "real_approx", "exact_alt_column"),
@@ -99,10 +105,14 @@ _COMPAT = {
     "apparentEnergyThisWeekKvah": _d(energy.apparent_energy_this_week_kvah, ["active_energy_import_kwh", "reactive_energy_import_kvarh"], "real_exact", "standard_formula"),
     "apparentEnergyThisMonthKvah": _d(energy.apparent_energy_this_month_kvah, ["active_energy_import_kwh", "reactive_energy_import_kvarh"], "real_exact", "standard_formula"),
     "specificEnergyConsumption":  _d(energy.specific_energy_consumption, ["active_energy_import_kwh"], "real_exact", "standard_formula"),
-    # DEAD-COUNTER RECOVERY: windowed kWh/kVArh from ∫power when the cumulative energy registers are all-NULL but power is
-    # live. real_approx (a sampled integral, honest note 'integrated from power'). Series-scoped: the executor supplies the
-    # windowed power series. Also the shared fallback the windowed-delta energy fns above call when their counter is dead.
+    # DEAD-COUNTER RECOVERY (ACTIVE energy / a POWER quantity ONLY): windowed kWh from ∫active-power when the cumulative
+    # ACTIVE-energy register is all-NULL but power is live. real_approx (a sampled integral, honest note 'integrated from
+    # power'). Series-scoped: the executor supplies the windowed power series. Also the shared fallback the ACTIVE
+    # windowed-delta energy fns above call when their counter is dead.
     "energyFromPowerKwh":         _d(energy.energy_from_power_kwh, ["active_power_total_kw", "ts"], "real_approx", "integrated_from_power"),
+    # DISABLED [card-72 fab-by-substitution, DEFINITIVE 2026-07-07]: the ∫reactive-power→reactive-ENERGY recovery is BANNED
+    # (fn always None). Reactive/apparent ENERGY may fill ONLY from a real reactive/apparent energy register — synthesizing
+    # an energy reading from ∫power for a meter with NO reactive-energy register (dg_1_mfm) is fabrication-by-substitution.
     "reactiveEnergyFromPowerKvarh": _d(energy.reactive_energy_from_power_kvarh, ["reactive_power_total_kvar", "ts"], "real_approx", "integrated_from_power"),
     "kpiKwLoadPctOfRated":        _d(power.kpi_kw_load_pct_of_rated, ["active_power_total_kw", "nameplate:rated_kva"], "real_exact", "nameplate_lookup"),
     "kpiLoadFactor":              _d(power.kpi_load_factor, ["active_power_total_kw", "nameplate:rated_kva"], "real_exact", "nameplate_lookup"),
@@ -128,6 +138,14 @@ _NAMEPLATE = {
                            ["nameplate:rated_kva"], "real_exact", "nameplate_lookup"),
     "sectionContracts": _d(lambda ctx: nameplate.section_contracts(ctx.get("feeders")),
                            ["nameplate:rated_kva"], "real_exact", "nameplate_lookup"),
+    # STREAM B [equipment wiring]: overload % against the feeder's REAL breaker rating (data/equipment/ratings —
+    # the `breaker:rating_a` pseudo-base names the equipment-schema denominator, not a frame column). SOURCE-GATED:
+    # catalog() omits it while equipment.derivations.enabled is off (fatal R2-2 — certified prompts never see it)
+    # and the fn body returns None at knob-off, so the executor can't produce a value even for a hallucinated ref.
+    "breakerOverloadPct": _d(breaker.overload_pct, ["current_avg", "breaker:rating_a"], "real_exact",
+                             "nameplate_lookup",
+                             note="max-phase where phase columns present, else average-phase — average understates "
+                                  "a single-phase overload"),
 }
 
 # neuract = the LIVE db. It gets the compat superset PLUS the nameplate-driven rated/contract keys (which resolve from
@@ -195,9 +213,23 @@ _QUANTITY = {
     "windowEnergyKwh": "active-energy-kwh", "todaysEnergyTotalKwh": "active-energy-kwh",
     "progressActivePct": "energy-progress-percent", "activeEnergyMvah": "active-energy-mvah",
     "reactiveEnergyMvarh": "reactive-energy-mvarh", "cumulativeApparentMvah": "apparent-energy-mvah",
+    # EMIT ALIASES (the AI's own per-slot metric names) for the cumulative energy-reliability cells (card 72). Same
+    # polarity family as their bound fn so the energy-POLARITY guard (verify._polarity_conflict) classifies the SLOT-side
+    # key (the _derived_key is the metric alias) correctly — active_mwh is ACTIVE (never blanked as apparent by 'mwh'∈mvah),
+    # reactive_mvarh is REACTIVE, apparentMvah is APPARENT. Bindings map each alias → its existing fn in derivation_binding.
+    # The AI emits mixed casing: `active_mwh`/`reactive_mvarh` (snake) for the cells + `apparentMvah` (camel) for the
+    # Apparent slot; `apparent_mvah` (snake) is kept as a harmless spec alias so BOTH casings resolve the same fn.
+    "active_mwh": "active-energy-mvah", "reactive_mvarh": "reactive-energy-mvarh",
+    "apparent_mvah": "apparent-energy-mvah", "apparentMvah": "apparent-energy-mvah",
+    # fn=null derived-KPI metric ALIASES (Defect 1, card 64): the AI names the QUANTITY but omits the fn; the
+    # derivation_binding row (seed_derivation_binding_fnless_metrics.sql) maps each → its computing fn. Same polarity
+    # family so verify._polarity_conflict classifies the slot-side key correctly (totalKwh is ACTIVE energy; avgLoad is
+    # a load-factor % — no polarity, so its slot never conflicts).
+    "totalKwh": "active-energy-kwh", "avgLoad": "load-factor-percent",
     "expectedLossKwh": "energy-loss-kwh", "loadFactorPct": "load-factor-percent",
     "worstPeakKw": "peak-active-power-kw", "worstPeakAt": "peak-time", "apparentPeakKva": "peak-apparent-power-kva",
     "activePowerDeltaPerMinute": "active-power-rate-kw-per-min", "lossPct": "distribution-loss-percent",
+    "efficiencyPct": "efficiency-percent",
     "aiSummary": "narrative-text", "sectionTrendSums": "section-trend-sum", "upsRatedKva": "rated-apparent-power-kva",
     "neutralCurrent": "neutral-current-a", "neutralToPhaseRatioPct": "neutral-to-phase-ratio-percent",
     "pfAngleDeg": "pf-angle-deg", "truePf": "true-power-factor", "displacementPf": "displacement-power-factor",
@@ -213,16 +245,44 @@ _QUANTITY = {
     "activePowerLossKw": "active-power-loss-kw", "activePowerLossPct": "active-power-loss-percent",
     "rateOfChangePowerKwPerMin": "active-power-rate-kw-per-min", "loadFactorWindowPct": "load-factor-percent",
     "ratedKw": "rated-power-kw", "ratedKva": "rated-apparent-power-kva", "sectionContracts": "section-contract-kva",
+    # load-percent-of-rated is the existing HARD quantity class (kpiKwLoadPctOfRated) — bare 'percent' is WEAK and
+    # under-gates, so the quantity walls accept the fn only into a %-of-rated slot.
+    "breakerOverloadPct": "load-percent-of-rated",
 }
+
+
+# SOURCE-GATED equipment fns [fatal R2-2]: while equipment.derivations.enabled is off these are ABSENT from every
+# catalog() rendering — no new library line, no hidden-count drift, no new trailer on certified cards — and each fn
+# body independently returns None, so a knobs-off emission is byte-identical AND unfillable. The gate is
+# breaker.enabled() (the one knob reader) so the offer and the execution can never disagree.
+_EQUIPMENT_GATED = frozenset({"breakerOverloadPct"})
+
+
+def _equipment_gated():
+    """The value_keys to OMIT from catalog() right now: the equipment set at knob-off, nothing when on. Fail-CLOSED
+    (a broken knob read hides the equipment fns — never offers them into a certified prompt)."""
+    try:
+        return _EQUIPMENT_GATED if not breaker.enabled() else frozenset()
+    except Exception:
+        return _EQUIPMENT_GATED
 
 
 def catalog():
     """The library spec SHOWN to Layer 2 so the AI references a real fn by value_key with the columns it needs. The AI
     picks a value_key whose base_columns are all in the asset's basket AND whose `quantity` equals the slot's quantity;
-    if none fits (the 4 walls), it honest-degrades."""
-    return [{"fn": k, "base_columns": v["columns"], "fidelity": v["fidelity"], "recover_class": v["recover_class"],
+    if none fits (the 4 walls), it honest-degrades. Equipment-backed fns are omitted at the SOURCE while their knob is
+    off (_equipment_gated); an entry's optional `note` (basis caveat) rides along only when the descriptor carries one."""
+    gated = _equipment_gated()
+    out = []
+    for k, v in LIBRARY.items():
+        if k in gated:
+            continue
+        e = {"fn": k, "base_columns": v["columns"], "fidelity": v["fidelity"], "recover_class": v["recover_class"],
              "quantity": _QUANTITY.get(k)}
-            for k, v in LIBRARY.items()]
+        if v.get("note"):
+            e["note"] = v["note"]
+        out.append(e)
+    return out
 
 
 # ── ROW-DRIVEN formulas (the DB is authoritative) ────────────────────────────────────────────────────────────────────

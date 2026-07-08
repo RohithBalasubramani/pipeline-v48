@@ -5,31 +5,31 @@
    "card_id": 23,
    "title": "PQ Issues KPI Strip (Total Issues / I-THD Events / V-THD Events / PF Gap Feeders / Neutral Stress / Worst I-THD / Worst V-THD)",
    "answerability": "partial",
-   "note": "Showing panel-level PQ breach counts and worst-case metrics aggregated from 6 active feeders; 2 feeders (UPS-05, UPS-06) are dark and honest-blanked."
+   "note": "Showing panel aggregate PQ health via roster_spec; individual scalar fields (I-THD/V-THD counts, worst values) are computed by the panel_aggregate renderer from member meters, not emitted as direct fields."
   },
   {
    "card_id": 24,
    "title": "Harmonics & PQ Timeline",
    "answerability": "partial",
-   "note": "Showing event timeline for 6 active feeders; 2 feeders (GIC-02-N6-UPS-05, GIC-02-N7-UPS-06) are dark and honest-blank."
+   "note": "Showing per-feeder THD and event counts from member meters; panel-level THD limits and PF floors are static config defaults as nameplate ratings are unknown for this asset."
   },
   {
    "card_id": 25,
    "title": "AI Summary",
    "answerability": "partial",
-   "note": "Showing active power (kW) for the 6 live feeders; harmonic (THD) and power factor metrics are consumed from the shared PQ buffer by the AI narrative engine, not bound as individual scalar fields in this roster."
+   "note": "Showing current THD (thd_compliance_i_avg) and power metrics; voltage THD (thd_compliance_v_avg) and harmonic orders (h3/h5/h7) are not measured by this meter and are omitted."
   },
   {
    "card_id": 26,
    "title": "Feeder PQ At {period}",
    "answerability": "partial",
-   "note": "Voltage THD (vThd) columns (thd_voltage_r/y/b_pct) failed validation on this meter; showing Current THD (iThd) and PF only. Some panel members (UPS-06, UPS-07) have no data and will render blank."
+   "note": "Showing current THD (iThd) \u2014 voltage THD (vThd) is not measured for this asset (columns failed validation)."
   },
   {
    "card_id": 27,
    "title": "Signature",
    "answerability": "partial",
-   "note": "Showing harmonic signature for feeders with data (UPS-01 to UPS-04, BPDB-01, BPDB-02); UPS-05 and UPS-06 are dark (no data) and will render as honest blanks."
+   "note": "Showing current THD (I-THD) and power (kW) \u2014 voltage THD (V-THD) and k-factor are not measured for this asset."
   }
  ],
  "loop2": null

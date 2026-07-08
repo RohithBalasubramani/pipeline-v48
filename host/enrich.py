@@ -68,6 +68,26 @@ def _per_metric_blank_reason(data_instructions, asset_name):
         return f"{label} not logged by this meter."
 
 
+def _graft_card_title(payload, card_title):
+    """DEFENSE-IN-DEPTH [metadata-stripping]: a card must NEVER render NAMELESS. When the served payload's own title
+    leaf is blank (None/''/'—') but cmd_catalog carries the card's title (card.title, e.g. 'Power & Energy
+    (Real-Time)'), graft card.title in. CHROME-ONLY, never a reading: only an EXISTING `title` key is filled (the
+    payload shape is never grown), a non-blank payload title always wins, and the graft source is catalog metadata.
+    Checks the canonical homes in order: payload.data.title then payload.title. Mutates + returns `payload`; never
+    raises (fail-open on the served payload). [atomic]"""
+    try:
+        if not card_title or not isinstance(payload, dict):
+            return payload
+        for holder in (payload.get("data"), payload):
+            if isinstance(holder, dict) and "title" in holder:
+                if holder.get("title") in (None, "", "—"):
+                    holder["title"] = str(card_title)
+                return payload                                # first title home wins (a real title is never clobbered)
+    except Exception:
+        pass
+    return payload
+
+
 def _merge_emit_gaps(gaps, emit_gaps, payload):
     """Fold Layer 2's di._emit_gaps per-leaf reason records into the executor's gap list (serve boundary). Deduped by
     slot (both `x` and `data.x` address forms); a record whose leaf resolves in the served payload and is NOT blank is
@@ -157,6 +177,10 @@ def _enrich_card(card, page_key, val_by_id, l2_out, completed=None, run_ok=True,
     from host.display_dash import apply as _dash
     _dash_ref = l2.get("_default_payload") or (_raw_default_payload(render_card_id) if skeleton_blank else None)
     payload = _dash(payload, _dash_ref)
+    # TITLE GRAFT [defense-in-depth, metadata-stripping]: whatever upstream pass stripped the payload's title leaf
+    # (an over-eager seed scrub / emit strip), the served card must never render NAMELESS — refill a blank existing
+    # title leaf from cmd_catalog's card.title. Chrome only (after the leaf accounting: a title never counts as data).
+    payload = _graft_card_title(payload, card.get("title"))
     reason = None
     if verdict != "render":
         asset_name = (l2.get("data_instructions") or {}).get("asset_name") or ""

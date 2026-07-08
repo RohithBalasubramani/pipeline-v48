@@ -5,31 +5,31 @@
    "card_id": 23,
    "title": "PQ Issues KPI Strip (Total Issues / I-THD Events / V-THD Events / PF Gap Feeders / Neutral Stress / Worst I-THD / Worst V-THD)",
    "answerability": "partial",
-   "note": "Showing panel-level PQ issue counts and worst-case metrics aggregated from active feeders; some feeders are dark (no data) and honest-blank their slots."
+   "note": "Showing total PQ issues and I-THD/V-THD events for PCC Panel 4 feeders; 3rd harmonic, peak-THD, and k-factor columns are not measured by this asset's member meters."
   },
   {
    "card_id": 24,
    "title": "Harmonics & PQ Timeline",
    "answerability": "partial",
-   "note": "Showing power quality event timelines for active feeders; some members (e.g., Solar Incomers, Curing Line) are dark and will render blank."
+   "note": "Showing per-panel harmonic and event data from live member meters; supply-side members (Solar Incomers) are dark and honest-blanked."
   },
   {
    "card_id": 25,
    "title": "AI Summary",
    "answerability": "partial",
-   "note": "Showing I-THD and V-THD for the first 3 active feeders; voltage THD columns (thd_voltage_*) have no data on this meter and are honest-blanked."
+   "note": "Showing current THD (I-THD) \u2014 voltage THD (V-THD) is not measured for this asset."
   },
   {
    "card_id": 26,
    "title": "Feeder PQ At {period}",
    "answerability": "partial",
-   "note": "Showing THD and power quality for feeders with active data (has_data=Y). Feeders with has_data=N are omitted from the roster."
+   "note": "Showing I-THD and V-THD (current only) \u2014 voltage THD columns (thd_voltage_*) are present in schema but have no data for this asset; 3rd, 5th, 7th, and peak harmonics are not measured."
   },
   {
    "card_id": 27,
    "title": "Signature",
    "answerability": "partial",
-   "note": "Showing harmonic signature (THD) and power metrics for active feeders; 3rd harmonic, k-factor, and voltage THD columns are not logged on this meter's member tables, so those spokes render as blanks."
+   "note": "Showing harmonic signatures for active feeders; 3rd harmonic, k-factor, and peak-THD columns are not measured by this meter class."
   }
  ],
  "loop2": null

@@ -123,13 +123,22 @@ def select(pairs, role_filter="all", reporting_only=False, power_col=None):
 # ═══════════════════════════════════════════════════════════════════════════════════════════════════════════════════
 #  rollup — the AGGREGATED SUPERSET ROW {column: rolled_value} + the panel's windowed energy
 # ═══════════════════════════════════════════════════════════════════════════════════════════════════════════════════
-def agg_row(pairs, window, columns, sum_cols, energy_col=None, pf_cols=None, power_col=None):
+def role_filter_for(member_scope):
+    """Map a panel's READING DIRECTION (member_scope: 'outgoing' default / 'incomer') to the select() role_filter:
+    'incomer' → 'supply' (the meters that FEED the panel — the supply side); anything else → 'load' (the fed
+    feeders/bays the panel distributes to, the DEFAULT). One place so agg_row / panel_kwh / the bucketed rolls all agree
+    on which side a member_scope selects. [panel_overview]"""
+    return "supply" if str(member_scope or "").strip().lower() == "incomer" else "load"
+
+
+def agg_row(pairs, window, columns, sum_cols, energy_col=None, pf_cols=None, power_col=None, role_filter="load"):
     """The fleet-rolled superset row the per-card executor fills KPI/scalar leaves from (ctx['_agg_row']). Each column
-    is reduced across the LOAD-side members that reported it — Σ-magnitude for `sum_cols`, mean otherwise. The unsigned
-    true PF fold (`pf_cols` = [preferred_unsigned, signed_fallback]) fills both PF columns; `energy_col` (cumulative
-    counter) becomes the windowed-delta Σ. Honest-null: a column no member reported → None (never a fabricated 0).
-    LOAD side only — supply incomers measure the same flow and would double-count it."""
-    reporting = select(pairs, role_filter="load", reporting_only=bool(power_col), power_col=power_col)
+    is reduced across the `role_filter`-side members that reported it — Σ-magnitude for `sum_cols`, mean otherwise. The
+    unsigned true PF fold (`pf_cols` = [preferred_unsigned, signed_fallback]) fills both PF columns; `energy_col`
+    (cumulative counter) becomes the windowed-delta Σ. Honest-null: a column no member reported → None (never a
+    fabricated 0). role_filter defaults to 'load' (the fed feeders/bays — a plain panel prompt) so the reading NEVER
+    double-counts a flow that both sides measure; 'supply' rolls the INCOMER side instead (an 'incomer <panel>' prompt)."""
+    reporting = select(pairs, role_filter=role_filter or "load", reporting_only=bool(power_col), power_col=power_col)
     row = {}
     sums = set(sum_cols or ())
     for col in (columns or []):
@@ -143,13 +152,14 @@ def agg_row(pairs, window, columns, sum_cols, energy_col=None, pf_cols=None, pow
         row[preferred] = pf
         row[signed] = pf
     if energy_col:
-        row[energy_col] = panel_kwh(pairs, window, energy_col)
+        row[energy_col] = panel_kwh(pairs, window, energy_col, role_filter=role_filter or "load")
     return row
 
 
-def panel_kwh(pairs, window, energy_col):
-    """Σ of per-member windowed energy deltas over the ctx window (the panel's energy). LOAD side only (double-count
-    guard). None when no member yields a real delta (honest-null).
+def panel_kwh(pairs, window, energy_col, role_filter="load"):
+    """Σ of per-member windowed energy deltas over the ctx window (the panel's energy). `role_filter` side only
+    (double-count guard; defaults to 'load' = the fed feeders, 'supply' for an incomer prompt). None when no member
+    yields a real delta (honest-null).
 
     REVERSED-CT AWARE (the register fix): a member wired reversed-CT keeps its real energy on the EXPORT register (its
     import delta is flat ~0 — the 3 GIC UPS feeders read import=0 while active_energy_export_kwh moves ~4700 kWh), a
@@ -160,7 +170,7 @@ def panel_kwh(pairs, window, energy_col):
     if not energy_col:
         return None
     total = None
-    for m, _r in select(pairs, role_filter="load"):
+    for m, _r in select(pairs, role_filter=role_filter or "load"):
         picked = member_delta(m, window, energy_col, ndigits=None)   # the ONE pick_mover selection (register_pairs)
         if picked is not None:
             total = (total or 0.0) + picked

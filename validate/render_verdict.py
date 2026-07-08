@@ -160,6 +160,57 @@ def undeclared_blank_count(payload, resolved_paths, roster_bases):
 _ANSWER = {"render": "full", "partial": "partial", "honest_blank": "none"}
 
 
+def _narrative_real(payload):
+    """A populated grounded NARRATIVE (widgets.ai_summary.text / top-level ai_summary.text / a *.pres.backendHeadline)
+    is an AI-summary card's REAL, DB-true content — the FE renders it through the designed backendHeadline seam. The
+    declared-field + numeric-leaf scan is BLIND to a STRING narrative (never counts it real OR blank), so a grounded
+    narrative_ai card verdicts honest_blank with real=0 while it renders the page's richest real element (F5). Detect
+    it GENERICALLY — the PRESENCE of a non-empty summary sentence (the narrative_ai contract), never a card id — so the
+    verdict credits it as >=1 REAL leaf. Returns True iff a non-empty, NON-DEGRADED narrative sentence is present.
+
+    HONEST-BLANK PROTECTION: an ai_summary widget marked `degraded` (the honest 'no metered data resolved' sentence an
+    EMPTY panel emits — narrative_ai._is_degraded) is NOT real content. It (and the SAME text threaded into every
+    backendHeadline seam) must NOT flip an empty panel's card honest_blank → partial (a false 'answered'). The
+    ai_summary widget is authoritative here — its `degraded` flag vetoes the whole payload's narrative credit, including
+    the mirrored backendHeadline. Never raises."""
+    def _find_ai(o):
+        if isinstance(o, dict):
+            ai = o.get("ai_summary")
+            if isinstance(ai, dict):
+                return ai
+            for v in o.values():
+                r = _find_ai(v)
+                if r is not None:
+                    return r
+        elif isinstance(o, list):
+            for v in o:
+                r = _find_ai(v)
+                if r is not None:
+                    return r
+        return None
+
+    def _has_headline(o):
+        if isinstance(o, dict):
+            bh = o.get("backendHeadline")
+            if isinstance(bh, str) and bh.strip():
+                return True
+            return any(_has_headline(v) for v in o.values())
+        if isinstance(o, list):
+            return any(_has_headline(v) for v in o)
+        return False
+
+    try:
+        ai = _find_ai(payload)
+        if ai is not None:                                       # a narrative_ai card — the widget is authoritative
+            text = ai.get("text")
+            if not (isinstance(text, str) and text.strip()):
+                return False
+            return not bool(ai.get("degraded"))                 # degradation sentence → NOT a real answered leaf
+        return _has_headline(payload)                            # no ai_summary widget → a raw backendHeadline seam
+    except Exception:
+        return False
+
+
 def _asset3d_envelope(payload):
     """The asset_3d ViewerResolveResponse envelope ({object: {slug,label,url,rating}|null, viewer: {…}}) — the same
     shape detect the FE registry routes on. Its ONE datum is the MODEL BINDING itself: a bound object.url IS the
@@ -197,6 +248,13 @@ def compute(payload, data_instructions, roster_stats, *, has_payload, skeleton_b
         u_blank = undeclared_blank_count(payload or {}, dpaths, roster_bases)
         n_real = d_real + r_real
         n_data = d_real + d_blank + r_data + u_blank
+        # NARRATIVE REAL LEAF [F5]: an ai_summary card carries its real content as a grounded SENTENCE the numeric scan
+        # cannot see. Credit a populated narrative as >=1 REAL data leaf so the verdict is answerable (partial/render),
+        # never honest_blank over a rendering, DB-true narrative. Skeleton-blank (L2 skipped) has no real sentence → no
+        # credit. GENERIC (keyed on the narrative presence, not a card id).
+        if not skeleton_blank and _narrative_real(payload or {}):
+            n_real += 1
+            n_data += 1
     except Exception:
         n_real = n_data = u_blank = 0
 

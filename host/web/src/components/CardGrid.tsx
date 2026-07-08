@@ -2,7 +2,7 @@ import React from "react";
 import type { Card } from "../types";
 import { CmdCard } from "./CmdCard";
 import { pageGrid, type PageLayout } from "../layout/pageGrid";
-import { cellPos } from "../layout/cellPos";
+import { planGrid } from "../layout/gridPlan";
 import { isBand } from "../layout/regions";
 import { RtmComposite } from "./RtmComposite";
 
@@ -54,9 +54,9 @@ export function CardGrid({ cards, layout, frames, liveFrame }: { cards: Card[]; 
     );
   }
 
-  const G = pageGrid(layout);
-  const band = cards.filter((c) => isBand(c.slot?.region)).sort(bySlot);          // page header / control strip → top band
-  const body = cards.filter((c) => !isBand(c.slot?.region));
+  const G = pageGrid(layout);                                                      // page template + resolved layout vocab
+  const band = cards.filter((c) => isBand(c.slot?.region, G.vocab)).sort(bySlot);  // strip/header/banner → full-width top band
+  const body = cards.filter((c) => !isBand(c.slot?.region, G.vocab));
   const shell: React.CSSProperties = {
     display: "flex", flexDirection: "column", gap: G.gap, padding: G.padding,
     height: "100%", minHeight: 0, background: "#faf8f3",
@@ -65,25 +65,38 @@ export function CardGrid({ cards, layout, frames, liveFrame }: { cards: Card[]; 
   return (
     <div style={shell}>
       {band.map((c) => <CmdCard key={c.card_id} card={c} h={cardH(c)} liveFrame={frameFor(c, frames, liveFrame)} pageFrame={liveFrame} />)}
-      {G.primitive === "flex" ? <RtmFlex G={G} cards={body} frames={frames} />
+      {G.primitive === G.vocab.flex_primitive ? <RtmFlex G={G} cards={body} frames={frames} />
                               : <RealGrid G={G} cards={body} frames={frames} liveFrame={liveFrame} />}
     </div>
   );
 }
 
-// GRID primitive: one CSS grid with the real template; each card seated by cellPos (sorted by slot_order so the
-// unparseable ones auto-flow into the right sequence). The cell fills its track (CmdCard h=undefined → 100%).
+// GRID primitive — EMS single-viewport placement. One CSS grid with the page's real column tracks; each card seated by
+// its TEMPLATE CELL (page_layout_cards.cell). GENERIC (no per-page CSS): we resolve every card to a concrete (col,row),
+// then size the grid rows to EXACTLY the rows used so the whole page fits the leftover viewport with no scroll:
+//   • parse the cell → {col,row,span} (parseCell);  band header already lifted out (CardGrid) → REBASE the row prose
+//     that counts the header as r1 (harmonics r2/r3 → grid rows 1/2);
+//   • a card with no row auto-stacks WITHIN its column (a per-column running counter) so column-mates never collide in
+//     row 1 (power-quality: side card 47 = col1; the two right cards 48/49 stack col2 row1 / col2 row2);
+//   • a card that is ALONE in its column spans every row (full-height side rail — power-quality card 47);
+//   • gridTemplateRows = the template's rows if it already declares enough tracks, else repeat(N,minmax(0,1fr)) for the
+//     N rows actually used → equal fractions of the viewport, no implicit auto rows that would overflow.
 function RealGrid({ G, cards, frames, liveFrame }: { G: ReturnType<typeof pageGrid>; cards: Card[]; frames?: Record<string, any>; liveFrame?: any }) {
+  const plan = planGrid(cards, G.rows, G.vocab);               // PURE placement: cells → concrete (col,row) + row tracks
+  const byId = new Map(cards.map((c) => [c.card_id, c]));
   const style: React.CSSProperties = {
-    display: "grid", gridTemplateColumns: G.cols, gridTemplateRows: G.rows, gap: G.gap, flex: 1, minHeight: 0,
+    display: "grid", gridTemplateColumns: G.cols, gridTemplateRows: plan.rows, gap: G.gap, flex: 1, minHeight: 0,
   };
   return (
     <div style={style}>
-      {[...cards].sort(bySlot).map((c) => (
-        <div key={c.card_id} style={{ ...cellPos(c.slot), minHeight: 0, overflow: "hidden" }}>
-          <CmdCard card={c} liveFrame={frameFor(c, frames, liveFrame)} pageFrame={liveFrame} />
-        </div>
-      ))}
+      {plan.seats.map((s) => {
+        const c = byId.get(s.card_id)!;
+        return (
+          <div key={c.card_id} style={{ ...s.style, minHeight: 0, overflow: "hidden" }}>
+            <CmdCard card={c} liveFrame={frameFor(c, frames, liveFrame)} pageFrame={liveFrame} />
+          </div>
+        );
+      })}
     </div>
   );
 }

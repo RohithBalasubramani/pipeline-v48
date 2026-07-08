@@ -5,7 +5,13 @@
    "card_id": 43,
    "title": "Voltage Live Health",
    "answerability": "partial",
-   "note": "Showing live phase voltages and deviation. 'Rate Change' (V/min) is not a voltage quantity; bound to active power rate of change as a proxy for system activity."
+   "note": "Showing instantaneous phase voltages, average voltage, deviation, and unbalance; rate-of-change is not measured by this asset."
+  },
+  {
+   "card_id": 44,
+   "title": "Voltage History",
+   "answerability": "partial",
+   "note": "Showing voltage history and deviation \u2014 sag/swell event counts and primary event narrative are not measured by this meter."
   }
  ],
  "loop2": null

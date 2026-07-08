@@ -1,0 +1,30 @@
+{
+ "run_id": "r_3164bb1779",
+ "loop1": [
+  {
+   "card_id": 78,
+   "title": "Tap Position Optimization",
+   "answerability": "partial",
+   "note": "Showing OLTC tap position snapshot \u2014 tap position, optimal position, and tap count are not measured by this asset's electrical meter."
+  },
+  {
+   "card_id": 79,
+   "title": "Voltage Regulation Timeline",
+   "answerability": "partial",
+   "note": "Showing voltage regulation timeline \u2014 tap position is not measured by this asset, so load factor is used as a proxy for tap activity (partial)."
+  },
+  {
+   "card_id": 80,
+   "title": "Recent Tap Changes",
+   "answerability": "partial",
+   "note": "Showing tap change sequence (time, from, to) \u2014 these columns are not in the standard electrical meter schema; the card relies on the asset's specific change-log endpoint to populate the table rows."
+  },
+  {
+   "card_id": 81,
+   "title": "Tap Activity & Wear",
+   "answerability": "partial",
+   "note": "Showing active energy and load factor as proxies for tap operations \u2014 this transformer meter does not log a dedicated tap counter column."
+  }
+ ],
+ "loop2": null
+}

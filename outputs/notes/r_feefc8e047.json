@@ -1,0 +1,24 @@
+{
+ "run_id": "r_feefc8e047",
+ "loop1": [
+  {
+   "card_id": 51,
+   "title": "Battery Health History",
+   "answerability": "none",
+   "note": "This asset is an electrical UPS meter; it does not measure battery-specific sub-scores (SOC, DC Bus Quality, Thermal, or Overall Readiness). The card's battery history slots are honest-blanked as these quantities are not logged by this asset."
+  },
+  {
+   "card_id": 52,
+   "title": "Backup Readiness",
+   "answerability": "partial",
+   "note": "Showing load factor as a proxy for readiness \u2014 this UPS meter does not measure battery capacity (Ah) or runtime data required for true backup time/headroom calculations."
+  },
+  {
+   "card_id": 53,
+   "title": "Backup Readiness History",
+   "answerability": "partial",
+   "note": "Showing load factor as a proxy for backup readiness \u2014 the UPS meter does not measure battery runtime, pressure, or headroom scores."
+  }
+ ],
+ "loop2": "'ups-asset-dashboard/battery-autonomy' answers the prompt as routed; these cards cover quantities not recorded for this asset and render honest-blank per-leaf with the reason: Battery Health History (This asset is an electrical UPS meter; it does not measure battery-specific sub-scores (SOC, DC Bus Quality, Thermal, or Overall Readiness). The card's battery history slots are honest-blanked as these quantities are not logged by this asset.)."
+}

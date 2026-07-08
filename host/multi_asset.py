@@ -14,6 +14,43 @@ from host.rebind_consumer import rebind_consumer
 from host.asset_lanes import resolve_assets
 
 
+def natural_compare_ids(prompt):
+    """NATURAL COMPARE auto-resolution [multi-asset gap fix]: a 'compare A and B' prompt that spells out 2+ SPECIFIC
+    full asset names ('GIC-01-N3-UPS-01 and GIC-02-N5-UPS-04') carries no picker asset_ids, so the single-asset resolver
+    sees both UPS tokens as one ambiguous set and dead-ends in the single picker (0 cards). This splits the prompt into
+    per-name sub-prompts and resolves EACH through the SAME 1b resolver (layer1b.compare.resolve_compare, concurrently);
+    when 2+ names pin CONFIDENTLY (exact unique meter, no picker) it returns those mfm_ids so the caller routes them
+    through build_response_multi — the identical author-once-per-class compare the picker's multi-select takes.
+
+    Returns [] (single-asset path unchanged) when: the prompt names <2 specific assets (a single full name, or bare
+    homonyms like 'UPS-01' that only match a class+unit token), OR any named asset stays AMBIGUOUS on its own sub-prompt
+    (that name must surface its OWN picker, not be auto-pinned to a wrong homonym). Gated by multi_asset.enabled. Purely
+    additive: the single-asset branch is byte-identical whenever this returns [].
+
+    FAIL-OPEN BOUNDARY: this is an OPTIONAL pre-flight enhancer that runs BEFORE build_response's protected layers —
+    any exception here (e.g. the registry has_data probe re-raising a :5433 outage) must NOT 500 the request. It
+    fail-opens to [] so the request proceeds down the single path, where the SAME outage is caught by the degrade gate
+    and served as the honest data_unavailable terminal (200 + reason), never a raw error page."""
+    if not bool(cfg("multi_asset.enabled", True)):
+        return []
+    try:
+        from layer1b.compare.detect import is_natural_compare
+        if not is_natural_compare(prompt):
+            return []
+        from layer1b.compare.resolve_names import resolve_compare
+        r = resolve_compare(prompt)
+        confident = r.get("confident") or []
+        # EVERY named asset must pin (no ambiguous name) AND 2+ confident — otherwise the honest answer is the single
+        # picker for the unresolved name, not a partial auto-compare that silently drops it.
+        if r.get("ambiguous") or len(confident) < 2:
+            return []
+        return confident
+    except Exception as e:
+        import sys
+        sys.stderr.write(f"[natural_compare] fail-open to single path ({type(e).__name__}: {str(e)[:120]})\n")
+        return []
+
+
 def build_response_multi(prompt, asset_ids, date_window=None):
     """Compare the resolved `asset_ids` in one run and return the merged /api/run response (cards tagged `card.asset`,
     page from the shared template). The number of assets is capped by the DB knob multi_asset.max_assets (code default 6)."""

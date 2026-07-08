@@ -63,15 +63,53 @@ def _class_of(r):
             or _name_class(r.get("table")))
 
 
+def _alias_map():
+    """{table: (aka, loc)} from the LOCAL equipment mirror (cmd_catalog.equipment.mfm via the data/equipment single
+    door) — the HUMAN names a user actually says ('Feeder Tx-1 (PCC-1A)') beside the canonical registry names, plus a
+    section/zone locator. ONE cached read; {} on knob-off ('equipment.alias.enabled') / outage — aliases are HINTS,
+    the canonical name stays the only return contract, so a dead equipment schema changes nothing. [stream C]"""
+    try:
+        from config.app_config import cfg
+        if str(cfg("equipment.alias.enabled", "on")).strip().lower() in ("off", "", "0", "false", "no", "none"):
+            return {}
+        from data.equipment.db import mfm_by_table
+        out = {}
+        for tbl, eq_rows in (mfm_by_table() or {}).items():
+            names = [x.get("name") for x in eq_rows if x.get("name")]
+            r0 = eq_rows[0] if eq_rows else {}
+            loc = "/".join(v for v in ((r0.get("section") or ""), (r0.get("zone") or "")) if v)
+            out[tbl] = ((names[0] if names else ""), loc)
+        # PCC PANEL aliases [CMD_V2 LEGACY_PCC_PANEL_PATH_ALIASES → cmd_catalog.pcc_panel_alias]: the aggregate PCC
+        # panels (PCC-Panel-1..4) have NO equipment.mfm row, so they carry no human alias — yet users type 'PCC-1A'.
+        # Give each panel its 'PCC-NA' display alias so the AI resolves 'PCC-1A' → PCC-Panel-1 CONSISTENTLY instead of
+        # surfacing a 4-panel picker. Keyed by the panel's neuract table via the registry id. [#3 fix]
+        try:
+            from data.db_client import q
+            for tbl, aka in q("cmd_catalog",
+                              "SELECT r.table_name, upper(a.alias) FROM pcc_panel_alias a "
+                              "JOIN registry_lt_mfm r ON r.id=a.panel_mfm_id WHERE a.section='A'"):
+                if tbl:
+                    out[str(tbl)] = (str(aka), out.get(str(tbl), ("", ""))[1] or "PCC")
+        except Exception:
+            pass
+        return out
+    except Exception:
+        return {}
+
+
 def asset_candidates():
-    """rows: [id, name, table_name, mfm_type_id, load_group, class, has_data, has_feeders, never_wired, table_exists] —
-    canonical id-space, mirror-sourced (read-only). Only PHYSICALLY-EXISTING tables are probed for values (a ghost table
-    in the batched probe would fail its whole chunk open). table_exists (index 9) is the sync-stamped GHOST flag: False
-    for the 14 canonical rows that point at a table neuract never created (`_sch` disambiguation ghosts + dead `_se`
-    rows) — such a row can NEVER render, so the resolver must never confidently pin it and the picker greys it. [P03]"""
+    """rows: [id, name, table_name, mfm_type_id, load_group, class, has_data, has_feeders, never_wired, table_exists,
+    aka, loc] — canonical id-space, mirror-sourced (read-only). Only PHYSICALLY-EXISTING tables are probed for values
+    (a ghost table in the batched probe would fail its whole chunk open). table_exists (index 9) is the sync-stamped
+    GHOST flag: False for the 14 canonical rows that point at a table neuract never created (`_sch` disambiguation
+    ghosts + dead `_se` rows) — such a row can NEVER render, so the resolver must never confidently pin it and the
+    picker greys it. [P03] aka (index 10) / loc (index 11) are equipment-registry HUMAN-ALIAS + section/zone hints
+    ('' when unmapped or the alias knob is off) — resolution hints only, the canonical name stays authoritative;
+    every consumer indexes ≤9 or len-guards, so the two additive columns are shape-safe. [stream C]"""
     rows = registry_rows()
     parents = parent_ids()
     live = tables_with_values([r["table"] for r in rows if r["table"] and r["table_exists"]])
+    amap = _alias_map()
     out = []
     for r in rows:
         cls = _class_of(r)
@@ -79,8 +117,11 @@ def asset_candidates():
         # an aggregate whose data legitimately comes from feeders = PANEL-granularity class only; a non-Panel parent
         # is a single meter (its own table decides), so a ghost/_sch stub with edges is NOT greened by topology.
         has_data = (r["table"] in live) or (has_feeders and belongs_on_panel(True, cls))
+        aka, loc = amap.get(r["table"]) or ("", "")
+        if aka == r["name"]:
+            aka = ""                                            # identical alias is pure noise
         out.append([str(r["id"]), r["name"], r["table"], str(r["mfm_type_id"] or ""), r["load_group"] or "",
-                    cls, has_data, has_feeders, bool(r["never_wired"]), bool(r["table_exists"])])
+                    cls, has_data, has_feeders, bool(r["never_wired"]), bool(r["table_exists"]), aka, loc])
     return out
 
 
@@ -117,4 +158,6 @@ def as_asset(c):
             "class": c[5] or None, "has_data": bool(c[6]) if len(c) > 6 else bool(c[2]),
             "has_feeders": bool(c[7]) if len(c) > 7 else False,
             "never_wired": bool(c[8]) if len(c) > 8 else False,
-            "table_exists": bool(c[9]) if len(c) > 9 else bool(c[2])}
+            "table_exists": bool(c[9]) if len(c) > 9 else bool(c[2]),
+            "aka": (c[10] or None) if len(c) > 10 else None,    # equipment human alias (hint only) [stream C]
+            "loc": (c[11] or None) if len(c) > 11 else None}    # equipment section/zone locator [stream C]

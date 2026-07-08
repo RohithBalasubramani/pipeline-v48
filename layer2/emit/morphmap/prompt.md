@@ -13,6 +13,11 @@ by construction — you cannot omit a key, you cannot drift a byte, and there is
 - `morphs` — `{}` when the defaults already serve the story (THE COMMON CASE). One entry per changed METADATA leaf.
 - `data_instructions` / `answerability` / `data_note` — authored under the SAME rules as the full-emit contract
   (PART 3): resolved recipe, real basket columns, honest-blank + the five physical walls, best-effort declarations.
+  UNCHANGED here: R2-DECLARE (every intentionally-blanked leaf ALSO listed in `data_instructions._honest_blanked` as
+  "<slot>: <reason>", never a silent '—'), R10-SEED (no default-payload seed literal survives — fill it from a real
+  column or honest-blank+declare it), R8-ROLE (a rail-qualified bypass/mains/utility/grid/incoming/output/battery leaf
+  the meter does not sense → honest-blank+declare), and the kind=time discipline (kind=time ONLY on the x/time-axis
+  leaf; NEVER on a value/marker/scale leaf like maxLine/minLine/expectedMax).
 - There is NO `exact_metadata` key and NO `_morphed` list in this contract: naming a path in `morphs` IS the
   declaration. An undeclared change is impossible — you never author the other leaves at all.
 
@@ -42,8 +47,32 @@ by construction — you cannot omit a key, you cannot drift a byte, and there is
   meter table ids) came from the Storybook fixture. When the run's ASSET / PANEL MEMBERS facts name the real members,
   morph each identifier leaf to the verbatim real name (one `morphs` entry per leaf). If the real member set is not in
   your facts (or differs in size), do NOT invent names — emit no roster morphs and SAY SO in `data_note`.
-- DATA LEAVES ARE NEVER MORPHS — a path on/inside/above a DATA leaf (the typed 0/[] placeholders in the shape) is
-  REJECTED by the producer: data fills live from the frame, never from you. Morph only true metadata.
+  ★ PANEL READING SIDE — the PANEL MEMBERS facts mark ONE side ▶ PRIMARY (the direction the prompt asked: OUTGOING
+  fed-feeders/bays by default, INCOMER/supply only when the prompt says 'incomer'/'supply'/'source'/'HT side'). Morph
+  roster identifier leaves to the ▶ PRIMARY members ONLY; never re-roster to the 'context only' side. The executor's
+  member fan-out already reads the PRIMARY side, so the labels must match it.
+  ★ aka IS DISPLAY, CANONICAL IS DATA — when a member/asset facts line carries `aka=<human alias>` you MAY morph a
+  DISPLAY-label leaf to that alias (it is the plant's human name, declared in `morphs`); every data-addressing string
+  (table ids, entity keys, roster data keys) stays the CANONICAL name — mixing them breaks the fill.
+  ★ THRESHOLDS MAY GROUND BAND MORPHS — a band/threshold metadata leaf may be morphed ONLY to a boundary quoted
+  VERBATIM from the RTM STATUS BANDS facts line (a stored consts.rtm_* row, declared in `morphs`); any other
+  threshold number is a guess and is gate-rejected.
+- ★ DATA LEAVES ARE NEVER MORPHS (HARD WALL — the #1 defect) — a path ON / INSIDE / ABOVE a DATA leaf (the typed
+  0 / [] / null placeholders in the shape) is REJECTED by the producer: DATA fills LIVE from the frame, NEVER from you.
+  A rejected data-leaf morph is a CARD FAILURE, not a no-op — so NEVER name one. Morph ONLY true METADATA, and a leaf
+  is METADATA only if it is a label the eye reads: title / label / caption / unit / descriptor / a threshold-CONFIG
+  number / a roster IDENTIFIER string / a tab-order entry. A NUMBER OR ARRAY THE CHART PLOTS IS DATA, NOT METADATA.
+- ★ DATA-LEAF NEVER-MORPH LIST — a path whose LAST segment (or any segment above the leaf) matches ANY of these value
+  shapes is DATA; it is FORBIDDEN in `morphs` regardless of what the story says:
+    · anything ending `.value` or `.values`      (a plotted magnitude / series array — e.g. `history.data.maxLine.value`)
+    · anything ending `.markerPct` / `.pct` / `.percent` / `.ratio`   (a data-fed gauge/axis marker — e.g. `capacity.readyMarkerPct`)
+    · a `.maxLine.*` / `.minLine.*` / `.avgLine.*` / `.threshold.*` NUMERIC leaf (an axis reference line fed by data)
+    · `metrics[i].value`, `series[i].values`, `panels[i].<qty>`, `tiles[i].value`, `rows[i].<qty>`, `points[i].*`
+    · any leaf UNDER a `.data.` / `.series` / `.dataset` / `.frame` container whose default is a number, [] or null
+    · any AXIS MARKER / DOMAIN bound / gauge needle / bar height / cell value that the live frame supplies.
+  If the story wants such a magnitude to change, that is a DATA request — put the column in `data_instructions.fields`
+  (or honest-blank it), NEVER in `morphs`. When unsure whether a leaf is a label or a plotted number, treat it as DATA
+  and DO NOT morph it.
 - ZERO CHROME — no pixel geometry, fonts, markup, functions, handlers, "rgba(" tokens in a morphed value. A
   chrome-bearing morph is rejected and the default ships.
 - ADDRESS LEAVES, NOT SUBTREES — one entry per changed leaf ("sections[2].label": "…"), never a whole object/array

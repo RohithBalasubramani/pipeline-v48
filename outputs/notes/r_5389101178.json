@@ -1,0 +1,24 @@
+{
+ "run_id": "r_5389101178",
+ "loop1": [
+  {
+   "card_id": 36,
+   "title": "Power & Energy (Real-Time)",
+   "answerability": "partial",
+   "note": "Showing active and reactive power, active energy, and apparent power. Reactive energy and projected demand are approximated from available power columns; trend and delta metrics are omitted as they are not directly measured."
+  },
+  {
+   "card_id": 37,
+   "title": "Voltage Monitor (Real-Time)",
+   "answerability": "partial",
+   "note": "Showing live three-phase voltage trends and statistical summaries; threshold lines omitted as the asset's nameplate rating (required for fixed limits) is unknown."
+  },
+  {
+   "card_id": 38,
+   "title": "Current Monitor (Real-Time)",
+   "answerability": "partial",
+   "note": "Showing live current trends and summaries; threshold lines omitted because the asset's nameplate rated_current_a is unknown."
+  }
+ ],
+ "loop2": null
+}

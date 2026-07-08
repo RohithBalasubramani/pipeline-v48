@@ -1,0 +1,24 @@
+{
+ "run_id": "r_6792b1a179",
+ "loop1": [
+  {
+   "card_id": 57,
+   "title": "UPS Capacity",
+   "answerability": "partial",
+   "note": "Showing capacity scores and headroom based on active power and apparent power; current score uses rated kVA as a proxy for rated current as no direct rated_current_a column is available in the basket for this derived calculation."
+  },
+  {
+   "card_id": 58,
+   "title": "UPS Load",
+   "answerability": "partial",
+   "note": "Showing average load % and current load kW; headroom kW is omitted because the asset's nameplate rated_kw is unknown."
+  },
+  {
+   "card_id": 59,
+   "title": "Output Load & Capacity \u2014 Composite",
+   "answerability": "partial",
+   "note": "Showing output load (kW) and frequency (Hz) trends. Readiness score, bypass voltage, and transfer counts are not measured by this UPS asset and are omitted."
+  }
+ ],
+ "loop2": null
+}

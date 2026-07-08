@@ -20,6 +20,8 @@ from layer1a.db_reads.page_feasibility import read_page_feasibility
 from layer1a.parse.page_key_fallback import resolve_page_key
 from layer1a.parse.template_feasibility_gate import filter_renderable_templates
 from layer1a.parse.metric_intent_defaults import clamp_metric_intent
+from layer1a.parse.window_default import clamp_window
+from layer1a.route_schema import route_answer_schema
 
 _HERE = os.path.dirname(os.path.abspath(__file__))
 
@@ -80,19 +82,19 @@ def route(prompt, db="cmd_catalog", feedback=None, exclude_page_key=None):
     if feedback:                                        # reflect-loop: the prior template couldn't be answered → re-route
         user += "\n" + _load_prompt("reroute_clause.md").strip().replace("{feedback}", str(feedback)) + "\n"
     user += "JSON:"
-    # ROUTING DETERMINISM [layer1 non-deterministic-page defect]: enum-CONSTRAIN the emission (vLLM structured output)
-    # to the EXACT candidate page_key list + the metric/intent vocab. Greedy temp-0 + pinned seed keeps the RNG stable,
-    # but a near-tie route can still flip run-to-run under batch load AND land in the fuzzy resolve_page_key recovery
-    # (segment/substring) which differs by which candidate barely wins. Forcing page_key ∈ keys removes that recovery
-    # branch entirely (the model can only emit a valid verbatim key → how='verbatim' always), so the same prompt yields
-    # the same page. stage='route' also applies the per-stage timeout so a slow batch can't flip to the fail-closed path.
+    # ROUTING DETERMINISM [L1a non-deterministic-page defect]: enum-CONSTRAIN the emission (vLLM structured output) to
+    # the EXACT candidate page_key list + the metric/intent vocab. Greedy temp-0 + pinned seed keeps the RNG stable,
+    # but a NEAR-TIE route can still flip run-to-run under batch load (concurrent batch composition changes the FP
+    # reduction order) AND land in the fuzzy resolve_page_key recovery (segment/substring) whose winner differs by
+    # which candidate barely wins. Forcing page_key ∈ keys removes that recovery branch entirely (the grammar can only
+    # emit a valid verbatim key → how='verbatim' always), so the same prompt yields the same page. Wired FLAG-GATED
+    # through json_schema= behind llm.guided_json.route (DEFAULT OFF, db/seed_route_guided_json.sql), mirroring the 1b
+    # asset-resolver seam (json_schema=asset_answer_schema()): flag OFF → route_answer_schema returns None → call_qwen's
+    # json_schema kwarg is inert → the request is BYTE-IDENTICAL to today (json_object). stage='route' also applies the
+    # per-stage timeout so a slow batch can't flip to the fail-closed path.
     _intent_vocab = list(cfg("intents.vocab", ["trend", "distribution", "snapshot", "table", "events"]))
-    _schema = {"type": "object",
-               "properties": {"page_key": {"type": "string", "enum": keys},
-                              "metric": {"type": "string", "enum": list(METRIC_VOCAB)},
-                              "intent": {"type": "string", "enum": _intent_vocab}},
-               "required": ["page_key", "metric", "intent"]}
-    r = call_qwen(system, user, stage="route", schema=_schema)
+    r = call_qwen(system, user, stage="route",
+                  json_schema=route_answer_schema(keys, METRIC_VOCAB, _intent_vocab))
     if not r:
         # fail-closed: call_qwen is fail-open ({} on ANY transport/parse error) — never emit a keys[0] route for it.
         # The message carries an outage fingerprint (run/degrade_gate.py) → honest data_unavailable terminal.
@@ -104,11 +106,13 @@ def route(prompt, db="cmd_catalog", feedback=None, exclude_page_key=None):
                            f"({how}) against the candidate list — fail-closed, no arbitrary fallback"
                            + (f" (excluded reroute page: {excluded!r})" if excluded else ""))
     metric, intent = clamp_metric_intent(r.get("metric"), r.get("intent"))
+    window = clamp_window(r.get("window"))
     spec = next(s for s in specs if s["page_key"] == page_key)
-    return {"page_key": page_key, "metric": metric, "intent": intent, "page_spec": spec,
-            # telemetry (stage-logged by run/harness.py): which fallback fired + what the gate/exclusion did
+    return {"page_key": page_key, "metric": metric, "intent": intent, "window": window, "page_spec": spec,
+            # telemetry (stage-logged by run/harness.py): which fallback fired + what the gate/exclusion did.
+            # `window` is ALSO carried inside routing so build_layer1a_output forwards it verbatim (harness fallback).
             "routing": {"page_key_how": how, "dropped_templates": dropped, "excluded_page_key": excluded,
-                        "raw_page_key": r.get("page_key")}}
+                        "raw_page_key": r.get("page_key"), "window": window}}
 
 
 def route_to(page_key, metric, intent, db="cmd_catalog", *, reason=None):

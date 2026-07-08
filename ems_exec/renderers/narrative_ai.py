@@ -14,7 +14,7 @@ Emits: payload['widgets']['ai_summary'] = {'badge': 'review'|'accounting', 'text
 card's payload actually carries, so the FE's own AISummary widget reads it; a card with neither leaf still gets a
 top-level 'ai_summary' so nothing is silently dropped).
 
-render(asset, card, ctx) -> payload   (sync; arender is the async variant for an event-loop caller)
+render(asset, card, ctx) -> payload   (sync)
 ctx = {asset_table, mfm_id, db_link, window, page_key}. DATA = NEURACT ONLY. DB-driven knobs. [atomic; honest-degrade]
 """
 from __future__ import annotations
@@ -64,9 +64,21 @@ def _story(asset, card, ctx):
         return _generic_no_data(ctx)
     try:
         members = _facts.resolve_members(ctx)                   # (members, coverage) — shared across builders
-        return builder.build(asset, card, ctx, members)
+        story, fb, badge = builder.build(asset, card, ctx, members)
+        return _with_asked_about(story, ctx), fb, badge
     except Exception:
         return _generic_no_data(ctx)
+
+
+def _with_asked_about(story, ctx):
+    """Thread the user's ASKED-ABOUT quantity (the 1a `metric`, e.g. 'voltage') into the story so the narrator LEADS with
+    it (see _insight._SYSTEM). GENERIC for every narrative page (keyed on ctx.metric, never a card id); absent metric →
+    story unchanged, so behaviour is identical until exec threads the ask."""
+    if isinstance(story, dict):
+        m = (ctx or {}).get("metric")
+        if m and not story.get("asked_about"):
+            story["asked_about"] = str(m)
+    return story
 
 
 def _generic_no_data(ctx):
@@ -76,8 +88,29 @@ def _generic_no_data(ctx):
     return story, fb, "accounting"
 
 
-def _widget(text, badge):
-    return {"badge": badge, "text": text}
+# A NO-DATA DEGRADATION story: every page builder's honest no-data path (and the generic fallback) sets one of these
+# `status` values; a REAL story carries NO status key at all. Used to mark the ai_summary widget as a degradation so the
+# render verdict does NOT credit an honest "no metered data" sentence as a real answered leaf (empty-panel honest-blank
+# must survive — otherwise a dark PCC panel would falsely verdict partial/answered). GENERIC (status vocab, no card id).
+_DEGRADED_STATUS = frozenset({"no_vi_data", "no_harmonics_data", "no_energy_accounted",
+                              "no_live_data", "summary_unavailable"})
+
+
+def _is_degraded(story):
+    """True iff the story is an honest NO-DATA degradation (its `status` ∈ the no-data vocab). A real story has no
+    status → False. Never raises."""
+    try:
+        return isinstance(story, dict) and story.get("status") in _DEGRADED_STATUS
+    except Exception:
+        return False
+
+
+def _widget(text, badge, degraded=False):
+    # `degraded` key added ONLY for a no-data narrative → a REAL narrative keeps the exact {badge, text} shape unchanged.
+    w = {"badge": badge, "text": text}
+    if degraded:
+        w["degraded"] = True
+    return w
 
 
 def _thread_headline(node, text):
@@ -124,24 +157,48 @@ def render(asset, card, ctx):
     narrator (summary_sync); the model narrates only `text`, badge is the Python verdict. Never raises."""
     ctx = ctx or {}
     story, fallback, badge = _story(asset, card, ctx)
+    degraded = _is_degraded(story)                             # honest no-data narrative → not a real answered leaf
+    binds = _pop_binds(story)                                   # lift the builder's real-fact leaf binds (narrator MUST NOT see them)
     try:
         result = _insight.summary_sync(story, fields=_FIELDS, fallback=fallback)
         text = (result or {}).get("text") or fallback["text"]
     except Exception:
         text = fallback["text"]
-    return _emit(_honest_skeleton(card), _widget(text, badge))
+    return _bind_leaves(_emit(_honest_skeleton(card), _widget(text, badge, degraded)), binds)
 
 
-async def arender(asset, card, ctx):
-    """ASYNC render (event-loop caller) → same contract, using the async narrator (model call off the loop)."""
-    ctx = ctx or {}
-    story, fallback, badge = _story(asset, card, ctx)
+def _pop_binds(story):
+    """Lift the page builder's payload-leaf bindings out of the story — a PRIVATE `_leaf_binds` key the narrator must
+    NOT see (it is a bind spec, not a fact to narrate). A builder MAY declare story['_leaf_binds'] = {dotted_leaf_path:
+    real_value} for facts it ALREADY computed that map to the card's REAL payload leaves (worst-V/I member+magnitude,
+    period label). Absent → {} → no binding (every other narrative page is byte-unchanged)."""
+    if isinstance(story, dict):
+        b = story.pop("_leaf_binds", None)
+        if isinstance(b, dict):
+            return b
+    return {}
+
+
+def _bind_leaves(payload, binds):
+    """Write each builder-declared REAL fact into the matching EXISTING payload leaf so it renders REAL instead of a
+    stripped 0.0 / nulled placeholder / surviving seed. ZERO-FABRICATION: values are the builder's OWN computed facts,
+    and ONLY a leaf the skeleton already carries is filled (never grows the shape). Tolerates the CMD_V2 `data.<slot>`
+    nesting. GENERIC (applies whatever binds the page builder declared); never raises. [F5 unaudited-side-channel fix]"""
+    if not (isinstance(payload, dict) and isinstance(binds, dict) and binds):
+        return payload
     try:
-        result = await _insight.summary(story, fields=_FIELDS, fallback=fallback)
-        text = (result or {}).get("text") or fallback["text"]
+        from ems_exec.executor.paths import _has_path, _set_leaf_typed
+        for path, val in binds.items():
+            if val is None or not path:
+                continue
+            p = str(path)
+            for cand in (p, ("data." + p) if not p.startswith("data.") else p[5:]):
+                if _has_path(payload, cand):
+                    _set_leaf_typed(payload, cand, val)          # scalar leaf ← real value (arrays/dicts untouched)
+                    break
     except Exception:
-        text = fallback["text"]
-    return _emit(_honest_skeleton(card), _widget(text, badge))
+        pass
+    return payload
 
 
 def _honest_skeleton(card):

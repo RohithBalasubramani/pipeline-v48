@@ -1,0 +1,24 @@
+{
+ "run_id": "r_74405fba38",
+ "loop1": [
+  {
+   "card_id": 57,
+   "title": "UPS Capacity",
+   "answerability": "partial",
+   "note": "Showing rated capacity scores and headroom \u2014 readiness marker and delta labels are omitted as this meter does not measure bypass/mains readiness or transfer deltas."
+  },
+  {
+   "card_id": 58,
+   "title": "UPS Load",
+   "answerability": "partial",
+   "note": "Showing UPS load and power factor; headroom is unavailable because the asset's nameplate rated_kw is unknown."
+  },
+  {
+   "card_id": 59,
+   "title": "Output Load & Capacity \u2014 Composite",
+   "answerability": "partial",
+   "note": "Showing output load % and bypass frequency \u2014 readiness score and transfer count are not directly measured by this asset's logged columns."
+  }
+ ],
+ "loop2": null
+}

@@ -1,0 +1,18 @@
+{
+ "run_id": "r_9d7ee5ef68",
+ "loop1": [
+  {
+   "card_id": 41,
+   "title": "Input vs Output Energy",
+   "answerability": "partial",
+   "note": "Showing total active energy import/export and derived loss/efficiency metrics; per-phase energy is not measured for this asset."
+  },
+  {
+   "card_id": 42,
+   "title": "Load Anomalies",
+   "answerability": "partial",
+   "note": "Showing load factor and actual load as % of rated capacity \u2014 expected load range and anomaly events are not directly measured by this meter's schema, so they are omitted."
+  }
+ ],
+ "loop2": "1 of 4 cards hard-failed their emit (frac 0.25 < reflect.min_gap_frac 0.34); left honest-blank per-leaf, page NOT re-routed."
+}

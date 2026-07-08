@@ -1,0 +1,24 @@
+{
+ "run_id": "r_5434d507a1",
+ "loop1": [
+  {
+   "card_id": 43,
+   "title": "Voltage Live Health",
+   "answerability": "partial",
+   "note": "Showing live UPS output voltage and deviation; Rate Change is not measured for this asset."
+  },
+  {
+   "card_id": 44,
+   "title": "Voltage History",
+   "answerability": "partial",
+   "note": "Showing per-phase voltage history and deviation stats; event counts and expected range bounds are not measured by this asset."
+  },
+  {
+   "card_id": 46,
+   "title": "Current History",
+   "answerability": "partial",
+   "note": "Showing current history and stats \u2014 expected range lines are omitted because the asset's rated current is not available to calculate the reference band."
+  }
+ ],
+ "loop2": null
+}

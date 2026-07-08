@@ -1,0 +1,36 @@
+{
+ "run_id": "r_d52377cca0",
+ "loop1": [
+  {
+   "card_id": 18,
+   "title": "Events KPI Strip",
+   "answerability": "partial",
+   "note": "Showing event counts and worst deviations for members with live data (UPS-01/02/03, BPDB-01/02); primary incomers are dark."
+  },
+  {
+   "card_id": 19,
+   "title": "AI Summary",
+   "answerability": "partial",
+   "note": "Primary incomers (Solar Incomer-1, Solar Incomer-2, Transformer-01, Transformer-02) have no live data; AI narrative is generated from available outgoing UPS/BPDB feeders only."
+  },
+  {
+   "card_id": 20,
+   "title": "Event Timeline at {period}",
+   "answerability": "partial",
+   "note": "Showing event counts and worst deviations for members with live data (UPS-01, UPS-02, UPS-03, BPDB-01, BPDB-02, UPS-04); primary incomers are dark."
+  },
+  {
+   "card_id": 21,
+   "title": "Current Distribution at {period}",
+   "answerability": "partial",
+   "note": "Showing current distribution for 7 active outgoing feeders; 3 feeders (UPS-05, UPS-06, HHF-01, HHF-02) are dark (no live data) and will render as blank spokes."
+  },
+  {
+   "card_id": 22,
+   "title": "Other Panels Event at {period}",
+   "answerability": "partial",
+   "note": "Showing event counts and voltage/current metrics for the 8 outgoing feeders (UPS-01 to UPS-06, BPDB-01, BPDB-02) that have live data; the 4 incomers are dark and omitted from the roster."
+  }
+ ],
+ "loop2": null
+}

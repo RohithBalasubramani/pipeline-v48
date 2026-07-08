@@ -1,0 +1,30 @@
+{
+ "run_id": "r_4080719fbd",
+ "loop1": [
+  {
+   "card_id": 74,
+   "title": "Thermal Life",
+   "answerability": "partial",
+   "note": "Showing Load Factor, Active Power, and Apparent Power as thermal stress proxies \u2014 no temperature sensors or nameplate ratings are available for this asset."
+  },
+  {
+   "card_id": 76,
+   "title": "Thermal Timeline",
+   "answerability": "partial",
+   "note": "Thermal sensors (hotspot, oil, winding) are not measured by this asset; showing available power data as a proxy for loading context."
+  },
+  {
+   "card_id": 75,
+   "title": "Life & Capacity",
+   "answerability": "partial",
+   "note": "Showing total active power as a proxy for loading percentage \u2014 per-phase power and nameplate ratings aren't measured for this asset."
+  },
+  {
+   "card_id": 77,
+   "title": "Insulation Aging & Loss of Life",
+   "answerability": "partial",
+   "note": "Showing projected aging/loss-of-life metrics derived from active power load (active_power_total_kw) \u2014 direct thermal/aging sensors (hotspotC, FAA) are not measured for this asset."
+  }
+ ],
+ "loop2": null
+}

@@ -14,6 +14,22 @@ with code defaults. Honest-degrade: no live power/PF/voltage → a "no live data
 from __future__ import annotations
 
 from ems_exec.renderers._story import _facts
+from ems_exec.renderers._story import _scrub
+
+# The anti-fabrication guard the narrator sees INSIDE the story. The narrator (_insight) narrates this dict as free
+# prose and — the card-8 defect — can INVENT a load % the grounded facts left null (217 kW → '72.0% load', a rating of
+# 301 kVA with no DB source). This constraint travels with the story so the model is told, at the point of narration,
+# never to compute/infer a load/percentage/rating not present as a real number. Belted by _scrub on the fallback and
+# any consumer that post-validates the narrated text. [honest-degrade]
+_CONSTRAINTS = ("State ONLY the numeric facts present in this story. NEVER compute, infer, estimate or recall a "
+                "load %, loading %, utilisation %, or rated/nameplate kVA. When a feeder's load is 'unavailable' or "
+                "no numeric load_pct is present, DO NOT state any percentage load for that feeder — say its power in "
+                "kW only. Invent no number, name or status not present above.")
+
+# What the `load` / `leading_feeder` slot carries when there is NO grounded load %: an explicit human directive string
+# in place of a bare `null` (which invites the model to fill the blank). This omits the rating number entirely so the
+# model has no denominator to fabricate a percentage from.
+_LOAD_UNAVAILABLE = "unavailable — no nameplate rating on file; do NOT state or infer any % load for this feeder"
 
 
 def _knobs():
@@ -45,10 +61,31 @@ def _rated_kva(asset_table):
         return None
 
 
+def _load_pct_ceiling():
+    """The load-% plausibility ceiling (DB-driven, code default 200%). A sustained snapshot load above this is not a real
+    overload — a feeder cannot run at 3x its rating for 500 samples without tripping — so it signals a WRONG rating
+    denominator, not a real reading."""
+    try:
+        from config.app_config import cfg
+        v = cfg("story.load_pct_plausibility_ceiling", 200.0)
+        return float(v) if v is not None else 200.0
+    except Exception:
+        return 200.0
+
+
 def _load_pct(kva, rated):
     if not isinstance(kva, (int, float)) or not isinstance(rated, (int, float)) or rated <= 0:
         return None
-    return kva / rated * 100.0
+    pct = kva / rated * 100.0
+    # PLAUSIBILITY WALL [card 8]: a load% far above physical possibility means the rating DENOMINATOR is wrong — not that
+    # the feeder truly runs at that multiple. A name-parse plate (a device-NAME token like 'CL:600KVA') that the LIVE
+    # apparent power exceeds many-fold is an untrustworthy denominator; computing '321% overloaded' against it fabricates
+    # a loading the meter contradicts 3x (card 9 on the same page honest-blanks this exact capacity). Above the ceiling,
+    # honest-degrade to None → the story states real power only and claims no % load (routes to _LOAD_UNAVAILABLE + _scrub).
+    ceil = _load_pct_ceiling()
+    if ceil and pct > ceil:
+        return None
+    return pct
 
 
 def _unsigned_pf(live):
@@ -76,7 +113,7 @@ def _load_sev(pct, k):
 
 def _no_data(name, coverage):
     story = {"subject": name, "status": "no_live_data", "reporting_members": coverage["reporting_count"],
-             "expected_members": coverage["expected_count"]}
+             "expected_members": coverage["expected_count"], "_constraints": _CONSTRAINTS}
     fb = {"text": ("%s reported no live electrical data — %d of %d members reporting; status verdict unavailable."
                    % (name, coverage["reporting_count"], coverage["expected_count"]))}
     return story, fb, "accounting"
@@ -127,15 +164,26 @@ def _single_feeder(subject, member, ctx, k, coverage):
     story = {
         "feeder": subject, "range_window": _window_label(ctx.get("window")),
         "overall_verdict": verdict,
-        "load": ({"kw": _r(kw), "kva": _r(kva), "load_pct": _r(load_pct), "rated_kva": _r(rated),
-                  "severity": load_sev} if (kw is not None or kva is not None) else None),
+        "load": _single_load_slot(kw, kva, load_pct, rated, load_sev),
         "power_factor": ({"pf": _r(pf, 3), "severity": pf_sev} if pf is not None else None),
         "voltage_deviation": ({"deviation_pct": _r(vdev), "severity": dev_sev} if vdev is not None else None),
         "phase_balance": ({"current_unbalance_pct": _r(unbal), "severity": unbal_sev} if unbal is not None else None),
         "busbar_temperature": ({"temp_c": _r(temp), "severity": temp_sev} if temp is not None else None),
+        "_constraints": _CONSTRAINTS,
     }
-    fb = {"text": _single_fallback(subject, verdict, load_pct, load_sev, pf, pf_sev, vdev, dev_sev, temp, unbal)}
+    fb = {"text": _scrub.scrub(
+        _single_fallback(subject, verdict, load_pct, load_sev, pf, pf_sev, vdev, dev_sev, temp, unbal), story)}
     return story, fb, badge
+
+
+def _single_load_slot(kw, kva, load_pct, rated, load_sev):
+    """The single-feeder `load` slot. Grounded load_pct → real kW/kVA/load_pct/rated_kva; no grounded load_pct → kW/kVA
+    only + an explicit 'load unavailable' directive (no bare null rated_kva/load_pct to fabricate a percentage from)."""
+    if not (kw is not None or kva is not None):
+        return None
+    if isinstance(load_pct, (int, float)) and not isinstance(load_pct, bool):
+        return {"kw": _r(kw), "kva": _r(kva), "load_pct": _r(load_pct), "rated_kva": _r(rated), "severity": load_sev}
+    return {"kw": _r(kw), "kva": _r(kva), "load": _LOAD_UNAVAILABLE}
 
 
 def _single_fallback(name, verdict, load_pct, load_sev, pf, pf_sev, vdev, dev_sev, temp, unbal):
@@ -183,13 +231,24 @@ def _panel_leader(subject, members, ctx, k, coverage):
     story = {
         "panel": subject, "range_window": _window_label(ctx.get("window")),
         "reporting_members": coverage["reporting_count"], "expected_members": coverage["expected_count"],
-        "leading_feeder": ({"name": leader["name"], "kw": _r(leader["kw"]), "load_pct": _r(leader["load_pct"]),
-                            "rated_kva": _r(leader["rated"]), "severity": load_sev} if leader else None),
+        "leading_feeder": (_leader_slot(leader, load_sev) if leader else None),
         "average_power_factor": ({"pf": avg_pf, "severity": pf_sev} if avg_pf is not None else None),
         "active_feeders": len(rows),
+        "_constraints": _CONSTRAINTS,
     }
-    fb = {"text": _panel_fallback(subject, leader, load_sev, avg_pf, pf_sev, len(rows))}
+    fb = {"text": _scrub.scrub(_panel_fallback(subject, leader, load_sev, avg_pf, pf_sev, len(rows)), story)}
     return story, fb, badge
+
+
+def _leader_slot(leader, load_sev):
+    """The leading-feeder slot for the story. When there IS a grounded load_pct it carries the real numbers; when
+    there is NONE it carries kW only + an explicit 'load unavailable' directive (no bare null rated_kva/load_pct that
+    invites the model to fabricate a percentage — the card-8 217 kW → 72% defect)."""
+    lp, rated = leader["load_pct"], leader["rated"]
+    if isinstance(lp, (int, float)) and not isinstance(lp, bool):
+        return {"name": leader["name"], "kw": _r(leader["kw"]), "load_pct": _r(lp),
+                "rated_kva": _r(rated), "severity": load_sev}
+    return {"name": leader["name"], "kw": _r(leader["kw"]), "load": _LOAD_UNAVAILABLE}
 
 
 def _panel_fallback(name, leader, load_sev, avg_pf, pf_sev, n):

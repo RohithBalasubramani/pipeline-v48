@@ -44,12 +44,14 @@ def is_registered(card_id):
 
 
 # ── pool filter [META-05, FR-5] ───────────────────────────────────────────────────────────────────
-def swappable_pool(pool, page_key):
+def swappable_pool(pool, page_key, *, metric=None):
     """Filter a swap candidate pool (list of {card_id, ...}) to targets that can actually render:
       · has a RECOVERABLE default (own or component-sibling) — never an ungated example payload [META-05], and
       · is a REGISTERED renderer id [FR-5].
-    Returns the filtered list (order preserved). Non-renderable candidates are dropped up front so the AI can never
-    choose one."""
+    Returns the filtered list. When `metric` (the pipeline's 1a metric) is given, a SOFT metric-affinity re-rank runs
+    over the survivors (metric-relevant cards first, existing order kept as a stable tiebreak) so a metric-aware pool
+    stays metric-ranked after the renderable filter; `metric=None` preserves the incoming order exactly. Non-renderable
+    candidates are dropped up front so the AI can never choose one."""
     keep = []
     for c in pool or []:
         cid = c.get("card_id")
@@ -60,12 +62,19 @@ def swappable_pool(pool, page_key):
         if not default_assemble.has_default(cid, page_key):
             continue
         keep.append(c)
+    if metric and keep:
+        # reuse the ONE generic affinity vocabulary/score from the pool builder (lazy import avoids the module-load
+        # cycle: candidates imports is_registered from here). Stable sort → equal-affinity order is preserved.
+        from layer2.swap.candidates import _metric_tokens, _affinity
+        tokens = _metric_tokens(metric)
+        if tokens:
+            keep.sort(key=lambda c: -_affinity(c, tokens))
     return keep
 
 
-def swappable_ids(pool, page_key):
-    """Convenience: just the renderable target card_ids from a pool."""
-    return [c["card_id"] for c in swappable_pool(pool, page_key)]
+def swappable_ids(pool, page_key, *, metric=None):
+    """Convenience: just the renderable target card_ids from a pool (metric-affinity-ranked when metric is given)."""
+    return [c["card_id"] for c in swappable_pool(pool, page_key, metric=metric)]
 
 
 # ── settle collisions [META-04] ─────────────────────────────────────────────────────────────────

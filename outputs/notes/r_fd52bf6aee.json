@@ -1,0 +1,36 @@
+{
+ "run_id": "r_fd52bf6aee",
+ "loop1": [
+  {
+   "card_id": 18,
+   "title": "Events KPI Strip",
+   "answerability": "partial",
+   "note": "Showing sag/swell/current/neutral event counts and worst deviation/imbalance from member meters; aggregate current (amps) and per-window voltage averages/max/min are not measured by this panel's schema."
+  },
+  {
+   "card_id": 19,
+   "title": "AI Summary",
+   "answerability": "partial",
+   "note": "nothing could be bound for this card on this asset \u2014 every data leaf renders an honest blank (per-leaf reasons attached), not a zero"
+  },
+  {
+   "card_id": 20,
+   "title": "Event Timeline at {period}",
+   "answerability": "partial",
+   "note": "Showing per-member event counts and worst deviations; some members (GIC-02-N6-UPS-05, GIC-02-N7-UPS-06) are dark (no data)."
+  },
+  {
+   "card_id": 21,
+   "title": "Current Distribution at {period}",
+   "answerability": "partial",
+   "note": "Showing current distribution across outgoing feeders; voltage, sag, swell, neutral, unbalance, and deviation metrics are not measured by the panel aggregate stub and are omitted."
+  },
+  {
+   "card_id": 22,
+   "title": "Other Panels Event at {period}",
+   "answerability": "partial",
+   "note": "Showing OUTGOING member panels (UPS-01 to UPS-06, BPDB-01, BPDB-02); INCOMER members (Solar Incomer-1, Solar Incomer-2, Transformer-01, Transformer-02) are dark and omitted from the roster."
+  }
+ ],
+ "loop2": null
+}

@@ -19,13 +19,15 @@ def build_layer1b_output(resolved, basket):
 def validate_layer1b_output(out):
     p = []
     how = out.get("how")
-    if how not in {"AI", "user-choice", "ambiguous", "empty", "no_data"}:
+    # collision_gate_fullname = the deterministic full-name pin (attributable to the collision gate, not the model) — a
+    # legitimate RESOLVED-WITH-DATA state; treated as a confident pin below (basket + no-picker safety checks apply).
+    if how not in {"AI", "user-choice", "ambiguous", "empty", "no_data", "collision_gate_fullname"}:
         p.append(f"bad how: {how!r}")
     if how == "ambiguous" and not out.get("candidate_list"):
         p.append("ambiguous but no candidate_list")
     if how == "no_data" and not out.get("asset"):
         p.append("no_data but no asset (must name which asset is dark)")
-    if how in {"AI", "user-choice"}:                                  # the RESOLVED-WITH-DATA states (no_data is excluded)
+    if how in {"AI", "user-choice", "collision_gate_fullname"}:       # the RESOLVED-WITH-DATA states (no_data is excluded)
         if not out.get("asset"):
             p.append(f"how={how} but no asset")
         elif not out.get("column_basket", {}).get("columns"):

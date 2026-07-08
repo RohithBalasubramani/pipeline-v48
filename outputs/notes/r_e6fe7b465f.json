@@ -1,0 +1,36 @@
+{
+ "run_id": "r_e6fe7b465f",
+ "loop1": [
+  {
+   "card_id": 18,
+   "title": "Events KPI Strip",
+   "answerability": "partial",
+   "note": "Showing event counts and worst deviations for PRIMARY feeders (GIC-01-N3-UPS-01, GIC-01-N4-UPS-02, GIC-01-N5-UPS-03, GIC-01-N8-BPDB-01, GIC-02-N2-BPDB-02, GIC-02-N5-UPS-04); GIC-02-N6-UPS-05 and GIC-02-N7-UPS-06 are dark (no data) and honest-blanked."
+  },
+  {
+   "card_id": 19,
+   "title": "AI Summary",
+   "answerability": "partial",
+   "note": "Showing AI narrative summary for PCC Panel 1A; per-member event counts (sag/swell/current) are not directly measured by this panel's stub table and rely on the AI model's inference from member data."
+  },
+  {
+   "card_id": 20,
+   "title": "Event Timeline at {period}",
+   "answerability": "partial",
+   "note": "Showing per-member event counts and worst deviations from PRIMARY feeders; GIC-02-N6-UPS-05 and GIC-02-N7-UPS-06 are dark (no data) and will render as honest blanks."
+  },
+  {
+   "card_id": 21,
+   "title": "Current Distribution at {period}",
+   "answerability": "partial",
+   "note": "Showing current draw per outgoing feeder (current_avg); voltage and unbalance metrics are not measured by these UPS/BPDB member meters."
+  },
+  {
+   "card_id": 22,
+   "title": "Other Panels Event at {period}",
+   "answerability": "partial",
+   "note": "Showing per-panel event counts and electrical metrics for the 10 listed panels. Note: GIC-02-N6-UPS-05, GIC-02-N7-UPS-06, GIC-01-N9-Solar Incomer-1, GIC-02-N1-Solar Incomer-2, and GIC-15-N10-PCC-01 (Transformer-01) and GIC-15-N11-PCC-01 (Transformer-02) are dark (no data) and will render as blanks."
+  }
+ ],
+ "loop2": null
+}

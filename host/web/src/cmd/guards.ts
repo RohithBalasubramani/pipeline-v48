@@ -47,8 +47,10 @@
 //                            drawn); all links unmeasured → nodes cleared (the primitive's own empty state); a
 //                            non-finite node 'layer' anywhere → layers dropped for all (d3's own justify realigns).
 //   g9 residual null dash  — any remaining null DICT-scalar becomes '—' EXCEPT enum/geometry/lookup keys (suffix
-//                            exclusion list) and nulls inside scalar arrays (a null series point is an honest gap the
-//                            chart primitives skip — NEVER dashed).
+//                            exclusion list), nulls inside scalar arrays (a null series point is an honest gap the
+//                            chart primitives skip — NEVER dashed), *points data-row dicts (whole-dict skip), and the
+//                            GUARD-consumed MEASURE leaves of a *panels roster row (amps/vAvg/… — a dash there defeats
+//                            the component's OWN `p.amps != null` filter → NaN radar auto-scale, card 21; left null).
 //   g10 heatmap section    — the RTM heatmap section contract ({feeders[], totalKw/totalKvar}): a feeder whose EVERY
 //                            metric is unmeasured is OMITTED from the sample (the heatmap cell formatter is
 //                            number-only; omission over a crash — an all-blank sample draws an empty section grid).
@@ -306,23 +308,50 @@ function fixSankey(s: Record<string, any>): void {
 // its max/min are yScale inputs only, and a dashed domain turns the WHOLE scale NaN (every tick/band/reference ships
 // y=NaN — reproduced live, card 76); left null they coerce to 0 and the component's own degenerate-domain guard
 // (`Math.max(1, tMax - tMin)`) renders the honest empty view.
-// POINT-ROW dicts — elements of an array under a *points key ({label, ups, hhf, rated, total, …} — the CMD_V2 chart
-// data-row contract). Their fields are SERIES/GEOMETRY inputs (fieldOf(p, key) → scaleY), so a null field is an
-// honest gap exactly like a null in a scalar series array (g9 header) and must NEVER be dashed: '—' reaching scaleY
-// ships y/height=NaN on the bar rects (reproduced live, card 16 — the null 'hhf' feeder). Marked at the parent visit
-// (walk reaches parents first), checked by dashResidualNulls.
+// DATA-ROW dicts — elements of a chart-series/member-roster array whose measure fields feed the component's OWN null
+// gate. Marked at the PARENT visit (walk reaches parents first), read by dashResidualNulls. Two families:
+//   • POINT rows — elements of an array under a *points key ({label, ups, hhf, rated, total, …} — the CMD_V2 chart
+//     data-row contract). EVERY field is a SERIES/GEOMETRY input (fieldOf(p, key) → scaleY), so a null is an honest gap
+//     exactly like a null in a scalar series array and the WHOLE dict is skipped: '—' reaching scaleY ships
+//     y/height=NaN on the bar rects (reproduced live, card 16 — the null 'hhf' feeder).
+//   • PANEL rows — elements of a *panels member-roster array (the lt-pcc panel-overview fan-out). Only the GUARD-
+//     consumed NUMERIC MEASURE leaves are protected (PANEL_MEASURE): the radar FILTERS the roster on a null
+//     (`period.panels.filter(p => p.amps != null)`) and the table/strip guard every cell (`p.vAvg == null ? '—' : …`,
+//     percentCell, worstTileDisplay — all `== null || !isFinite → '—'`). A g9 dash DEFEATS those guards exactly like
+//     the `rated`/`contracted` point-row class: '—' is not nullish, so the two dark UPS members SURVIVE the filter and
+//     reach the radar math as strings → Math.max(...,'—')=NaN → niceMax(NaN)=1 → the empty "0..1 octagon" (card 21).
+//     Left null, the guard drops the spoke / renders '—'. SCOPED to *panels and to those keys ON PURPOSE — the RTM
+//     heatmap formats `feeders[].iUnbalance` number-only (`value.toFixed(1)`) and the harmonics feeder-table formats
+//     `iThd/vThd/iThdPk` via the UNGUARDED `fmt()` (`value.toLocaleString()`): those live in *feeders / carry other
+//     keys, so they stay DASHED (a null there THROWS; a '—' rides through shims.ts) — never broadened to them.
 const POINT_ROWS = new WeakSet<object>();
-function markPointRows(d: Record<string, any>): void {
+const PANEL_ROWS = new WeakSet<object>();
+// The lt-pcc panel-roster nullable measures (voltage-current PanelPeriodState) — every reachable consumer null-guards
+// them, so a null is the honest gap; NOT the event-count keys (sag/swell/current/neutral — non-null, rendered raw) nor
+// any number-only key (iThd/vThd/kw/kvar/pf — see above). Exact match: no accidental prefix/suffix capture.
+const PANEL_MEASURE = /^(amps|vavg|vmax|vmin|vdeviation|iunbalance|neutrala)$/i;
+function markDataRows(d: Record<string, any>): void {
   for (const [k, v] of Object.entries(d)) {
-    if (!Array.isArray(v) || !/points$/i.test(k)) continue;
-    for (const e of v) if (isDict(e)) POINT_ROWS.add(e);
+    if (!Array.isArray(v)) continue;
+    if (/points$/i.test(k)) {
+      for (const e of v) if (isDict(e)) POINT_ROWS.add(e);
+    } else if (/panels$/i.test(k)) {
+      for (const e of v) if (isDict(e)) PANEL_ROWS.add(e);
+    }
   }
 }
 function dashResidualNulls(d: Record<string, any>): void {
-  if (POINT_ROWS.has(d)) return; // every null in a data row is an honest gap the chart primitives skip
+  if (POINT_ROWS.has(d)) return; // every null in a *points data row is an honest gap the chart primitives skip
+  const panelRow = PANEL_ROWS.has(d); // *panels roster row — its guard-consumed measures stay null (PANEL_MEASURE)
   const axisDomain = Array.isArray(d.ticks) && "max" in d && "min" in d;
   for (const [k, v] of Object.entries(d)) {
     if (axisDomain && (k === "max" || k === "min")) continue;
+    if (panelRow && PANEL_MEASURE.test(k)) {
+      // guard-consumed panel MEASURE: a null is the honest gap the component's OWN filter/guard handles; a served
+      // '—'/'' is that same unmeasured state having DEFEATED the guard (radar kept the spoke → NaN) — repair to null.
+      if (v === DASH || v === "") d[k] = null;
+      continue;
+    }
     if (v === null && !NULL_DASH_EXCLUDE.test(k) && !NULL_DASH_EXCLUDE_EXACT.test(k)) d[k] = DASH;
     else if ((v === DASH || v === "") && GEOMETRY_PCT_KEY.test(k)) d[k] = null; // served dash in a geometry slot
   }
@@ -457,7 +486,7 @@ function walk(node: any): void {
     return;
   }
   if (!isDict(node)) return;
-  markPointRows(node);
+  markDataRows(node);
   fixFreshness(node);
   fixReferenceLines(node);
   fixBadge(node);

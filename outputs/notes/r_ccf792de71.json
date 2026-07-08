@@ -1,0 +1,18 @@
+{
+ "run_id": "r_ccf792de71",
+ "loop1": [
+  {
+   "card_id": 47,
+   "title": "Power Quality",
+   "answerability": "partial",
+   "note": "Showing current THD compliance \u2014 voltage harmonics, flicker, and crest factor are not measured by this meter."
+  },
+  {
+   "card_id": 48,
+   "title": "Distortion & Harmonic Profile",
+   "answerability": "partial",
+   "note": "Showing current THD trends (R/Y/B) \u2014 voltage THD and specific harmonic orders (H5/H7) are not measured by this asset."
+  }
+ ],
+ "loop2": null
+}

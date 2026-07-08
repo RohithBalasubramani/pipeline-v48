@@ -1,0 +1,30 @@
+{
+ "run_id": "r_b729fb7dea",
+ "loop1": [
+  {
+   "card_id": 14,
+   "title": "Cumulative Energy",
+   "answerability": "partial",
+   "note": "Showing this-month cumulative energy from PRIMARY incomers (Tx-5, Tx-6); Solar incomers have no data."
+  },
+  {
+   "card_id": 16,
+   "title": "Energy Consumption Trend",
+   "answerability": "partial",
+   "note": "Showing energy consumption trend for PRIMARY incomers (Feeder \u2192 Tx-5, Feeder \u2192 Tx-6); Solar Incomers are dark (no data). Rated/Contracted lines are omitted as nameplate ratings are unknown for this asset."
+  },
+  {
+   "card_id": 15,
+   "title": "Today live power analysis",
+   "answerability": "partial",
+   "note": "Showing live power (kVA) and active/reactive breakdown from PRIMARY incomers (Tx-5, Tx-6); capacity and peak markers are ungrounded due to missing nameplate rating and windowed-peak columns."
+  },
+  {
+   "card_id": 17,
+   "title": "Daily Power Demand by Feeder",
+   "answerability": "partial",
+   "note": "Showing Worst Peak and UPS/BPDB demand series from member meters; Load Factor and Critical Demand threshold are omitted as no recovery fn or config constant is available for this asset."
+  }
+ ],
+ "loop2": null
+}

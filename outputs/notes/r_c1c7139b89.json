@@ -1,0 +1,30 @@
+{
+ "run_id": "r_c1c7139b89",
+ "loop1": [
+  {
+   "card_id": 74,
+   "title": "Thermal Life",
+   "answerability": "partial",
+   "note": "Showing active power and load factor (stress) \u2014 winding/oil temperatures and stress border are not measured or available for this asset."
+  },
+  {
+   "card_id": 76,
+   "title": "Thermal Timeline",
+   "answerability": "partial",
+   "note": "Showing active power load history \u2014 thermal data (oil/winding/hotspot) is not measured by this electrical meter."
+  },
+  {
+   "card_id": 75,
+   "title": "Life & Capacity",
+   "answerability": "partial",
+   "note": "Showing total active energy consumption to estimate life fill \u2014 derated capacity and base design life are unavailable because this asset's nameplate rating (rated_kva/rated_kw) and design life are unknown."
+  },
+  {
+   "card_id": 77,
+   "title": "Insulation Aging & Loss of Life",
+   "answerability": "partial",
+   "note": "Showing active power as a proxy for aging factor and loss of life \u2014 direct thermal aging metrics are not measured for this asset."
+  }
+ ],
+ "loop2": null
+}

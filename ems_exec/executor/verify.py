@@ -89,7 +89,17 @@ def _fn_output_polarity(fn_key):
 def _polarity_conflict(field, fn_key):
     """True when the SLOT's declared polarity (unit/label/quantity token) and the bound FN's output polarity are BOTH
     known and DISAGREE — a fab-by-mislabel binding (active-energy fn → reactive-energy slot). Both unknown / either
-    unknown / agree → False (the binding stands; this guard never blanks a slot it cannot prove wrong)."""
-    slot_pol = _polarity_of_token(field.get("unit"), field.get("label"), field.get("quantity"), field.get("metric"))
+    unknown / agree → False (the binding stands; this guard never blanks a slot it cannot prove wrong).
+
+    The slot side reads ONLY the slot's OWN meaning — its unit + label + declared quantity. It DELIBERATELY excludes the
+    field's `metric` when the metric IS the bound fn's key (the common metric-wins case): a camelCase fn identifier embeds
+    a UNIT-symbol fragment that lies about polarity — `activeEnergyMvah` contains 'mvah' (an apparent needle) though it
+    measures ACTIVE energy in MWh, so feeding it into the slot side falsely flagged an active leaf as apparent and
+    blanked a real 27.8 MWh (card 72, the fix that over-swung). The metric == fn is self-referential — it can't be a
+    mislabel signal against itself. A metric that DIFFERS from the fn (a real reactive-slot ← active-fn mislabel) still
+    contributes, so the genuine Family-G fab (windowEnergyKwh → a Reactive/MVARh slot) is still caught by unit+label."""
+    metric = field.get("metric")
+    metric_signal = None if (metric and fn_key and str(metric) == str(fn_key)) else metric
+    slot_pol = _polarity_of_token(field.get("unit"), field.get("label"), field.get("quantity"), metric_signal)
     fn_pol = _fn_output_polarity(fn_key)
     return bool(slot_pol and fn_pol and slot_pol != fn_pol)

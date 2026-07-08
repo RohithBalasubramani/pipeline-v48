@@ -6,6 +6,12 @@
 -- This seed upserts ONE row per registry value_key, base_columns/fidelity copied verbatim from the registry
 -- descriptors (the code ground truth). upsRatedKva's input is the asset NAME carried in ctx (not a frame column),
 -- so its base_columns is empty. Idempotent: ON CONFLICT re-derives.
+-- SINGLE-FEEDER LOSS/EFF PROXY (2026-07-07, card 41 Input-vs-Output false-blank): expectedLossKwh + lossPct are now
+-- real_approx — an input-vs-output card over ONE meter has no modelled upstream input, so both derive a BOUNDED
+-- design-band estimate (energy_balance.expected_loss_band_pct) over the meter's REAL windowed energy/power throughput
+-- (expected_loss = window_energy × band/100; loss% = band). Honest proxy, never a fabrication (blanks a genuinely-dark
+-- meter). The HV/LV-leg loss (activePowerLossKw/Pct) stays real_exact-or-None: it blanks honestly when a UPS/feeder
+-- lacks the two physical HV/LV legs (gic_* has no hv_input_kw/lv_output_kw column).
 INSERT INTO derivation_binding (metric, fn, base_columns, fidelity) VALUES
  ('nominalVoltageLN',            'nominalVoltageLN',            'voltage_avg,kpi_voltage_deviation_pct',                          'real_exact'),
  ('voltageStatutoryBand',        'voltageStatutoryBand',        'voltage_avg,kpi_voltage_deviation_pct',                          'real_exact'),
@@ -14,12 +20,12 @@ INSERT INTO derivation_binding (metric, fn, base_columns, fidelity) VALUES
  ('activeEnergyMvah',            'activeEnergyMvah',            'active_energy_import_kwh',                                       'real_exact'),
  ('reactiveEnergyMvarh',         'reactiveEnergyMvarh',         'reactive_energy_import_kvarh',                                   'real_exact'),
  ('cumulativeApparentMvah',      'cumulativeApparentMvah',      'active_energy_import_kwh,reactive_energy_import_kvarh',          'real_exact'),
- ('expectedLossKwh',             'expectedLossKwh',             'active_energy_import_kwh',                                       'real_exact'),
+ ('expectedLossKwh',             'expectedLossKwh',             'active_energy_import_kwh',                                       'real_approx'),
  ('worstPeakKw',                 'worstPeakKw',                 'active_power_total_kw',                                          'real_exact'),
  ('worstPeakAt',                 'worstPeakAt',                 'active_power_total_kw,ts',                                       'real_exact'),
  ('apparentPeakKva',             'apparentPeakKva',             'apparent_power_total_kva',                                       'real_approx'),
  ('activePowerDeltaPerMinute',   'activePowerDeltaPerMinute',   'active_power_total_kw,ts',                                       'real_exact'),
- ('lossPct',                     'lossPct',                     'active_power_total_kw',                                          'real_exact'),
+ ('lossPct',                     'lossPct',                     'active_power_total_kw',                                          'real_approx'),
  ('aiSummary',                   'aiSummary',                   'active_power_total_kw',                                          'real_exact'),
  ('sectionTrendSums',            'sectionTrendSums',            'active_power_total_kw',                                          'real_exact'),
  ('upsRatedKva',                 'upsRatedKva',                 '',                                                               'real_approx'),

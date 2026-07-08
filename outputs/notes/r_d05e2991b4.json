@@ -1,0 +1,18 @@
+{
+ "run_id": "r_d05e2991b4",
+ "loop1": [
+  {
+   "card_id": 66,
+   "title": "Voltage Live Health",
+   "answerability": "partial",
+   "note": "one or more leaves could not be bound for this card on this asset \u2014 those leaves render an honest blank (per-leaf reasons attached), every other leaf fills"
+  },
+  {
+   "card_id": 67,
+   "title": "Voltage History",
+   "answerability": "partial",
+   "note": "Showing per-phase line-to-line voltage history (R-Y, Y-B, B-N) against \u00b15% range (381.5V - 418.5V). Max Deviation and Worst Spread are derived from logged voltage columns. Event counts (Swell/Sag) are narrative summaries."
+  }
+ ],
+ "loop2": null
+}

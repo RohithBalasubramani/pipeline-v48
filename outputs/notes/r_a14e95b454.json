@@ -5,13 +5,13 @@
    "card_id": 12,
    "title": "Energy Input & Distribution",
    "answerability": "partial",
-   "note": "Supply-side members (Solar Incomers, Transformers) are dark (has_data=N) and will render as honest-blanks; only load-side feeders (UPS, BPDB) report live data."
+   "note": "Showing total active power and energy for all panel members; per-member breakdown is populated from member meters (UPS-01/02/03, BPDB-01, BPDB-02, UPS-04), while Solar Incomers and Transformers are dark (no data)."
   },
   {
    "card_id": 13,
    "title": "Energy Flow Diagram",
    "answerability": "partial",
-   "note": "Showing energy flow for active feeders (UPS-01, UPS-02, UPS-03, BPDB-01, BPDB-02, UPS-04). Incomers (Solar, Transformers) and some UPS feeders (UPS-05, UPS-06) are dark (no data) and will render as honest blanks in the Sankey nodes and links."
+   "note": "Showing energy flow for active feeders (UPS-01/02/03, BPDB-01/02, UPS-04/05/06); supply incomers (Solar-1/2, Transformer-01/02) are dark (no data) and render as zero-value nodes."
   }
  ],
  "loop2": null

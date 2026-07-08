@@ -1,0 +1,24 @@
+{
+ "run_id": "r_1dee11245e",
+ "loop1": [
+  {
+   "card_id": 63,
+   "title": "Fuel Tank Anatomy",
+   "answerability": "partial",
+   "note": "Showing fuel state metadata frame \u2014 fuel level, temperature, rate, and efficiency are not measured by this electrical meter."
+  },
+  {
+   "card_id": 64,
+   "title": "All Runs (Fuel Log)",
+   "answerability": "partial",
+   "note": "Showing total energy and average load factor \u2014 fuel, run hours, starts, and faults are not measured by this electrical meter."
+  },
+  {
+   "card_id": 65,
+   "title": "Fuel & Tank \u2014 Composite",
+   "answerability": "partial",
+   "note": "Showing electrical load and efficiency metrics \u2014 fuel level, burn rate, and temperature are not measured by this electrical meter."
+  }
+ ],
+ "loop2": null
+}

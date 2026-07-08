@@ -66,9 +66,14 @@ body {
 @keyframes cc-loadbar { 0% { transform: translateX(-100%); } 100% { transform: translateX(320%); } }
 @keyframes cc-fade { from { opacity: 0; transform: translateY(-4px); } to { opacity: 1; transform: translateY(0); } }
 @keyframes spin { to { transform: rotate(360deg); } }
+@keyframes ccPulse { 0% { opacity: 1; } 50% { opacity: 0.35; } 100% { opacity: 1; } }  /* offline status dot (DataUnavailable) */
 
 /* ════════════════════ COMMAND CENTER SHELL ════════════════════ */
-.cc-shell { min-height: 100vh; background: var(--cream-100); display: flex; flex-direction: column; }
+/* EMS single-viewport shell: the whole app is exactly ONE viewport tall (100vh, no page scroll). The header is auto-
+   height; .cc-results below it fills the remainder (flex:1 + min-height:0) so a resolved page grid is bounded to the
+   leftover height and lays its cards out by their template cells inside it — never taller than the screen. The empty/
+   knowledge/outage states still scroll internally via .cc-work (which is flex:1 with its own overflow). */
+.cc-shell { height: 100vh; overflow: hidden; background: var(--cream-100); display: flex; flex-direction: column; }
 
 /* ── Header / command bar ── */
 .cc-header {
@@ -157,7 +162,7 @@ body {
 .cc-pb-foot .lat { font-family: var(--font-mono); font-size: 11px; color: var(--slate-soft); }
 
 /* ════════════════════ WORKSPACE / EMPTY STATE ════════════════════ */
-.cc-work { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: flex-start; padding: 84px 28px 40px; }
+.cc-work { flex: 1; min-height: 0; overflow-y: auto; display: flex; flex-direction: column; align-items: center; justify-content: flex-start; padding: 84px 28px 40px; }
 .cc-work-inner { width: 100%; max-width: 760px; display: flex; flex-direction: column; gap: 18px; }
 .cc-work-label { font-family: var(--font-sans); font-size: 10px; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; color: var(--slate-500); }
 

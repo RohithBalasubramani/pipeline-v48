@@ -216,3 +216,39 @@ def test_envelope_flag_on_no_dp_card_keeps_exact_metadata(monkeypatch):
     s = E._system(_nodp_card())
     assert '"exact_metadata":{"_morphed":[]}' in s and '"morphs":{}' not in s   # no skeleton → full-emit
     assert "MORPH-MAP EMIT" not in s
+
+
+# ── V2 ⊕ MORPH-MAP COMPOSITION: with BOTH flags on, v2 stays the base (its tuned R1-R14 data rules) and a skeleton
+# card gets the morph-map Part-2 OVERRIDE section + the morphs envelope; a no-dp card keeps v2's full-author contract.
+# The flags are NO LONGER mutually exclusive — flipping both on must not silently disable morph-map. ────────────────
+def _both_on(monkeypatch):
+    import config.app_config as ac
+    monkeypatch.setattr(ac, "_load", lambda: {"llm.prompt_v2": ("true", "bool"),
+                                              "emit.morphmap_mode": ("on", "text")})
+
+
+def test_v2_plus_morphmap_dp_card_composes_override_and_morphs_envelope(monkeypatch):
+    import layer2.emit.emit as E
+    _both_on(monkeypatch)
+    s = E._system(_dp_card())
+    assert "You are LAYER 2 of a dashboard-composition pipeline" in s and "R14." in s   # v2 base intact
+    assert "PART 2 OVERRIDE — MORPH-MAP" in s                                           # override appended
+    assert '"morphs":{}' in s and '"exact_metadata":{"_morphed":[]}' not in s           # envelope activated
+    assert "{{" not in s                                                                # placeholders filled
+
+
+def test_v2_plus_morphmap_no_dp_card_keeps_v2_full_author(monkeypatch):
+    import layer2.emit.emit as E
+    _both_on(monkeypatch)
+    s = E._system(_nodp_card())
+    assert "You are LAYER 2 of a dashboard-composition pipeline" in s                   # v2 base
+    assert "PART 2 OVERRIDE — MORPH-MAP" not in s                                       # no override (no skeleton)
+    assert '"exact_metadata":{"_morphed":[]}' in s and '"morphs":{}' not in s           # full-author envelope
+
+
+def test_v2_only_never_composes_morphmap(monkeypatch):
+    import config.app_config as ac
+    import layer2.emit.emit as E
+    monkeypatch.setattr(ac, "_load", lambda: {"llm.prompt_v2": ("true", "bool")})
+    s = E._system(_dp_card())
+    assert "PART 2 OVERRIDE — MORPH-MAP" not in s and '"exact_metadata":{"_morphed":[]}' in s

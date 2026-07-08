@@ -14,6 +14,7 @@ def build_layer1a_output(route_result, cards, layout, groups):
         "module": layout.get("module"),
         "metric": route_result["metric"],
         "intent": route_result["intent"],
+        "window": route_result.get("window"),   # prompt-derived time preset (clamp_window key or None); forwarded to harness
         "story": spec.get("theme", "") or spec.get("answers", ""),
         # routing telemetry (stage-logged by run/harness.py): fallback kind, gate-dropped templates, reroute exclusion
         "routing": route_result.get("routing") or {},

@@ -1,0 +1,24 @@
+{
+ "run_id": "r_7aac6dc6f0",
+ "loop1": [
+  {
+   "card_id": 36,
+   "title": "Power & Energy (Real-Time)",
+   "answerability": "partial",
+   "note": "Showing input active power and nominal output apparent power \u2014 active/reactive energy and projected demand are not measured by this UPS asset."
+  },
+  {
+   "card_id": 37,
+   "title": "Voltage Monitor (Real-Time)",
+   "answerability": "partial",
+   "note": "Showing live three-phase output voltage trends (R, Y, B) and average/max/min KPIs for R-phase; structural axis ticks, thresholds, and legend values are omitted as they are not measured quantities."
+  },
+  {
+   "card_id": 38,
+   "title": "Current Monitor (Real-Time)",
+   "answerability": "partial",
+   "note": "Showing real-time output current for R, Y, and B phases plus neutral; legend item values are derived from their respective series data as no dedicated scalar columns exist for them."
+  }
+ ],
+ "loop2": null
+}

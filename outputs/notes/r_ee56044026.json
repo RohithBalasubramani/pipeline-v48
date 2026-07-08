@@ -1,0 +1,18 @@
+{
+ "run_id": "r_ee56044026",
+ "loop1": [
+  {
+   "card_id": 61,
+   "title": "Thermal Timeline",
+   "answerability": "none",
+   "note": "This card requires temperature data (coolant, oil, intake, exhaust) which is not measured by this electrical meter; showing no data."
+  },
+  {
+   "card_id": 62,
+   "title": "Pressure \u00b7 Speed \u00b7 Load",
+   "answerability": "partial",
+   "note": "Showing load percentage (derived from active power) \u2014 oil pressure and engine speed are not measured by this electrical meter."
+  }
+ ],
+ "loop2": "'diesel-generator-asset-dashboard/engine-cooling' answers the prompt as routed; these cards cover quantities not recorded for this asset and render honest-blank per-leaf with the reason: Thermal Timeline (This card requires temperature data (coolant, oil, intake, exhaust) which is not measured by this electrical meter; showing no data.)."
+}

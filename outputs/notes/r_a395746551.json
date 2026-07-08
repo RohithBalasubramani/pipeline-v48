@@ -1,0 +1,24 @@
+{
+ "run_id": "r_a395746551",
+ "loop1": [
+  {
+   "card_id": 57,
+   "title": "UPS Capacity",
+   "answerability": "partial",
+   "note": "Showing kVA, kW, and current load factors against nameplate; headroom is derived from active power load factor. Per-phase power and current reserves are not directly measured as distinct capacity limits, so the composite headroom reflects the primary active power constraint."
+  },
+  {
+   "card_id": 58,
+   "title": "UPS Load",
+   "answerability": "partial",
+   "note": "Showing average load % and current load kW; headroom is rated capacity (kW) \u2014 actual UPS headroom requires real-time input power vs rated capacity, which is not directly measured as a single delta column."
+  },
+  {
+   "card_id": 59,
+   "title": "Output Load & Capacity \u2014 Composite",
+   "answerability": "partial",
+   "note": "Showing load (active power) and frequency trends; readiness score, bypass voltage, and transfer counts are not measured by this asset and are omitted."
+  }
+ ],
+ "loop2": null
+}

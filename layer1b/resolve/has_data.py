@@ -8,9 +8,12 @@ chunked so one bad table can't void the whole check, FAIL-OPEN, cached per proce
 from data.db_client import q
 from config.databases import DATA_DB, DATA_SCHEMA, DATA_TS_COL, DATA_TS_CAST
 from config.validation import PLUMBING_COLUMNS as _PLUMBING   # ONE shared home with col_dict._SKIP (was drifting)
+from data.ttl_cache import TTLCache
 
-_CACHE = {}
-_VAL_CACHE = {}
+# TTL-expiring so a transient :5433 flap that lands a stale has-data set self-heals within cache.resolution_ttl_s
+# instead of poisoning the long-running server until restart [poison-permanent-fix]
+_CACHE = TTLCache()
+_VAL_CACHE = TTLCache()
 VALUE_MIN = 3                                          # >= this many non-null metric columns ⇒ a renderable meter
 
 

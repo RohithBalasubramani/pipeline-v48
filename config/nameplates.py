@@ -12,13 +12,82 @@ contracted-kVA fallback (config.asset_class_defaults). All knobs are editable ro
 throughout — a missing input returns None, never a guessed value.
 """
 import math
+import re
 
 from data.db_client import q
 from config import rating_knobs as _rk
 from config import asset_class_defaults as _acd
 
+try:
+    from config.app_config import cfg as _cfg
+except Exception:  # pragma: no cover — import-safe without the pipeline config on the path
+    def _cfg(key, default):
+        return default
+
 _COLS = ["asset_table", "mfm_name", "rated_kva", "contracted_kva",
          "nominal_voltage_ll", "role", "section", "asset_category", "source"]
+
+# ── real-per-asset rating gate (the class-default fabrication fix) ────────────────────────────────────────────────────
+# A stored rated_kva is a REAL per-asset nameplate ONLY when it has genuine per-asset provenance. Otherwise it is a
+# CLASS/SHEET fill — the premier-energies DB-mapping sheet backfilled a typical-for-the-category kVA onto assets the
+# neuract plant has NO real rating for (neuract lt_mfm.rated_capacity_kva is NULL for ALL 320 assets; the CMD equipment
+# sheet lists bpdb-* / most LT panels as having NO OCR source, yet every BPDB feeder landed a uniform 300.0). Treating
+# such a class guess as a real denominator FABRICATES a load% / overload (card 8: 'BPDB-02 … 127.3% of its 300.0 kVA').
+# So rated_kva is HONORED only when:
+#   (1) its `source` is a trusted per-asset provenance (name_parse, or a future manual/OCR/datasheet seed) — DB-tunable
+#       set config.app_config `nameplate.trusted_rating_sources`; OR
+#   (2) the asset's OWN name embeds a kVA token EQUAL to the stored rating (e.g. 'UPS-01 CL:600KVA', '160 KVA UPS-01') —
+#       the rating is written on the asset, so it is genuinely per-asset regardless of which sheet loaded the row.
+# Anything else (a category/sheet fill with no per-asset corroboration) → rated_kva is nulled → the caller honest-degrades
+# the loading% slot (None), NEVER a fabricated denominator. [RN-01/02/05, DS-10, DID-03; the card-8 class-default defect]
+_TRUSTED_RATING_SOURCES = ("name_parse", "manual", "ocr", "datasheet", "nameplate", "asset_nameplate")
+
+# a kVA value embedded in the asset name: '600kVA', '160 KVA', 'CL:600KVA' — a bare number immediately followed by 'kva'
+# (word boundary). Excludes 'KVAR'/'KVARh' (reactive) and a trailing model number like 'Elite300' (no 'kva' suffix).
+_NAME_KVA = re.compile(r"(?<![\w.])(\d+(?:\.\d+)?)\s*k\s*va(?![rh\w])", re.I)
+
+
+def _trusted_sources():
+    """The set of per-asset rating provenances that are honored WITHOUT name corroboration (DB-tunable, code default)."""
+    try:
+        v = _cfg("nameplate.trusted_rating_sources", list(_TRUSTED_RATING_SOURCES))
+        if isinstance(v, (list, tuple, set)):
+            return {str(s).strip().lower() for s in v}
+    except Exception:
+        pass
+    return {s.lower() for s in _TRUSTED_RATING_SOURCES}
+
+
+def _name_corroborates(mfm_name, rated):
+    """True when the asset's own name embeds a kVA token EQUAL to `rated` (the rating is written on the asset → real
+    per-asset). A ~1% tolerance absorbs 600 vs 600.0 rounding. False when the name has no kVA or a DIFFERENT one (a
+    sheet value that contradicts the name is not trustworthy)."""
+    try:
+        r = float(rated)
+    except (TypeError, ValueError):
+        return False
+    if r <= 0:
+        return False
+    for m in _NAME_KVA.finditer(mfm_name or ""):
+        try:
+            nk = float(m.group(1))
+        except (TypeError, ValueError):
+            continue
+        if abs(nk - r) <= max(0.01, r * 0.01):
+            return True
+    return False
+
+
+def _is_real_per_asset_rating(row):
+    """Whether `row`'s stored rated_kva is a REAL per-asset nameplate (trusted source OR name-corroborated) vs a
+    class/sheet-default fill (→ null it, honest-degrade the loading% denominator). A row with no rating is trivially
+    'real' (None stays None)."""
+    rated = row.get("rated_kva")
+    if rated in (None, "", "NULL"):
+        return True
+    if str(row.get("source") or "").strip().lower() in _trusted_sources():
+        return True
+    return _name_corroborates(row.get("mfm_name"), rated)
 
 # The feeder-PQ (equipment-detail power-quality) per-asset limit fields the CMD_V2 mapper reads before falling back to
 # the IEEE-519 code default (powerQualityMapper.ts:169-175). A per-asset nameplate can carry these; absent one, the
@@ -38,7 +107,13 @@ def _num(x):
 
 def get_nameplate(asset_table):
     """The full nameplate row for a neuract table_name → dict (rated_kva/contracted_kva/nominal_voltage_ll numeric,
-    others text) or None if the asset has no nameplate row at all."""
+    others text) or None if the asset has no nameplate row at all.
+
+    The stored rated_kva (and its derived contracted_kva) is NULLED here when it is a CLASS/SHEET-default fill rather
+    than a real per-asset nameplate (see _is_real_per_asset_rating) — so EVERY consumer (the rated_kva/contracted_kva
+    accessors, derive_ratings_for, and the executor's raw-row nameplate:rated_kva fill in gaps/derived) honest-degrades
+    the loading% denominator to None instead of fabricating a load% / overload off a class guess. The identity /
+    policy fields (role, section, asset_category, nominal_voltage_ll) are always preserved."""
     rows = q("cmd_catalog",
              "SELECT " + ",".join(_COLS) + " FROM asset_nameplate "
              f"WHERE asset_table='{_esc(asset_table)}'")
@@ -48,6 +123,12 @@ def get_nameplate(asset_table):
     d = dict(zip(_COLS, r))
     for k in ("rated_kva", "contracted_kva", "nominal_voltage_ll"):
         d[k] = _num(d[k])
+    if not _is_real_per_asset_rating(d):
+        # a class/sheet-default rating is NOT a real nameplate — drop the denominator (and its derived contract) so no
+        # caller fabricates a load% from it. Keep the raw sheet value under `rated_kva_class_default` for diagnostics.
+        d["rated_kva_class_default"] = d["rated_kva"]
+        d["rated_kva"] = None
+        d["contracted_kva"] = None
     return d
 
 

@@ -19,6 +19,30 @@ page (the strip+complete still runs, so no seed leaks even on a fetch error). [e
 from __future__ import annotations
 
 from ems_exec.executor import fill as _fill
+from ems_exec.executor.roster_modes_sankey import _prune_dark_edges as _prune_sankey
+
+
+# ─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+#  SANKEY SERVE-SAFETY SWEEP — the LAST word: never ship a null-endpoint sankey link (d3-sankey.find 'missing: —' crash)
+# ─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+# The roster builder writes resolvable endpoints, but a later post-fill class killer can blank a link's source/target
+# string when it byte-matches the default's structural stage id (a sankey endpoint IS topology identity, not a reading —
+# but it collides with the narrative 'source' key the seed-leak class polices). An unresolved endpoint makes d3-sankey's
+# computeNodeLinks() find() throw and crash the WHOLE card — NOT the per-leaf degrade contract. This sweep runs on the
+# COMPLETED payload (after every fill pass) and drops any link whose source OR target no longer resolves to a real node,
+# then omits any node left edge-less. Generic (zero card ids): walks the payload for ANY {nodes,links} sankey. Per-leaf
+# degrade — the live member flows stay, only edges to dark/blanked endpoints vanish; d3-sankey only sees resolvable ids.
+
+def _sweep_sankeys(node):
+    """Recurse the completed payload; prune dark-endpoint links on every sankey ({nodes,links} dict). In place."""
+    if isinstance(node, dict):
+        if isinstance(node.get("links"), list) and "nodes" in node:
+            _prune_sankey(node)
+        for v in node.values():
+            _sweep_sankeys(v)
+    elif isinstance(node, list):
+        for v in node:
+            _sweep_sankeys(v)
 
 
 def build_ctx(asset_table, *, db_link=None, window=None, mfm_id=None, asset_name=None, card_id=None):
@@ -71,12 +95,17 @@ def run_card(exact_metadata, data_instructions, asset_table, *, db_link=None, wi
     ctx = build_ctx(asset_table, db_link=db_link, window=window, mfm_id=mfm_id, asset_name=asset_name,
                     card_id=card_id)
     try:
-        return _fill.fill(exact_metadata, data_instructions, ctx, default_payload=default_payload,
-                          shape_ref=shape_ref)
+        out = _fill.fill(exact_metadata, data_instructions, ctx, default_payload=default_payload,
+                         shape_ref=shape_ref)
     except Exception:
         # honest-degrade: still strip the seed + complete the shape so a fetch failure never leaks demo numbers
         try:
-            return _fill.fill(exact_metadata, {"fields": []}, ctx, default_payload=default_payload,
-                              shape_ref=shape_ref)
+            out = _fill.fill(exact_metadata, {"fields": []}, ctx, default_payload=default_payload,
+                             shape_ref=shape_ref)
         except Exception:
-            return exact_metadata or {}
+            out = exact_metadata or {}
+    try:
+        _sweep_sankeys(out)                                   # LAST word: never ship a null-endpoint sankey link
+    except Exception:
+        pass
+    return out

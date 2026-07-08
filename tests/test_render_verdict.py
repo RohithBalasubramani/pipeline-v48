@@ -143,3 +143,58 @@ def test_roster_stats_series_split_counts_member_keys_not_the_time_label():
         {"label": "00:00", "ups": 590.0, "bpdp": 300.0, "hhf": None}]}}}
     real, data = _rstats.stats(payload, {"roster": [spec]})
     assert real == 4 and data == 6          # 2 real keys × 2 points = 4 real; hhf nulls counted as data (blank), label ignored
+
+
+# ── NARRATIVE REAL LEAF [F5]: a grounded ai_summary sentence must count as >=1 real leaf, never honest_blank ──────────
+def test_populated_narrative_is_real_not_honest_blank():
+    # A narrative_ai card (fields=[]) whose real content is a grounded SENTENCE (backendHeadline + ai_summary.text)
+    # plus builder-bound worst-V/I stats — was verdicted honest_blank (real=0) because the scan is string-blind.
+    payload = {"summary": {
+        "stats": {"worstVoltage": {"vDeviation": -2.47, "panel": "GIC-01-N3-UPS-01 CL:600KVA"},
+                  "worstCurrent": {"iUnbalance": 12.29, "panel": "GIC-01-N8-BPDB-01"}},
+        "period": {"label": "the latest reading"},
+        "pres": {"backendHeadline": "Voltage steady; critical 12.3% current unbalance at BPDB-01."}},
+        "ai_summary": {"badge": "review", "text": "Voltage steady; critical 12.3% current unbalance at BPDB-01."}}
+    v = _v(payload, {"fields": []})
+    assert v["n_real"] >= 1
+    assert v["verdict"] != "honest_blank" and v["answerability"] != "none"
+
+
+def test_narrative_with_unbound_roster_is_partial():
+    # narrative sentence real (+2 bound numeric stats) but the per-member roster is unbound → PARTIAL, answerable.
+    payload = {"summary": {"stats": {"worstVoltage": {"vDeviation": -2.47}, "worstCurrent": {"iUnbalance": 12.29}}},
+               "ai_summary": {"text": "one grounded factual sentence."}}
+    v = _v(payload, {"fields": []})
+    assert v["n_real"] == 1 and v["verdict"] == "partial" and v["answerability"] == "partial"
+
+
+def test_skeleton_blank_narrative_gets_no_credit():
+    # a served skeleton (L2 skipped) carries no real sentence → honest_blank, never a false narrative credit.
+    payload = {"summary": {}, "ai_summary": {"text": ""}}
+    v = _v(payload, {"fields": []}, skeleton_blank=True)
+    assert v["verdict"] == "honest_blank"
+
+
+def test_degraded_narrative_stays_honest_blank_over_empty_panel():
+    # HONEST-BLANK PROTECTION: an EMPTY panel's narrative_ai card emits the honest 'no metered data resolved' sentence,
+    # marked degraded (narrative_ai._is_degraded). It must NOT flip honest_blank → partial (a false 'answered') — even
+    # though narrative_ai threads that same degradation text into the backendHeadline seam. The degraded flag vetoes.
+    from validate.render_verdict import _narrative_real
+    text = "AI summary unavailable for PCC-Panel-4 — no metered data resolved."
+    # faithful empty-panel shape: honest-blanked declared stat leaf (n_data>0, n_real=0) + the degradation narrative.
+    degraded = {"summary": {"stats": {"worstVoltage": {"vDeviation": None}},
+                            "pres": {"backendHeadline": text}},
+                "widgets": {"ai_summary": {"badge": "accounting", "text": text, "degraded": True}},
+                "ai_summary": {"badge": "accounting", "text": text, "degraded": True}}
+    assert _narrative_real(degraded) is False                    # degradation sentence → NOT real content
+    di = {"fields": [{"slot": "summary.stats.worstVoltage.vDeviation", "kind": "raw"}]}
+    v = _v(degraded, di)
+    assert v["n_real"] == 0 and v["verdict"] == "honest_blank" and v["answerability"] == "none"
+
+
+def test_non_narrative_payload_gets_no_narrative_credit():
+    from validate.render_verdict import _narrative_real
+    assert _narrative_real({"data": {"readings": {"activePower": {"value": None, "unit": "kW"}}}}) is False
+    di = {"fields": [{"slot": "data.readings.activePower.value", "kind": "raw"}]}
+    v = _v({"data": {"readings": {"activePower": {"value": "—", "unit": "kW"}}}}, di)
+    assert v["n_real"] == 0 and v["verdict"] == "honest_blank"   # unchanged: no narrative present

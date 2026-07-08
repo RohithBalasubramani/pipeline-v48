@@ -157,12 +157,18 @@ export function AssetResolution({
     <>
       {selected.length > 0 && (
         // THE ONE submit — label adapts: 1 selected → open that asset, 2+ → compare. Disabled while a run is in flight.
-        <div style={{ display: "flex", alignItems: "center", gap: 12, padding: "10px 4px 2px" }}>
-          <button className="cc-ar-btn" style={{ padding: "8px 16px", opacity: loading ? 0.6 : 1 }}
-                  disabled={loading} onClick={runSelection}>
-            {selected.length === 1 ? `Open ${selected[0].name || "asset"}` : `Compare ${selected.length} assets`}
+        <div style={{ display: "flex", alignItems: "center", gap: 12, padding: "10px 16px 2px", minWidth: 0 }}>
+          {/* the button NEVER shrinks or wraps (flex row squeezed it → 2-line clip inside the fixed 38px height);
+              the selected-names list is the flexible part and truncates with an ellipsis instead. */}
+          <button className="cc-ar-btn" style={{ flex: "none", whiteSpace: "nowrap" }}
+                  disabled={loading} onClick={runSelection}
+                  title={selected.map((a) => a.name).filter(Boolean).join(" · ")}>
+            {selected.length === 1
+              ? "Open asset"
+              : `Compare ${selected.length} assets`}
           </button>
-          <span style={{ fontFamily: "var(--font-sans)", fontSize: 12, color: "var(--slate-500)" }}>
+          <span style={{ fontFamily: "var(--font-sans)", fontSize: 12, color: "var(--slate-500)", flex: 1, minWidth: 0,
+                         overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
             {selected.map((a) => a.name).filter(Boolean).join(" · ")}
           </span>
         </div>

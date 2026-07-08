@@ -1,0 +1,30 @@
+{
+ "run_id": "r_97927854a5",
+ "loop1": [
+  {
+   "card_id": 39,
+   "title": "Today's Energy",
+   "answerability": "partial",
+   "note": "Showing today's active and reactive energy import; per-phase breakdown and progress metrics are omitted as they are not measured or configured for this asset."
+  },
+  {
+   "card_id": 40,
+   "title": "Power Energy Analysis",
+   "answerability": "partial",
+   "note": "one or more leaves could not be bound for this card on this asset \u2014 those leaves render an honest blank (per-leaf reasons attached), every other leaf fills"
+  },
+  {
+   "card_id": 41,
+   "title": "Input vs Output Energy",
+   "answerability": "partial",
+   "note": "Showing total active power as both HV Input and LV Output (single-point meter); loss and efficiency are derived from total active power."
+  },
+  {
+   "card_id": 42,
+   "title": "Load Anomalies",
+   "answerability": "partial",
+   "note": "Showing actual load and load factor \u2014 expected load profiles, anomaly counts, and event details are not measured by this asset."
+  }
+ ],
+ "loop2": null
+}

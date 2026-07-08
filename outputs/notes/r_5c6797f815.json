@@ -1,0 +1,36 @@
+{
+ "run_id": "r_5c6797f815",
+ "loop1": [
+  {
+   "card_id": 18,
+   "title": "Events KPI Strip",
+   "answerability": "partial",
+   "note": "Showing event counts and worst deviations for members with live data (UPS-01 to UPS-05); supply feeders (Solar/Transformer) are dark and omitted."
+  },
+  {
+   "card_id": 19,
+   "title": "AI Summary",
+   "answerability": "partial",
+   "note": "Showing panel-aggregate narrative; per-member stats are bound to available columns (voltage_avg, current_avg, etc.) but some members (UPS-06, UPS-07) are dark and will render as honest blanks."
+  },
+  {
+   "card_id": 20,
+   "title": "Event Timeline at {period}",
+   "answerability": "partial",
+   "note": "Showing per-member event counts and voltage/current stats; supply-side members (Solar Incomers, Transformers) are dark (no data) and honest-blank their slots."
+  },
+  {
+   "card_id": 21,
+   "title": "Current Distribution at {period}",
+   "answerability": "partial",
+   "note": "Showing current distribution for 6 active feeders; 2 feeders (UPS-05, UPS-06) are dark (no live data) and honest-blanked."
+  },
+  {
+   "card_id": 22,
+   "title": "Other Panels Event at {period}",
+   "answerability": "partial",
+   "note": "Showing per-panel event counts and voltage/current metrics for live feeders; supply-side members (Solar/Transformer) are dark and honest-blanked."
+  }
+ ],
+ "loop2": null
+}

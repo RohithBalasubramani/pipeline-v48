@@ -636,11 +636,43 @@ def enforce_honest_blank(data_instructions, basket, *, is_group_card=False, exac
         if bad:
             blanked.append(f"{slot}: {reason}")
             continue
+        bad, reason = _live_claim_without_source(f)                          # RULE (iv-b) — live-claim w/o source [card 78]
+        if bad:
+            blanked.append(f"{slot}: {reason}")
+            continue
         f.pop("_sibling_unit", None)                                         # internal stamps never ship
         f.pop("_sibling_label", None)
         kept.append(f)
     data_instructions["fields"] = kept
     return blanked
+
+
+def _live_claim_without_source(f):
+    """(True, reason) for a field that CLAIMS a LIVE reading (source=='live') of a metric but has NEITHER a column NOR a
+    fn to read it from — a text/enum LITERAL shipped as though it were live telemetry. Card 78: a transformer with zero
+    tap/rtcc telemetry emitted {kind:'text', metric:'rtcc_mode', source:'live', value:'AUTO', column:None, fn:None} and
+    {metric:'status_tone', source:'live', value:'Nominal', column:None, fn:None} — 'AUTO'/'Nominal' then render as claimed
+    live readings with no source behind them. Neither _const_without_source (numeric+kind=const only) nor fab_guards
+    CLASS 3 (numeric only) catches a NON-numeric literal, so a string enum masquerading as live slips through.
+
+    A field is fabricating a live reading iff it DECLARES source=='live' yet resolves NO real source (no column, no fn).
+    A genuine live field always carries a column or a fn; a legitimate chrome/label const does NOT claim source=='live'
+    (its source is const/frame/absent) — so this never blanks real telemetry or a static design label. DB-driven: the
+    'live'/data source tokens come from a cfg list with a code default. Never raises."""
+    try:
+        from config.app_config import cfg
+        live_srcs = {str(s).strip().lower() for s in cfg("gates.live_source_tokens", ["live", "data"]) if s}
+    except Exception:
+        live_srcs = {"live", "data"}
+    if str(f.get("source") or "").strip().lower() not in live_srcs:
+        return False, None
+    if f.get("column") or f.get("fn"):
+        return False, None
+    v = f.get("value")
+    if v in (None, "", "—"):
+        return False, None
+    return True, (f"{v!r} claims a live reading (source=live, metric={f.get('metric')!r}) but has no column and no fn — "
+                  "no telemetry source exists for this leaf; honest-blanks")
 
 
 def _nameplate_missing(data_instructions, basket):

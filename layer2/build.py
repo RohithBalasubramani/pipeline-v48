@@ -178,14 +178,27 @@ def _backfill_default_window(di, table, recipe_slots=None):
     The FE date pick still overrides at fetch (host ctx.window beats di.window in the executor's _window_of).
     Mutates di; returns a telemetry note when a backfill was applied, else None. The structured note also rides
     di.window.backfill (visible in traces/sweeps — telemetry, never a render gate)."""
+    from config.windows import ensure_nonzero_span
     w = di.get("window") if isinstance(di.get("window"), dict) else {}
     if w.get("start") or w.get("end"):
-        return None                                            # AI-authored bounds — honored as-is
+        # AI-authored bounds — honored as-is, EXCEPT a degenerate zero-width span (a same-day custom-range where the
+        # AI wrote start==end): a counter delta over [today,today] folds every member to a false 0.0 (card-12). Extend
+        # the END to span the full period so the delta reads the real energy; a normal forward window is untouched.
+        s2, e2 = ensure_nonzero_span(w.get("start"), w.get("end"))
+        if (s2, e2) != (w.get("start"), w.get("end")):
+            di["window"] = {**w, "start": s2, "end": e2, "backfill": {"origin": "nonzero_span_guard"}}
+            return "zero-width AI-authored window extended to a full-day span (custom-range start==end folds delta to 0)"
+        return None
     eb = di.get("ems_backend") if isinstance(di.get("ems_backend"), dict) else {}
     if eb.get("start") or eb.get("end"):
-        di["window"] = {**w, "start": eb.get("start"), "end": eb.get("end"),
-                        "backfill": {"origin": "ems_backend_spec"}}
-        return "window bounds promoted from the AI's ems_backend custom-range spec"
+        # Promote the AI's ems_backend custom-range bounds, but never as a degenerate zero-width span (card-12's
+        # 'today' custom-range emitted start==end==YYYY-MM-DD → member_delta over [today,today] == 0.0). Guarantee a
+        # non-zero exclusive span so a same-day window spans [day 00:00, day+1 00:00) and the delta reads real kWh.
+        s2, e2 = ensure_nonzero_span(eb.get("start"), eb.get("end"))
+        origin = "ems_backend_spec" if (s2, e2) == (eb.get("start"), eb.get("end")) else "ems_backend_spec_nonzero_span"
+        di["window"] = {**w, "start": s2, "end": e2, "backfill": {"origin": origin}}
+        return ("window bounds promoted from the AI's ems_backend custom-range spec" if origin == "ems_backend_spec"
+                else "zero-width ems_backend custom-range span extended to a full day (start==end folds delta to 0)")
     from config.app_config import cfg
     from config.windows import TIME_WINDOWS, DEFAULT_WINDOW
     declared = next((str(v) for v in (w.get("lookback"), w.get("range"), eb.get("range")) if v), None) \
@@ -200,9 +213,14 @@ def _backfill_default_window(di, table, recipe_slots=None):
     end, anchor = _window_anchor(table)
     cal = _calendar_start(rng, end) if origin == "declared_range" else None
     start = cal if cal is not None else end - delta
-    di["window"] = {**w, "start": start.isoformat(), "end": end.isoformat(),
+    # NON-ZERO SPAN GUARD (same guarantee as the custom-range paths above): a calendar anchor whose day is the same as
+    # the anchor's own latest-ts (a 'today' whose data-now sits at site-midnight) would resolve start==end and fold the
+    # delta to 0.0. Extend the end to at least a full day so the read always spans a real period; a normal window
+    # (end strictly after start) is returned unchanged.
+    s_iso, e_iso = ensure_nonzero_span(start.isoformat(), end.isoformat())
+    di["window"] = {**w, "start": s_iso, "end": e_iso,
                     "backfill": {"origin": origin, "range": rng, "anchor": anchor}}
-    return f"{origin} window backfilled: {rng} [{start.isoformat()} .. {end.isoformat()}] anchored to {anchor}"
+    return f"{origin} window backfilled: {rng} [{s_iso} .. {e_iso}] anchored to {anchor}"
 
 
 def _reconcile_slots(di, dp_payload, basket, *, fields_optional=False, data_note=None):
@@ -308,12 +326,48 @@ def _cross_domain_fields(di):
 
 
 def _cross_domain_note(xdom):
-    """One truthful user-facing sentence: the leaf's real quantity isn't measured, a different-quantity stand-in fills
-    it. The honest override for a wrong-kind fill (per-leaf degradation, never a card-block)."""
+    """One truthful user-facing sentence: the leaf's real quantity isn't measured, so the wrong-domain reading is
+    honest-BLANKED (not rendered). The honest override for a wrong-kind fill (per-leaf degradation, never a card-block)."""
     slot, sfam, src, cfam = xdom[0]
     extra = f" (and {len(xdom) - 1} other leaf(s))" if len(xdom) > 1 else ""
-    return (f"{sfam} isn't measured for this leaf on this asset — a {cfam} value ({src}) is shown as an approximate "
-            f"stand-in{extra}; treat it as indicative, not the exact {sfam} reading.")
+    return (f"{sfam} isn't measured for this leaf on this asset — the only candidate was a {cfam} value ({src}), a "
+            f"different physical quantity, so the leaf is left blank{extra} rather than shown under the wrong unit.")
+
+
+def _blank_cross_domain_leaves(di, xdom):
+    """PER-LEAF BLANKING PASS for the cross-domain fields _cross_domain_fields flagged (slot_family != source_family,
+    both known). A wrong-QUANTITY reading is not real data (a POWER value cannot be a true ENERGY reading no matter how
+    it is relabelled), so per the zero-fabrication mandate the leaf must HONEST-BLANK, exactly like column_override's
+    slot-quantity guard does — NOT merely carry a telemetry note while still rendering the wrong number.
+
+    Mirrors resolve/column_override.apply's drop convention: DROP the bound column/fn (→ None) and reroute the field to
+    the FRAME honest-blank path (source='frame'), so the executor returns None for that leaf (fill.py: a raw/bucketed/
+    event field with column=None honest-blanks; a derived field with fn=None+metric=None falls to the raw path and
+    honest-blanks too). PER-LEAF only — it edits ONLY the flagged field dicts (matched by slot + bound source), so every
+    OTHER field on the card still renders its real data; it is NEVER a card-block. Generic + DB-driven (no card ids).
+
+    A genuine SAME-domain proxy is inherently safe: _cross_domain_fields flags ONLY cfam != sfam with both known, so a
+    declared/display-morphed same-quantity proxy (cfam == sfam, the R7 rule already honored in _cross_domain_fields) is
+    never in `xdom` and is never touched here. Mutates di['fields'] in place; returns the count of leaves blanked."""
+    flagged = {(str(s), str(src)) for (s, _sf, src, _cf) in xdom}
+    n = 0
+    for f in (di.get("fields") or []):
+        if not isinstance(f, dict):
+            continue
+        slot = str(f.get("slot") or "")
+        # the SAME source string _cross_domain_fields keyed on: fn for a derived field, else the column
+        src = str((f.get("fn") if f.get("kind") == "derived" else f.get("column")) or "")
+        if (slot, src) not in flagged:
+            continue
+        # DROP the wrong-domain bind exactly like the column_override slot-quantity guard: column/fn → None, reroute to
+        # the frame/honest-blank path so THIS leaf renders blank while its siblings still fill. Keep the slot/shape.
+        f["column"] = None
+        if f.get("kind") == "derived":
+            f["fn"] = None
+            f["metric"] = None                                  # so fill.py's `fn or metric` derived branch cannot re-fire
+        f["source"] = "frame"
+        n += 1
+    return n
 
 
 def _finalize(ci, raw, swap, *, reemit_of=None):
@@ -396,7 +450,8 @@ def _finalize(ci, raw, swap, *, reemit_of=None):
     # NORMALIZATION TELEMETRY [silent-normalization defect]: override notes ride di._normalized (visible in traces /
     # sweeps — hallucination counts feed the prompt-steer loop) and NEVER gate conforms — per-leaf degradation.
     di, ov_notes = override_columns(di, basket, data_note=raw.get("data_note"), applied_morphs=applied,
-                                    is_group_card=ci["is_group_card"])
+                                    is_group_card=ci["is_group_card"],
+                                    default_payload=(dp["payload"] if dp else None))
     if ov_notes:
         di["_normalized"] = ov_notes
     # DETERMINISTIC ENVELOPE COMPLETION [META-08]: backfill payload_shape/orientation/entity_dim from the catalog
@@ -467,13 +522,52 @@ def _finalize(ci, raw, swap, *, reemit_of=None):
                                             fields_optional=_fields_optional,
                                             answerability=_declared_answer,
                                             exact_metadata=exact_metadata)
-    failures += d_issues
+    # PER-LEAF PAYLOAD_ERROR PARTITION [deterministic robustness — degrade PER-LEAF, verdicts are telemetry, never a
+    # card gate]. gate_data_instructions returns TWO kinds of issue and used to treat BOTH as a card-blocking
+    # payload_error (conforms=False), even though a single malformed/unbindable FIELD already HONEST-BLANKS at fill
+    # (fn=None → nothing derives; column=None → nothing binds; const value=None → nothing renders): the card still
+    # mounts its real component and every SIBLING leaf fills.
+    #   (a) FIELD-LEVEL per-leaf issues — shaped 'fields[i] …' ('kind=derived without fn', 'kind=bucketed missing a
+    #       resolved column', 'kind=const without a value', 'kind=event without edge', a hallucinated-column flag): one
+    #       field that self-heals to a blank. These are TELEMETRY (di._per_leaf_gaps + a data_note), NOT failures, and
+    #       they do NOT gate conforms — mirrors the roster-aware partition above (audit PASSED cards 62/72/77/59/54 as
+    #       honest degradation; the payload_error was a telemetry mislabel).
+    #   (b) CARD-STRUCTURAL issues — anything WITHOUT the 'fields[' prefix ('data_instructions.fields is empty', a bad
+    #       $ctx-on-non-group flag, an envelope/shape defect): a real card conformance error. These STAY failures and
+    #       KEEP conforms=False. A genuinely fields-required card with empty fields still fails honestly.
+    # ok_d is RECOMPUTED over only the card-structural issues, so conforms stays True when only per-leaf field issues
+    # remain. Generic — no card ids/vocab; keyed purely on the 'fields[' issue shape the gate itself emits.
+    _field_issues = [i for i in d_issues if str(i).startswith("fields[")]
+    _struct_issues = [i for i in d_issues if not str(i).startswith("fields[")]
+    ok_d = not _struct_issues
+    if _field_issues:
+        di["_per_leaf_gaps"] = (di.get("_per_leaf_gaps") or []) + list(_field_issues)
+    failures += _struct_issues          # only card-structural data issues are card-blocking failures
     failures += r_issues                # roster telemetry AFTER gate issues — the failure reason stays a real gate hit
 
     # DETERMINISTIC COMPLETENESS RECONCILE — slot-catalog coverage diff (telemetry + the per-leaf 'unbound_by_emit'
     # reason records fill.py merges into the honest-gap channel). Never a render gate.
     _reconcile_slots(di, dp["payload"] if dp else None, basket, fields_optional=_fields_optional,
                      data_note=_declared_note)
+
+    # NO-OP MORPH-REJECTION PARTITION [per-leaf robustness, mirrors the field partition above]: a morph the AI DECLARED
+    # on a path that is NOT a real metadata leaf ('… is not a real metadata leaf'), or declared but sent no value for
+    # ('… declared morphed but no value in exact_metadata'), is a NO-OP — produce()/morphmap_apply already shipped the
+    # byte-identical DEFAULT for that path, so it NEVER rendered anything different (card 42's non-leaf morphs). Move it
+    # to telemetry (di._noop_morphs) so it can't become the card's failure.detail/payload_error. This does NOT partition
+    # a GENUINE metadata defect that reverted: a 'reverted to default: …' (a byte-identity/chrome violation the enforce
+    # pass had to undo) and a 'morph rejected: …: DATA leaf …' / '…: morph value is chrome …' (an attempt to inject a
+    # seed data value or chrome) STAY failures — the default shipping there is a self-heal of a real violation, not a
+    # harmless no-op. Keyed purely on the two no-op reason suffixes produce()/morphmap_apply emit (no card ids/vocab).
+    def _is_noop_morph(s):
+        s = str(s)
+        return s.startswith("morph rejected:") and (
+            s.endswith("morph path is not a real metadata leaf")
+            or s.endswith("declared morphed but no value in exact_metadata"))
+    _noop_morphs = [f for f in failures if _is_noop_morph(f)]
+    if _noop_morphs:
+        failures = [f for f in failures if not _is_noop_morph(f)]
+        di["_noop_morphs"] = (di.get("_noop_morphs") or []) + list(_noop_morphs)
 
     conforms = ok_m and ok_d and bool(exact_metadata) and not llm_err
     # BEST-EFFORT / ANSWERABILITY: the AI reports whether it could answer the card's story with REAL columns —
@@ -498,6 +592,15 @@ def _finalize(ci, raw, swap, *, reemit_of=None):
     # honest-blank). Never a gap/re-route; never a card-blocking failure.
     if roster_honest_blank:
         data_note = data_note or roster_honest_blank
+        if answerability == "full":
+            answerability = "partial"
+    # PER-LEAF FIELD-GAP note [payload_error partition]: a field that self-heals to a blank (derived-without-fn /
+    # bucketed-no-column / const-without-value / hallucinated column — di._per_leaf_gaps) is a per-leaf degradation, not
+    # a full answer nor a card block. Surface a user-facing note + soften answerability; the card renders, that leaf
+    # blanks, every sibling fills. Never a gap/re-route, never a payload_error.
+    if di.get("_per_leaf_gaps"):
+        data_note = data_note or ("one or more leaves could not be bound for this card on this asset — those leaves "
+                                  "render an honest blank (per-leaf reasons attached), every other leaf fills")
         if answerability == "full":
             answerability = "partial"
     # ZERO-SKELETON HONESTY [cards 19/25 — 'emit zero-skeleton']: an emit that binds NOTHING (fields [] AND no roster)
@@ -534,10 +637,16 @@ def _finalize(ci, raw, swap, *, reemit_of=None):
         if answerability == "full":
             answerability = "partial"
     # CROSS-DOMAIN HONESTY [semantic mis-bind E / bad derived math G]: a data field bound to a column/fn of a DIFFERENT
-    # physical domain than its slot (a current column under a voltage-THD leaf; an energy fn in a 'years' leaf) is a
-    # wrong-KIND stand-in — it must NEVER claim "full". Deterministically force ≥partial + a truthful generated note
-    # (overriding a possibly-false AI note). Generic + DB-driven (config.metrics.quantity_family); per-leaf telemetry,
-    # never a card-blocking failure. This is the honesty backstop for a substitute the prompt tried to prevent.
+    # physical domain than its slot (a current column under a voltage-THD leaf; an energy fn in a 'years' leaf; the
+    # card-72 apparent_power_total_kva under an energy `apparentMvah` leaf) is a wrong-KIND stand-in. A wrong-QUANTITY
+    # reading is NOT real data (a POWER value cannot be a true ENERGY reading no matter how it is relabelled), so per the
+    # zero-fabrication mandate the leaf must HONEST-BLANK — not merely carry a telemetry note while the wrong number still
+    # renders. Promote the old telemetry-only pass to a PER-LEAF BLANKING pass: drop each flagged field's column/fn to
+    # None + reroute to the frame path (identical to resolve/column_override.apply's slot-quantity guard), so ONLY the
+    # wrong-domain leaves blank while every sibling field still fills — NEVER a card-block. Keep the telemetry record
+    # (di['_cross_domain']) + the honest note + force ≥partial. Generic + DB-driven (config.metrics.quantity_family); a
+    # genuine SAME-domain proxy (cfam == sfam, the R7 rule already honored in _cross_domain_fields) is never flagged, so
+    # it is never blanked here. This is the honesty backstop for a substitute the prompt tried to prevent.
     _xdom = _cross_domain_fields(di)
     if _xdom:
         if answerability == "full":
@@ -545,6 +654,7 @@ def _finalize(ci, raw, swap, *, reemit_of=None):
         data_note = _cross_domain_note(_xdom) if not data_note else data_note + " " + _cross_domain_note(_xdom)
         di["_cross_domain"] = [{"slot": s, "slot_family": sf, "source": src, "source_family": cf}
                                for (s, sf, src, cf) in _xdom]
+        di["_cross_domain_blanked"] = _blank_cross_domain_leaves(di, _xdom)   # per-LEAF honest-blank (telemetry: count)
     out = {
         "card_id": ci["card_id"],
         "$ctx": ci["group_id"] if ci["is_group_card"] else None,
@@ -608,11 +718,17 @@ def run_card(run_id, card_id, l1a, l1b, *, already_chosen=None, shared_ctx_ref=N
     # not already claimed by another slot. A FORCED swap is stamped confidence=FORCED_SWAP_CONFIDENCE (>1.0) so the
     # parallel runner's settle post-pass (grounding.swap_settle, highest-confidence-first) never reverts a MANDATORY
     # swap in favor of another slot's optional stylistic swap on the same target. [user rule 1, META-04]
+    # the AI's OWN per-asset render verdict [#1 dataless swap]: answerability='none' = this card is WHOLLY unfillable for
+    # THIS asset (every leaf honest-blanks — a Fuel Tank on a DG with no fuel column). The static catalog verdict can't
+    # know that; the gate treats it like an unrenderable verdict and force-swaps to a fillable candidate (or honestly
+    # keeps when the whole page is a data dead-end). Same robust extraction as _finalize (top-level OR nested envelope).
+    _di = raw.get("data_instructions") if isinstance(raw.get("data_instructions"), dict) else {}
+    _answer = raw.get("answerability") or _di.get("answerability")
     swap = swap_gate(raw.get("swap_decision") or {"action": "keep"},
                      pool_ids=[c["card_id"] for c in ci["swap_candidates"]],
                      template_card_ids=ci["story"]["template_card_ids"], already_chosen=already_chosen,
                      page_card_ids=_page_card_ids(ci["page_key"]), current_card_id=card_id,
-                     current_verdict=_current_verdict, pool=ci["swap_candidates"])
+                     current_verdict=_current_verdict, pool=ci["swap_candidates"], answerability=_answer)
 
     # SWAP-TARGET RE-EMIT: the first emit authored the payload for `card_id`'s shape; the FINAL card is the swap
     # target, which has a DIFFERENT shape. Re-run the emit for the target (it inherits the slot's story) so the
@@ -621,6 +737,19 @@ def run_card(run_id, card_id, l1a, l1b, *, already_chosen=None, shared_ctx_ref=N
     if swap.get("origin") == "swapped" and tgt and tgt != card_id:
         target_ci = build_swap_target_input(run_id, tgt, ci, l1b)
         target_raw = emit(target_ci)
+        # DATALESS REVERT-GUARD [#1]: a forced dataless swap must land on a card THIS asset can actually FILL. The pool is
+        # only CATALOG-render_real; the target's per-asset fillability is unknown until it re-emits. If the target ALSO
+        # declares itself wholly unfillable (answerability in DATALESS_ANSWERABILITY — a whole-page data dead-end, e.g. a
+        # fuel page on a fuel-less DG where every candidate is empty), swapping empty→empty just loses the ORIGINAL's
+        # honest data_note. Revert: keep the original card (honest-blank + its declared reason), never fabricate.
+        if swap.get("forced_dataless"):
+            _tdi = target_raw.get("data_instructions") if isinstance(target_raw.get("data_instructions"), dict) else {}
+            _tans = target_raw.get("answerability") or _tdi.get("answerability")
+            if _force.is_dataless(_tans):
+                keep = {**swap, "action": "keep", "origin": "kept", "swap_to_id": None, "swap_to_title": None,
+                        "forced_renderable": False, "forced_kept_unrenderable": True, "reverted_dataless_swap": True,
+                        "confidence": swap.get("ai_confidence")}
+                return _finalize_with_gate_retry(ci, raw, keep)
         return _finalize_with_gate_retry(target_ci, target_raw, swap, reemit_of=card_id)
 
     return _finalize_with_gate_retry(ci, raw, swap)

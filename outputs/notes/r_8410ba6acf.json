@@ -1,0 +1,18 @@
+{
+ "run_id": "r_8410ba6acf",
+ "loop1": [
+  {
+   "card_id": 36,
+   "title": "Power & Energy (Real-Time)",
+   "answerability": "partial",
+   "note": "Showing total active and reactive power \u2014 per-phase power isn't measured for this asset; trend/rate-of-change metrics are not available."
+  },
+  {
+   "card_id": 37,
+   "title": "Voltage Monitor (Real-Time)",
+   "answerability": "partial",
+   "note": "Showing live three-phase line-to-neutral voltages (R-N, Y-N, B-N) and their average/max/min KPIs; axis ticks and threshold values are auto-scaled or omitted as no dedicated columns exist."
+  }
+ ],
+ "loop2": null
+}

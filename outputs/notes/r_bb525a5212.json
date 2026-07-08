@@ -2,16 +2,28 @@
  "run_id": "r_bb525a5212",
  "loop1": [
   {
+   "card_id": 39,
+   "title": "Today's Energy",
+   "answerability": "partial",
+   "note": "Showing total active and reactive energy consumed for the month; per-unit efficiency, subsidy limits, and targets are not measured by this asset."
+  },
+  {
+   "card_id": 40,
+   "title": "Power Energy Analysis",
+   "answerability": "partial",
+   "note": "one or more leaves could not be bound for this card on this asset \u2014 those leaves render an honest blank (per-leaf reasons attached), every other leaf fills"
+  },
+  {
    "card_id": 41,
    "title": "Input vs Output Energy",
    "answerability": "partial",
-   "note": "Showing UPS input/output power and energy deltas; 'Expected Loss' is a placeholder as no specific UPS loss model is available for this asset."
+   "note": "Showing total active power and derived energy loss/efficiency \u2014 per-phase energy isn't measured for this asset; lossPct used for deltaPct as no dedicated 'loss pct of input' fn exists."
   },
   {
    "card_id": 42,
    "title": "Load Anomalies",
    "answerability": "partial",
-   "note": "Showing load factor and present load as percentages of rated capacity; expected load and anomaly events are derived from shared context and may not be fully populated for this UPS asset."
+   "note": "Showing actual load and load factor \u2014 expected load, range, and anomaly counts are not measured by this asset."
   }
  ],
  "loop2": null

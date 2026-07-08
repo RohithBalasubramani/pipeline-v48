@@ -1,0 +1,13 @@
+{
+ "run_id": "r_c014c1875c",
+ "loop1": [
+  {
+   "card_id": 37,
+   "title": "Voltage Monitor (Real-Time)",
+   "answerability": "partial",
+   "note": "Showing live three-phase voltage trends (R-N, Y-N, B-N) and aggregate stats (Avg/Max/Min); legend values and threshold lines are static seeds as no dedicated columns exist for those specific scalar slots."
+  }
+ ],
+ "loop2": null,
+ "reconcile": "asset 'GIC-01-N3-UPS-01 CL:600KVA' has_feeders=False but the routed page 'panel-overview-shell/real-time-monitoring' is the panel-aggregate granularity \u2014 reconciled to 'individual-feeder-meter-shell/real-time-monitoring'"
+}

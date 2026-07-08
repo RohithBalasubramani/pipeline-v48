@@ -1,0 +1,30 @@
+{
+ "run_id": "r_cbf35b9740",
+ "loop1": [
+  {
+   "card_id": 50,
+   "title": "Battery Health",
+   "answerability": "none",
+   "note": "This electrical meter does not measure battery SOC, temperature, or output-specific voltage/current; showing headline state-of-charge is not possible."
+  },
+  {
+   "card_id": 51,
+   "title": "Battery Health History",
+   "answerability": "partial",
+   "note": "Showing proxy scores (Charge Level, DC Bus, Thermal, Overall) derived from electrical metrics (Energy, Voltage, Current, Power) as battery-specific scores are not measured by this UPS meter; thresholds and axis limits are also proxied."
+  },
+  {
+   "card_id": 52,
+   "title": "Backup Readiness",
+   "answerability": "partial",
+   "note": "Showing load factor as a proxy for headroom \u2014 battery autonomy envelope, backup time, and readiness scores are not measured by this UPS meter."
+  },
+  {
+   "card_id": 53,
+   "title": "Backup Readiness History",
+   "answerability": "partial",
+   "note": "Showing load factor as a proxy for autonomy/backup scores \u2014 this UPS meter does not measure battery-specific autonomy, runtime, or headroom indices directly."
+  }
+ ],
+ "loop2": "'ups-asset-dashboard/battery-autonomy' answers the prompt as routed; these cards cover quantities not recorded for this asset and render honest-blank per-leaf with the reason: Battery Health (This electrical meter does not measure battery SOC, temperature, or output-specific voltage/current; showing headline state-of-charge is not possible.)."
+}

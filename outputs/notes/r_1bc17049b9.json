@@ -5,13 +5,19 @@
    "card_id": 47,
    "title": "Power Quality",
    "answerability": "partial",
-   "note": "Showing current THD (thd_compliance_i_avg) and voltage THD (thd_compliance_v_avg) as proxies for harmonic distortion; voltage THD columns failed validation so compliance average is used. Flicker, Crest Factor, and H5/H7 specific values are not directly measured by this meter's validated columns, so they are left blank or proxied where possible."
+   "note": "Showing total I-THD as proxy for V-THD, H5, and H7 because dedicated voltage-harmonic and individual-order columns are not measured by this meter; Flicker and Crest Factor are not measured."
   },
   {
    "card_id": 48,
    "title": "Distortion & Harmonic Profile",
    "answerability": "partial",
-   "note": "Showing current THD trends; voltage THD columns (thd_voltage_*) failed validation on this meter and are omitted."
+   "note": "Showing current THD evolution (I-THD) \u2014 voltage THD and specific harmonic orders (H5/H7) are not measured by this UPS meter."
+  },
+  {
+   "card_id": 49,
+   "title": "Load Impact & Transformer Stress",
+   "answerability": "partial",
+   "note": "Showing Displacement PF, True PF, and PF Gap \u2014 K-factor and Phase Angle are not measured for this asset."
   }
  ],
  "loop2": null

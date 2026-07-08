@@ -30,7 +30,8 @@ def assemble_cards(out, asset, date_window=None):
         return []
     completed_by_id, status_by_id = _run_cards(l2, asset_table, db_link=_neuract_dsn.dsn(),
                                                date_window=date_window, run_id=out.get("run_id"),
-                                               asset=asset, page_key=page_key)
+                                               asset=asset, page_key=page_key,
+                                               metric=l1a.get("metric"), intent=l1a.get("intent"))
     return [_enrich_card(c, page_key, val_by_id, l2.get(c.get("card_id")),
                          completed=completed_by_id.get(c.get("card_id")),
                          run_ok=(status_by_id.get(c.get("card_id")) or {}).get("ok", True),

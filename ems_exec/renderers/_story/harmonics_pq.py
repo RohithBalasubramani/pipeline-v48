@@ -2,15 +2,20 @@
 feeders by THD, and the selected feeder's specifics when one is picked), pre-judged in Python from REAL neuract snapshots
 over the panel members.
 
-Severity is judged off the IEEE-519 harmonic-distortion headroom columns (thd_voltage_*_pct → the per-phase max, and
-thd_current_*_pct), each vs its statutory limit. Every limit is a DB-driven knob (config.event_thresholds V_THD/I_THD)
-with the IEEE-519 code default. Python ranks the members by worst voltage-THD, picks the worst feeder, and (when ctx pins
-a specific member via ctx['mfm_id']) surfaces that feeder's own THD as the "selected feeder specifics". Honest-degrade:
-no member reports THD → a "no harmonics data" story whose fallback says so (never a fabricated distortion %). [atomic]
+Each feeder's THD is the REAL neuract THD: the AVG of its per-phase thd_voltage_*_pct / thd_current_*_pct columns over
+the SELECTED WINDOW (the canonical THD backend2 / the thdComplianceIeee519 derivation report), NOT the peak phase of one
+latest instant — a peak-of-one-sample over-states the distortion and can fabricate a breach the real avg never has.
+Each is compared vs its statutory limit — a DB-driven knob (config.event_thresholds V_THD/I_THD) with the IEEE-519 code
+default. Python ranks the members by worst voltage-THD, picks the worst feeder, and (when ctx pins a specific member via
+ctx['mfm_id']) surfaces that feeder's own THD as the "selected feeder specifics". Honest-degrade: a member with no
+phase-THD logged over the window is OMITTED from the worst-list, and no member reporting THD → a "no harmonics data"
+story whose fallback says so (never a fabricated distortion %; a breach is only ever claimed when the real avg ≥ the
+limit). [atomic]
 """
 from __future__ import annotations
 
 from ems_exec.renderers._story import _facts
+from ems_exec.data import neuract as _nx
 
 
 def _limits():
@@ -22,10 +27,29 @@ def _limits():
         return 5.0, 8.0
 
 
-def _phase_max(live, cols):
-    vals = [live.get(c) for c in cols]
-    nums = [v for v in vals if isinstance(v, (int, float))]
-    return max(nums) if nums else None
+def _window_thd(table, cols, window):
+    """The REAL THD% for one feeder = the AVG of its per-phase thd_*_r/y/b_pct columns over the WINDOW.
+
+    This is the canonical THD the neuract data reports (avg over thd_current_r/y/b, matching backend2 / the
+    thdComplianceIeee519 derivation), NOT the peak-phase of one latest instant. Reads ONLY neuract via the one door
+    (data.neuract.series → per-bucket per-phase AVGs over [start,end]), then averages the phases present in each bucket
+    and averages those bucket means. None when the table has no phase-THD column logged over the window — so a feeder
+    with no real THD honest-degrades (and is omitted from the worst-list) rather than inventing a value. [honest-degrade]"""
+    if not table:
+        return None
+    start, end = (window or (None, None))[0], (window or (None, None))[1]
+    rows = _nx.series(table, cols, start, end)
+    if not rows:
+        return None
+    bucket_means = []
+    for r in rows:
+        phase_vals = [r.get(c) for c in cols]
+        phase_vals = [v for v in phase_vals if isinstance(v, (int, float)) and not isinstance(v, bool)]
+        if phase_vals:
+            bucket_means.append(sum(phase_vals) / len(phase_vals))
+    if not bucket_means:
+        return None
+    return sum(bucket_means) / len(bucket_means)
 
 
 def _sev(mag, limit):
@@ -57,13 +81,15 @@ def build(asset, card, ctx, members):
     panel_name = _facts._name_for(ctx.get("mfm_id")) or ctx.get("asset_table") or "Panel"
     selected_mfm = ctx.get("mfm_id")
 
+    window = ctx.get("window")
     snaps = _facts.snapshots_for(members)
     ranked = []
     selected = None
     for s in snaps:
-        live = s.get("live") or {}
-        vthd = _phase_max(live, _V_COLS)
-        ithd = _phase_max(live, _I_COLS)
+        # REAL THD = the window-average of the per-phase thd_*_r/y/b_pct columns (the neuract-reported THD), NOT the
+        # peak phase of one latest instant. A feeder with no phase-THD logged over the window → None (omitted below).
+        vthd = _window_thd(s.get("table"), _V_COLS, window)
+        ithd = _window_thd(s.get("table"), _I_COLS, window)
         if vthd is None and ithd is None:
             continue
         rec = {"name": s["name"], "vthd": (round(vthd, 2) if vthd is not None else None),

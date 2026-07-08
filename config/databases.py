@@ -71,6 +71,13 @@ _TUNNEL_DBS = {DATA_DB, "meta_data_version1", "target_version1", "target_version
 
 
 def conn_env(db):
-    """PGHOST/PGPORT/PGUSER/PGPASSWORD for `db` — routes the live tunnel (DATA+REGISTRY) vs the local catalog endpoint."""
+    """PGHOST/PGPORT/PGUSER/PGPASSWORD for `db` — routes the live tunnel (DATA+REGISTRY) vs the local catalog endpoint.
+
+    PGCONNECT_TIMEOUT: a HALF-DEAD tunnel (:5433 port hanging, SYN unanswered) used to block every psql/psycopg2
+    connect for the OS TCP timeout (~2 min) — /api/site and any DB-touching endpoint froze. libpq's connect timeout
+    makes a dead tunnel FAIL FAST instead ('connection timed out' matches the degrade-gate outage fingerprints → the
+    honest data_unavailable terminal in seconds). CONNECT-phase only — query runtime is never limited by this.
+    Env-overridable (PG_CONNECT_TIMEOUT); connect-only, so a slow query can still take as long as it needs."""
     host, port = (PG_HOST, PG_PORT) if db in _TUNNEL_DBS else (CATALOG_HOST, CATALOG_PORT)
-    return {"PGHOST": host, "PGPORT": str(port), "PGUSER": PG_USER, "PGPASSWORD": PG_PASSWORD}
+    return {"PGHOST": host, "PGPORT": str(port), "PGUSER": PG_USER, "PGPASSWORD": PG_PASSWORD,
+            "PGCONNECT_TIMEOUT": os.environ.get("PG_CONNECT_TIMEOUT", "5")}

@@ -1,0 +1,18 @@
+{
+ "run_id": "r_6fbc707748",
+ "loop1": [
+  {
+   "card_id": 57,
+   "title": "UPS Capacity",
+   "answerability": "partial",
+   "note": "Showing kVA, kW, and Current scores derived from nameplate ratings and live measurements; headroom is the minimum of these three scores."
+  },
+  {
+   "card_id": 58,
+   "title": "UPS Load",
+   "answerability": "partial",
+   "note": "Showing current load (kW) and PF; 30d load history sparkline is omitted because the interpreter lacks per-bucket rated-kW normalization for the sparkline objects."
+  }
+ ],
+ "loop2": null
+}

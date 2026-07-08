@@ -1,9 +1,11 @@
-"""tests/test_energy_from_power.py — F4 dead-counter kWh recovery (∫power).
+"""tests/test_energy_from_power.py — F4 dead-counter kWh recovery (∫power) — ACTIVE energy only.
 
-The 4 cumulative energy-counter registers (active/reactive import/export kWh) are all-NULL on many meters, while
-active_power_total_kw logs continuously. Energy IS ∫P dt, so kWh is RECOVERABLE by trapezoidally integrating the observed
-power series over the window (fidelity real_approx, honest note 'integrated from power'). These are PURE unit tests — no
-DB, no live data (the neuract series() reader is monkeypatched)."""
+The ACTIVE cumulative energy counter (active_energy_import/export_kwh) is all-NULL on many meters while
+active_power_total_kw logs continuously. ACTIVE energy IS ∫P dt, so ACTIVE kWh is RECOVERABLE by trapezoidally
+integrating the observed power series over the window (fidelity real_approx, honest note 'integrated from power').
+REACTIVE / APPARENT ENERGY is NOT recoverable this way — it fills only from a real reactive/apparent energy register,
+else honest-blanks (card-72 fab-by-substitution rule; the reactive ∫power fn is disabled). These are PURE unit tests —
+no DB, no live data (the neuract series() reader is monkeypatched)."""
 from datetime import datetime, timedelta, timezone
 
 from ems_exec.derivations import energy as E
@@ -44,9 +46,12 @@ def test_reversed_ct_negative_power_is_abs():
     assert E.energy_from_power_kwh(ctx2) == 100.0
 
 
-def test_reactive_twin_reads_reactive_column():
+def test_reactive_energy_from_power_is_disabled():
+    # DEFINITIVE [card-72 fab-by-substitution]: reactive ENERGY may fill ONLY from a real reactive-ENERGY register — the
+    # ∫reactive-power→reactive-ENERGY recovery is BANNED (always None). A live reactive-POWER series never synthesizes a
+    # reactive-ENERGY reading for a meter that carries no reactive-energy register. (∫active-power→ACTIVE kWh is kept.)
     ctx = {"series": _series([(12, 60.0), (13, 60.0)], col="reactive_power_total_kvar")}
-    assert E.reactive_energy_from_power_kvarh(ctx) == 60.0
+    assert E.reactive_energy_from_power_kvarh(ctx) is None
 
 
 def test_iso_string_timestamps_also_parse():

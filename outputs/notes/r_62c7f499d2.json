@@ -1,0 +1,30 @@
+{
+ "run_id": "r_62c7f499d2",
+ "loop1": [
+  {
+   "card_id": 50,
+   "title": "Battery Health",
+   "answerability": "none",
+   "note": "This meter class (electrical UPS input) does not measure battery SOC, temperature, or output voltage/current; these slots are honest-blanked as they are off-domain for this asset."
+  },
+  {
+   "card_id": 51,
+   "title": "Battery Health History",
+   "answerability": "partial",
+   "note": "Showing active power trends as proxies for battery sub-scores (SOC, DC Bus, Thermal) \u2014 this electrical meter does not measure battery-specific scores."
+  },
+  {
+   "card_id": 52,
+   "title": "Backup Readiness",
+   "answerability": "partial",
+   "note": "Showing autonomy readiness as a load-factor proxy (active power vs rated capacity); backup time and headroom are derived estimates from energy/power data as no battery SOC is measured."
+  },
+  {
+   "card_id": 53,
+   "title": "Backup Readiness History",
+   "answerability": "partial",
+   "note": "Showing active power trend as a proxy for autonomy/readiness scores \u2014 the UPS meter does not log battery-specific autonomy, backup time, or readiness scores, so these series are filled with the available load data."
+  }
+ ],
+ "loop2": "'ups-asset-dashboard/battery-autonomy' answers the prompt as routed; these cards cover quantities not recorded for this asset and render honest-blank per-leaf with the reason: Battery Health (This meter class (electrical UPS input) does not measure battery SOC, temperature, or output voltage/current; these slots are honest-blanked as they are off-domain for this asset.)."
+}

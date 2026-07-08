@@ -11,8 +11,8 @@ Wants=network-online.target
 Type=simple
 ExecStart=/home/rohith/.pyenv/versions/3.11.9/bin/vllm serve Qwen/Qwen3-4B-Instruct-2507-FP8 \
     --port 8201 \
-    --gpu-memory-utilization 0.17 \
-    --max-model-len 32768 \
+    --gpu-memory-utilization 0.12 \
+    --max-model-len 8192 \
     --served-model-name Qwen/Qwen3-4B-Instruct-2507-FP8 \
     --speculative-config '{"method": "ngram", "num_speculative_tokens": 5, "prompt_lookup_max": 5, "prompt_lookup_min": 2}'
 Environment=HOME=/home/rohith

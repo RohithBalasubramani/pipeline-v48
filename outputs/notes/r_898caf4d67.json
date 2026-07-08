@@ -1,0 +1,36 @@
+{
+ "run_id": "r_898caf4d67",
+ "loop1": [
+  {
+   "card_id": 23,
+   "title": "PQ Issues KPI Strip (Total Issues / I-THD Events / V-THD Events / PF Gap Feeders / Neutral Stress / Worst I-THD / Worst V-THD)",
+   "answerability": "partial",
+   "note": "Showing aggregate panel PQ issue counts and worst-case metrics; per-phase voltage harmonics (h3/h5/h7) and k-factor are not measured for this asset."
+  },
+  {
+   "card_id": 24,
+   "title": "Harmonics & PQ Timeline",
+   "answerability": "partial",
+   "note": "Showing per-feeder THD and power data from panel members; sag/swell/neutral event counts are not directly measured on this panel aggregate and are omitted."
+  },
+  {
+   "card_id": 25,
+   "title": "AI Summary",
+   "answerability": "partial",
+   "note": "Showing active power (kW) for panel members \u2014 per-phase THD and voltage harmonics are not measured for this aggregate panel (data is sourced from sibling cards)."
+  },
+  {
+   "card_id": 26,
+   "title": "Feeder PQ At {period}",
+   "answerability": "partial",
+   "note": "Showing per-feeder THD and power data for 6 active feeders; 2 feeders (UPS-05, UPS-06) are dark and honest-blank."
+  },
+  {
+   "card_id": 27,
+   "title": "Signature",
+   "answerability": "partial",
+   "note": "Showing current THD (I-THD) and voltage THD (V-THD) per feeder; 3rd harmonic (H3) and K-factor are not measured by this meter's schema."
+  }
+ ],
+ "loop2": null
+}

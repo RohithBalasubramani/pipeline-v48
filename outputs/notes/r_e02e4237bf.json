@@ -5,19 +5,19 @@
    "card_id": 57,
    "title": "UPS Capacity",
    "answerability": "partial",
-   "note": "Showing load factor against rated capacity; nameplate:rated_kva is unknown for this asset, so kVA and kW scores are honest-blanked. Current score uses average current load factor as a proxy."
+   "note": "Showing kVA, kW, and current load scores against nameplate ratings; readiness marker and delta label are omitted as they are off-domain or unsupported for this snapshot card."
   },
   {
    "card_id": 58,
    "title": "UPS Load",
    "answerability": "partial",
-   "note": "Showing active power load and PF; headroom is omitted because the asset's nameplate rated_kva is unknown (empty denominator)."
+   "note": "Showing load as % of rated capacity (kW headroom omitted due to missing nameplate rating)."
   },
   {
    "card_id": 59,
    "title": "Output Load & Capacity \u2014 Composite",
    "answerability": "partial",
-   "note": "Showing total active power as a proxy for UPS load readiness; per-phase power is not used for the composite score. Bypass voltage and transfers are not measured by this meter and are omitted."
+   "note": "Showing output load and frequency \u2014 readiness score, bypass voltage, and transfer counts are not measured for this asset."
   }
  ],
  "loop2": null

@@ -1,0 +1,24 @@
+{
+ "run_id": "r_63a4678bd3",
+ "loop1": [
+  {
+   "card_id": 70,
+   "title": "Live Operations & Runtime",
+   "answerability": "none",
+   "note": "This electrical meter does not measure run-hours, start counts, service intervals, or availability \u2014 these are engine-specific metrics not logged by the DG-3 MFM."
+  },
+  {
+   "card_id": 72,
+   "title": "Energy & Reliability",
+   "answerability": "partial",
+   "note": "Showing active energy and power factor \u2014 reactive energy, apparent energy, MTBF, MTTR, and availability fractions are not measured for this asset."
+  },
+  {
+   "card_id": 73,
+   "title": "Power Energy Analysis",
+   "answerability": "partial",
+   "note": "Showing active power, reactive power, and energy history \u2014 readiness scores and thresholds are not measured by this meter."
+  }
+ ],
+ "loop2": "'diesel-generator-asset-dashboard/operations-runtime' answers the prompt as routed; these cards cover quantities not recorded for this asset and render honest-blank per-leaf with the reason: Live Operations & Runtime (This electrical meter does not measure run-hours, start counts, service intervals, or availability \u2014 these are engine-specific metrics not logged by the DG-3 MFM.)."
+}

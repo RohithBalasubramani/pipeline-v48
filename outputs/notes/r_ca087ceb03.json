@@ -1,0 +1,25 @@
+{
+ "run_id": "r_ca087ceb03",
+ "loop1": [
+  {
+   "card_id": 43,
+   "title": "Voltage Live Health",
+   "answerability": "partial",
+   "note": "Showing live phase voltages and deviation; Rate Change is omitted as it requires time-series data not available in this snapshot view."
+  },
+  {
+   "card_id": 44,
+   "title": "Voltage History",
+   "answerability": "partial",
+   "note": "Showing per-phase voltage history and deviation stats. Expected range lines are fixed proxies (230V \u00b15%) as the asset's nameplate rating is unknown."
+  },
+  {
+   "card_id": 46,
+   "title": "Current History",
+   "answerability": "partial",
+   "note": "Showing per-phase current history and peak/average stats; expected range lines omitted because the asset's rated current is unknown."
+  }
+ ],
+ "loop2": null,
+ "reconcile": "asset 'PQM Transformer-1 Incomer (PCC-01)' has_feeders=False but the routed page 'panel-overview-shell/voltage-current' is the panel-aggregate granularity \u2014 reconciled to 'individual-feeder-meter-shell/voltage-current'"
+}

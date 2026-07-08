@@ -18,6 +18,31 @@ from grounding.default_assemble import has_default
 # cmd_catalog.app_config 'feasibility.pool_verdicts'), NOT a hardcoded list in the SQL. Default: render_real only.
 POOL_VERDICTS = tuple(str(v) for v in cfg("feasibility.pool_verdicts", ["render_real"]))
 
+# minimum affinity-token length — drop 1-2 char noise ('pf' is a real metric so keep len>=2). Editable knob.
+_AFFINITY_MIN_TOK = int(cfg("swap.affinity_min_token_len", 2))
+
+
+def _metric_tokens(metric):
+    """GENERIC affinity vocabulary from the pipeline's 1a metric: lowercased alnum tokens of the metric string
+    (len >= knob), deduped. None/blank/too-short → () → pure-size behavior (fully backward-compatible). Works for
+    any metric word ('voltage','current','energy','thd',…) or phrase — no per-metric list."""
+    if not metric:
+        return ()
+    import re
+    toks = [t for t in re.split(r"[^a-z0-9]+", str(metric).lower()) if len(t) >= _AFFINITY_MIN_TOK]
+    return tuple(dict.fromkeys(toks))            # dedupe, preserve order
+
+
+def _affinity(cand, tokens):
+    """SOFT metric-relevance score of a swap candidate: the count of metric tokens that appear (substring,
+    case-insensitive) anywhere in the card's catalog text (title / analytical_role / card_purpose / visualization).
+    0 = off-metric (deprioritized, NEVER dropped). Generic — the same computation for every metric and every card."""
+    if not tokens:
+        return 0
+    text = " ".join(str(cand.get(k) or "") for k in
+                    ("title", "analytical_role", "card_purpose", "visualization")).lower()
+    return sum(1 for t in tokens if t in text)
+
 
 def _available_card_ids():
     """card_ids that appear on one of the available pages — the swap universe."""
@@ -29,7 +54,13 @@ def _available_card_ids():
             f"SELECT DISTINCT card_id FROM page_layout_cards WHERE card_id IS NOT NULL AND page_key IN ({inlist})") if x and x[0]}
 
 
-def pool(card_id, page_key, template_card_ids, *, width=None, height=None):
+def pool(card_id, page_key, template_card_ids, *, width=None, height=None, metric=None):
+    """Swap candidate pool for one slot. Ranked by SIZE-fit (closest ±SIZE_TOLERANCE first), truncated to
+    SWAP_POOL_MAX. When `metric` (the pipeline's 1a metric) is given, a SOFT metric-affinity re-rank runs BEFORE the
+    truncation: metric-relevant cards (metric token in title/analytical_role/card_purpose/visualization) surface first,
+    size stays the tiebreak. It never DROPS a size-fit candidate — off-metric ones only fall after — so a page with no
+    metric-specific card still returns its full size pool. `metric=None` (or a token-less metric) → byte-identical to
+    the pure-size pool. Generic for any metric; no per-card/per-metric branch."""
     if not width or not height:
         r = q("cmd_catalog", f"SELECT width_px, height_px FROM card_grid_size WHERE card_id={int(card_id)} LIMIT 1")
         if r and r[0] and r[0][0]:
@@ -51,6 +82,7 @@ def pool(card_id, page_key, template_card_ids, *, width=None, height=None):
           AND g.width_px BETWEEN {lo_w:.0f} AND {hi_w:.0f}
           AND g.height_px BETWEEN {lo_h:.0f} AND {hi_h:.0f}
         ORDER BY abs(g.width_px-{width}) + abs(g.height_px-{height})""")
+    tokens = _metric_tokens(metric)                               # () when no metric → pure-size path (unchanged)
     out = []
     for x in rows:
         if not x or not x[0]:
@@ -62,9 +94,22 @@ def pool(card_id, page_key, template_card_ids, *, width=None, height=None):
         # closest-N truncation so the AI still sees up to SWAP_POOL_MAX genuinely swappable candidates.
         if not is_registered(cid) or not has_default(cid, page_key):
             continue
-        out.append({"card_id": cid, "title": x[1], "analytical_role": x[2] or None,
-                    "card_purpose": (x[3] or "")[:200] or None, "visualization": x[4] or None,
-                    "width_px": int(x[5]), "height_px": int(x[6])})
-        if len(out) >= SWAP_POOL_MAX:
-            break
-    return out
+        cand = {"card_id": cid, "title": x[1], "analytical_role": x[2] or None,
+                "card_purpose": (x[3] or "")[:200] or None, "visualization": x[4] or None,
+                "width_px": int(x[5]), "height_px": int(x[6])}
+        if not tokens:
+            # no metric → today's behavior exactly: closest-first, early-break at the cap (byte-identical output).
+            out.append(cand)
+            if len(out) >= SWAP_POOL_MAX:
+                break
+        else:
+            # metric present → materialize ALL size-fit renderable survivors (no early break) so a metric-relevant
+            # card beyond the size-closest-N is still visible to the affinity re-rank below.
+            out.append((_affinity(cand, tokens), cand))
+    if not tokens:
+        return out
+    # ★ SOFT metric-affinity re-rank: relevant-first, SQL size-ascending order kept as the stable tiebreak (Python's
+    # sort is stable, so equal-affinity candidates retain closest-first size order). Truncate AFTER ranking so a
+    # voltage-role card outranks a size-closer off-metric one, yet no size-fit candidate is dropped before ranking.
+    out.sort(key=lambda t: -t[0])
+    return [cand for _aff, cand in out[:SWAP_POOL_MAX]]

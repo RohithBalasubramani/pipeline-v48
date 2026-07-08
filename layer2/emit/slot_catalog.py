@@ -3,7 +3,7 @@
 The executor (ems_exec/executor/fill.py::_leaf_path_for) resolves a field.slot ONLY to `data.<slot>` or `<slot>` (a
 dotted/indexed path). So the AI CANNOT invent a token (`tile_r`, `series_r`, `sourceInputKw`) — it MUST emit slot = the
 REAL fillable leaf path in this card's harvested default payload (e.g. `health.data.phases[0].value`,
-`flow.vm.kpis.lossKw`, `history.data.series[0].values`). This module enumerates those exact paths from the default
+`flow.vm.kpis.lossKwh`, `history.data.series[0].values`). This module enumerates those exact paths from the default
 payload (value-aware via validate.leaf_classify) + expands a series-of-objects / numeric-array to its per-element
 fillable leaves, then attaches, PER LEAF, the best-matching REAL basket columns by the leaf's measured QUANTITY — so the
 AI has an obvious slot+column to name and never has to guess. DB-driven (quantity vocab = config.metrics), atomic, honest

@@ -1,0 +1,30 @@
+{
+ "run_id": "r_31f699563d",
+ "loop1": [
+  {
+   "card_id": 39,
+   "title": "Today's Energy",
+   "answerability": "partial",
+   "note": "Showing total active and reactive energy for the current period; per-phase energy is not measured for this asset."
+  },
+  {
+   "card_id": 40,
+   "title": "Power Energy Analysis",
+   "answerability": "partial",
+   "note": "Showing active power trend and average; reactive power is not directly measured by this UPS meter, so reactive bars and average are omitted."
+  },
+  {
+   "card_id": 41,
+   "title": "Input vs Output Energy",
+   "answerability": "partial",
+   "note": "Showing input and output active power; efficiency and loss metrics are derived from these values. Output power total has failed validation on this asset, so output readings may be unreliable or missing."
+  },
+  {
+   "card_id": 42,
+   "title": "Load Anomalies",
+   "answerability": "partial",
+   "note": "Showing input active power as a percentage of nominal output capacity \u2014 UPS does not log a dedicated 'load factor' or 'anomaly count' column, so these are derived or omitted."
+  }
+ ],
+ "loop2": null
+}

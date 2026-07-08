@@ -163,15 +163,15 @@ def test_five_walls_and_no_filename_refs_in_user_message():
 
 
 def test_prompts_carry_five_walls_and_closed_source_set():
-    di = open(os.path.join(_P, "data_instructions.md"), errors="replace").read()
+    # data_instructions_v2.md is the SINGLE Layer-2 contract — it subsumes the retired swap/metadata/data_instructions
+    # trio, so every rule those files taught now lives here (and is what the model actually sees).
+    di = open(os.path.join(_P, "data_instructions_v2.md"), errors="replace").read()
     assert "FOUR PHYSICAL WALLS" not in di and "THE FIVE PHYSICAL WALLS" in di
-    assert "`live` | `test-db` | `$ctx` | `const`" in di        # documents the gate's closed source set
+    assert "live | test-db | $ctx | const" in di                # documents the gate's closed source set
     assert "mock" not in di.lower()                             # the mock asides are gone
-    md = open(os.path.join(_P, "metadata.md"), errors="replace").read()
-    assert "see PART 3" not in md                               # points at BEST-EFFORT + ANSWERABILITY instead
-    assert "BEST-EFFORT + ANSWERABILITY" in md
-    assert "_morphed` IS REQUIRED" in md                        # [A1] the contract is REQUIRED, not audit-only
-    assert "sectionContracts" not in md                         # RTM/HPQ fixtures moved out of the shared prompt
+    assert "BEST-EFFORT + ANSWERABILITY" in di
+    assert "_morphed` (REQUIRED" in di                          # [A1] the contract is REQUIRED, not audit-only
+    assert "sectionContracts" not in di                         # RTM/HPQ fixtures moved out of the shared prompt
 
 
 def test_dual_owned_flag_is_per_card_from_the_skeleton():
@@ -198,7 +198,7 @@ def test_undeclared_morph_reverts_and_surfaces_as_telemetry():
 
 
 def test_contract_exemplar_carries_empty_morphed_list():
-    di = open(os.path.join(_P, "data_instructions.md"), errors="replace").read()
+    di = open(os.path.join(_P, "data_instructions_v2.md"), errors="replace").read()
     assert '"exact_metadata":{"_morphed":[]}' in di             # [A1] the exemplar teaches the REQUIRED key
 
 

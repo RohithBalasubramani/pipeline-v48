@@ -1,0 +1,51 @@
+# db-tunnel.service — HARDENED (2026-07-07). DB forward :5433 → 10.90.200.91:5432 over the FortiClient VPN.
+# Drop-in replacement for /etc/systemd/system/db-tunnel.service. Fixes the flap-storm: 3 real remote timeouts today
+# amplified into 487 start/stop events (111× "Address already in use", 48× "remote port forwarding failed").
+#
+# WHAT CHANGED vs the original (and why):
+#   • ServerAliveCountMax 3 → 6         a healthy tunnel now tolerates 90s of remote silence before ssh gives up
+#                                       (was 45s — a brief VPN/remote stall was killing a working link).
+#   • ConnectTimeout=10                 a dead-remote connect fails fast instead of hanging the restart.
+#   • TCPKeepAlive=yes                  OS-level keepalive in addition to ssh's, so a half-dead socket is detected.
+#   • ExecStartPre frees :5433          kills any LINGERING old ssh + lets the socket release BEFORE the new bind —
+#                                       this is the direct fix for the "Address already in use" restart storm.
+#   • RestartSec 10→3 + backoff         a quick blip recovers in ~3s (was a fixed 10s OFFLINE gap); a SUSTAINED
+#     (RestartSteps/RestartMaxDelaySec) outage backs off 3s→30s so it stops hammering a truly-down remote.
+#   • StartLimitIntervalSec=0           never enters "failed, give up" — Restart=always keeps trying through any
+#                                       outage length (a data tunnel you always want back).
+#   • DB-only (no -R 2222)              the reverse forward is decoupled — a 2222 bind failure can no longer take
+#                                       down the healthy DB forward (was the 48× "remote port forwarding failed"
+#                                       cascade). If you still need the reverse SSH, run it as its OWN unit.
+#
+# INSTALL (review first, then):
+#   sudo cp ops/db-tunnel.service /etc/systemd/system/db-tunnel.service
+#   sudo systemctl daemon-reload
+#   sudo systemctl restart db-tunnel.service
+#   systemctl status db-tunnel.service   # Active: running; watch: journalctl -u db-tunnel.service -f
+
+[Unit]
+Description=Tunnels to 10.90.200.91 — DB (5433) [hardened]
+After=network-online.target forti-vpn.service
+Wants=forti-vpn.service
+# never stop retrying, regardless of how many restarts pile up during a long outage
+StartLimitIntervalSec=0
+
+[Service]
+User=rohith
+# free :5433 of any lingering listener before we (re)bind — kills the "Address already in use" storm. Non-fatal (-).
+ExecStartPre=-/bin/sh -c '/usr/bin/fuser -k -TERM 5433/tcp 2>/dev/null; sleep 1; exit 0'
+ExecStart=/usr/bin/ssh -i /home/rohith/.ssh/id_tunnel -N \
+  -o ExitOnForwardFailure=yes \
+  -o ConnectTimeout=10 \
+  -o ServerAliveInterval=15 -o ServerAliveCountMax=6 \
+  -o TCPKeepAlive=yes \
+  -o StrictHostKeyChecking=accept-new \
+  -L 127.0.0.1:5433:127.0.0.1:5432 rohithdev@10.90.200.91
+Restart=always
+RestartSec=3
+# exponential backoff (systemd >= 254): 3s → … → 30s so a down remote isn't hammered every 3s
+RestartSteps=4
+RestartMaxDelaySec=30
+
+[Install]
+WantedBy=multi-user.target

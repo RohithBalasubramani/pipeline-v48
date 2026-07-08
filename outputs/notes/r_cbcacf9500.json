@@ -5,25 +5,25 @@
    "card_id": 14,
    "title": "Cumulative Energy",
    "answerability": "partial",
-   "note": "Showing total active energy \u2014 per-member breakdown is not measured for this panel aggregate; SEC and target are not measured."
+   "note": "Showing cumulative energy (kWh/kVArh) for this month \u2014 per-member data is aggregated from live feeders; capacity/target/marker are not measured for this panel."
   },
   {
    "card_id": 16,
    "title": "Energy Consumption Trend",
    "answerability": "partial",
-   "note": "Showing energy consumption trend for active feeders (UPS, BPDB, HHF). Rated and Contracted reference lines are omitted because the asset's nameplate ratings (rated_kw, contracted_kw) are unknown."
+   "note": "Showing total active and reactive energy trend by feeder (UPS, BPDB, HHF); rated and contracted reference lines are omitted because the asset's nameplate ratings are unknown."
   },
   {
    "card_id": 15,
    "title": "Today live power analysis",
    "answerability": "partial",
-   "note": "Showing apparent power (kVA) and active/reactive power (kW/kVAr) for all load feeders. Capacity (rated kVA) and peak markers are omitted because the asset's nameplate rating is unknown and no windowed-peak reducer is available."
+   "note": "Showing live apparent power (kVA) and reactive power (kVAr); rated capacity and peak markers are omitted because the asset's nameplate rating is unknown."
   },
   {
    "card_id": 17,
    "title": "Daily Power Demand by Feeder",
    "answerability": "partial",
-   "note": "Showing demand profile for UPS and BPDB feeders (has_data=Y); HHF feeders are not present on this panel's roster and will render as null."
+   "note": "Showing peak demand and load factor (derived from active power); HHF feeder data is not available for this panel."
   }
  ],
  "loop2": null

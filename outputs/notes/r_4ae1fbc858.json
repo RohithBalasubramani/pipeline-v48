@@ -1,0 +1,18 @@
+{
+ "run_id": "r_4ae1fbc858",
+ "loop1": [
+  {
+   "card_id": 47,
+   "title": "Power Quality",
+   "answerability": "partial",
+   "note": "Showing total current THD and per-phase R values for H5/H7; voltage harmonics, flicker, and crest factor are not measured by this UPS meter."
+  },
+  {
+   "card_id": 48,
+   "title": "Distortion & Harmonic Profile",
+   "answerability": "partial",
+   "note": "Showing I-THD and V-THD trends over the last 7 days; per-order harmonics (H5/H7) are not measured by this asset and are omitted."
+  }
+ ],
+ "loop2": null
+}

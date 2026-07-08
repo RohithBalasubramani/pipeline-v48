@@ -64,7 +64,8 @@ def _registry_mfm_id(asset):
     return asset.get("mfm_id") or asset.get("id")
 
 
-def _run_cards(l2, asset_table, db_link=None, date_window=None, run_id="-", asset=None, page_key=None):
+def _run_cards(l2, asset_table, db_link=None, date_window=None, run_id="-", asset=None, page_key=None,
+               metric=None, intent=None):
     """Fill EVERY Layer-2 card's payload from NEURACT via ems_exec.run_card — PER-CARD, IN PARALLEL, with a wall-clock
     budget. Returns (completed_by_id, status_by_id): completed_by_id={card_id: completed CMD_V2 payload}; status_by_id=
     {card_id: {ok, why}} the honest fetch-reason channel [ER-6]. Feeder + asset + panel cards ALL go through run_card
@@ -82,6 +83,9 @@ def _run_cards(l2, asset_table, db_link=None, date_window=None, run_id="-", asse
     special = _special_handling_map(list(tasks.keys()))       # {card_id: kind} for the SPECIAL renderer cards
     reg_mfm = _registry_mfm_id(asset)                         # the lt_mfm.id for topology/narrative membership
     asset_name = (asset or {}).get("name")
+    member_scope = (asset or {}).get("member_scope") or "outgoing"  # PANEL READING DIRECTION [panel_overview]: the
+    # incomer-vs-outgoing side the prompt asked for (stamped by layer1b/resolve/member_scope). Threaded to the
+    # panel_aggregate renderer so its member fan-out sums the RIGHT side (default 'outgoing' → behaviour unchanged).
 
     def _fill(cid, o):
         em = o.get("exact_metadata")
@@ -91,17 +95,30 @@ def _run_cards(l2, asset_table, db_link=None, date_window=None, run_id="-", asse
         rid = (o.get("swap_decision") or {}).get("swap_to_id") or cid  # the RENDERED card's identity (swap target)
         if kind:                                              # asset_3d / topology_sld / narrative_ai → run_special
             from ems_exec.renderers import run_special
-            a = {"mfm_id": reg_mfm, "name": asset_name, "table": asset_table}
+            a = {"mfm_id": reg_mfm, "name": asset_name, "table": asset_table, "member_scope": member_scope}
+            # ASK + REQUESTED-WINDOW seam [narrative_ai: lead-with-asked-about + honest window label]. The narrator/story
+            # need (1) the user's ASKED-ABOUT quantity — the 1a `metric` (e.g. 'voltage') — so a voltage question leads
+            # with the voltage fact (not a more-severe current event), and (2) the FE-REQUESTED window: `window` above is
+            # the OPERATIVE read window (None for a snapshot/non-history card, so run_card / the story keep reading the
+            # latest row), while `requested_window` carries what the FE asked REGARDLESS of is_history, so the label can
+            # stay HONEST and a future windowed-facts path can light up without re-plumbing. Extra keys are inert for the
+            # other special renderers (asset_3d / topology_sld / panel_aggregate); metric/intent None → behaviour unchanged.
             ctx = {"asset_table": asset_table, "mfm_id": reg_mfm, "db_link": db_link,
-                   "window": window, "page_key": page_key}
+                   "window": window, "requested_window": date_window, "page_key": page_key,
+                   "metric": metric, "intent": intent, "member_scope": member_scope}
             # panel_aggregate fills the card's OWN exact_metadata skeleton from the member-aggregated row, so pass the
             # payload + data_instructions + harvested default (grafts elided rosters); topology/narrative/asset_3d ignore
             # these extra keys (they build widgets from scratch). One uniform card dict for every special kind.
             # render_card_id = the swap target when Layer 2 swapped — the payload is ALREADY the target's shape, so the
             # roster interpreter must key card_fill_recipe on the RENDERED card, never the original slot id (a swapped
             # card whose original id has a recipe would otherwise run that recipe against the wrong payload shape).
+            # shape_ref = the RAW harvested default for the RENDERED card — the SAME shape oracle run_card gets below.
+            # The panel_aggregate renderer reuses fill() (which threads shape_ref into fab_guards' raw-vs-stripped CLASS-4
+            # wall); without it that path hits the legacy chrome-vocab wall and OVER-BLANKS order/layout/palette metadata
+            # (empty stackOrder/columnOrder/tileOrder → dead plots). Handed down so ems_exec need not reach up into host.
             card = {"card_id": cid, "render_card_id": rid, "card_handling": kind, "exact_metadata": em,
-                    "data_instructions": di, "_default_payload": o.get("_default_payload")}
+                    "data_instructions": di, "_default_payload": o.get("_default_payload"),
+                    "shape_ref": _raw_default_payload(rid)}
             out = run_special(kind, a, card, ctx)
             return out if out is not None else em            # None → fall back to the metadata skeleton (honest)
         # shape_ref = the RAW harvested default (shape oracle for the post-fill axis/scale/normalize passes — clock

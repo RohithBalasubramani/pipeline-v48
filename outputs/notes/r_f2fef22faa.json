@@ -1,0 +1,24 @@
+{
+ "run_id": "r_f2fef22faa",
+ "loop1": [
+  {
+   "card_id": 54,
+   "title": "Transfer readiness",
+   "answerability": "none",
+   "note": "This UPS asset does not measure transfer readiness scores, permissive states, or bypass voltages; the card's core readiness metrics are absent and cannot be derived from available electrical columns."
+  },
+  {
+   "card_id": 55,
+   "title": "Activity",
+   "answerability": "partial",
+   "note": "Showing transfer activity volume and timing \u2014 derived from auto-restart counts; exact transfer-specific columns are not logged for this asset."
+  },
+  {
+   "card_id": 56,
+   "title": "Source Transfer \u2014 Composite",
+   "answerability": "partial",
+   "note": "Showing bypass frequency and input voltage \u2014 composite transfer readiness score and transfer event count are not directly measured by this UPS asset's schema, so those slots are omitted."
+  }
+ ],
+ "loop2": "'ups-asset-dashboard/source-transfer' answers the prompt as routed; these cards cover quantities not recorded for this asset and render honest-blank per-leaf with the reason: Transfer readiness (This UPS asset does not measure transfer readiness scores, permissive states, or bypass voltages; the card's core readiness metrics are absent and cannot be derived from available electrical columns.)."
+}

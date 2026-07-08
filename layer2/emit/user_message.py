@@ -8,6 +8,14 @@ import json
 from config.app_config import cfg
 from layer2.emit.asset_facts import nameplate_line, data_window_line
 from layer2.emit.panel_members_block import panel_members_block
+
+# equipment-registry facts [stream C] — additive lines beside NAMEPLATE/DATA WINDOW; a broken/absent module must
+# never take the user message down (facts degrade to none, prompt byte-identical to pre-wiring).
+try:
+    from layer2.emit.equipment_facts import equipment_fact_lines
+except Exception:                                              # pragma: no cover — import-time armor
+    def equipment_fact_lines(asset):
+        return ()
 from layer2.emit.slot_catalog import build_slot_catalog, render_slot_catalog
 from layer2.emit.data.consumer_binding import domain_endpoints
 
@@ -248,7 +256,8 @@ def _build(card_in, *, oversize=False):
     # NAMEPLATE + DATA WINDOW verbatim facts [C3]: the real rating row (a '—' rating ⇒ any fn/const needing it is
     # UNBINDABLE — the faith-based I_RATED=131 / ratedKw=600 consts had no fact to check against) and the table's real
     # first/last logged ts (28/38 window emits chose wall-clock 'today' over a lagging dataset — 255 no_reading blanks).
-    for _fact in (nameplate_line(asset), data_window_line(asset, card_in.get("column_basket"))):
+    for _fact in (nameplate_line(asset), data_window_line(asset, card_in.get("column_basket")),
+                  *equipment_fact_lines(asset)):              # equipment-registry facts [stream C]; () on miss/off
         if _fact:
             parts.append(_fact)
     parts += [

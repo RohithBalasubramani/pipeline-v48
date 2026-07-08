@@ -1,0 +1,12 @@
+{
+ "run_id": "r_f0fab33c35",
+ "loop1": [
+  {
+   "card_id": 9,
+   "title": "Total Feeder Consumption / Supply",
+   "answerability": "partial",
+   "note": "Showing total active power demand \u2014 contracted capacity is unknown for this asset, so the denominator and consumption percentage are omitted."
+  }
+ ],
+ "loop2": null
+}

@@ -67,10 +67,13 @@ renders it directly.
 
 ## SCOPE — per-card only (aggregation intentionally OUT)
 
-There is **no aggregate kind, no multi-meter fetch, no member resolution** in this build (the user retired fan-out for
-now to keep the architecture simple). A panel-aggregate card whose leaves cannot be filled from ITS ONE resolved table
-simply honest-blanks. The membership metadata (`cmd_equipment.feeder`, `panel_topology`) is ready to reuse LATER; the
-executor never touches it.
+There is **no aggregate kind, no multi-meter fetch, no member resolution** in the per-card executor ITSELF — a
+panel-aggregate card is served by the SEPARATE panel_aggregate renderer / roster interpreter (member fan-out via
+registries/neuract/members + data/lt_panels/panel_members), never by this contract. Membership metadata is WIRED
+(2026-07-08 equipment wiring): the local `cmd_catalog.equipment.feeder` graph serves richer directed rosters through
+data/equipment/edges.py behind the default-off `equipment.topology.enabled` knob + per-panel allowlist, falling back
+per panel to the neuract mirror edges; the old `panel_topology` table was dropped as dead. The per-card executor
+still never touches any of it.
 
 ## Entry points
 

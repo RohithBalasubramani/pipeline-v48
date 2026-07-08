@@ -5,31 +5,31 @@
    "card_id": 18,
    "title": "Events KPI Strip",
    "answerability": "partial",
-   "note": "Showing aggregate panel event counts; some panel members (GIC-01-N9, GIC-02-N1, GIC-15-N10, GIC-15-N11, GIC-02-N6, GIC-02-N7) are dark and do not report live data."
+   "note": "Showing panel-level event aggregates; supply-side members (Solar Incomers, Transformers) are dark (has_data=N) and contribute zero to the rollup."
   },
   {
    "card_id": 19,
    "title": "AI Summary",
    "answerability": "partial",
-   "note": "Showing narrative summary for 6 active feeders; 2 supply incomers and 2 UPS feeders are dark (no data) and will render as honest blanks."
+   "note": "Showing panel-aggregate narrative \u2014 per-member roster values are filled from member meters; some members (GIC-01-N9, GIC-02-N1, GIC-15-N10, GIC-15-N11, GIC-02-N6, GIC-02-N7) are dark and honest-blank."
   },
   {
    "card_id": 20,
    "title": "Event Timeline at {period}",
    "answerability": "partial",
-   "note": "Showing per-member event distribution for 6 active feeders; 2 feeders (GIC-02-N6-UPS-05, GIC-02-N7-UPS-06) are dark and honest-blank their slots."
+   "note": "Showing event timeline for 6 active feeders; 4 members (Solar Incomers, Transformers) are dark and honest-blank their slots."
   },
   {
    "card_id": 21,
    "title": "Current Distribution at {period}",
    "answerability": "partial",
-   "note": "Showing current distribution for 6 active feeders; 2 feeders (UPS-05, UPS-06) are dark (no data) and will render as blank spokes."
+   "note": "Showing current distribution for 8 feeders; 2 feeders (UPS-05, UPS-06) are dark (no live data) and render as blanks."
   },
   {
    "card_id": 22,
    "title": "Other Panels Event at {period}",
    "answerability": "partial",
-   "note": "Showing per-panel voltage/current events and metrics for active feeders (UPS-01, UPS-02, UPS-03, BPDB-01, BPDB-02, UPS-04); inactive feeders (UPS-05, UPS-06, Solar Incomers, Transformers) are honest-blanked as they have no data."
+   "note": "Showing sag, swell, current, and neutral event counts per panel; voltage max/min are not measured by this meter, so vAvg is used as a proxy for voltage magnitude."
   }
  ],
  "loop2": null

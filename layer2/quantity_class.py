@@ -18,6 +18,10 @@ DB-config-driven with code-default mirrors (mandate): the vocabularies are cmd_c
   quantity.semantic_families — NAME-level families (efficiency / sfc / consumption / fuel): a slot whose name claims
                             a family binds only a same-family (or family-licensed-class) source — the card-65
                             same-dimension pun wall ('Efficiency' ← loadFactorPct)
+  quantity.source_role_markers — role → rail-qualifier marker tokens (output/bypass/input/mains/utility/grid/
+                            incoming/line_side/source): the SOURCE-ROLE CLASSIFIER (source_role_of / is_non_output_
+                            source) the measurable_resolve source-role WALL consumes to refuse the meter's own output
+                            reading for a NON-output rail label ('Average Bypass Voltage' → bypass → honest-blank)
   quantity.compatible_slot_source_pairs — ORDERED (slot, source) grants: a statistic-kind source into its base
                             dimension's slot (amps cell ← deviation-spread stat) — reverse NOT granted
   quantity.structural_const_tokens — const metric/leaf tokens that name DISPLAY knobs (decimals/opacity/index/
@@ -52,6 +56,34 @@ _UNIT_CLASSES_DEFAULT = {
     "years": "lifetime", "year": "lifetime", "yrs": "lifetime",
     "min": "duration", "mins": "duration", "minutes": "duration", "s": "duration", "sec": "duration",
     "h": "duration", "hr": "duration", "hrs": "duration", "hours": "duration", "ms": "duration", "days": "duration",
+    # a PER-HOUR OCCURRENCE-RATE unit ('/hr' / '/hrs' / '/hour' / 'per hour') — the count-PER-time quantity the
+    # transformer tap-rtcc KPIs carry (card 14 Peak/Average tap-count '/hrs'). A RATE is NOT a duration ('/hrs' has a
+    # leading slash: a rate of events per hour, never a span OF hours) and NOT a power — a POWER derivation
+    # (worstPeakKw on active_power_total_kw) shipped under a '/hrs' tap-rate leaf is a cross-domain fabrication, so the
+    # quantity wall (unit_class '/hrs' → 'rate' != power) honest-blanks it. Keyed on the SLASH-prefixed spelling so the
+    # bare 'hr'/'hrs' duration units above are untouched.
+    "/hr": "rate", "/hrs": "rate", "/hour": "rate", "/h": "rate", "perhr": "rate", "perhour": "rate",
+    # a RATE-OF-CHANGE unit ('%/hour' = percent-per-hour) — the power-quality Trend-Rate KPIs (card 47
+    # snapshot.trendPctPerHour, unit '%/hour') and the THD trend derivations report a PERCENTAGE CHANGE PER HOUR: how
+    # fast a distortion metric is rising/falling. This is a DISTINCT quantity from the raw magnitude AND from a bare
+    # occurrence 'rate' (a count-per-hour): binding a raw current/voltage/power/energy column into a '%/hour' trend-rate
+    # slot ships an amps/volts/kW magnitude AS a rate-of-change (card 47: current_avg=275 A shown as '+275 %/hour Trend
+    # Rate'), a cross-quantity fabrication. The unit keeps its '%' so it never collides with the bare '/hr'/'ops/hr'
+    # occurrence-rate keys above; a GENUINE %/hour rate derivation (fn thdTrendRatePctPerHour, name-class 'rate-of-change'
+    # via its own tokens) is compatible and still fills. DB row quantity.unit_classes.
+    "%/hour": "rate-of-change", "%/hr": "rate-of-change", "%/h": "rate-of-change",
+    "pct/hour": "rate-of-change", "pct/hr": "rate-of-change", "pctperhour": "rate-of-change",
+    "pctperhr": "rate-of-change", "%perhour": "rate-of-change", "%perhr": "rate-of-change",
+    # a TAP-OPERATION unit ('ops' = discrete OLTC operation count; 'ops/hr' = operations-per-hour rate) — the
+    # transformer tap-rtcc Tap-Activity KPIs/legend/points carry unit='ops' (Total/Peak/Avg operations, Hourly/
+    # Cumulative ops) and the raw Rate cells unit='ops/hr' (card 81, pinned Transformer-01). An 'ops' count and an
+    # 'ops/hr' rate are NOT a power — a POWER derivation (worstPeakKw on active_power_total_kw) or a load-factor
+    # derivation (loadFactorPct) shipped under an 'ops' tap-operation KPI is a cross-domain fabrication, so the
+    # quantity wall (unit_class 'ops' → 'count' / 'ops/hr' → 'rate', both != power/load-factor) honest-blanks it.
+    # This is the PRIMARY card-81 anchor: every one of the fabricated Tap-Activity leaves declares unit='ops', so the
+    # slot classifies count even though its path leaf is a generic 'value'. 'ops/hr' keeps its slash (a rate) so the
+    # bare 'ops' count key is untouched, mirroring the '/hrs' rate discipline above.
+    "ops": "count", "ops/hr": "rate", "ops/hrs": "rate", "ops/h": "rate", "opsperhr": "rate",
     "°": "angle", "deg": "angle",
     # ASSET-DOMAIN units an electrical MFM does NOT sense — a same-family source never exists in a V/A/kW/PF basket,
     # so the slot honest-blanks. rpm = crankshaft tacho (DG); kPa/bar/psi = oil/manifold pressure (DG — also FIXES
@@ -82,6 +114,20 @@ _NAME_CLASSES_DEFAULT = {
     "aging": "aging-factor", "ageing": "aging-factor", "faa": "aging-factor",
     "readiness": "readiness",
     "tapcount": "count", "count": "count", "transfers": "count",
+    # TAP-OPERATION COUNT words [transformer tap-rtcc, card 14 Peak/Average tap-count KPIs] — an OLTC tap OPERATION
+    # is a discrete tap CHANGE the meter tallies (a count / count-per-hour rate), NOT a power reading. These name a
+    # count so that even when the KPI slot leaf is a generic 'value' (no 'tapCount' leaf token) the tap-operation
+    # CONTAINER segment still classifies count, and a power fn (worstPeakKw) bound there honest-blanks. PAIR tokens
+    # ('tap'+'changes' = tapchanges) so the bare 'tap' PATH token keeps its 'tap-position' class (OLTC step, cards
+    # 78-81) — tapChanges/tapOperations are the OPERATION TALLY, tapPosition is the discrete step.
+    "tapchanges": "count", "tapchange": "count", "tapoperations": "count", "tapoperation": "count",
+    # TAP-ACTIVITY LABEL count word [card 81 Tap-Activity KPIs: labels 'Total operations' / 'Tap operations (hourly)']
+    # — a tap OPERATION is a discrete tap-change TALLY (a count), so the KPI/legend/points labels naming it classify
+    # count even when the slot path leaf is a generic 'value' and (variant) the unit is stripped, giving the wall a
+    # label-side anchor beyond the unit='ops' primary. SINGULAR/PLURAL 'operation'/'operations' only — the bare 'ops'
+    # abbreviation is DELIBERATELY ABSENT here (it rides the container slot token 'liveOps' on card 70's Availability
+    # KPI, where it is NOT a count; the unit_classes 'ops' key covers card 81's unit path with no such slot collision).
+    "operations": "count", "operation": "count",
     # occurrence words [c61 'Events' KPI / c64 stats.starts]: an events/starts slot is a COUNT — never a percent/
     # power derivation re-labelled. Plural-only ('event'/'start' singular stay absent: they ride flag-column names
     # like sag_event_active and axisStartMs, where they are NOT the leaf's quantity).
@@ -92,10 +138,28 @@ _NAME_CLASSES_DEFAULT = {
     "h9": "voltage-harmonic", "h11": "voltage-harmonic", "h13": "voltage-harmonic",
     "thdcurrent": "current-thd", "currentthd": "current-thd", "ithd": "current-thd", "thdi": "current-thd",
     "thdvoltage": "voltage-thd", "voltagethd": "voltage-thd", "vthd": "voltage-thd", "thdv": "voltage-thd",
+    # PEAK-THD [DEFECT B, card 04 iThdPk] — a peak individual-harmonic-THD-CURRENT leaf. There is NO peak-THD column on
+    # any gic_* meter, so classing it current-thd (a distortion %, NOT a raw amps magnitude) lets the quantity wall +
+    # measurable_resolve honest-blank it instead of binding current_avg (the 265-amps-as-peak-THD fab). 'ithdpk' is the
+    # token-exact single; 'thdpk'/'peakthd' catch the bare peak-THD spellings (the 'ithd' pair already catches iThdPk,
+    # these make the peak spelling classify on its own, no prefix token needed).
+    "ithdpk": "current-thd", "thdpk": "current-thd", "peakthd": "current-thd", "thdpeak": "current-thd",
     "deviation": "deviation-spread", "spread": "deviation-spread",
     "unbalance": "unbalance", "imbalance": "unbalance",
     "powerfactor": "power-factor", "pf": "power-factor", "cosphi": "power-factor",
     "loadfactor": "load-factor",
+    # RATE-OF-CHANGE / TREND-RATE [card 47 snapshot.trendPctPerHour, unit '%/hour'] — a PERCENT-PER-HOUR trend rate:
+    # how fast a metric is rising/falling. A DISTINCT quantity from the raw magnitude (a rate-of-change is NOT amps/
+    # volts/kW/kWh): binding a raw current/voltage/power/energy column into a '…PctPerHour' / 'trendRate' / 'ratePct'
+    # slot ships that magnitude AS a rate-of-change (current_avg=275 A → '+275 %/hour Trend Rate'), a fabrication → the
+    # quantity wall honest-blanks. PAIR tokens only ('pct'+'per' = pctper as in trendPctPerHour/…PctPerHr; 'trend'+
+    # 'rate'; 'rate'+'pct'/'percent') so a bare 'trend'/'rate'/'per'/'hour' token stays untouched — this is critical:
+    # a COUNT-per-hour ('tapChangesPerHour'→count) or ENERGY-per-hour ('kwhPerHour'→energy) slot classifies on its OWN
+    # leading quantity token (leaf-most-first) and is NEVER re-classed rate-of-change (verified against the corpus). A
+    # GENUINE %/hour derivation (fn thdTrendRatePctPerHour — tokens thd/trend/rate/pct/per/hour → 'pctper' pair → rate-
+    # of-change) is compatible with the slot and still fills. DB row quantity.name_classes.
+    "pctper": "rate-of-change", "trendrate": "rate-of-change",
+    "ratepct": "rate-of-change", "ratepercent": "rate-of-change",
     # PAIR 'load'+'pct' = a load-percentage slot/fn (loadPct / …LoadPctOfRated) — catches raw NEGATIVE kW dumped into a
     # loadPct series (cards 58/76) while loadFactorPct / kpiKwLoadPctOfRated (both classify load-factor via their own
     # pairs) stay compatible. Bare 'load' stays deliberately absent (container false-positives).
@@ -133,6 +197,22 @@ _NAME_CLASSES_DEFAULT = {
     # SOURCE-TRANSFER ACTIVITY [UPS source-transfer 55] — days-since / count of static-switch transfers; a transfer-
     # switch event the MFM does not log (FIVE WALLS #5). ('transfers' plural already → count.)
     "transferdays": "count", "lasttransfer": "count",
+    # RELIABILITY HOURS [DG operations-runtime 'Energy & Reliability' 72] — MTBF / MTTR are failure-and-repair
+    # statistics (mean-time-between-failures / mean-time-to-repair, in HOURS) computed from a failure/repair-EVENT
+    # log. dg_1_mfm (and every gic_* electrical MFM) has NO failure/repair-event column (no %mtbf%/%mttr%/%fail%/
+    # %repair% column, verified against information_schema), so an MTBF/MTTR cell binds NO same-quantity source and
+    # MUST honest-blank — the card's own note even says these are not measured by this meter. The family fabrication
+    # is an ENERGY counter (fn windowEnergyKwh over active_energy_import_kwh: a 24h energy delta) re-labelled as
+    # reliability-hours; 'reliability' is distinct from 'energy' so compatible() returns False and the wall blanks
+    # with 'reliability not measured by this meter'. (Their unit 'h' also classifies duration — either evidence
+    # blanks the energy bind.) Token-EXACT; these tokens are corpus-unique to card 72.
+    "mtbf": "reliability", "mttr": "reliability", "reliability": "reliability",
+    # AVAILABLE-ENERGY FRACTION [card 72 'activeFraction'/'reactiveFraction'] — the share of apparent energy that is
+    # active/reactive (an availability RATIO, 0..1). Distinct from 'energy': binding the raw active-energy counter
+    # (windowEnergyKwh) into a fraction cell ships kWh AS a fraction (activeFraction=100.2), a fabrication. 'fraction'
+    # (leaf-most, activeFraction/reactiveFraction) → availability so compatible(availability, energy) is False; a
+    # legitimate ratio fn (progressActivePct, unclassified) stays compatible (unknown source never flags).
+    "fraction": "availability", "availability": "availability",
 }
 
 # dimension-only classes too generic to flag: an unclassified-by-name '%' column could be ANY percent-semantic —
@@ -188,6 +268,37 @@ _SOURCE_ROLES_DEFAULT = {
     "input": {"markers": ["input", "line", "mains"], "dedicated": False},
 }
 
+# ── SOURCE-ROLE CLASSIFIER [DEFECT 56, card 56 'Average Bypass Voltage'] ───────────────────────────────────────────
+# A qualified electrical label (a voltage/current/frequency/power reading with a RAIL qualifier) names WHICH physical
+# sensing point of a multi-rail asset it reads: the asset's own metered OUTPUT/LOAD terminal, or a physically DISTINCT
+# un-metered rail (BYPASS static-switch / INPUT-LINE / MAINS / UTILITY / GRID / INCOMING / LINE-SIDE / SOURCE). This
+# gic_* MFM senses only its OWN output — voltage_avg / current_avg ARE that measured (output) reading, NOT a separate
+# rail. So a source-role WALL (in ems_exec.executor.measurable_resolve, owned by another concern) must resolve a
+# qualified label to its rail and REFUSE the meter's own output reading for any NON-output rail:
+#     'Output Voltage'          → role 'output'  → KEEP  (the meter's own measured terminal)
+#     'Average Bypass Voltage'  → role 'bypass'  → []    (honest blank — this meter has no bypass sensor)
+#     'Input/Mains/Utility/Grid/Incoming/Line-side Voltage' → non-output rail → []  (a separate un-metered rail)
+# This section is the DB-driven grounding VOCAB the wall consumes (via getattr on source_role_of / is_non_output_source
+# below); it is the SAME rail-qualifier vocabulary the wall used to carry inline, hoisted here so there is exactly ONE
+# source-role vocabulary and it is DB-config-driven with a code-default mirror. role → marker tokens (token-EXACT, a
+# multi-word marker like 'line side' matches an ADJACENT token run — never a substring, so 'sourced'/'grinder'/
+# 'inputted' never tokenize to a role token). 'output' is the ONE measured/self role (is_non_output_source False);
+# every other role is a distinct un-metered rail (is_non_output_source True). DB row: quantity.source_role_markers.
+_SOURCE_ROLE_MARKERS_DEFAULT = {
+    "output": ["output", "load side", "load-side", "loadside"],
+    "bypass": ["bypass"],
+    "input": ["input"],
+    "mains": ["mains"],
+    "utility": ["utility"],
+    "grid": ["grid"],
+    "incoming": ["incoming"],
+    "line_side": ["line side", "line-side", "lineside", "line"],
+    "source": ["source"],
+}
+# the ONE role the meter measures at its own terminals — a label naming it binds the meter's own reading and NEVER
+# honest-blanks (is_non_output_source False). Every other classified role is a physically distinct un-metered rail.
+_MEASURED_SOURCE_ROLE = "output"
+
 # TIME-AXIS LABEL leaf tokens [card 59 secondary: composite.points[*].label ← active_power_total_kw = negative kW
 # rendered AS x-axis time labels]: the per-point `label` / `slot` leaf of a time SERIES is the time-axis tick label —
 # it is filled from the card's OWN bucket timestamps (kind=time), NEVER from a measured column. A raw/bucketed field
@@ -219,6 +330,19 @@ _COMPATIBLE_SLOT_SOURCE_PAIRS_DEFAULT = [["current", "deviation-spread"], ["volt
 # never matches and stays policed. DB row: quantity.structural_const_tokens.
 _STRUCTURAL_CONST_TOKENS_DEFAULT = ["decimals", "opacity", "index", "layout", "windowdays"]
 
+# MIXED-QUANTITY CONTAINER segments [card 72 'energyReliability']: a slot-path CONTAINER whose own name concatenates
+# TWO distinct measured quantities (energy + reliability) is NOT a single-quantity qualifier (unlike 'hotspotC' or
+# 'fuelTemp', which name ONE quantity and whose leaf-most token rightly wins). Such a container groups cells of
+# DIFFERENT quantities under a generic '.cells[N].value' leaf — so letting the container assert a class would smear
+# ONE quantity onto every cell: 'energyReliability' → 'energy' passed the MTBF/MTTR reliability cells fed the active-
+# energy counter (the family fabrication), and → 'reliability' would over-blank the real active/reactive ENERGY cells.
+# slot_class SKIPS a mixed container (token-EXACT on the segment's concatenated tokens) so classification defers to the
+# per-cell evidence the wall already carries (the field's own display unit 'h'→duration / 'MWh'→energy, then its
+# sibling label 'MTBF'→reliability / 'Active'→energy) — the MTBF/MTTR/fraction cells blank on their reliability/
+# duration/availability quantity while the active/reactive energy cells keep. A single-quantity container (hotspotC /
+# fuelTemp / lifetimeTransfers) is NOT listed and classifies exactly as before. DB row: quantity.mixed_container_tokens.
+_MIXED_CONTAINER_TOKENS_DEFAULT = ["energyreliability"]
+
 
 def _unit_map():
     return {str(k).replace(" ", "").lower(): str(v) for k, v in
@@ -248,6 +372,13 @@ def _compatible_pairs():
 def _structural_const_tokens():
     return {str(t).replace(" ", "").lower() for t in
             (cfg("quantity.structural_const_tokens", _STRUCTURAL_CONST_TOKENS_DEFAULT) or [])}
+
+
+def _mixed_container_tokens():
+    """Slot-path CONTAINER segments (concatenated tokens) that name TWO distinct quantities — slot_class SKIPS them so
+    per-cell evidence (unit / sibling label) discriminates. DB row: quantity.mixed_container_tokens (code-default mirror)."""
+    return {str(t).replace(" ", "").lower() for t in
+            (cfg("quantity.mixed_container_tokens", _MIXED_CONTAINER_TOKENS_DEFAULT) or [])}
 
 
 def structural_const_name(field):
@@ -313,9 +444,14 @@ def name_class(name):
 def slot_class(slot):
     """The quantity class a SLOT PATH's own tokens name — per SEGMENT, leaf-most segment first (so the leaf's
     'hotspotC' beats an ancestor container), digits/[*] skipped. None when no segment classifies (a generic
-    'chart.series[0].values' path never flags)."""
+    'chart.series[0].values' path never flags). A MIXED-QUANTITY CONTAINER segment (quantity.mixed_container_tokens:
+    'energyReliability' groups energy AND reliability cells) is SKIPPED — it is not a single-quantity qualifier, so
+    it must not smear one class onto every cell; classification defers to the per-cell unit/label evidence [card 72]."""
     segs = [s for s in re.findall(r"[^.\[\]]+", str(slot or "")) if s and not s.isdigit() and s != "*"]
+    mixed = _mixed_container_tokens()
     for seg in reversed(segs):
+        if mixed and "".join(_tokens(seg)) in mixed:            # mixed container → defer to leaf/unit evidence
+            continue
         c = _classify_tokens(_tokens(seg))
         if c:
             return c
@@ -455,6 +591,69 @@ def source_role_mismatch(slot_names, source_name):
     if dedicated & source_roles(source_name):
         return False, None
     return True, sorted(dedicated)
+
+
+# ── source-role CLASSIFIER (the rail resolver the measurable_resolve source-role wall consumes) ────────────────────
+def _role_marker_map():
+    """{role: [marker token tuples]} from the DB row quantity.source_role_markers (code-default mirror). Tolerates a
+    bare-string marker (wrapped to a list) and a bad/empty row (falls back to the code default). Never raises."""
+    try:
+        raw = cfg("quantity.source_role_markers", _SOURCE_ROLE_MARKERS_DEFAULT)
+    except Exception:
+        raw = _SOURCE_ROLE_MARKERS_DEFAULT
+    if not isinstance(raw, dict) or not raw:
+        raw = _SOURCE_ROLE_MARKERS_DEFAULT
+    out = {}
+    for role, markers in raw.items():
+        if isinstance(markers, str):
+            markers = [markers]
+        seqs = [tuple(_tokens(m)) for m in (markers or [])]
+        out[str(role)] = [s for s in seqs if s]
+    return out
+
+
+def source_role_of(label):
+    """The SOURCE ROLE a qualified electrical LABEL names — which physical sensing RAIL of a multi-rail asset it reads:
+      'output' | 'bypass' | 'input' | 'mains' | 'utility' | 'grid' | 'incoming' | 'line_side'   (+ 'source')
+    or None when the label carries NO rail qualifier (a plain 'Voltage' / 'Average Current' names no rail → the meter's
+    own reading is legitimate, so the caller never blanks). Token-EXACT marker match (a multi-word marker like 'line
+    side' matches an adjacent token run; never a substring — 'sourced'/'grinder'/'inputted' never fire). The MEASURED
+    'output' role wins when a label pairs it with a rail word (an 'Output' label is always the meter's own terminal).
+    DB row quantity.source_role_markers with a code-default mirror. Import-safe / NEVER raises — a failure returns None
+    (treated as 'no rail claim', so a genuine reading is never accidentally refused). This is the ONE vocab the
+    downstream source-role wall in ems_exec.executor.measurable_resolve consumes via getattr."""
+    try:
+        toks = _tokens(label)
+        if not toks:
+            return None
+        role_map = _role_marker_map()
+        # the measured self-role ('output') wins over any co-occurring rail word — an 'Output …' label is the meter's own point
+        for seq in role_map.get(_MEASURED_SOURCE_ROLE, []):
+            if _marker_hit(toks, seq):
+                return _MEASURED_SOURCE_ROLE
+        for role, seqs in role_map.items():
+            if role == _MEASURED_SOURCE_ROLE:
+                continue
+            if any(_marker_hit(toks, s) for s in seqs):
+                return role
+    except Exception:
+        return None
+    return None
+
+
+def is_non_output_source(label):
+    """True when a qualified electrical LABEL names a NON-OUTPUT source rail (bypass / input / mains / utility / grid /
+    incoming / line_side / source) — a physically distinct sensing point this OUTPUT-metering MFM has NO dedicated
+    column for, so a voltage/current/frequency/power label there must honest-blank rather than bind the meter's own
+    output reading (DEFECT 56 'Average Bypass Voltage' ← voltage_avg). False for the MEASURED 'output' role and for an
+    UNQUALIFIED label (None role — a plain reading is legitimate). Import-safe / NEVER raises (a failure returns False,
+    so a genuine reading is never accidentally refused). The convenience predicate the measurable_resolve source-role
+    wall consumes via getattr — equivalent to `source_role_of(label) not in (None, 'output')`."""
+    try:
+        role = source_role_of(label)
+        return bool(role) and role != _MEASURED_SOURCE_ROLE
+    except Exception:
+        return False
 
 
 def _time_axis_label_tokens():

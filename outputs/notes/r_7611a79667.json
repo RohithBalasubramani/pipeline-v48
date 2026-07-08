@@ -1,0 +1,18 @@
+{
+ "run_id": "r_7611a79667",
+ "loop1": [
+  {
+   "card_id": 47,
+   "title": "Power Quality",
+   "answerability": "partial",
+   "note": "Showing total current THD and IEEE 519 compliance status; per-order harmonics (H5/H7) and flicker/crest metrics are not measured by this meter."
+  },
+  {
+   "card_id": 48,
+   "title": "Distortion & Harmonic Profile",
+   "answerability": "partial",
+   "note": "Showing V-THD and I-THD phase trends \u2014 5th/7th harmonic orders and per-phase max/min/average stats are not measured by this asset."
+  }
+ ],
+ "loop2": null
+}

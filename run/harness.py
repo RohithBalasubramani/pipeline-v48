@@ -199,6 +199,11 @@ def run_pipeline(prompt, *, asset_id=None, db=None, run_id=None, layer1a=None):
 
     out = {"prompt": prompt, "run_id": run_id, "asset_id": asset_id,
            "layer1a": None, "layer1b": None, "validation": None, "layer2": None,
+           # PROMPT-DERIVED WINDOW [route-1a-timewindow]: the 1a router's relative-time preset extracted from the prompt
+           # ('last 7 days' → 'last-7-days'); None = no time phrase. Surfaced so the HOST can DEFAULT response.date_window
+           # from it when the FE sent none. Page-invariant (comes from the prompt, not the routed page) → set once below
+           # from the FIRST resolved 1a and it survives every reconcile/preflight/reflect re-route.
+           "window": None,
            "notes": {"loop1": [], "loop2": None}, "errors": {}}
     for name in ("layer1a", "layer1b"):
         r = results[name]
@@ -220,6 +225,11 @@ def run_pipeline(prompt, *, asset_id=None, db=None, run_id=None, layer1a=None):
     l1a, l1b = out["layer1a"] or {}, out["layer1b"] or {}
     if out["layer1a"] is not None:
         _rt = l1a.get("routing") or {}
+        # route-1a-timewindow: capture the prompt's relative-time preset from the FIRST 1a answer (first-class field, or
+        # the routing telemetry fallback — whichever the 1a carried). Captured BEFORE reconcile/preflight/reflect so a
+        # re-route (which re-runs 1a on the SAME prompt) can never lose it; the host reads out["window"], never the final
+        # (possibly reconciled) layer1a. None when the prompt named no time range.
+        out["window"] = l1a.get("window") or _rt.get("window")
         stage(run_id, "1a", page=l1a.get("page_key"), primitive=(l1a.get("layout") or {}).get("layout_primitive"),
               cards=len(l1a.get("cards") or []), metric=l1a.get("metric"), intent=l1a.get("intent"),
               page_key_how=_rt.get("page_key_how"), dropped_templates=_rt.get("dropped_templates") or [])
@@ -272,7 +282,11 @@ def run_pipeline(prompt, *, asset_id=None, db=None, run_id=None, layer1a=None):
         # NOT a Layer-2 skip. Only the GENUINELY-UNRESOLVED outcomes (ambiguous/empty = asset_pending) or a validation
         # block stop before Layer 2 — those are real "which asset?" questions the picker must answer first.
         how = (out["layer1b"] or {}).get("how")           # asset_no_data already set (pre-flight) — how==no_data
-        asset_resolved = (how in {"AI", "user-choice", "no_data"} and bool((out["layer1b"] or {}).get("asset")))
+        # collision_gate_fullname = the DETERMINISTIC full-name pin (the user spelled ONE colliding row out in full,
+        # e.g. 'PCC Panel 1' / 'GIC-01-N3-UPS-01') — a RESOLVED-WITH-DATA state exactly like "AI", just attributed to the
+        # collision gate instead of the model. It MUST render (not fall to the picker), so it belongs in the resolved set.
+        asset_resolved = (how in {"AI", "user-choice", "no_data", "collision_gate_fullname"}
+                          and bool((out["layer1b"] or {}).get("asset")))
         asset_pinned = (asset_resolved and not out["validation_blocked"])   # asset resolved by name AND page renderable
         out["asset_pending"] = (not asset_resolved and not out["validation_blocked"])
         stage(run_id, "asset_gate", pinned=asset_pinned, how=how, no_data=out["asset_no_data"],

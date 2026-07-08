@@ -14,12 +14,34 @@ Each returned member is {mfm_id, name, neuract_table, role} where role ∈ {outg
 power_quality} names WHICH edge table it came from (its structural relationship to the panel), and neuract_table is the
 gic_* time-series table that member logs to (via meters.table_for) — i.e. exactly what the aggregation then reads.
 
+EQUIPMENT-FIRST [stream A]: for a panel whose table is named in the equipment.topology.panel_allowlist (behind the
+default-OFF equipment.topology.enabled kill-switch), the member ids come from the bay-anchored, two-sided-guarded
+LOCAL roster (data/equipment/edges.py, :5432) instead of the live edge tables; None → today's live path unchanged.
+Role tagging stays HERE in the callers (outgoing/incoming by direction) so member_scope → role_filter_for →
+select('supply'|'load') semantics are untouched.
+
 Honest-degrade: an unknown panel / a panel with no edges → [] (never a fabricated member). [atomic; DB-driven]
 """
 from __future__ import annotations
 
 from registries.neuract import _db
 from registries.neuract import meters as _meters
+
+
+def _equipment_roster(panel_id, direction):
+    """The LOCAL bay-anchored roster (canonical member ids) when this panel is allowlisted — None → today's live
+    path. Lazy + guarded import: a defect in data/equipment can never break the certified live edge reads (and at
+    knobs-off the consult is a latched-knob check only)."""
+    try:
+        from data.equipment import edges as _eq_edges
+        if not _eq_edges.enabled():
+            return None
+        tbl = _meters.table_for(panel_id)
+        if not tbl:
+            return None
+        return _eq_edges.panel_roster(tbl, direction)
+    except Exception:
+        return None
 
 # the edge tables that carry membership, in resolution order. All share (from_mfm_id, to_mfm_id).
 #   outgoing = downstream members of the panel (the primary aggregation set)
@@ -50,7 +72,13 @@ def _member_row(mfm_id, role):
 
 
 def _edge_targets(edge, panel_id):
-    """The `to_mfm_id`s where from_mfm_id = panel_id in the given edge table (the panel's members via that edge)."""
+    """The `to_mfm_id`s where from_mfm_id = panel_id in the given edge table (the panel's members via that edge).
+    The outgoing edge consults the allowlisted equipment roster FIRST (local :5432); None → the live path below.
+    The caller tags the role — this fn stays id-only either way."""
+    if edge == "outgoing":
+        roster = _equipment_roster(panel_id, "outgoing")
+        if roster is not None:
+            return list(roster)
     tbl = f"lt_mfm_{edge}"
     if not _db.table_exists(tbl):
         return []
@@ -92,6 +120,9 @@ def incomers_of(panel_ref):
     pid = _panel_id(panel_ref)
     if pid is None:
         return []
+    roster = _equipment_roster(pid, "incoming")
+    if roster is not None:
+        return [_member_row(mid, "incoming") for mid in roster]      # role tagged HERE (supply-side semantics kept)
     if _db.table_exists("lt_mfm_outgoing"):
         got = _db.rows(
             "SELECT from_mfm_id FROM lt_mfm_outgoing WHERE to_mfm_id = %s ORDER BY from_mfm_id",

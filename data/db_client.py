@@ -28,4 +28,5 @@ def pg_connect(db):
     import psycopg2
     ce = conn_env(db)
     return psycopg2.connect(dbname=db, user=ce["PGUSER"], host=ce["PGHOST"], port=ce["PGPORT"],
-                            password=(ce["PGPASSWORD"] or None))
+                            password=(ce["PGPASSWORD"] or None),
+                            connect_timeout=int(ce.get("PGCONNECT_TIMEOUT", "5")))  # dead tunnel → fail fast, not ~2min TCP hang

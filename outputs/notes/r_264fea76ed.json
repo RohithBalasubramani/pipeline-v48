@@ -1,0 +1,24 @@
+{
+ "run_id": "r_264fea76ed",
+ "loop1": [
+  {
+   "card_id": 39,
+   "title": "Today's Energy",
+   "answerability": "partial",
+   "note": "Showing monthly active, reactive, and total energy consumption \u2014 subsidy limits, targets, and specific consumption metrics are not measured for this asset."
+  },
+  {
+   "card_id": 41,
+   "title": "Input vs Output Energy",
+   "answerability": "partial",
+   "note": "Showing total input/output energy and derived efficiency/loss metrics \u2014 per-phase energy and specific loss-ratio percentages are not directly measured for this asset."
+  },
+  {
+   "card_id": 42,
+   "title": "Load Anomalies",
+   "answerability": "partial",
+   "note": "Showing actual load trend and load factor \u2014 anomaly events, expected load, and range data are not measured for this asset."
+  }
+ ],
+ "loop2": null
+}

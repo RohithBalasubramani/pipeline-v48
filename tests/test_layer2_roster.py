@@ -149,9 +149,10 @@ def test_user_message_shows_roster_spec_verbatim():
 
 
 def test_prompt_carries_the_roster_rules():
-    """[package §2b] data_instructions.md teaches the roster vocabulary (emit key, column-only authority, honest-null)."""
+    """[package §2b] data_instructions_v2.md (the single Layer-2 contract) teaches the roster vocabulary (emit key,
+    column-only authority, honest-null)."""
     p = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
-                     "layer2", "prompts", "data_instructions.md")
+                     "layer2", "prompts", "data_instructions_v2.md")
     txt = open(p).read()
     assert "## ROSTER (member-scope) slots" in txt
     assert "data_instructions.roster" in txt

@@ -14,6 +14,90 @@ from ems_exec.executor.roster_template import _default_at, _default_list_at, _me
 from ems_exec.executor.roster_eval import _select, _context_vals
 
 
+# ─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+#  RENDER-SAFETY: never ship a null-endpoint sankey link (2026-07-07 pg02 card-13 d3-sankey 'missing: —' crash)
+# ─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+# d3-sankey's computeNodeLinks() resolves every link's {source,target} to a node by id via find(); an unresolvable id
+# (null / the honest-blank '—' sentinel / an id no node carries) throws 'missing: <id>' and crashes the WHOLE card — NOT
+# the per-leaf degrade contract. The roster builder writes RESOLVABLE endpoints, but a LATER post-fill class killer blanks
+# a link's source/target string when it byte-matches the default's structural stage id (a sankey endpoint IS topology
+# identity, byte-identical by design — but it collides with the narrative `source` key that class polices). So by the time
+# the payload ships, EVERY endpoint can be null while the node roster (real ids + values) and each link's own value are
+# intact.  Two-part guard:
+#   1. the builder STASHES each link's resolvable {source,target} on the sankey under a reserved `_endpoints` key — a
+#      leading-underscore key that the seed-leak / fab-guard passes skip by contract, so it survives fill() untouched;
+#   2. _prune_dark_edges RESTORES a blanked endpoint from that stash (recovering the REAL member flow edge), THEN drops
+#      any link still unresolved (a genuinely dark node has no edge), omits any now-edge-less node, and removes the stash.
+# Generic (zero card ids) — applies to any flow/sankey. Per-leaf degrade: live member flows stay; only dark edges vanish.
+
+_STASH_KEY = "_endpoints"                                      # reserved (leading '_') → skipped by the seed-leak passes
+
+
+def _blank_ids():
+    """The endpoint sentinels that never resolve to a node — a cmd_catalog vocab row with the code default. The FE's
+    honest-blank sentinel is the em-dash '—' (== CMD_V2 fmtMetric METRIC_PLACEHOLDER); None/'' are the raw dark forms."""
+    default = [None, "—", ""]
+    try:
+        from config.app_config import cfg
+        v = cfg("roster.sankey.dark_endpoint_sentinels", None)
+        if isinstance(v, list) and v:
+            return set(v) | {None}
+    except Exception:
+        pass
+    return set(default)
+
+
+def _stash_endpoints(sankey):
+    """Record each link's resolvable {source,target} (in link order) under the reserved `_endpoints` key so a later pass
+    that blanks an endpoint string can be UNDONE at serve time. Called by the builder after it writes clean links."""
+    if not isinstance(sankey, dict) or not isinstance(sankey.get("links"), list):
+        return
+    sankey[_STASH_KEY] = [{"source": lk.get("source"), "target": lk.get("target")}
+                          if isinstance(lk, dict) else None for lk in sankey["links"]]
+
+
+def _prune_dark_edges(sankey):
+    """Restore any blanked link endpoint from the `_endpoints` stash, then drop every link still unresolved (null / '—' /
+    not-a-real-node source OR target) so d3-sankey.find() never throws, omit any node left edge-less, and remove the
+    stash. Per-leaf degrade: the live member flows stay, only edges to dark endpoints vanish. NEVER ships a null-endpoint
+    link. In-place; no-op on a non-dict / listless sankey."""
+    if not isinstance(sankey, dict):
+        return
+    nodes = sankey.get("nodes") if isinstance(sankey.get("nodes"), list) else None
+    links = sankey.get("links") if isinstance(sankey.get("links"), list) else None
+    if links is None:
+        sankey.pop(_STASH_KEY, None)
+        return
+    blank = _blank_ids()
+    node_ids = {n.get("id") for n in nodes if isinstance(n, dict)} if nodes is not None else None
+    stash = sankey.get(_STASH_KEY) if isinstance(sankey.get(_STASH_KEY), list) else None
+
+    def _resolvable(endpoint):
+        if endpoint in blank:
+            return False
+        if node_ids is not None and endpoint not in node_ids:
+            return False                                        # an id no node carries — d3-sankey.find() would throw
+        return True
+
+    # (1) RESTORE a blanked endpoint from the stash when the stashed id still names a real node (recover the real edge).
+    if stash is not None:
+        for i, lk in enumerate(links):
+            if not isinstance(lk, dict) or i >= len(stash) or not isinstance(stash[i], dict):
+                continue
+            for end in ("source", "target"):
+                if lk.get(end) in blank and _resolvable(stash[i].get(end)):
+                    lk[end] = stash[i][end]
+
+    # (2) DROP any link still unresolved; d3-sankey only ever sees resolvable endpoints.
+    kept = [lk for lk in links
+            if isinstance(lk, dict) and _resolvable(lk.get("source")) and _resolvable(lk.get("target"))]
+    sankey["links"] = kept
+    if nodes is not None:                                       # omit a node no surviving edge touches (a dark island)
+        touched = {lk.get("source") for lk in kept} | {lk.get("target") for lk in kept}
+        sankey["nodes"] = [n for n in nodes if not isinstance(n, dict) or n.get("id") in touched]
+    sankey.pop(_STASH_KEY, None)                                # the stash is internal — never ships
+
+
 def _sankey_slot(payload, spec, state, default_payload):
     if spec.get("rebuild"):
         _sankey_rebuild(payload, spec, state, default_payload)   # real-roster topology, never the foreign skeleton
@@ -79,6 +163,9 @@ def _sankey_slot(payload, spec, state, default_payload):
                 lk["value"] = trunk_v                           # the panel's own trunk ribbon
             else:
                 lk["value"] = entity_v
+
+    _prune_dark_edges(sankey)                                   # never ship a null-endpoint link (d3-sankey.find crash)
+    _stash_endpoints(sankey)                                   # survive a later endpoint-blanking pass (serve restores)
 
 
 def _node_role(node, by_slug, panel_slugs, marker_kinds):
@@ -231,6 +318,8 @@ def _sankey_rebuild(payload, spec, state, default_payload):
     # (curveSag, colors, kind extras — byte-faithful via the template rule) under the rebuilt values.
     sankey["nodes"] = _merge_templates(nodes, dflt.get("nodes"))
     sankey["links"] = _merge_templates(links, dflt.get("links"))
+    _prune_dark_edges(sankey)                                   # never ship a null-endpoint link (d3-sankey.find crash)
+    _stash_endpoints(sankey)                                   # survive a later endpoint-blanking pass (serve restores)
     container[key] = sankey
 
     # ── legend (optional; recipe-declared groups over the SAME real roster) ────────────────────────────────────────

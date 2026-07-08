@@ -1,0 +1,24 @@
+{
+ "run_id": "r_0c817fa054",
+ "loop1": [
+  {
+   "card_id": 57,
+   "title": "UPS Capacity",
+   "answerability": "partial",
+   "note": "Showing active power load vs rated capacity (kVA/kW) and current load \u2014 bypass readiness score is not measured by this UPS output meter."
+  },
+  {
+   "card_id": 58,
+   "title": "UPS Load",
+   "answerability": "partial",
+   "note": "Showing active power load and load factor \u2014 headroom is derived from rated capacity; narrative insight is not available."
+  },
+  {
+   "card_id": 59,
+   "title": "Output Load & Capacity \u2014 Composite",
+   "answerability": "partial",
+   "note": "Showing output load (load factor) and bypass frequency; bypass voltage is proxied by nominal voltage as it is not directly measured."
+  }
+ ],
+ "loop2": null
+}

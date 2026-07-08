@@ -1,0 +1,24 @@
+{
+ "run_id": "r_9eea19b5be",
+ "loop1": [
+  {
+   "card_id": 14,
+   "title": "Cumulative Energy",
+   "answerability": "partial",
+   "note": "Showing total active energy (kWh) and reactive energy (kVArh) for this month; SEC and subsidy target are not measured for this panel."
+  },
+  {
+   "card_id": 15,
+   "title": "Today live power analysis",
+   "answerability": "partial",
+   "note": "Showing live active and reactive power from outgoing feeders; capacity marker and load factor are blank because the panel's rated capacity is unknown and load factor is not measured on member meters."
+  },
+  {
+   "card_id": 17,
+   "title": "Daily Power Demand by Feeder",
+   "answerability": "partial",
+   "note": "Showing Worst Peak and Feeder Demand trends (UPS, BPDB) \u2014 Load Factor is not measured by this asset's meter and no recovery fn is available in the basket."
+  }
+ ],
+ "loop2": null
+}

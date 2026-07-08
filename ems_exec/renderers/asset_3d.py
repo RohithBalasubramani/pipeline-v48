@@ -65,6 +65,11 @@ def render(asset, card, ctx):
         "object": obj,          # {slug,label,url,rating} OR None — NEVER a fabricated model
         "viewer": viewer,       # merged look (empty {} baseline when nothing configured — honest)
     }
+    # ADDITIVE optional key [stream D]: a kit-preview-resolved object may carry a backend-driven KPI-overlay
+    # `template` JSON (25/55 catalog slugs). Pass it through top-level when present; absent (every lt_asset_3d
+    # object today) → the key is OMITTED and the envelope is byte-identical — per-leaf honest-blank downstream.
+    if isinstance(obj, dict) and obj.get("template") is not None:
+        out["template"] = obj["template"]
     # HONEST-GAP REASON [c60 wrong-template family]: an UNBOUND model must carry the 3D-appropriate reason (the
     # editable reason_template 'no_3d_model'/'no_asset_3d' rows — never the metric sentence 'these metrics not logged
     # by this meter', which describes a column card, not a model binding). The resolver's own reason (emit_asset_3d's
@@ -81,7 +86,10 @@ def render(asset, card, ctx):
             resolver_reason = "No 3D model registered for this asset."
         try:
             from ems_exec.executor.fill import GAPS_KEY
-            out[GAPS_KEY] = [{"slot": "object", "cause": "no_3d_model", "metric": "3D model",
+            # the resolver may name a MORE SPECIFIC cause (e.g. 'glb_not_in_media_root' — a kit-preview model
+            # resolved but its GLB failed the default-deny local-file gate [stream D]); generic 'no_3d_model' else.
+            cause = (emitted.get("cause") if isinstance(emitted, dict) else None) or "no_3d_model"
+            out[GAPS_KEY] = [{"slot": "object", "cause": cause, "metric": "3D model",
                               "column": None, "fn": None, "reason": resolver_reason}]
         except Exception:
             pass

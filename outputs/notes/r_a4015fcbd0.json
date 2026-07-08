@@ -1,0 +1,24 @@
+{
+ "run_id": "r_a4015fcbd0",
+ "loop1": [
+  {
+   "card_id": 47,
+   "title": "Power Quality",
+   "answerability": "partial",
+   "note": "Showing current and voltage THD compliance and H5/H7 harmonics; flicker and crest factor are not measured by this meter."
+  },
+  {
+   "card_id": 48,
+   "title": "Distortion & Harmonic Profile",
+   "answerability": "partial",
+   "note": "Showing current THD evolution \u2014 voltage THD and specific harmonic orders (5th/7th) are not measured by this UPS asset."
+  },
+  {
+   "card_id": 49,
+   "title": "Load Impact & Transformer Stress",
+   "answerability": "partial",
+   "note": "Showing load factor as K-factor proxy and power factor/phase angle directly \u2014 K-factor is not measured for this asset."
+  }
+ ],
+ "loop2": null
+}

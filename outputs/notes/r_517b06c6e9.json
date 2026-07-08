@@ -1,0 +1,12 @@
+{
+ "run_id": "r_517b06c6e9",
+ "loop1": [
+  {
+   "card_id": 37,
+   "title": "Voltage Monitor (Real-Time)",
+   "answerability": "partial",
+   "note": "Showing live voltage trends (R, Y, B phases) and KPIs (Avg, Max, Min). Thresholds and Y-axis ticks are not measured by this asset's schema and are omitted."
+  }
+ ],
+ "loop2": "GIC-26-N10-OG Air Compressor-1 has no logged data \u2014 every card renders its real component with per-leaf-null leaves (honest empty). 262 data-bearing alternative(s) offered in the picker."
+}

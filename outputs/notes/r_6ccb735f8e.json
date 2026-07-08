@@ -1,0 +1,25 @@
+{
+ "run_id": "r_6ccb735f8e",
+ "loop1": [
+  {
+   "card_id": 16,
+   "title": "Energy Consumption Trend",
+   "answerability": "partial",
+   "note": "Showing total active and reactive energy consumption trend; rated and contracted reference lines are omitted because this asset's nameplate rating is unknown."
+  },
+  {
+   "card_id": 15,
+   "title": "Today live power analysis",
+   "answerability": "partial",
+   "note": "Showing apparent power (kVA) and active power (kW) \u2014 Load Factor, Worst Peak, and Rated Capacity are not measured or available for this asset."
+  },
+  {
+   "card_id": 17,
+   "title": "Daily Power Demand by Feeder",
+   "answerability": "partial",
+   "note": "Showing UPS and BPDB feeder demand \u2014 HHF feeder has no members on this panel, so its series is omitted."
+  }
+ ],
+ "loop2": null,
+ "reconcile": "asset 'GIC-01-N8-BPDB-01 For Lamination-01&02' has_feeders=False but the routed page 'individual-feeder-meter-shell/energy-power' is the panel-aggregate granularity \u2014 reconciled to 'panel-overview-shell/energy-power'"
+}

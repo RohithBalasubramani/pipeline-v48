@@ -1,0 +1,18 @@
+{
+ "run_id": "r_8bb7ee3a30",
+ "loop1": [
+  {
+   "card_id": 47,
+   "title": "Power Quality",
+   "answerability": "partial",
+   "note": "Showing current THD compliance and distortion \u2014 voltage harmonics, flicker, and crest factor are not measured by this asset."
+  },
+  {
+   "card_id": 48,
+   "title": "Distortion & Harmonic Profile",
+   "answerability": "partial",
+   "note": "Showing current THD trends (R/Y/B) \u2014 voltage THD data is unavailable for this asset."
+  }
+ ],
+ "loop2": null
+}

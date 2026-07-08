@@ -1,0 +1,30 @@
+{
+ "run_id": "r_8f959eb266",
+ "loop1": [
+  {
+   "card_id": 70,
+   "title": "Live Operations & Runtime",
+   "answerability": "partial",
+   "note": "Showing live power/frequency vitals \u2014 runtime, service intervals, and availability counts are not measured by this electrical meter."
+  },
+  {
+   "card_id": 71,
+   "title": "Runtime & Duty",
+   "answerability": "partial",
+   "note": "Showing load percentage \u2014 run-hours and start counts are not measured by this asset's meter."
+  },
+  {
+   "card_id": 72,
+   "title": "Energy & Reliability",
+   "answerability": "partial",
+   "note": "Showing total active, reactive, and apparent energy plus power factor \u2014 availability (MTBF/MTTR) and energy fractions are not measured for this asset."
+  },
+  {
+   "card_id": 73,
+   "title": "Power Energy Analysis",
+   "answerability": "partial",
+   "note": "Showing Active, Reactive, and Apparent Power and Power Factor history \u2014 the card's static 'Backup Readiness' scores (Autonomy, Runtime, Pressure, Headroom) are not measured by this electrical meter and are honestly blanked."
+  }
+ ],
+ "loop2": null
+}

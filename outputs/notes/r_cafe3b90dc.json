@@ -1,0 +1,18 @@
+{
+ "run_id": "r_cafe3b90dc",
+ "loop1": [
+  {
+   "card_id": 44,
+   "title": "Voltage History",
+   "answerability": "partial",
+   "note": "Showing per-phase voltage history against expected statutory range (207V-253V); event counts and specific deviation stats are not directly measured, so derived values are used for max/min lines."
+  },
+  {
+   "card_id": 46,
+   "title": "Current History",
+   "answerability": "partial",
+   "note": "Showing per-phase current history and peak/average stats \u2014 expected range lines are omitted because the asset's rated current is unknown."
+  }
+ ],
+ "loop2": null
+}

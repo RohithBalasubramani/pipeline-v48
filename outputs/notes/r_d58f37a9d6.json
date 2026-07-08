@@ -1,0 +1,30 @@
+{
+ "run_id": "r_d58f37a9d6",
+ "loop1": [
+  {
+   "card_id": 7,
+   "title": "Context Rail Header (Overview / Section / Feeder)",
+   "answerability": "partial",
+   "note": "Showing total active power and voltage/current stats for Panel 1A's fed feeders (GIC-01-N3 to GIC-02-N7); GIC-02-N6 and GIC-02-N7 are dark (no data)."
+  },
+  {
+   "card_id": 5,
+   "title": "Real Time Monitoring (Feeder Heatmap)",
+   "answerability": "partial",
+   "note": "Showing total active power, power factor, kVA, kVAr, current, voltage, and unbalance for all feeders; Load % is omitted because the panel members lack a rated_kva nameplate to calculate the percentage."
+  },
+  {
+   "card_id": 9,
+   "title": "Total Feeder Consumption / Supply",
+   "answerability": "partial",
+   "note": "Showing total active power consumption from outgoing feeders \u2014 panel capacity (denominator) is unknown for this asset, so consumed percentage is not calculated."
+  },
+  {
+   "card_id": 10,
+   "title": "Consumption Trend / Supply Trend",
+   "answerability": "partial",
+   "note": "Showing panel aggregate consumption trend from 6 active outgoing feeders; 2 feeders (UPS-05, UPS-06) are dark and honest-blanked."
+  }
+ ],
+ "loop2": null
+}

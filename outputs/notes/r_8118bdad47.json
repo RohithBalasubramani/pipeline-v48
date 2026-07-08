@@ -1,0 +1,30 @@
+{
+ "run_id": "r_8118bdad47",
+ "loop1": [
+  {
+   "card_id": 7,
+   "title": "Context Rail Header (Overview / Section / Feeder)",
+   "answerability": "partial",
+   "note": "Showing PCC-1A aggregate readings from 7 live outgoing feeders (UPS/BPDB); 2 UPS feeders and 2 solar incomers are dark (no data)."
+  },
+  {
+   "card_id": 5,
+   "title": "Real Time Monitoring (Feeder Heatmap)",
+   "answerability": "partial",
+   "note": "Showing real-time snapshot for 6 active feeders (UPS-01/02/03, BPDB-01/02, UPS-04); 2 feeders (UPS-05/06) are dark (no data)."
+  },
+  {
+   "card_id": 9,
+   "title": "Total Feeder Consumption / Supply",
+   "answerability": "partial",
+   "note": "Showing total active power (kW) from outgoing feeders; consumption % and headroom are omitted because the panel's nameplate capacity is unknown."
+  },
+  {
+   "card_id": 10,
+   "title": "Consumption Trend / Supply Trend",
+   "answerability": "partial",
+   "note": "Showing consumption trend via panel-aggregate active power; per-member roster data is live for 6 of 8 feeders (GIC-02-N6-UPS-05, GIC-02-N7-UPS-06 are dark)."
+  }
+ ],
+ "loop2": null
+}

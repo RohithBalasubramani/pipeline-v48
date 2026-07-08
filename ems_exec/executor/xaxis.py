@@ -103,6 +103,30 @@ def _positions(n_labels, n_points):
     return sorted({round(i * (n_points - 1) / (n - 1)) for i in range(n)})
 
 
+def _span_fmt(ms_list, base_fmt):
+    """SPAN-AWARE label format. A clock-only '%H:%M' axis is right for a ≤~1-day trend, but over a MULTI-DAY window it
+    reads as non-monotonic/reversed — a 7-day harmonics trend labelled 21:00→16:00→10:00→… looks like time runs
+    backward, when in fact each ~19 h tick step just drifts the wall-clock back 5 h while TIME moves forward (21:00
+    seven-days-ago → 21:00 now). The fix is not to re-order (the axis IS ascending, paired to the real bucket ts) but to
+    LABEL with the date once the span exceeds a day, so the reader can tell WHEN. Returns base_fmt on any issue.
+    DB-driven thresholds/formats (xaxis.* knobs) with code defaults. [AHU-8 harmonics time-axis]"""
+    try:
+        nums = [float(x) for x in ms_list if isinstance(x, (int, float)) and not isinstance(x, bool)]
+        if len(nums) < 2:
+            return base_fmt
+        span_h = (max(nums) - min(nums)) / 3.6e6                            # ms → hours
+        from config.app_config import cfg
+        multiday_h = float(cfg("xaxis.multiday_threshold_hours", 48.0))
+        hybrid_h = float(cfg("xaxis.hybrid_threshold_hours", 26.0))
+        if span_h > multiday_h:
+            return str(cfg("xaxis.multiday_label_format", "%d %b"))         # >2 days → date only ('07 Jul')
+        if span_h > hybrid_h:
+            return str(cfg("xaxis.intraday_label_format", "%d %b %H:%M"))   # 1–2 days → date + time
+        return base_fmt                                                     # ≤ ~1 day → clock only (unchanged)
+    except Exception:
+        return base_fmt
+
+
 def _label(ms, tz, fmt):
     from datetime import datetime, timezone
     try:
@@ -171,7 +195,9 @@ def _walk(node, dnode, pats, tz, fmt, gaps, path, ts_provider):
                         gaps.append(_gap(slot))                # underivable → reasons-always, never a silent blank
                         continue
                     pos = _positions(n_labels, len(fts))
-                    labels = [_label(fts[p], tz, fmt) for p in pos]
+                    _picked = [fts[p] for p in pos]
+                    _fmt2 = _span_fmt(_picked, fmt)
+                    labels = [_label(m, tz, _fmt2) for m in _picked]
                     if not labels or any(x is None for x in labels):
                         gaps.append(_gap(slot))
                         continue
@@ -185,7 +211,9 @@ def _walk(node, dnode, pats, tz, fmt, gaps, path, ts_provider):
                     continue
                 ts = node[ts_key]
                 pos = _positions(n_labels, len(ts))
-                labels = [_label(ts[p], tz, fmt) for p in pos]
+                _picked = [ts[p] for p in pos]
+                _fmt2 = _span_fmt(_picked, fmt)
+                labels = [_label(m, tz, _fmt2) for m in _picked]
                 if not labels or any(x is None for x in labels):
                     gaps.append(_gap(slot))
                     continue

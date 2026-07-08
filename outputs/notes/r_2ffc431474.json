@@ -1,0 +1,13 @@
+{
+ "run_id": "r_2ffc431474",
+ "loop1": [
+  {
+   "card_id": 19,
+   "title": "AI Summary",
+   "answerability": "partial",
+   "note": "nothing could be bound for this card on this asset \u2014 every data leaf renders an honest blank (per-leaf reasons attached), not a zero"
+  }
+ ],
+ "loop2": null,
+ "reconcile": "asset 'GIC-01-N8-BPDB-01 For Lamination-01&02' has_feeders=False but the routed page 'individual-feeder-meter-shell/voltage-current' is the panel-aggregate granularity \u2014 reconciled to 'panel-overview-shell/voltage-current'"
+}

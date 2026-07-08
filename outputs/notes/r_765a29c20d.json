@@ -1,0 +1,24 @@
+{
+ "run_id": "r_765a29c20d",
+ "loop1": [
+  {
+   "card_id": 70,
+   "title": "Live Operations & Runtime",
+   "answerability": "partial",
+   "note": "Showing derived availability and run-hour proxies \u2014 specific runtime counts, service intervals, and startup durations are not measured by this meter's electrical columns."
+  },
+  {
+   "card_id": 71,
+   "title": "Runtime & Duty",
+   "answerability": "partial",
+   "note": "Showing total active power and load factor \u2014 run-hours and start counts are not directly measured by this meter, so windowEnergyKwh is used as a proxy for operational intensity."
+  },
+  {
+   "card_id": 72,
+   "title": "Energy & Reliability",
+   "answerability": "partial",
+   "note": "Showing total apparent energy and power factor \u2014 MTBF/MTTR (duration) are not measured for this asset."
+  }
+ ],
+ "loop2": null
+}

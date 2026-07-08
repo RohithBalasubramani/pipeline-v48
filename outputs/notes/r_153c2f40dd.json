@@ -1,0 +1,12 @@
+{
+ "run_id": "r_153c2f40dd",
+ "loop1": [
+  {
+   "card_id": 37,
+   "title": "Voltage Monitor (Real-Time)",
+   "answerability": "partial",
+   "note": "Showing live three-phase voltage stability (R-N, Y-N, B-N) with min/max/avg summaries; statutory voltage deviation thresholds are not configured for this asset."
+  }
+ ],
+ "loop2": null
+}

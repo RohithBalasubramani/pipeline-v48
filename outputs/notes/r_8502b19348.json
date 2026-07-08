@@ -1,0 +1,36 @@
+{
+ "run_id": "r_8502b19348",
+ "loop1": [
+  {
+   "card_id": 18,
+   "title": "Events KPI Strip",
+   "answerability": "partial",
+   "note": "Showing panel-level event aggregates for the last 7 days; per-member roster data is partial as 3 of 8 feeders have no live data."
+  },
+  {
+   "card_id": 19,
+   "title": "AI Summary",
+   "answerability": "partial",
+   "note": "Roster identifiers morphed to real panel members; some members (Solar Incomers, UPS-05/06) have no data and will render blank."
+  },
+  {
+   "card_id": 20,
+   "title": "Event Timeline at {period}",
+   "answerability": "partial",
+   "note": "Showing event trends for 6 active feeders; 2 feeders (UPS-05, UPS-06) are dark (no data) and honest-blank their per-member leaves."
+  },
+  {
+   "card_id": 21,
+   "title": "Current Distribution at {period}",
+   "answerability": "partial",
+   "note": "Showing current draw for 6 active feeders; 4 feeders (UPS-05, UPS-06, Solar Incomer-1, Transformer-01/02) are dark and honest-blank."
+  },
+  {
+   "card_id": 22,
+   "title": "Other Panels Event at {period}",
+   "answerability": "partial",
+   "note": "Showing 6 live feeders; 4 members (Solar Incomers, UPS-05/06) are dark and honest-blank their slots."
+  }
+ ],
+ "loop2": null
+}

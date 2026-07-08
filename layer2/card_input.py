@@ -45,7 +45,8 @@ def build_card_input(run_id, card_id, l1a, l1b, *, shared_ctx_ref=None):
         "catalog_row": catalog,
         "swap_candidates": swap_pool(card_id, page_key, template_ids,
                                      width=catalog["size"].get("width_px"),
-                                     height=catalog["size"].get("height_px")),
+                                     height=catalog["size"].get("height_px"),
+                                     metric=l1a.get("metric")),
     }
 
 

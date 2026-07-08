@@ -1,0 +1,30 @@
+{
+ "run_id": "r_4c816f8537",
+ "loop1": [
+  {
+   "card_id": 18,
+   "title": "Events KPI Strip",
+   "answerability": "partial",
+   "note": "Showing event counts and worst deviations for members with data (GIC-01-N3-UPS-01, GIC-01-N4-UPS-02, GIC-01-N5-UPS-03, GIC-01-N8-BPDB-01, GIC-02-N2-BPDB-02, GIC-02-N5-UPS-04). Members GIC-02-N6-UPS-05 and GIC-02-N7-UPS-06 are dark (no data) and will render as honest blanks."
+  },
+  {
+   "card_id": 20,
+   "title": "Event Timeline at {period}",
+   "answerability": "partial",
+   "note": "Showing event counts and worst deviations for 7 active feeders; 3 feeders (GIC-02-N6-UPS-05, GIC-02-N7-UPS-06, Solar Incomers) are dark and honest-blanked."
+  },
+  {
+   "card_id": 21,
+   "title": "Current Distribution at {period}",
+   "answerability": "partial",
+   "note": "Showing current_avg for 6 active outgoing feeders; 4 members (UPS-05, UPS-06, Solar Incomer-1, Solar Incomer-2) are dark (no live data) and render as blanks."
+  },
+  {
+   "card_id": 22,
+   "title": "Other Panels Event at {period}",
+   "answerability": "partial",
+   "note": "Showing event frequency for 6 active outgoing feeders; 4 members (UPS-05, UPS-06, Solar Incomer-1, Solar Incomer-2) are dark (no data) and honest-blanked."
+  }
+ ],
+ "loop2": null
+}

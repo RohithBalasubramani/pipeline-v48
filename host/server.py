@@ -67,12 +67,52 @@ def _attach_l2_notes(cards, l2):
     return cards
 
 
+def _window_from_preset(preset):
+    """route-1a-timewindow: a prompt-derived TIME_WINDOWS preset ('last-7-days') → a concrete FE-vocabulary date_window
+    {range,start,end,sampling}, or None. Mirrors the FE date-wiring (host/web/.../date-wiring.ts): the `range` TOKEN is
+    the preset itself; start/end are the resolved span in the SITE timezone; sampling maps the preset's bucket to the FE
+    sampling vocab. Start is computed by REUSING the executor's own ems_exec.window_policy._range_start (the SAME
+    calendar-anchor / TIME_WINDOWS-lookback / last-N logic exec uses to honor a declared range) so the host default and
+    the exec reads can never disagree. None in / unknown preset / any failure → None (the page keeps today/latest,
+    unchanged). Never raises."""
+    if not preset:
+        return None
+    try:
+        from config.windows import TIME_WINDOWS, site_tz
+        spec = (TIME_WINDOWS or {}).get(str(preset))
+        if not spec:
+            return None
+        from datetime import datetime
+        from ems_exec.executor.window_policy import _range_start   # reuse the canonical range→start resolver (no dup math)
+        now = datetime.now(site_tz())
+        start = _range_start(str(preset), now)
+        if start is None:
+            return None
+        bucket = str(spec.get("bucket", "hour")).strip().lower()
+        sampling = {"minute": "hourly", "15 min": "shift", "hour": "hourly",
+                    "day": "day", "week": "week"}.get(bucket, "hourly")
+        return {"range": str(preset), "start": start.isoformat(), "end": now.isoformat(), "sampling": sampling}
+    except Exception:
+        return None
+
+
 def build_response(prompt, asset_id=None, date_window=None):
     t0 = time.time()
     out = run_pipeline(prompt, asset_id=asset_id)
     l1a = out.get("layer1a") or {}
     l1b = out.get("layer1b") or {}
     val = out.get("validation") or {}
+
+    # PROMPT-DERIVED DATE WINDOW [route-1a-timewindow]: 1a extracted the relative time range ('last 7 days') from the
+    # prompt as a preset (out["window"]). When the FE sent NO explicit date_window (a freshly typed prompt → api.ts posts
+    # date_window:null), DEFAULT it to that preset resolved to a concrete {range,start,end,sampling}, so response.date_window
+    # is non-null: the exec history seam (host/exec_cards._date_window_for) reads real start/end and the FE date bar
+    # initializes to the asked range. An explicit FE pick ALWAYS wins (only fill when absent). No time phrase → out["window"]
+    # None → date_window stays None → today/latest default unchanged.
+    if not date_window:
+        _prompt_window = _window_from_preset(out.get("window"))
+        if _prompt_window:
+            date_window = _prompt_window
 
     page_key = l1a.get("page_key")
     l2 = out.get("layer2") or {}                              # {card_id: Layer2CardOutput} — the payload source
@@ -260,6 +300,16 @@ class Handler(BaseHTTPRequestHandler):
                             "answer": _k["answer"], "refused": _k["refused"]}
                     _dump_response(resp)
                     return self._send(200, resp)
+                # NATURAL COMPARE [multi-asset gap fix]: a fresh 'compare A and B' prompt naming 2+ SPECIFIC full asset
+                # names carries no picker ids, so the single-asset resolver would dead-end in the single picker. Split +
+                # resolve EACH name through the SAME 1b resolver; if 2+ pin confidently, promote to the picker's compare
+                # path (build_response_multi) with those ids. Only reached for a FRESH prompt (no asset_id/asset_ids from
+                # the FE picker) — a homonym or single name returns [] and the single-asset path stays byte-identical.
+                from host.multi_asset import natural_compare_ids
+                _nat_ids = natural_compare_ids(prompt)
+                if _nat_ids:
+                    asset_ids = _nat_ids
+                    multi = True
             if multi:
                 from host.multi_asset import build_response_multi
                 resp = build_response_multi(prompt, asset_ids, date_window=date_window)

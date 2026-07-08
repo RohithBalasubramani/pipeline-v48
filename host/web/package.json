@@ -8,6 +8,7 @@
     "build": "tsc -b && vite build",
     "ssr-gate": "vite-node scripts/ssr_gate.mjs --",
     "client-gate": "vite-node scripts/client_repro.tsx --gate",
+    "layout-gate": "vite-node scripts/layout_gate.mjs",
     "preview": "vite preview"
   },
   "dependencies": {

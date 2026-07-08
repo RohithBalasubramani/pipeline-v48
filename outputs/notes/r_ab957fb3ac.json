@@ -1,0 +1,18 @@
+{
+ "run_id": "r_ab957fb3ac",
+ "loop1": [
+  {
+   "card_id": 37,
+   "title": "Voltage Monitor (Real-Time)",
+   "answerability": "partial",
+   "note": "Showing live voltage trends and KPIs \u2014 threshold limits and y-axis ticks are structural defaults not measured by this meter."
+  },
+  {
+   "card_id": 38,
+   "title": "Current Monitor (Real-Time)",
+   "answerability": "partial",
+   "note": "Showing real-time current trends (R/Y/B phases, Neutral, Max/Min/Avg) \u2014 current high/low thresholds are omitted because the asset's nameplate rated current is unknown."
+  }
+ ],
+ "loop2": null
+}

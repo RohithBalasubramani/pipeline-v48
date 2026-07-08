@@ -2,10 +2,28 @@
  "run_id": "r_2b9d87326e",
  "loop1": [
   {
+   "card_id": 39,
+   "title": "Today's Energy",
+   "answerability": "partial",
+   "note": "Showing total active energy and reactive energy for the month; per-phase breakdown, SEC, and subsidy targets are not measured or configured for this asset."
+  },
+  {
+   "card_id": 40,
+   "title": "Power Energy Analysis",
+   "answerability": "partial",
+   "note": "Showing active and reactive power trends over the last 7 days; rated and contracted power reference lines are omitted because the asset's nameplate ratings are unknown."
+  },
+  {
    "card_id": 41,
    "title": "Input vs Output Energy",
    "answerability": "partial",
-   "note": "Showing total active power as a proxy for both HV Input and LV Output (per-phase breakdown not available for this DG asset). Efficiency and Loss metrics are derived from total power/energy aggregates."
+   "note": "Showing total active power as both input and output proxy \u2014 per-phase or separate HV/LV rails are not measured for this asset; loss and efficiency are derived from total active power."
+  },
+  {
+   "card_id": 42,
+   "title": "Load Anomalies",
+   "answerability": "partial",
+   "note": "Showing actual load trend and load factor \u2014 anomaly events, expected load, and thresholds are not measured by this asset."
   }
  ],
  "loop2": null

@@ -34,15 +34,21 @@ from grounding.default_assemble import _CLOCK_STR, _strip_and_scrub
 from grounding.exemplar_reduce import reduce_repeated
 from grounding.measured_annotation_scrub import _annotation_keys, _is_num, _pattern
 from grounding.role_scrub import _dictionary_subtree_keys, _event_parents
-from validate.leaf_classify import _chrome_subtree_keys, _num_str, _numeric_axis_keys
+from validate.leaf_classify import _chrome_element_keys, _chrome_subtree_keys, _num_str, _numeric_axis_keys
 
 
 def _jload(v):
     return v if isinstance(v, (dict, list)) else json.loads(v)
 
 
-def scan_classes(payload, dict_keys, chrome_keys, event_parents, axis_keys, ann_keys, emb_pat):
-    """The per-row residual-seed class hits: [(class, path, value), ...]."""
+def scan_classes(payload, dict_keys, chrome_keys, event_parents, axis_keys, ann_keys, emb_pat, el_keys=frozenset()):
+    """The per-row residual-seed class hits: [(class, path, value), ...].
+
+    el_keys = vocab.element_chrome_keys (the SAME per-element design-chrome denylist leaf_classify uses): a NUMERIC
+    leaf under one of these keys (decimals/width/warn/trip/from/to/rowHeight/fitMin/minWidth…) is a design/dimensional
+    CHROME literal, kept byte-identical by the strip — NOT a residual measured seed. Without this exemption the scan
+    false-positived every sanctioned element-chrome number (65 hits over the catalog) while leaf_classify treated them
+    as chrome — the verifier must agree with the classifier it verifies. Only the numeric class is affected."""
     hits = []
 
     def walk(o, path):
@@ -59,7 +65,7 @@ def scan_classes(payload, dict_keys, chrome_keys, event_parents, axis_keys, ann_
                     if has_num_sib and kl in ann_keys and emb_pat.search(v):
                         hits.append(("embedded", child, v))
                 elif _is_num(v):
-                    if v != 0:
+                    if v != 0 and kl not in el_keys:            # sanctioned per-element design-chrome number → not a seed
                         hits.append(("numeric", child, v))
                 elif isinstance(v, list):
                     if v and all(isinstance(x, bool) for x in v) and any(v):
@@ -126,6 +132,7 @@ def main():
     from grounding.default_assemble import _narrative_slots
     dict_keys = _dictionary_subtree_keys()
     chrome_keys = _chrome_subtree_keys()
+    el_keys = _chrome_element_keys()
     event_parents = _event_parents()
     axis_keys = _numeric_axis_keys()
     ann_keys = _annotation_keys()
@@ -143,7 +150,7 @@ def main():
             continue
         raw, stored = _jload(raw), _jload(stored)
         for cls, path, val in scan_classes(stored, dict_keys, chrome_keys, event_parents, axis_keys,
-                                           ann_keys, emb_pat):
+                                           ann_keys, emb_pat, el_keys):
             counts[cls] += 1
             offenders.append((cls, story_id, path, val))
         # fixed point: the stored skeleton must be invariant under its own strip+scrub (string_role incl.)

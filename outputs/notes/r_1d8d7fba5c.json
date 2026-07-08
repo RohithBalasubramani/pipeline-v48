@@ -1,0 +1,24 @@
+{
+ "run_id": "r_1d8d7fba5c",
+ "loop1": [
+  {
+   "card_id": 43,
+   "title": "Voltage Live Health",
+   "answerability": "partial",
+   "note": "Showing live per-phase voltages, average, deviation, unbalance, and max spread \u2014 Rate Change is not measured for this asset."
+  },
+  {
+   "card_id": 44,
+   "title": "Voltage History",
+   "answerability": "partial",
+   "note": "Showing per-phase voltage history and deviation stats \u2014 sag/swell event counts are not measured by this asset."
+  },
+  {
+   "card_id": 46,
+   "title": "Current History",
+   "answerability": "partial",
+   "note": "Showing per-phase current history and peak/average stats \u2014 expected range bands are omitted because the asset's rated current nameplate is unknown."
+  }
+ ],
+ "loop2": null
+}

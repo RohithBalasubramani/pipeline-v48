@@ -12,6 +12,7 @@ HARDENED [2026-07-03 emit findings]:
   · call is stage-tagged ('l2_emit') so its timeout is the DB row llm.timeout.l2_emit and failures are classified,
     returning {"_llm_error": kind} instead of a silent {} (build.py degrades honestly on it)."""
 import os
+import re
 
 from llm.client import call_qwen
 from layer2.emit.user_message import build_user
@@ -20,6 +21,11 @@ _P = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "
 
 _LIB_PLACEHOLDER = "{{RECOVERY_LIBRARY}}"
 _ROSTER_BEGIN, _ROSTER_END = "<!--ROSTER:BEGIN-->", "<!--ROSTER:END-->"
+
+# A '<word>:' pseudo-prefix marks a NON-FRAME base (nameplate:rated_kva, breaker:rating_a — resolved from a config /
+# equipment-schema table, never a meter column), so the plain-basket filter must skip it. Generalized from the old
+# literal 'nameplate:' split; '<asset name>' and real columns don't match, keeping their classification byte-identical.
+_PSEUDO_BASE = re.compile(r"^[A-Za-z_][A-Za-z0-9_]*:")
 
 
 def _nameplate_rated(card_in):
@@ -35,6 +41,22 @@ def _nameplate_rated(card_in):
         return None
 
 
+def _breaker_rated(card_in):
+    """True/False = the resolved asset's breaker rating_a is populated; None = unknown (no asset / DB outage) —
+    unknown NEVER hides a fn (mirrors _nameplate_rated exactly). False covers every DETERMINISTIC no-fill state
+    (no breaker row / NULL or non-positive rating / dup-table meter), where offering the fn is pure temptation.
+    Reached only while equipment.derivations.enabled is on — at knobs-off the breaker fns are absent at the source
+    (registry.catalog), so this probe never runs on a certified emission."""
+    table = ((card_in or {}).get("asset") or {}).get("table")
+    if not table:
+        return None
+    try:
+        from data.equipment.ratings import breaker_state
+        return breaker_state(table)
+    except Exception:
+        return None
+
+
 def _recovery_library_block(card_in=None):
     """The RECOVERY LIBRARY lines, generated from the ONE code LIBRARY (registry.catalog()) so prompt and executor can
     never disagree. A derivation_binding row annotated scope='topology' is marked not-single-meter-bindable (its base
@@ -45,8 +67,11 @@ def _recovery_library_block(card_in=None):
     so vLLM prefix caching is preserved]: with a card_in, a fn whose non-nameplate base_columns are NOT all in this
     card's column basket is HIDDEN (it could never be legally bound here — showing it was pure temptation: DG fuel fns
     on panel voltage cards), and a fn with a `nameplate:<rating>` base is hidden when THIS asset's rating is known-empty
-    (the empty-denominator rule). A trailer always says how many fns were hidden and why, so a legal recovery is never
-    silently invisible. No card_in (or an unknown basket) → the FULL library, unchanged."""
+    (the empty-denominator rule). A `breaker:<rating>` base gets the same empty-denominator treatment via the tri-state
+    _breaker_rated probe (known-empty hides; unknown never does), probed LAZILY on the first breaker-based entry so a
+    knobs-off emission — where registry.catalog() omits the breaker fns at the source — performs zero equipment reads.
+    A trailer always says how many fns were hidden and why, so a legal recovery is never silently invisible. No card_in
+    (or an unknown basket) → the FULL library, unchanged."""
     try:
         from ems_exec.derivations.registry import catalog
         scopes = {}
@@ -62,22 +87,31 @@ def _recovery_library_block(card_in=None):
                            if c.get("column")}
             rated = _nameplate_rated(card_in)
         lines, hidden = [], 0
+        brated = "unprobed"                                    # lazy tri-state: probed once, only if a breaker fn shows
         for e in catalog():
             base = e.get("base_columns") or []
             if basket_cols is not None:
-                plain = [b for b in base if not str(b).startswith("nameplate:")]
+                plain = [b for b in base if not _PSEUDO_BASE.match(str(b))]
                 nplate = [b for b in base if str(b).startswith("nameplate:")]
+                brk = [b for b in base if str(b).startswith("breaker:")]
                 if plain and not all(b in basket_cols for b in plain):
                     hidden += 1
                     continue                                   # base columns not on this meter — never legally bindable
                 if nplate and rated is False:
                     hidden += 1
                     continue                                   # empty nameplate denominator — the fn must not be offered
+                if brk:
+                    if brated == "unprobed":
+                        brated = _breaker_rated(card_in)
+                    if brated is False:
+                        hidden += 1
+                        continue                               # empty breaker denominator — same rule, tri-state probed
             mark = "  ★ topology-pair only — NOT single-meter bindable (never pick for a fields[] fn)" \
                 if scopes.get(e["fn"]) == "topology" else ""
             q = e.get("quantity") or "unclassified"
+            note = f" | note={e['note']}" if e.get("note") else ""
             lines.append(f"{e['fn']} | quantity={q} | base_columns=[{','.join(e['base_columns'])}] "
-                         f"| fidelity={e['fidelity']}{mark}")
+                         f"| fidelity={e['fidelity']}{note}{mark}")
         if hidden:
             lines.append(f"({hidden} fns hidden — their base columns are not on this meter / the nameplate rating is "
                          f"empty, so they CANNOT be legally bound here; do NOT name a fn that is not listed above)")
@@ -112,31 +146,28 @@ _MORPHMAP_PROMPT = os.path.join(os.path.dirname(os.path.abspath(__file__)), "mor
 
 
 def _system(card_in=None):
-    # PROMPT SELECTION (two DEFAULT-OFF flags; default path is the byte-identical 3-file concat):
-    #  · llm.prompt_v2 → the rules-first rewrite data_instructions_v2.md which SUBSUMES swap+metadata+data into ONE file
-    #    (still the full-author exact_metadata contract). Held default-off pending a larger A/B (the 8-card A/B showed a
-    #    coverage regression). Takes precedence: v2 carries its own metadata contract, so morph-map does not compose in.
-    #  · emit.morphmap_mode → swap ONLY the metadata slice (metadata.md → morphmap/prompt.md, the morphs-only Part-2
-    #    variant); swap.md + data_instructions.md unchanged. build.py routes the {"morphs":…} return through
-    #    morphmap.producer.apply. The two flags are mutually exclusive; prompt_v2 wins if both are somehow set.
-    #    ★ DP-GATED: the morph-map metadata slice is composed ONLY for a card that HAS a stored skeleton to overlay
-    #    (use_morphmap_metadata = flag on AND catalog_row.default_payload.payload_stripped non-null — the SAME fact
-    #    build._finalize routes the morphs on). A NO-DEFAULT-PAYLOAD card (no card_payloads row — e.g. the AI-Summary /
-    #    Heatmap time-axis narrative cards) keeps the FULL-author metadata.md even with the flag on, so it authors
-    #    exact_metadata, hits build.py's no-dp else-branch, and never trips "no default payload + empty exact_metadata".
-    from config.app_config import cfg as _cfg
+    # PROMPT COMPOSITION — the base is the rules-first data_instructions_v2.md, the SINGLE Layer-2 contract (it subsumes
+    # the retired swap.md + metadata.md + data_instructions.md trio; the llm.prompt_v2 selector + those files are gone).
+    # ONE remaining DEFAULT-OFF flag, emit.morphmap_mode:
+    #  · morph-map is the morphs-only metadata contract, appended as an explicit PART 2 OVERRIDE section for a card that
+    #    HAS a stored skeleton to overlay (use_morphmap_metadata = flag on AND catalog_row.default_payload.payload_stripped
+    #    non-null — the SAME fact build._finalize routes the morphs on). A NO-DEFAULT-PAYLOAD card (no card_payloads row —
+    #    e.g. the AI-Summary / Heatmap time-axis narrative cards) keeps v2's FULL-author exact_metadata contract even with
+    #    the flag on, so it authors exact_metadata, hits build.py's no-dp branch, and never trips "no default payload +
+    #    empty exact_metadata". When the override is composed the output envelope is rewritten to "morphs":{} below — the
+    #    empirically dominant lever (the model follows the concrete JSON template). build.py routes a {"morphs":…} return
+    #    through morphmap.producer.apply; a full exact_metadata return still routes the full path (shape-keyed, fail-safe).
     from layer2.emit.morphmap.mode import use_morphmap_metadata as _use_mm
-    prompt_v2 = str(_cfg("llm.prompt_v2", "false")).strip().lower() in ("1", "true", "yes", "on")
+    _mm = _use_mm(card_in)
     parts = []
-    if prompt_v2:
-        with open(os.path.join(_P, "data_instructions_v2.md"), errors="replace") as f:
-            parts.append(f.read().strip())
-    else:
-        _mm = _use_mm(card_in)
-        for name in ("swap.md", "metadata.md", "data_instructions.md"):
-            path = _MORPHMAP_PROMPT if (name == "metadata.md" and _mm) else os.path.join(_P, name)
-            with open(path, errors="replace") as f:
-                parts.append(f.read().strip())
+    with open(os.path.join(_P, "data_instructions_v2.md"), errors="replace") as f:
+        parts.append(f.read().strip())
+    if _mm:
+        with open(_MORPHMAP_PROMPT, errors="replace") as f:
+            parts.append(
+                "════ PART 2 OVERRIDE — MORPH-MAP (supersedes R12's `_morphed` mechanism and PART 2's "
+                "exact_metadata retype for THIS card; every OTHER rule R1-R14 stands unchanged) ════\n"
+                + f.read().strip())
     out = "\n\n".join(parts)
     live, retired = _endpoint_sets()
     out = out.replace("{{LIVE_ENDPOINTS}}", str(live)).replace("{{RETIRED_ENDPOINTS}}", str(retired))
@@ -150,14 +181,15 @@ def _system(card_in=None):
             out = out[:b] + out[e + len(_ROSTER_END) + 1:]
     if _LIB_PLACEHOLDER in out:
         out = out.replace(_LIB_PLACEHOLDER, _recovery_library_block(card_in))
-    # MORPH-MAP OUTPUT-ENVELOPE ACTIVATION [live-activation of the morphs path]: the metadata slice is morphmap/prompt.md
-    # (morphs-only), but data_instructions.md's final 'Emit exactly {…}' envelope still shows
+    # MORPH-MAP OUTPUT-ENVELOPE ACTIVATION [live-activation of the morphs path]: the metadata contract is morphs-only,
+    # but the base prompt's final 'Emit exactly {…}' envelope in data_instructions_v2.md still shows
     # "exact_metadata":{"_morphed":[]} — a contradiction the model resolves toward the concrete JSON template, so it
-    # emitted exact_metadata and build.py's shape-router sent it down the FULL path (morph-map never actually activated).
-    # When the morph-map metadata slice is composed, rewrite that ONE envelope key to the morphs shape so the single
-    # output contract the model sees is morphs (build._mm_raw then routes {"morphs":…} through morphmap.producer.apply).
-    # Off / prompt_v2 / no-dp cards keep exact_metadata verbatim — the substring is unique to the envelope line.
-    if not prompt_v2 and _use_mm(card_in):
+    # emitted exact_metadata and build.py's shape-router sent it down the FULL path (morph-map never actually
+    # activated). When the morph-map PART 2 override is composed for a skeleton card,
+    # rewrite that ONE envelope key to the morphs shape so the single output contract the model sees is morphs
+    # (build._mm_raw then routes {"morphs":…} through morphmap.producer.apply). Off / no-dp cards keep exact_metadata
+    # verbatim — the substring is unique to the envelope line.
+    if _mm:
         out = out.replace('"exact_metadata":{"_morphed":[]}', '"morphs":{}')
     return out
 

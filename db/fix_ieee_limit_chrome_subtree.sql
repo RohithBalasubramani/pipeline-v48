@@ -12,11 +12,18 @@
 -- computed against the REAL standard, not a fabricated 0.0. (The measured harmonic VALUE leaves — valuePct, value —
 -- stay data and honest-blank as before.)
 -- value re-derived FROM LIVE 2026-07-06: the list gained "axes" and "limit" (axis/limit reference subtrees kept as chrome).
+-- 2026-07-08 (r_5c6797f815 B6): added the PRESENTATION-DIMENSIONAL object subtrees "layout" (table rowHeight/
+-- headerHeight/maxRowHeight), "fit" (column fit bounds fitMin/fitMax), "palette" (row hover/select colors) and
+-- "dimopacity" (line/stack dim opacities). Each is an OBJECT of pure presentation geometry/colour — a subtree key
+-- (not element) so the WHOLE object is kept byte-identical, including any future numeric sibling. Without them the
+-- type-only classifier data-classified their numeric leaves (dimOpacity.line 0.4, layout.rowHeight 20) and
+-- strip_to_placeholders zeroed them, wrecking table/rail presentation in the stored skeleton (unbound_by_emit null).
 INSERT INTO app_config (key, value, data_type, section, note) VALUES
  ('vocab.chrome_subtree_keys',
-  '["bandthresholds", "curvesag", "limitpct", "scalemaxpct", "defaultlimit", "axes", "limit"]', 'json', 'vocab',
+  '["bandthresholds", "curvesag", "limitpct", "scalemaxpct", "defaultlimit", "axes", "limit", "layout", "fit", "palette", "dimopacity"]', 'json', 'vocab',
   'leaf_classify: keys whose value is DESIGN CHROME / a UNIVERSAL reference constant even though numeric (heatmap '
   'band/shade thresholds + divisors; sankey ribbon curvature curveSag; IEEE-519 harmonic limitPct/scaleMaxPct/'
-  'defaultLimit reference thresholds) — kept byte-identical, never stripped/filled. Extend by editing this row.')
+  'defaultLimit reference thresholds; presentation-dimensional layout/fit/palette/dimOpacity subtrees) — the WHOLE '
+  'subtree is kept byte-identical, never stripped/filled. Extend by editing this row.')
 ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value, data_type = EXCLUDED.data_type,
                                 section = EXCLUDED.section, note = EXCLUDED.note;

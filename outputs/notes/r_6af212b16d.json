@@ -1,0 +1,30 @@
+{
+ "run_id": "r_6af212b16d",
+ "loop1": [
+  {
+   "card_id": 39,
+   "title": "Today's Energy",
+   "answerability": "partial",
+   "note": "Showing total active and reactive energy consumption for the current month \u2014 commercial targets and subsidy limits are not measured for this asset."
+  },
+  {
+   "card_id": 40,
+   "title": "Power Energy Analysis",
+   "answerability": "partial",
+   "note": "one or more leaves could not be bound for this card on this asset \u2014 those leaves render an honest blank (per-leaf reasons attached), every other leaf fills"
+  },
+  {
+   "card_id": 41,
+   "title": "Input vs Output Energy",
+   "answerability": "partial",
+   "note": "Showing UPS input power, output power, and derived loss/efficiency metrics; 'Loss Pct of Input' is omitted as no dedicated loss-energy column or matching library function is available for this asset."
+  },
+  {
+   "card_id": 42,
+   "title": "Load Anomalies",
+   "answerability": "partial",
+   "note": "Showing actual load trend and load factor \u2014 expected load profiles, anomaly counts, and threshold lines are not measured by this asset."
+  }
+ ],
+ "loop2": null
+}

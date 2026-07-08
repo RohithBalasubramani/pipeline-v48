@@ -1,0 +1,18 @@
+{
+ "run_id": "r_627ae7b326",
+ "loop1": [
+  {
+   "card_id": 36,
+   "title": "Power & Energy (Real-Time)",
+   "answerability": "partial",
+   "note": "Showing active power, apparent power, and active energy \u2014 reactive energy is not measured by this asset (no dedicated reactive energy column logged), so active energy is shown as the sole energy metric."
+  },
+  {
+   "card_id": 38,
+   "title": "Current Monitor (Real-Time)",
+   "answerability": "partial",
+   "note": "Showing live three-phase and neutral current trends; high/low current thresholds are omitted because the asset's rated current is unknown."
+  }
+ ],
+ "loop2": null
+}

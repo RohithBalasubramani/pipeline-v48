@@ -1,0 +1,24 @@
+{
+ "run_id": "r_3c151b406d",
+ "loop1": [
+  {
+   "card_id": 54,
+   "title": "Transfer readiness",
+   "answerability": "partial",
+   "note": "Showing transfer readiness score as a load factor proxy (active_power_total_kw) \u2014 a dedicated transfer readiness score column is not measured for this asset."
+  },
+  {
+   "card_id": 55,
+   "title": "Activity",
+   "answerability": "partial",
+   "note": "Showing total active power \u2014 per-phase power isn't measured for this asset; transfer count/duration/count metrics are not directly measured by this UPS meter, so they are honest-blanked."
+  },
+  {
+   "card_id": 56,
+   "title": "Source Transfer \u2014 Composite",
+   "answerability": "partial",
+   "note": "Showing input voltage and current trends \u2014 readiness score, bypass voltage, bypass frequency, and transfer counts are not measured by this UPS asset."
+  }
+ ],
+ "loop2": null
+}

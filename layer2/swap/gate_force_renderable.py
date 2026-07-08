@@ -22,7 +22,7 @@ OPTIONAL (its KEEP still renders), so a forced decision is stamped confidence = 
 AI's own value is preserved as `ai_confidence` for audit. Without the stamp a forced swap inherits the AI's KEEP
 (confidence 0.0), sorts LAST in the settle, loses every collision, and the unrenderable card ships. [META-04 x rule 1]"""
 from config.app_config import cfg
-from config.feasibility import UNRENDERABLE_VERDICTS
+from config.feasibility import UNRENDERABLE_VERDICTS, DATALESS_ANSWERABILITY, FORCE_SWAP_ON_DATALESS
 
 # settle-ordering priority for a FORCED swap — must exceed any AI confidence (the AI emits within [0,1]).
 FORCED_SWAP_CONFIDENCE = cfg("swap.forced_swap_confidence", 2.0)
@@ -34,15 +34,26 @@ def is_unrenderable(verdict):
     return verdict in UNRENDERABLE_VERDICTS
 
 
-def enforce(decision, *, verdict, pool, already_chosen=None):
-    """Override `decision` when the CURRENT card is unrenderable. Returns (decision, forced_kept_unrenderable:bool).
+def is_dataless(answerability):
+    """True iff the AI declared THIS card WHOLLY unfillable for THIS asset (answerability='none') AND the dataless-swap
+    knob is on. This is the per-asset render-gate the static verdict cannot express: a catalog-renderable card whose
+    every data leaf honest-blanks because the asset's schema has no matching column. [#1 dataless swap]"""
+    return FORCE_SWAP_ON_DATALESS and answerability in DATALESS_ANSWERABILITY
+
+
+def enforce(decision, *, verdict, pool, already_chosen=None, answerability=None):
+    """Override `decision` when the CURRENT card cannot render REAL DATA — EITHER the static catalog verdict is
+    unrenderable (config.feasibility.UNRENDERABLE_VERDICTS) OR the AI declared it dataless for THIS asset
+    (answerability='none', the DATALESS-swap knob). Returns (decision, forced_kept_unrenderable:bool).
 
     `pool` = the slot's swap_candidates (list of {card_id,title,...}), already render_real-only + closest-first.
     `already_chosen` = final render ids claimed by other slots — skipped, so a forced swap never duplicates a card
-    another slot already swapped to [META-04]. Non-mutating on the input; returns a fresh dict."""
+    another slot already swapped to [META-04]. Non-mutating on the input; returns a fresh dict. When there is NO
+    unclaimed candidate (a whole-page data dead-end) it KEEPS the card honestly (never fabricates)."""
     d = dict(decision or {})
-    if not is_unrenderable(verdict):
-        return d, False                       # render_real / static_chrome / unknown → leave the AI decision intact
+    _dataless = is_dataless(answerability) and not is_unrenderable(verdict)   # pure per-asset dataless (not a catalog verdict)
+    if not (is_unrenderable(verdict) or is_dataless(answerability)):
+        return d, False                       # render_real / static_chrome / unknown + fillable → leave AI decision intact
     # UNRENDERABLE: a selected card that can't render must be force-swapped to a renderable alternative.
     taken = {int(x) for x in (already_chosen or set())}
     for tgt in pool or []:                    # closest-first (pool is ordered by size distance); skip claimed targets
@@ -51,6 +62,10 @@ def enforce(decision, *, verdict, pool, already_chosen=None):
         d.update(action="swap", origin="swapped",
                  swap_to_id=int(tgt["card_id"]), swap_to_title=tgt.get("title"),
                  forced_renderable=True,
+                 # a DATALESS-forced swap (the target is only CATALOG-render_real; its per-asset fillability is unknown
+                 # until it re-emits) carries this marker so run_card can REVERT if the target is ALSO dataless — never
+                 # swap one honest-empty card for another (a whole-page data dead-end keeps the honest original). [#1]
+                 forced_dataless=_dataless,
                  # MANDATORY swap outranks every optional stylistic swap in the settle ordering [META-04 x rule 1]
                  ai_confidence=d.get("confidence"), confidence=FORCED_SWAP_CONFIDENCE)
         return d, False

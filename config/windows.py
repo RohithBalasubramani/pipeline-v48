@@ -23,3 +23,56 @@ def site_tz():
     except Exception:
         from datetime import timezone
         return timezone.utc
+
+
+# The exclusive-end minimum span a resolved DATA window must cover: a counter-delta read is (end − start), so a
+# degenerate window whose end <= start folds EVERY member/bucket to a false 0.0 (card-12 'today' custom-range
+# resolved start==end==YYYY-MM-DD → member_delta over [today,today] == 0.0 while today genuinely carries kWh; the
+# real delta needs [today, today+1)). Code default 1 day (a single-calendar-day 'today' window spans the full day
+# to the next midnight); DB-tunable via app_config `windows.min_span_days` for a coarser floor. Never < a day.
+MIN_SPAN_DAYS = cfg("windows.min_span_days", 1)
+
+
+def _parse_dt(v):
+    """(datetime, was_bare_date) from a window bound — a bare 'YYYY-MM-DD' calendar date (custom-range start/end) OR a
+    full ISO datetime. None when unparseable / empty. `was_bare_date` marks a date-only token so ensure_nonzero_span
+    can extend by whole calendar days (a 'today' custom-range is a CALENDAR day, not a rolling instant)."""
+    from datetime import datetime, date
+    if v in (None, ""):
+        return None, False
+    if isinstance(v, datetime):
+        return v, False
+    if isinstance(v, date):
+        return datetime(v.year, v.month, v.day), True
+    s = str(v).strip()
+    try:
+        return datetime.fromisoformat(s), (len(s) == 10 and s.count("-") == 2)   # bare YYYY-MM-DD
+    except (TypeError, ValueError):
+        return None, False
+
+
+def ensure_nonzero_span(start, end):
+    """(start, end) guaranteeing a NON-ZERO exclusive span — the degenerate-window guard for every window-resolution
+    path (custom-range promotion, AI-authored bounds, calendar/lookback backfill). A counter-delta read is (end −
+    start): when the resolved end <= start (a same-day custom-range, a single calendar day, or any end that folds to
+    or below the start), a 'today' delta comes back 0.0 for every member though today carries real kWh (card-12
+    energy-distribution false-zero). Extend the END to a minimum span so the read spans the full period:
+      • both bounds present and end <= start → end = start + MIN_SPAN_DAYS (the next-midnight for a bare calendar day,
+        so a same-day 'today' custom-range spans [day 00:00, day+1 00:00));
+      • only start present → end = start + MIN_SPAN_DAYS (a lone anchor is a single day, not a zero-width instant).
+    A NORMAL window (end strictly after start, or nothing resolvable) is returned UNCHANGED — this only rescues the
+    degenerate case, never shrinks or shifts a real multi-day/rolling window. Preserves each bound's original spelling
+    (a bare date stays a bare date, an ISO datetime stays ISO). Never raises."""
+    try:
+        from datetime import timedelta
+        span = timedelta(days=max(1, int(MIN_SPAN_DAYS or 1)))
+        s_dt, s_bare = _parse_dt(start)
+        e_dt, _e_bare = _parse_dt(end)
+        if s_dt is None:
+            return start, end                                  # no start to anchor — leave the window untouched (honest)
+        if e_dt is not None and e_dt > s_dt:
+            return start, end                                  # a real forward span — never touched
+        new_end = s_dt + span
+        return start, (new_end.date().isoformat() if s_bare else new_end.isoformat())
+    except Exception:
+        return start, end

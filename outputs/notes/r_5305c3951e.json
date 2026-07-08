@@ -1,0 +1,18 @@
+{
+ "run_id": "r_5305c3951e",
+ "loop1": [
+  {
+   "card_id": 57,
+   "title": "UPS Capacity",
+   "answerability": "partial",
+   "note": "Showing total active power and current headroom \u2014 per-phase power isn't measured for this asset; bypass readiness score is not available."
+  },
+  {
+   "card_id": 58,
+   "title": "UPS Load",
+   "answerability": "partial",
+   "note": "Showing load percentage (loadPct) \u2014 headroom is shown as a percentage of rated capacity rather than absolute kW, as the exact headroom column is not measured."
+  }
+ ],
+ "loop2": null
+}

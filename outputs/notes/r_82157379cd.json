@@ -1,0 +1,18 @@
+{
+ "run_id": "r_82157379cd",
+ "loop1": [
+  {
+   "card_id": 36,
+   "title": "Power & Energy (Real-Time)",
+   "answerability": "partial",
+   "note": "Showing total active power and energy \u2014 per-phase power isn't measured for this asset; trend and delta metrics are not available."
+  },
+  {
+   "card_id": 37,
+   "title": "Voltage Monitor (Real-Time)",
+   "answerability": "partial",
+   "note": "Showing live three-phase voltage trends (R-N, Y-N, B-N) and aggregate stats (Avg/Max/Min); legend values and threshold lines are static defaults as no dedicated scalar columns exist for them."
+  }
+ ],
+ "loop2": null
+}

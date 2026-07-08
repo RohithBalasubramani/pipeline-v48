@@ -5,13 +5,13 @@
    "card_id": 12,
    "title": "Energy Input & Distribution",
    "answerability": "partial",
-   "note": "Supply-side members (Solar Incomers, Transformers) are dark (has_data=N) and will render as honest-blanks; only load-side feeders (UPS, BPDB) have live data."
+   "note": "Showing total active power and energy \u2014 per-phase power isn't measured for this asset."
   },
   {
    "card_id": 13,
    "title": "Energy Flow Diagram",
    "answerability": "partial",
-   "note": "Showing energy flow for active feeders (UPS-01, UPS-02, UPS-03, BPDB-01, BPDB-02, UPS-04); incomers and UPS-05/06 are dark (no data) and will render as honest blanks."
+   "note": "Showing energy distribution flow for PCC Panel 1; supply-side incomers (Solar, Transformer) have no live data (has_data=N) and render as zero/blank, while fed feeders (UPS, BPDB) report live energy and power."
   }
  ],
  "loop2": null

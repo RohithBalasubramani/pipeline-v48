@@ -52,7 +52,8 @@ from ems_exec.executor.wildcards import (                                       
     _wildcard_time_value, _split_wildcard, _fill_wildcard_arrays, _grow_one_wildcard_array)
 from ems_exec.executor.indexed_families import (                                              # noqa: F401
     _IDXED, _split_indexed, _scalar_point_slot, _binding_for_field, _derived_bucket_values,
-    _SAMPLING_LADDER, _sampling_ladder, _family_series, _fill_indexed_families)
+    _SAMPLING_LADDER, _sampling_ladder, _family_series, _fill_indexed_families,
+    is_series_family_field)
 from ems_exec.executor.gaps import (                                                          # noqa: F401
     GAPS_KEY, pop_gaps, _blank_val, _gap_of, _gap_sentence, _prune_stale_gaps, _attach_unbound_gaps, _note_gap)
 from ems_exec.executor.graft import (                                                         # noqa: F401
@@ -63,6 +64,47 @@ from ems_exec.executor.window_policy import _range_start, _honor_range, _window_
 def _fields_of(data_instructions):
     di = data_instructions or {}
     return [f for f in (di.get("fields") or []) if isinstance(f, dict)]
+
+
+def _honest_blank_paths(data_instructions):
+    """The set of slot-paths (as _toks tuples, address-normalized both ways) the AI EXPLICITLY honest-blanked for this
+    card — parsed from di._honest_blanked (each a '{slot}: {reason}' string; the slot is the prefix before the first
+    ':') + di._emit_gaps[].slot (the reconcile's per-leaf gap records). A post-fill RESCUE (scalar_tile_fill /
+    scalar_mean_fill / load_factor_fill) MUST NOT resurrect a leaf in this set — the AI's declared honest-blank is
+    authoritative; a mechanical label/quantity rescue must never override it (DEFECT 56).
+
+    Every path is normalized to the SAME tokens-tuple form the rescues address with (`data.` prefix stripped/added both
+    ways so a rescue that walks `data.foo.bar` and a gate that recorded `foo.bar` — or vice-versa — still match). A
+    wildcard/index segment ('[*]' / '[3]') is kept as its raw token so a `<array>[*].<key>` blank matches the grown
+    element paths too. Never raises — an unparsable entry is simply skipped (fail-open; the rescue then runs as before)."""
+    di = data_instructions or {}
+    out = set()
+
+    def _add(slot):
+        s = str(slot or "").strip()
+        if not s:
+            return
+        # normalize both address forms: the bare slot and its data.<slot> envelope
+        forms = {s}
+        if s.startswith("data."):
+            forms.add(s[5:])
+        else:
+            forms.add(f"data.{s}")
+        for form in forms:
+            toks = tuple(_toks(form))
+            if toks:
+                out.add(toks)
+
+    for entry in (di.get("_honest_blanked") or []):
+        if isinstance(entry, str):
+            slot = entry.split(":", 1)[0]            # '{slot}: {reason}' → slot prefix (the reason may itself hold ':')
+            _add(slot)
+        elif isinstance(entry, dict):
+            _add(entry.get("slot"))
+    for entry in (di.get("_emit_gaps") or []):
+        if isinstance(entry, dict):
+            _add(entry.get("slot"))
+    return out
 
 
 def _windowed_register_delta(asset_table, col, window):
@@ -200,6 +242,10 @@ def fill(payload, data_instructions, ctx, default_payload=None, shape_ref=None):
     asset_table = ctx.get("asset_table") or ctx.get("table") or ctx.get("table_name")
     agg_row = ctx.get("_agg_row")                                # panel-aggregate: injected fleet-rolled superset row
     fields = _fields_of(data_instructions)
+    # the AI's EXPLICIT honest-blank path-set (di._honest_blanked + di._emit_gaps): a post-fill RESCUE must SKIP any
+    # leaf here — a mechanical label/quantity rescue must never resurrect a leaf the AI deliberately honest-blanked
+    # (DEFECT 56 — 'Average Bypass Voltage' ← voltage_avg over an explicit no-bypass-column honest-blank).
+    hb_paths = _honest_blank_paths(data_instructions)
     window = _window_of(ctx, data_instructions)
     # in the aggregate path the "present columns" for RAW fields are the keys of the injected row (every column the
     # renderer could roll up); otherwise they are the resolved single meter's real columns.
@@ -263,14 +309,27 @@ def fill(payload, data_instructions, ctx, default_payload=None, shape_ref=None):
     # PROMOTED to the wildcard array-grow above (single-index per-bucket series) are excluded — they are grown, not indexed.
     idx_groups = {}
     for f in fields:
-        if (f.get("kind") or "").lower() != "bucketed" or _split_wildcard(f.get("slot")):
+        # ROUTE on is_series_family_field (not the literal kind=='bucketed'): the LIVE card-58 emit fans the sparkline into
+        # `kind='derived'` per-point fields (fn='loadFactorPct') — a literal 'bucketed' gate excluded them so all 30 fell to
+        # the scalar loop and BROADCAST one window value. The predicate accepts both bucketed points and per-bucket derived
+        # points, while still returning False for the paired kind='time'/'const' label/axis leaf (its own path, untouched).
+        if not is_series_family_field(f) or _split_wildcard(f.get("slot")):
             continue
         if id(f) in promoted_ids:
             continue
         sp = _split_indexed(f.get("slot"))
         if sp and _scalar_point_slot(out, default_payload, f.get("slot")):
             idx_groups.setdefault((sp[0], sp[2]), []).append((f, sp[1]))
-    families = {k: v for k, v in idx_groups.items() if len(v) >= 2}
+
+    def _homogeneous_series(members):
+        # A genuine per-bucket SERIES binds ONE metric/fn across ALL its points (card-58: loadFactorPct ×30 → fan the real
+        # per-bucket series). DISTINCT-metric siblings are NOT a time series: card-72 energyReliability.cells[0]=active /
+        # [1]=reactive / [2]=apparent are separate KPIs that happen to share an array+key — fanning a single bucketed series
+        # across them is wrong (it blanks the real active 24h delta). Only a metric-homogeneous group is a fan-able series;
+        # a mixed-metric group falls through to the scalar loop so each KPI fills (or honest-blanks) on its own.
+        sig = {((f.get("metric") or "").strip().lower(), (f.get("fn") or "").strip().lower()) for f, _ in members}
+        return len(sig) == 1
+    families = {k: v for k, v in idx_groups.items() if len(v) >= 2 and _homogeneous_series(v)}
     consumed_ids = set()
     if families:
         consumed_ids = _fill_indexed_families(out, default_payload, families, asset_table, present_cols, window,
@@ -453,6 +512,24 @@ def fill(payload, data_instructions, ctx, default_payload=None, shape_ref=None):
         except Exception:
             pass
 
+    # POST-FILL CHROME RESTORE [family H render-safety, cards 7/10/18/23/47/49]: a PRESENTATION-CONFIG leaf the emit /
+    # honest-blank / seed-leak pass stripped to null/0/'' — the active-VIEW selector (loadImpact.view), an enum
+    # DIRECTION/glyph (trend.dir/glyph/glyphColor → RT_DIR_PRESETS[dir]), an event/strip filter SELECTOR
+    # (filterSelection.preset/resample → rangeForPreset), a gauge SCALE/limit (snapshot.h5.scaleMaxPct/limitPct), a
+    # tone/badge/ieee enum — is RESTORED from the harvested default. CMD_V2 components index/switch/scale on these
+    # UNGUARDED, so a null/0 CRASHES SSR or EMPTIES the card (not an honest blank). Restore BEFORE view_select so a
+    # restored `view` can still be re-pointed at a data-bearing sibling; every restored leaf is a written value (its
+    # default is not fabrication — it is the design's own switch/scale config). Generic + DB-driven, NO card ids.
+    if isinstance(out, dict) and default_payload is not None:
+        try:
+            from ems_exec.executor import fab_guards as _fabg_r
+            for _rp in _fabg_r.restore_chrome(out, default_payload, written_value_paths):
+                p = ".".join(str(t) for t in _rp)
+                written_value_paths.add(p)
+                written_value_paths.add(f"data.{p}")
+        except Exception:
+            pass
+
     # POST-FILL VIEW SELECT [card 48]: a multi-view chart whose `view` selector points at a DATA-LESS view while a
     # sibling view carries the real filled series opens on the data-bearing view instead (shape-driven, honest).
     if isinstance(out, dict):
@@ -492,6 +569,79 @@ def fill(payload, data_instructions, ctx, default_payload=None, shape_ref=None):
         try:
             from ems_exec.executor import trend_badge as _tbadge
             out = _tbadge.apply(out)
+        except Exception:
+            pass
+
+    # POST-FILL FABRICATION GUARDS [slot-name-INDEPENDENT class killers]: ONE deterministic pass over the FINISHED
+    # payload that blanks whole fabrication CLASSES regardless of the slot the AI mislabeled — the adversarial audit
+    # keeps hitting the SAME class on a DIFFERENT slot each fire, so per-slot fixes never generalize. Kills:
+    #   CLASS 1  epoch-ms time-leak  — a NON-time-axis leaf holding epoch-ms magnitudes (maxLine/expectedMax ← [1783…]);
+    #   CLASS 2  null-column reading  — a written leaf whose bound column is 100% NULL (vThd ← thd_compliance_v_avg 0/n);
+    #   CLASS 3  no-source value      — a written numeric leaf whose field resolved NO column/fn/nameplate (iThdPk=265).
+    # Every blank carries a per-leaf reason on the SAME gaps channel. Runs BEFORE the three post-fill measurable RESCUES
+    # below (ordering fix, DEFECT A/card 50): CLASS 3 keys off the DECLARED FIELD, so a card-50 tile whose field is a
+    # column-less {metric:'voltage'} (no resolved source) would be blanked by CLASS 3 — but that same tile's LABEL
+    # ('Output Voltage') is a REAL, independently-verified source the label-keyed rescue fills from. So the guards run
+    # first to kill genuine strays, THEN each rescue writes its own DB-verified value onto the (now-blank) leaf; the
+    # stale-gap prune below drops the CLASS-3 gap for any leaf a rescue subsequently filled. The rescues cannot
+    # re-introduce a fabrication a guard kills — every rescue fills ONLY from a present+logged column (never epoch-ms,
+    # never a null column, never a no-source stray). Fail-open (a guard that throws leaves the payload untouched).
+    if isinstance(out, dict):
+        try:
+            from ems_exec.executor import fab_guards as _fabg
+            out, _fab_gaps = _fabg.apply(out, fields, present_cols, asset_table,
+                                         default_payload=default_payload, written_paths=written_value_paths,
+                                         shape_ref=shape_ref)
+            if _fab_gaps:
+                gaps.extend(_fab_gaps)
+        except Exception:
+            pass
+
+    # POST-FILL SCALAR-MEAN RESCUE [R4 residual, card 40]: an UNBOUND measurable scalar-average leaf (…AvgKw/…MaxKw —
+    # a quantity + statistic key) the AI emitted NO field for, yet a SIBLING data field on this card already binds a
+    # real column of that quantity (data.activePowerAvgKw ← the bars' active_power_total_kw, agg avg). Fill it with the
+    # window reduction of that sibling column — deterministic, DB-verified (present+logged), over-reach-safe (no sibling
+    # column / an absent-or-all-null column keeps the honest blank). Runs AFTER fab_guards so a CLASS-3 blank of a
+    # column-less sibling-fed leaf is then re-filled from the sibling's real column; the filled paths are recorded so the
+    # stale-gap prune / unbound-gap scan below treat them as explained (real). Skips every AI honest-blanked leaf (hb_paths).
+    if isinstance(out, dict):
+        try:
+            from ems_exec.executor import scalar_mean_fill as _smf
+            _smf_paths = _smf.apply(out, fields, asset_table, window, honest_blank_paths=hb_paths)
+            written_value_paths |= _smf_paths
+        except Exception:
+            pass
+
+    # POST-FILL LABEL-KEYED TILE RESCUE [DEFECT A, card 50 ups-battery-autonomy]: a {label,value} tile whose data lives
+    # under the neutral key `value` (the quantity is in the sibling LABEL, e.g. "Output Voltage") that Layer 2 emitted NO
+    # field for (fields=[]) — OR emitted a column-less {metric:'voltage'} field that resolves NO source and is therefore
+    # blanked by fab_guards CLASS 3 above — stayed blank though voltage_avg/current_avg are live on the asset table. Fill
+    # it from the window mean of the raw magnitude column the LABEL names — DB-verified (present+logged), over-reach-safe
+    # (measurable_resolve's quantity wall refuses a THD/battery/thermal label AND its SOURCE-ROLE wall refuses a
+    # bypass/input/mains rail → those tiles keep the honest blank; the written-path fence never clobbers a real reading;
+    # an AI honest-blanked tile is skipped via hb_paths). Runs after scalar_mean_fill so a sibling-field fill wins first.
+    if isinstance(out, dict):
+        try:
+            from ems_exec.executor import scalar_tile_fill as _stf
+            _stf_paths = _stf.apply(out, asset_table, window, written_value_paths=written_value_paths,
+                                    honest_blank_paths=hb_paths)
+            written_value_paths |= _stf_paths
+        except Exception:
+            pass
+
+    # POST-FILL LOAD-FACTOR RESCUE [R4 residual, cards 70/71 — dg_1_mfm]: a BLANK derived load-factor-% KPI (avgLoadPct
+    # 'Average load' / availabilityPct 'Availability') the hourly-AVG derivation over-blanked — a standby genset's ~1.6 h
+    # of running smeared across 24 buckets trips power._energized's min-degeneracy floor though ~96 raw samples ARE
+    # energized. Recompute from the RAW column at native resolution with the SAME mean/peak energized identity (real
+    # 91.1 %), so the measurable leaf fills; a genuinely-idle window (no energized raw samples) keeps its honest blank.
+    # UNIT GATE [DEFECT 71]: fills ONLY a PERCENT-LIKE target slot — a load-% is NEVER written into an hours/count/energy
+    # unit ('total-run-hours' unit='h' honest-blanks). Runs after fab_guards (same rationale as the tile rescue); the
+    # filled paths are recorded as explained (real); every AI honest-blanked leaf is skipped via hb_paths (DEFECT 56).
+    if isinstance(out, dict):
+        try:
+            from ems_exec.executor import load_factor_fill as _lff
+            _lff_paths = _lff.apply(out, fields, asset_table, window, honest_blank_paths=hb_paths)
+            written_value_paths |= _lff_paths
         except Exception:
             pass
 

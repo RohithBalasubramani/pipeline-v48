@@ -38,10 +38,15 @@ def suggest(text):
     out = generate.generate(text, g)
     out["latency_ms"] = int((time.time() - t0) * 1000)
     out["cached"] = False
-    with _lock:
-        if len(_cache) > _CACHE_MAX:
-            _cache.clear()
-        _cache[key] = out
+    # Cache ONLY a genuine model result. NEVER cache an 'unavailable'/error response: otherwise a transient
+    # model-endpoint outage (:8201 down / connection refused) poisons the cache with a permanent failure that
+    # survives every later query until a process restart. Skipping failures makes the copilot self-heal — the next
+    # query re-attempts the model the moment it is back, and a stale outage response can never be replayed.
+    if out.get("source") == "model" and not out.get("error"):
+        with _lock:
+            if len(_cache) > _CACHE_MAX:
+                _cache.clear()
+            _cache[key] = out
     return out
 
 

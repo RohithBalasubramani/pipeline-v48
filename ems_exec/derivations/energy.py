@@ -1,6 +1,8 @@
-"""derivations/energy.py — ENERGY recoveries (pure fns, no DB). compat KEPT active_energy_import_kwh +
-reactive_energy_import_kvarh (cumulative), so period energy is a windowed delta and MVAh is the quadrature sum.
-[best-possible-recovery: cards 14/39]"""
+"""derivations/energy.py — ENERGY recoveries (pure fns, no DB). Period ACTIVE energy is a windowed delta of the
+cumulative active register (or ∫active-power when that counter is dead). REACTIVE / APPARENT ENERGY fill ONLY from a
+real reactive/apparent ENERGY register — a meter without that register HONEST-BLANKS; there is NO ∫reactive-power→
+reactive-ENERGY synthesis (fabrication-by-substitution, card-72). ∫power recovery is legitimate only for ACTIVE energy
+and POWER/load-factor quantities. [best-possible-recovery: cards 14/39; card-72 energy-register rule]"""
 from __future__ import annotations
 
 import math
@@ -11,6 +13,19 @@ def _f(x):
         return float(x)
     except (TypeError, ValueError):
         return None
+
+
+def _expected_loss_band_pct():
+    """The config-driven EXPECTED-LOSS BAND (% of input) — the SAME editable knob the energy-distribution renderer reads
+    (energy_balance.expected_loss_band_pct, code default 3.0). Used as the single-feeder expected-loss/loss-% proxy basis
+    when NO per-asset target efficiency is wired into ctx (an input-vs-output card over ONE meter has no modelled upstream
+    input meter, so the bounded design band IS the honest estimate). DB-driven; never raises (falls back to 3.0)."""
+    try:
+        from config import energy_balance_policy as _eb
+        v = _f(_eb.num("energy_balance.expected_loss_band_pct", 3.0))
+        return v if (v is not None and 0.0 <= v < 100.0) else 3.0
+    except Exception:
+        return 3.0
 
 
 def window_energy_kwh(ctx):
@@ -64,28 +79,65 @@ def mvah_active(ctx):
 
 
 def mvah_reactive(ctx):
-    """Cumulative reactive energy import in MVArh. real_exact. ctx: {row}."""
+    """Reactive ENERGY in MVArh — the reactive leg of the MVAh apparent quadrature. Fills ONLY from a REAL reactive-
+    ENERGY REGISTER; otherwise HONEST-BLANKS (None). There is NO ∫power fallback for this ENERGY leaf.
+
+    REAL SOURCE (real_exact): the cumulative reactive-energy import register (reactive_energy_import_kvarh) / 1000.
+
+    NO ∫POWER RECOVERY [card-72 fab-by-substitution, DEFINITIVE 2026-07-07]: an earlier fix integrated the live
+    reactive-POWER series (∫|reactive_power|dt) to synthesize reactive kVArh whenever the reactive-ENERGY register was
+    absent (dg_1_mfm has reactive_power_total_kvar but NO reactive_energy_import_kvarh). The adversarial audit correctly
+    calls that FABRICATION-BY-SUBSTITUTION: you cannot report reactive/apparent ENERGY for a meter that carries NO
+    reactive/apparent ENERGY REGISTER — synthesizing an energy READING from ∫power where the register does not exist
+    manufactures a measurement the meter never took. A reactive-ENERGY leaf therefore fills real-or-honest-blank ONLY:
+    the register is present → its value; the register is absent → None (the honest 'column_absent' the gap channel
+    already reports off the binding's reactive_energy_import_kvarh base). (∫power recovery remains legitimate for a
+    POWER / load-factor quantity — energy_from_power_kwh still serves those — it is BANNED only for ENERGY-register
+    leaves, which this is.) ctx: {row}."""
     r = _f((ctx.get("row") or {}).get("reactive_energy_import_kvarh"))
-    return round(r / 1000.0, 2) if r is not None else None
+    if r is None:
+        return None                                            # reactive-energy REGISTER absent → honest-blank, no ∫power
+    return round(r / 1000.0, 2)                                # real_exact: the cumulative counter register only
 
 
 def cumulative_apparent_mvah(ctx):
-    """Apparent energy MVAh = hypot(active MVAh, reactive MVArh) — the textbook quadrature identity. real_exact."""
+    """Apparent energy MVAh = hypot(active MVAh, reactive MVArh) — the textbook quadrature identity. real_exact.
+
+    HONEST-BLANK when EITHER leg is genuinely UNAVAILABLE (None): apparent energy is undefined without both the active
+    AND the reactive component, so it must NEVER ship the active MWh magnitude relabeled 'Apparent' (the `r or 0.0`
+    substitution filled 27.83 MVAh from a 27.83 MWh active reading with zero reactive basis — a fab-by-substitution).
+    A register that IS present and reads a real 0.0 (mvah_reactive → 0.0, not None) still computes apparent = |active|
+    legitimately (that is a true quadrature with a zero reactive leg, not a missing one).
+
+    NO SYNTHESIZED REACTIVE LEG [card-72, DEFINITIVE 2026-07-07]: mvah_reactive fills ONLY from a real reactive-ENERGY
+    register (no ∫reactive-power recovery — see its docstring). So a meter with NO reactive-energy register (dg_1_mfm)
+    yields r=None here and this apparent-ENERGY leaf HONEST-BLANKS — it never ships hypot(active, ∫-synthesized-reactive),
+    which would be a fabricated apparent-energy reading for a meter that has no apparent/reactive energy register at all.
+    Apparent energy fills real only when BOTH energy legs are real. Never fabricates."""
     a, r = mvah_active(ctx), mvah_reactive(ctx)
-    if a is None:
+    if a is None or r is None:
         return None
-    return round(math.hypot(a, r or 0.0), 2)
+    return round(math.hypot(a, r), 2)
 
 
 def expected_loss_kwh(ctx):
-    """Expected loss = window energy × (1 − target_efficiency%/100). real_exact ONLY when target_efficiency_pct is wired
-    from config; else None (honest-degrade). ctx: {start_row, end_row, target_efficiency_pct}."""
-    eff = _f(ctx.get("target_efficiency_pct"))
-    if eff is None:
-        return None
+    """Expected loss (kWh) = window energy × (1 − target_efficiency%/100) — the design-band conversion/distribution loss
+    over the meter's OWN real windowed energy throughput.
+
+    real_exact when a per-asset `target_efficiency_pct` is wired into ctx. When it is NOT (a single-feeder input-vs-output
+    card has no modelled upstream HV meter, so no asset-specific efficiency is carried), fall back to the DB-driven
+    expected-loss BAND (energy_balance.expected_loss_band_pct, default 3.0 %): expected_loss = window_energy × band/100.
+    This is the SAME bounded design band the energy-distribution renderer reads — a legitimate single-feeder ESTIMATE
+    (real_approx), NOT a fabricated number: it multiplies the meter's REAL windowed energy by a published design band, so
+    the leaf FILLS the honest proxy it is instead of false-blanking. Still honest-degrades to None when the window carries
+    NO real energy basis (window_energy_kwh None → a genuinely-dark meter blanks). ctx: {start_row, end_row, series,
+    target_efficiency_pct?}."""
     win = window_energy_kwh(ctx)
     if win is None:
-        return None
+        return None                                            # no real windowed energy basis → honest-blank
+    eff = _f(ctx.get("target_efficiency_pct"))
+    if eff is None:
+        eff = 100.0 - _expected_loss_band_pct()                # single-feeder: design-band efficiency (100 − band %)
     return round(win * (1.0 - eff / 100.0), 1)
 
 
@@ -251,9 +303,16 @@ def energy_from_power_kwh(ctx, power_col="active_power_total_kw"):
 
 
 def reactive_energy_from_power_kvarh(ctx):
-    """Windowed reactive energy (kVArh) = trapezoidal ∫ |reactive_power| dt — the reactive twin of energy_from_power_kwh
-    (dead reactive-counter recovery). real_approx, 'integrated from power'. None on < 2 usable samples / no elapsed time."""
-    return energy_from_power_kwh(ctx, power_col="reactive_power_total_kvar")
+    """DISABLED [card-72 fab-by-substitution, DEFINITIVE 2026-07-07] — always honest-blanks (None).
+
+    This once integrated the reactive-POWER series (∫|reactive_power|dt) to synthesize a reactive-ENERGY kVArh reading
+    when the reactive-ENERGY register was absent. The adversarial audit ruled that FABRICATION-BY-SUBSTITUTION: a meter
+    with NO reactive-energy REGISTER (dg_1_mfm) cannot report reactive ENERGY — an energy reading synthesized from
+    ∫power is a measurement the meter never took. Reactive/apparent ENERGY fills real-or-honest-blank ONLY (from a real
+    reactive/apparent energy register). The symbol is KEPT (registry/catalog reference) but neutered to None so no
+    ENERGY-register leaf can ever synthesize a value. (∫power recovery for a POWER/load-factor quantity stays legitimate
+    via energy_from_power_kwh — it is banned only here, for the reactive-ENERGY leaf.)"""
+    return None
 
 
 def specific_energy_consumption_ratio(ctx):
