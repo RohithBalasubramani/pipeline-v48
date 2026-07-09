@@ -21,6 +21,11 @@ export default defineConfig({
     host: true,
     port: 5188,
     fs: { allow: [path.resolve("."), CMD_V2] },
+    // CMD_V2 is READ-ONLY here (we import its cards, never edit them). Do NOT full-page-reload :5188 when a SEPARATE
+    // dev/session edits CMD_V2 source — that churn (source-twin / bms / *.test.ts saved every ~20-40s) reloaded the
+    // host faster than it could render, leaving a blank, constantly-refreshing page. The host renders a stable CMD_V2
+    // snapshot; a manual refresh picks up an intentional CMD_V2 change. Only host/web/src edits still HMR.
+    watch: { ignored: [`${CMD_V2}/**`] },
     proxy: {
       "/api": { target: API, changeOrigin: true },
       "/copilot": { target: COPILOT, changeOrigin: true },

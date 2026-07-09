@@ -2,6 +2,7 @@ import React from "react";
 import type { Card, DateWindow } from "../types";
 import { renderCmd } from "../cmd/registry";
 import { fetchCardFrame } from "../api";
+import { useDateSync } from "./DateSync";
 
 // HONEST-BLANK on a deep component throw [FR-1 / frontend-contract crash family]: a CMD_V2 component can throw DURING
 // React's render of the already-built node — e.g. an unguarded `data.activePowerAvgKw.toFixed()` when an honest-blank
@@ -51,11 +52,20 @@ export function CmdCard({ card, h, liveFrame, pageFrame }: { card: Card; h?: num
   // PER-CARD DATE NAVIGATION: the renderer fills from `card.payload` (the `frame` arg is inert now that frames are
   // retired), so an interactive date pick must SWAP the payload, not the frame. onDateChange re-fetches this card's
   // completed payload for the new window (/api/frame) and stores it as an override; a new page run/card drops it.
+  // PAGE-LEVEL SYNC [DateSync]: a date pick PUBLISHES to the shared page window, and EVERY date-navigable card
+  // re-fetches when that shared window changes — one control moves the whole page, like the CMD_V2 app's page filter.
+  const { window: sharedWindow, setWindow: setSharedWindow } = useDateSync();
   const [payloadOverride, setPayloadOverride] = React.useState<any>(null);
   React.useEffect(() => { setPayloadOverride(null); }, [card]);   // new card/run → back to the page payload
   const onDateChange = React.useCallback((dw: DateWindow) => {
-    fetchCardFrame(card, dw).then((p) => { if (p) setPayloadOverride(p); }).catch(() => {});
-  }, [card]);
+    setSharedWindow(dw);                                          // propagate to every card on the page
+  }, [setSharedWindow]);
+  React.useEffect(() => {                                         // any card's pick (incl. this one) → re-fetch mine
+    if (!sharedWindow || !(card as any).is_history) return;
+    let live = true;
+    fetchCardFrame(card, sharedWindow).then((p) => { if (live && p) setPayloadOverride(p); }).catch(() => {});
+    return () => { live = false; };
+  }, [sharedWindow, card]);
 
   // SAFE-RENDER [FR-1]: the renderCmd() CALL itself can THROW (a fill mapper reading a malformed frame, an unwrap on a
   // bad payload) — and that throw happens DURING this component's render, OUTSIDE <Boundary> (which only catches throws

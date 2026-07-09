@@ -19,6 +19,26 @@ candidate rows (asset_candidates shape) in prompt order, de-duplicated by regist
 from layer1b.resolve.asset_candidates import asset_candidates
 from layer1b.compare.discriminators import _discriminators, _norm
 
+_ALIAS_IDX = {}
+
+
+def _panel_alias_index():
+    """{normalized panel_name -> [normalized alias, ...]} from cmd_catalog.pcc_panel_alias — the PCC-panel aliases a
+    user actually types ('pcc-1a', 'panel-2a', 'panel-2') instead of the canonical registry name ('PCC-Panel-2'). Lets
+    the compare detector recognize a panel NAMED BY ALIAS, so 'compare pcc panel 1a and panel 2a' spells out 2 panels
+    (the registry name 'PCC-Panel-2' never appears in that prompt). Process-cached; {} on any failure (fail-open — the
+    name-only detection below still works). [compare-alias fix: #3 wired aliases into the resolver but not this gate]"""
+    if _ALIAS_IDX:
+        return _ALIAS_IDX
+    try:
+        from data.db_client import q
+        for pname, alias in q("cmd_catalog", "SELECT panel_name, alias FROM pcc_panel_alias WHERE panel_name IS NOT NULL"):
+            if pname and alias:
+                _ALIAS_IDX.setdefault(_norm(pname), []).append(_norm(alias))
+    except Exception:
+        pass
+    return _ALIAS_IDX
+
 
 def named_full_rows(prompt, cands=None):
     """The distinct registry rows the PROMPT names FULLY (whole name OR unique GIC-node prefix), in first-mention order,
@@ -30,10 +50,13 @@ def named_full_rows(prompt, cands=None):
     if not p:
         return []
     # position of the FIRST discriminator hit → order rows by where the user mentioned them (stable, human-readable)
+    aidx = _panel_alias_index()
     hits = []
     for c in cands:
         best = None
-        for d in _discriminators(c[1]):
+        # registry-name discriminators + this panel's typed aliases ('pcc-1a'/'panel-2a') so an alias-named panel counts
+        discs = list(_discriminators(c[1])) + aidx.get(_norm(c[1]), [])
+        for d in discs:
             if d and d in p:
                 pos = p.find(d)
                 best = pos if best is None else min(best, pos)
