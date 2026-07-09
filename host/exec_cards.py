@@ -20,12 +20,50 @@ _EXEC_BUDGET_S = cfg("ems_exec.card_budget_s", float(os.environ.get("V48_EXEC_BU
 
 def _date_window_for(consumer, date_window):
     """The (start,end)/None window run_card reads. History cards honor the user's date_window; non-history cards read the
-    latest logged range (None). run_card accepts a (start,end) tuple, a {start,end} dict, or None."""
+    latest logged range (None). run_card accepts a (start,end) tuple, a {start,end} dict, or None.
+
+    RC2/RC4 [interactive date-nav]: the everyday-preset FE emitters send a RANGE-ONLY window ({range:'today' |
+    'last-7-days' | 'yesterday' | …, start:None, end:None}); with no concrete span the read falls to full/latest and the
+    date pick does nothing. Resolve the span HERE — the ONE seam shared by the initial /api/run fan-out and the
+    interactive /api/frame re-fetch — mirroring the working prompt-path _window_from_preset (reuse the executor's own
+    window_policy._range_start so host + exec can never disagree). An explicit start+end (custom-range / the panel
+    emitter) passes through untouched."""
     if not date_window:
         return None
     if not (consumer or {}).get("is_history"):
         return None                                          # snapshot card → latest row regardless of the FE date bar
-    return date_window                                       # {range,start,end,sampling} dict — run_card reads start/end
+    dw = date_window
+    if isinstance(dw, dict) and dw.get("range") and not (dw.get("start") and dw.get("end")):
+        dw = _resolve_range_span(dw)
+    return dw                                                # {range,start,end,sampling} dict — run_card reads start/end
+
+
+def _resolve_range_span(dw):
+    """Fill start/end for a RANGE-ONLY preset (dw['range'] present, start/end absent). Calendar/lookback ranges via
+    window_policy._range_start anchored at site-now; 'yesterday' is the one range whose END is NOT now — it anchors at
+    midnight-today (start = that − 1 day) so it never leaks into today's partial day. Unknown range → left untouched
+    (honest; the read stays latest). Returns a NEW dict; never raises."""
+    try:
+        from datetime import datetime, timedelta
+        from config.windows import site_tz
+        from ems_exec.executor.window_policy import _range_start
+        from ems_exec.executor.derived import _site_calendar_start
+        now = datetime.now(site_tz())
+        rng = str(dw.get("range")).strip().lower().replace("_", "-")
+        if rng == "yesterday":
+            end = _site_calendar_start(now, "day")            # midnight today (site tz)
+            start = end - timedelta(days=1)                   # midnight yesterday
+        else:
+            end = now
+            start = _range_start(rng, end)                    # None → unknown range → leave dw as-is (honest)
+        if start is not None and end is not None:
+            out = dict(dw)
+            out["start"] = start.isoformat()
+            out["end"] = end.isoformat()
+            return out
+    except Exception:
+        pass
+    return dw
 
 
 _SPECIAL_KINDS = ("asset_3d", "topology_sld", "narrative_ai", "panel_aggregate")
@@ -64,6 +102,39 @@ def _registry_mfm_id(asset):
     return asset.get("mfm_id") or asset.get("id")
 
 
+def fill_one_card(*, cid, render_card_id, handling_class, exact_metadata, data_instructions, asset_table,
+                  db_link=None, window=None, requested_window=None, default_payload=None, mfm_id=None,
+                  asset_name=None, member_scope="outgoing", page_key=None, metric=None, intent=None):
+    """Fill ONE card's payload from NEURACT — the SHARED seam used by BOTH the parallel page fan-out (_run_cards._fill)
+    AND the interactive /api/frame per-card date re-fetch. Dispatches run_special for a SPECIAL handling_class
+    (asset_3d / topology_sld / narrative_ai / panel_aggregate) else run_card. This dispatch is the reason /api/frame
+    must go through here: a panel-overview trend card is handling_class=panel_aggregate and is_history=true, so a
+    run_card-only re-fetch would silently replace its member-summed data with wrong single-table data. [RC1]
+
+    `window` = the OPERATIVE (start,end)/None read window (None for a snapshot/non-history card → latest row);
+    `requested_window` = what the FE asked REGARDLESS of is_history (kept for honest narrative window labels). Never
+    raises up here (run_card / run_special honest-degrade)."""
+    if handling_class in _SPECIAL_KINDS:                     # asset_3d / topology_sld / narrative_ai / panel_aggregate
+        from ems_exec.renderers import run_special
+        a = {"mfm_id": mfm_id, "name": asset_name, "table": asset_table, "member_scope": member_scope}
+        # panel_aggregate fills the card's OWN skeleton from the member-aggregated row; topology/narrative/asset_3d build
+        # widgets from scratch and ignore the extra keys. shape_ref = the RAW harvested default for the RENDERED card
+        # (the shape oracle fill()/fab_guards need so the panel path does not over-blank order/layout metadata).
+        ctx = {"asset_table": asset_table, "mfm_id": mfm_id, "db_link": db_link,
+               "window": window, "requested_window": requested_window, "page_key": page_key,
+               "metric": metric, "intent": intent, "member_scope": member_scope}
+        card = {"card_id": cid, "render_card_id": render_card_id, "card_handling": handling_class,
+                "exact_metadata": exact_metadata, "data_instructions": data_instructions,
+                "_default_payload": default_payload, "shape_ref": _raw_default_payload(render_card_id)}
+        out = run_special(handling_class, a, card, ctx)
+        return out if out is not None else exact_metadata    # None → fall back to the metadata skeleton (honest)
+    # column-fill path — shape_ref = the RAW harvested default (shape oracle for the post-fill axis/scale/normalize
+    # passes). Values are NEVER copied from it (zero-fabrication stands).
+    return ems_exec_run.run_card(exact_metadata, data_instructions, asset_table, db_link=db_link, window=window,
+                                 default_payload=default_payload,
+                                 shape_ref=_raw_default_payload(render_card_id), card_id=render_card_id)
+
+
 def _run_cards(l2, asset_table, db_link=None, date_window=None, run_id="-", asset=None, page_key=None,
                metric=None, intent=None):
     """Fill EVERY Layer-2 card's payload from NEURACT via ems_exec.run_card — PER-CARD, IN PARALLEL, with a wall-clock
@@ -88,44 +159,17 @@ def _run_cards(l2, asset_table, db_link=None, date_window=None, run_id="-", asse
     # panel_aggregate renderer so its member fan-out sums the RIGHT side (default 'outgoing' → behaviour unchanged).
 
     def _fill(cid, o):
-        em = o.get("exact_metadata")
         di = o.get("data_instructions") or {}
         window = _date_window_for(di.get("consumer") or {}, date_window)
-        kind = special.get(cid)
         rid = (o.get("swap_decision") or {}).get("swap_to_id") or cid  # the RENDERED card's identity (swap target)
-        if kind:                                              # asset_3d / topology_sld / narrative_ai → run_special
-            from ems_exec.renderers import run_special
-            a = {"mfm_id": reg_mfm, "name": asset_name, "table": asset_table, "member_scope": member_scope}
-            # ASK + REQUESTED-WINDOW seam [narrative_ai: lead-with-asked-about + honest window label]. The narrator/story
-            # need (1) the user's ASKED-ABOUT quantity — the 1a `metric` (e.g. 'voltage') — so a voltage question leads
-            # with the voltage fact (not a more-severe current event), and (2) the FE-REQUESTED window: `window` above is
-            # the OPERATIVE read window (None for a snapshot/non-history card, so run_card / the story keep reading the
-            # latest row), while `requested_window` carries what the FE asked REGARDLESS of is_history, so the label can
-            # stay HONEST and a future windowed-facts path can light up without re-plumbing. Extra keys are inert for the
-            # other special renderers (asset_3d / topology_sld / panel_aggregate); metric/intent None → behaviour unchanged.
-            ctx = {"asset_table": asset_table, "mfm_id": reg_mfm, "db_link": db_link,
-                   "window": window, "requested_window": date_window, "page_key": page_key,
-                   "metric": metric, "intent": intent, "member_scope": member_scope}
-            # panel_aggregate fills the card's OWN exact_metadata skeleton from the member-aggregated row, so pass the
-            # payload + data_instructions + harvested default (grafts elided rosters); topology/narrative/asset_3d ignore
-            # these extra keys (they build widgets from scratch). One uniform card dict for every special kind.
-            # render_card_id = the swap target when Layer 2 swapped — the payload is ALREADY the target's shape, so the
-            # roster interpreter must key card_fill_recipe on the RENDERED card, never the original slot id (a swapped
-            # card whose original id has a recipe would otherwise run that recipe against the wrong payload shape).
-            # shape_ref = the RAW harvested default for the RENDERED card — the SAME shape oracle run_card gets below.
-            # The panel_aggregate renderer reuses fill() (which threads shape_ref into fab_guards' raw-vs-stripped CLASS-4
-            # wall); without it that path hits the legacy chrome-vocab wall and OVER-BLANKS order/layout/palette metadata
-            # (empty stackOrder/columnOrder/tileOrder → dead plots). Handed down so ems_exec need not reach up into host.
-            card = {"card_id": cid, "render_card_id": rid, "card_handling": kind, "exact_metadata": em,
-                    "data_instructions": di, "_default_payload": o.get("_default_payload"),
-                    "shape_ref": _raw_default_payload(rid)}
-            out = run_special(kind, a, card, ctx)
-            return out if out is not None else em            # None → fall back to the metadata skeleton (honest)
-        # shape_ref = the RAW harvested default (shape oracle for the post-fill axis/scale/normalize passes — clock
-        # labels, tick element types, [0,1] contracts). Values are NEVER copied from it (zero-fabrication stands).
-        return ems_exec_run.run_card(em, di, asset_table, db_link=db_link, window=window,
-                                     default_payload=o.get("_default_payload"),
-                                     shape_ref=_raw_default_payload(rid), card_id=rid)
+        # ONE shared seam for every card kind (dispatches run_special vs run_card) — see fill_one_card. `requested_window`
+        # carries what the FE asked REGARDLESS of is_history (honest narrative label + future windowed-facts) while
+        # `window` is the OPERATIVE read window; `metric`/`intent` let the narrator lead with the asked-about quantity.
+        return fill_one_card(cid=cid, render_card_id=rid, handling_class=special.get(cid),
+                             exact_metadata=o.get("exact_metadata"), data_instructions=di, asset_table=asset_table,
+                             db_link=db_link, window=window, requested_window=date_window,
+                             default_payload=o.get("_default_payload"), mfm_id=reg_mfm, asset_name=asset_name,
+                             member_scope=member_scope, page_key=page_key, metric=metric, intent=intent)
 
     deadline = time.time() + _EXEC_BUDGET_S
     with ThreadPoolExecutor(max_workers=max(2, min(len(tasks), 8))) as ex:

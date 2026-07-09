@@ -39,7 +39,8 @@ from ems_exec.serve import run as ems_exec_run             # noqa: E402  per-car
 from config import neuract_dsn as _neuract_dsn             # noqa: E402  DB-driven neuract DSN (code-default fallback)
 from host.enrich import (                                  # noqa: E402,F401  the FE card build (re-exported for tests)
     _enrich_card, _merge_emit_gaps, _gap_note, _no_data_reason, _asset_has_logged_data, _per_metric_blank_reason)
-from host.exec_cards import _run_cards, _date_window_for   # noqa: E402  the parallel executor fan-out
+from host.exec_cards import (                              # noqa: E402  the parallel executor fan-out + shared seam
+    _run_cards, _date_window_for, fill_one_card, _special_handling_map, _registry_mfm_id)
 from host.payload_store import _skeleton_payload, _raw_default_payload, _as_json  # noqa: E402,F401
 
 SB_BASE = os.environ.get("STORYBOOK_URL", "http://100.90.185.31:6008").rstrip("/")
@@ -89,7 +90,7 @@ def _window_from_preset(preset):
         if start is None:
             return None
         bucket = str(spec.get("bucket", "hour")).strip().lower()
-        sampling = {"minute": "hourly", "15 min": "shift", "hour": "hourly",
+        sampling = {"minute": "minute", "15 min": "minute", "hour": "hourly",   # [RC5] minute/15-min → sub-hour sampling
                     "day": "day", "week": "week"}.get(bucket, "hourly")
         return {"range": str(preset), "start": start.isoformat(), "end": now.isoformat(), "sampling": sampling}
     except Exception:
@@ -252,20 +253,40 @@ class Handler(BaseHTTPRequestHandler):
             try:
                 exact_metadata = req.get("exact_metadata") or (req.get("payload") if isinstance(req.get("payload"), dict) else None)
                 data_instructions = req.get("data_instructions") or {}
-                asset_table = req.get("asset_table") or ((req.get("consumer") or {}).get("asset_table"))
+                date_window = req.get("date_window")
+                # REFETCH bundle (enrich.py) — the per-card facts the consumer/payload do NOT carry. Back-compat: fall
+                # back to the legacy top-level / consumer fields so an older FE build still works.
+                refetch = req.get("refetch") or {}
                 consumer = (data_instructions.get("consumer") or {}) or (req.get("consumer") or {})
-                window = _date_window_for(consumer, req.get("date_window"))
+                asset_table = refetch.get("asset_table") or req.get("asset_table") or consumer.get("asset_table")
+                asset_name = refetch.get("asset_name")
+                member_scope = refetch.get("member_scope") or "outgoing"
+                default_payload = refetch.get("_default_payload") if "_default_payload" in refetch else req.get("_default_payload")
+                render_card_id = refetch.get("render_card_id") or req.get("render_card_id") or req.get("card_id")
                 if exact_metadata is None or not asset_table:
                     return self._send(400, {"ok": False, "error": "exact_metadata + asset_table required"})
-                _rid = req.get("render_card_id") or req.get("card_id")
-                payload = ems_exec_run.run_card(exact_metadata, data_instructions, asset_table,
-                                                db_link=_neuract_dsn.dsn(), window=window,
-                                                default_payload=req.get("_default_payload"),
-                                                shape_ref=_raw_default_payload(_rid), card_id=_rid)
+                # RC2b NARROW-FIX — make the FE pick AUTHORITATIVE over the L2-baked consumer.range so _honor_range (which
+                # is widen-only, keyed on consumer.range) anchors to the pick instead of re-widening a narrower window.
+                # Request-object only (the response is just the payload) → no served-card side effect.
+                if isinstance(date_window, dict) and date_window.get("range") and isinstance(consumer, dict):
+                    consumer = dict(consumer); consumer["range"] = date_window.get("range")
+                    data_instructions = {**data_instructions, "consumer": consumer}
+                window = _date_window_for(consumer, date_window)
+                # SPECIAL DISPATCH [RC1] — a panel_aggregate/topology/narrative/3d card must NOT be re-filled by a plain
+                # run_card (a panel trend card is is_history=true today → its date control is enabled). Route through the
+                # SAME fill_one_card the page fan-out uses; derive the lt_mfm member id from the table/name (NOT
+                # consumer.mfm_id — a different id-space).
+                handling_class = _special_handling_map([render_card_id]).get(int(render_card_id)) if render_card_id else None
+                mfm_id = _registry_mfm_id({"table": asset_table, "name": asset_name})
+                payload = fill_one_card(cid=render_card_id, render_card_id=render_card_id, handling_class=handling_class,
+                                        exact_metadata=exact_metadata, data_instructions=data_instructions,
+                                        asset_table=asset_table, db_link=_neuract_dsn.dsn(), window=window,
+                                        requested_window=date_window, default_payload=default_payload,
+                                        mfm_id=mfm_id, asset_name=asset_name, member_scope=member_scope)
                 from host.display_dash import apply as _dash    # same serve-boundary display policy as /api/run
                 from ems_exec.executor import roster_stats as _rstats
                 _rstats.pop(payload)                             # telemetry key never rides to the FE
-                payload = _dash(payload, req.get("_default_payload"))
+                payload = _dash(payload, default_payload)
                 return self._send(200, {"ok": True, "why": "ok", "endpoint": consumer.get("endpoint"),
                                         "payload": payload})
             except Exception as e:

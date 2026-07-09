@@ -92,4 +92,14 @@ def _window_of(ctx, data_instructions):
             start, end = dw.get("start"), dw.get("end")
     # DECLARED-RANGE HONORING: the consumer's own `range` is the card's window CONTRACT — the reads must span it.
     rng = ((data_instructions or {}).get("consumer") or {}).get("range")
-    return _honor_range(start, end, rng)
+    start, end = _honor_range(start, end, rng)
+    # RC7 SPAN GUARD: a degenerate window (a same-day custom pick → start==end, or a lone start) buckets to 0-1 points.
+    # Widen to a minimum non-zero span so a same-day pick still renders a trend. No-op on a normal multi-day/rolling
+    # window (never shrinks or shifts one) and on the latest read (both None → nothing resolvable → unchanged).
+    if start or end:
+        try:
+            from config.windows import ensure_nonzero_span
+            start, end = ensure_nonzero_span(start, end)
+        except Exception:
+            pass
+    return start, end

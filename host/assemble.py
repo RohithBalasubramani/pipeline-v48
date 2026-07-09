@@ -36,5 +36,5 @@ def assemble_cards(out, asset, date_window=None):
                          completed=completed_by_id.get(c.get("card_id")),
                          run_ok=(status_by_id.get(c.get("card_id")) or {}).get("ok", True),
                          run_why=(status_by_id.get(c.get("card_id")) or {}).get("why"),
-                         asset_table=asset_table)
+                         asset_table=asset_table, asset=asset)      # asset → the per-card /api/frame refetch bundle [RC1]
             for c in (l1a.get("cards") or [])]

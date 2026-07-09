@@ -48,11 +48,14 @@ export function CmdCard({ card, h, liveFrame, pageFrame }: { card: Card; h?: num
   const [frame, setFrame] = React.useState<any>(liveFrame);
   React.useEffect(() => { setFrame(liveFrame); }, [liveFrame]);   // new page run/date → reseed from the page frame
 
-  const consumer = (card as any).data_instructions?.consumer;
+  // PER-CARD DATE NAVIGATION: the renderer fills from `card.payload` (the `frame` arg is inert now that frames are
+  // retired), so an interactive date pick must SWAP the payload, not the frame. onDateChange re-fetches this card's
+  // completed payload for the new window (/api/frame) and stores it as an override; a new page run/card drops it.
+  const [payloadOverride, setPayloadOverride] = React.useState<any>(null);
+  React.useEffect(() => { setPayloadOverride(null); }, [card]);   // new card/run → back to the page payload
   const onDateChange = React.useCallback((dw: DateWindow) => {
-    if (!consumer) return;
-    fetchCardFrame(consumer, dw).then((f) => { if (f) setFrame(f); }).catch(() => {});
-  }, [consumer]);
+    fetchCardFrame(card, dw).then((p) => { if (p) setPayloadOverride(p); }).catch(() => {});
+  }, [card]);
 
   // SAFE-RENDER [FR-1]: the renderCmd() CALL itself can THROW (a fill mapper reading a malformed frame, an unwrap on a
   // bad payload) — and that throw happens DURING this component's render, OUTSIDE <Boundary> (which only catches throws
@@ -60,7 +63,8 @@ export function CmdCard({ card, h, liveFrame, pageFrame }: { card: Card; h?: num
   let node: React.ReactNode = null;
   let renderErr: string | null = null;
   try {
-    node = renderCmd(card, frame, onDateChange, pageFrame ?? liveFrame);
+    const rc = payloadOverride ? { ...card, payload: payloadOverride } : card;
+    node = renderCmd(rc, frame, onDateChange, pageFrame ?? liveFrame);
   } catch (e: any) {
     renderErr = String(e?.message ?? e);
   }

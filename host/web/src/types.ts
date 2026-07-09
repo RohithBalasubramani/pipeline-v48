@@ -50,6 +50,8 @@ export interface Card {
   render_card_id?: number;
   endpoint?: string | null;
   is_history?: boolean | null;
+  refetch?: unknown;                              // per-card /api/frame date re-fetch bundle (is_history cards only)
+  data_instructions?: unknown;                    // carries consumer (endpoint/range/sampling) for date re-fetch
   title: string;
   story: string;
   role: string;

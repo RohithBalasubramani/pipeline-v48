@@ -123,7 +123,7 @@ def _merge_emit_gaps(gaps, emit_gaps, payload):
 
 
 def _enrich_card(card, page_key, val_by_id, l2_out, completed=None, run_ok=True, run_why=None, endpoint_override=None,
-                 asset_table=None):
+                 asset_table=None, asset=None):
     """Build the FE card. The `payload` is the COMPLETED CMD_V2 payload from ems_exec.run_card (`completed`) — real
     neuract leaves + honest-blank else, seed numbers stripped. If Layer 2 emitted nothing (no exact_metadata) the
     executor was skipped and payload is None (the FE shows it not-rendered — honest, not masked). On an accepted swap the
@@ -209,6 +209,16 @@ def _enrich_card(card, page_key, val_by_id, l2_out, completed=None, run_ok=True,
         "payload": payload,                                  # the ems_exec-COMPLETED CMD_V2 payload (FE renders directly)
         "endpoint": endpoint,                                # informational label + per-card date-nav key
         "is_history": consumer.get("is_history"),            # date-navigable card?
+        # INTERACTIVE DATE RE-FETCH bundle [RC1]: everything /api/frame needs to re-fill THIS card for a new window that
+        # the consumer/payload does NOT carry — the RENDERED card identity, the resolved neuract table + asset name (the
+        # panel member fan-out resolves its lt_mfm id from these, NOT consumer.mfm_id — a different id-space), the panel
+        # reading side, and the harvested chrome-safe default. Served ONLY for date-navigable (is_history) cards so a
+        # snapshot card (date control disabled) never bloats the response. The FE posts card.payload as exact_metadata.
+        "refetch": ({"render_card_id": render_card_id, "asset_table": asset_table,
+                     "asset_name": (asset or {}).get("name"),
+                     "member_scope": (asset or {}).get("member_scope") or "outgoing",
+                     "_default_payload": l2.get("_default_payload")}
+                    if consumer.get("is_history") else None),
         "swap": swap,
         "conforms": l2.get("conforms"),
         "fill_source": "ems_exec",                           # DATA filled server-side by the per-card NEURACT executor

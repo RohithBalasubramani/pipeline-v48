@@ -3,6 +3,7 @@ import { COMPONENTS } from "./components";
 import { COMPOSE } from "./compose";
 import { guardPayload, aiHeadlineOf } from "./guards";
 import { SPECIAL, ENVELOPE_RENDERERS, isNarrativeEnvelope, isTopologyEnvelope, isAsset3dEnvelope } from "./special";
+import { dateControlProps } from "./date-adapter";
 
 // CARD_ID-KEYED REGISTRY — DIRECT COMPLETED-PAYLOAD RENDER (2026-07-02).
 // The host now returns each card's COMPLETED payload (card.payload = the ems_exec-filled CMD V2 props for data cards, OR
@@ -224,7 +225,7 @@ function withGaps(node: React.ReactNode, gaps?: GapRecord[] | null, note?: strin
  *  (never a seed), and suppress_default_leaves are force-blanked in the payload before it reaches the component. */
 export function renderCmd(
   card: { card_id: number; render_card_id?: number; payload: any; title?: string; render?: any;
-          data_note?: string | null; l2_answerability?: string | null } | null | undefined,
+          data_note?: string | null; l2_answerability?: string | null; is_history?: boolean | null } | null | undefined,
   frame?: any,
   onDateChange?: (dw: any) => void,
   pageFrame?: any,
@@ -272,9 +273,15 @@ export function renderCmd(
   if (FILL[id]) return withGaps(FILL[id](pg, frame, onDateChange, pageFrame), rv.gaps, dnote, l2ans);
 
   // 3. COMPONENTS — DIRECT render of the card's REAL CMD V2 component from the completed payload (cards whose props are
-  //    spread-safe without a per-card view-model).
+  //    spread-safe without a per-card view-model). PER-CARD DATE NAVIGATION [time-series]: a date-navigable (is_history)
+  //    card gets the CMD_V2 date-control callback (onRangeChange) wired to the host re-fetch, so a range pick re-fills
+  //    THIS card for the new window (/api/frame). No CMD_V2 change — the panel-overview cards already accept the prop;
+  //    a component that ignores it is unaffected. FILL-tier cards wire their own onDateChange, so this is COMPONENTS-only.
   const Comp = COMPONENTS[id];
-  if (Comp) return withGaps(<Comp {...unwrap(pg)} />, rv.gaps, dnote, l2ans);
+  if (Comp) {
+    const dateProps = card.is_history ? dateControlProps(onDateChange) : {};
+    return withGaps(<Comp {...unwrap(pg)} {...dateProps} />, rv.gaps, dnote, l2ans);
+  }
 
   // 4. COMPOSE — bespoke glue for stacked cards (card 5) + the RTM chrome atoms (6/160, which carry no card_payloads
   //    skeleton) — the empty-object payload draws their own default chrome / empty state on no_data.

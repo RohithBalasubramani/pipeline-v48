@@ -260,17 +260,41 @@ def series(table, columns, start, end, sampling="hourly"):
 # ═══════════════════════════════════════════════════════════════════════════════════════════════════════════════════
 #  bucketed — a down-sampled time series of ONE column over [start, end) (history / trend leaves)
 # ═══════════════════════════════════════════════════════════════════════════════════════════════════════════════════
-_SAMPLING = {"hourly": "hour", "2hour": "hour", "shift": "hour", "day": "day", "week": "week", "month": "month"}
+# sampling vocab → date_trunc granularity. 'minute' [RC5 sub-hour] serves the intraday minute / '15 min' picker options
+# (true 15-min binning would need date_bin; per-minute is finer and renders correctly). '2hour'/'shift' still fold to
+# hour (a coarser true bin is a future refinement).
+_SAMPLING = {"minute": "minute", "15min": "minute", "15 min": "minute",
+             "hourly": "hour", "2hour": "hour", "shift": "hour", "day": "day", "week": "week", "month": "month"}
+_GRAN_ORDER = ["minute", "hour", "day", "week", "month"]
+_GRAN_SECONDS = {"minute": 60, "hour": 3600, "day": 86400, "week": 604800, "month": 2592000}
+
+
+def _coarsen_minute_for_span(gran, start, end, max_buckets=1600):
+    """[RC5 guard] A 'minute' pick over a long window blows the bucket budget (minute over 30d = 43k points → dead
+    plot). Step minute→hour→day… until the estimated bucket count fits `max_buckets` (24h@minute=1440 stays minute →
+    real intraday resolution; 7d@minute coarsens to hour). Only ever COARSENS, and ONLY the new 'minute' granularity —
+    every pre-existing sampling path is byte-identical (returns `gran` unchanged)."""
+    if gran != "minute" or not (start and end):
+        return gran
+    try:
+        from datetime import datetime
+        secs = max(1.0, (datetime.fromisoformat(str(end)) - datetime.fromisoformat(str(start))).total_seconds())
+        i = 0
+        while i < len(_GRAN_ORDER) - 1 and secs / _GRAN_SECONDS[_GRAN_ORDER[i]] > max_buckets:
+            i += 1
+        return _GRAN_ORDER[i]
+    except Exception:
+        return "hour"                                        # unparsable bounds → hour, never an unbounded minute scan
 
 
 def bucketed(table, col, start, end, sampling="hourly"):
     """A down-sampled [{t, value}] series of ONE column, avg per time bucket over [start, end), ordered ascending.
-    `sampling` maps to a date_trunc granularity (hourly/2hour/shift→hour, day, week, month; default hour). Returns [] if
-    the column is absent / the table is empty / unreadable — honest-degrade, never fabricated points. PER-CARD (one
-    table); no fan-out. start/end are ISO or bare dates; either may be None (open-ended on that side)."""
+    `sampling` maps to a date_trunc granularity (minute [RC5], hourly/2hour/shift→hour, day, week, month; default hour).
+    Returns [] if the column is absent / the table is empty / unreadable — honest-degrade, never fabricated points.
+    PER-CARD (one table); no fan-out. start/end are ISO or bare dates; either may be None (open-ended on that side)."""
     if not table or not col or col not in present_columns(table):
         return []
-    gran = _SAMPLING.get((sampling or "hourly").lower(), "hour")
+    gran = _coarsen_minute_for_span(_SAMPLING.get((sampling or "hourly").lower(), "hour"), start, end)
     tbl = _qtbl(table)
     tsx = _tsexpr()
     bucket = f"date_trunc('{gran}', {tsx})"
