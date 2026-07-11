@@ -265,6 +265,48 @@ def cmd_determinism(args) -> int:
     return 0
 
 
+def cmd_datesync(args) -> int:
+    """Interactive date-sync coverage over a session's SAVED raw responses (checks/datesync.py): every is_history card
+    must reslice (or be an honest RC9 as-of-latest scalar), no snapshot card may carry a refetch bundle. /api/frame is
+    NO-LLM, so this sweep is cheap and vLLM-safe; --limit caps how many responses are driven (newest-id-first stable)."""
+    sid = _resolve_session(args)
+    if not sid:
+        return 1
+    sdir = config.session_dir(sid)
+    raws = sorted(glob.glob(os.path.join(sdir, "raw", "*.json")))
+    raws = [p for p in raws if not p.endswith(".replay.json")][: args.limit or None]
+    if not raws:
+        _say("session", sid, "has no raw responses")
+        return 1
+    ok, _mod = _call_flex("validation.checks.datesync", "check_response", [({},)])  # probe availability only
+    totals = {"responses": 0, "n_history": 0, "reslices": 0, "as_of_latest": 0, "failures": [], "snapshot_violations": []}
+    from validation.checks.datesync import check_response
+    for p in raws:
+        try:
+            with open(p) as f:
+                raw = json.load(f)
+        except (OSError, ValueError):
+            continue
+        if not (raw.get("cards") or []):
+            continue
+        r = check_response(raw)
+        totals["responses"] += 1
+        totals["n_history"] += r["n_history"]
+        totals["reslices"] += r["reslices"]
+        totals["as_of_latest"] += r["as_of_latest"]
+        cid = os.path.basename(p)[:-5]
+        totals["failures"].extend({**f, "case": cid} for f in r["failures"])
+        totals["snapshot_violations"].extend({"case": cid, "card_id": c} for c in r["snapshot_violations"])
+        _say(f"  {cid}: history={r['n_history']} reslice={r['reslices']} as_of_latest={r['as_of_latest']} "
+             f"fail={len(r['failures'])} snapshot_violations={len(r['snapshot_violations'])}")
+    with open(os.path.join(sdir, "datesync.json"), "w") as f:
+        json.dump(totals, f, sort_keys=True, indent=1)
+    _say(f"datesync: {totals['responses']} responses, {totals['n_history']} history cards -> "
+         f"{totals['reslices']} reslice + {totals['as_of_latest']} as-of-latest, "
+         f"{len(totals['failures'])} failures, {len(totals['snapshot_violations'])} snapshot violations")
+    return 0 if not totals["failures"] and not totals["snapshot_violations"] else 1
+
+
 # ---------------------------------------------------------------- dispatch
 
 def main(argv: list[str] | None = None) -> int:
@@ -297,6 +339,11 @@ def main(argv: list[str] | None = None) -> int:
     d.add_argument("--limit", type=int, default=10)
     d.add_argument("--repeats", type=int, default=3)
     d.set_defaults(func=cmd_determinism)
+
+    ds = sub.add_parser("datesync", help="interactive date-sync checks over a session's saved responses")
+    ds.add_argument("--session", default=None)
+    ds.add_argument("--limit", type=int, default=None)
+    ds.set_defaults(func=cmd_datesync)
 
     args = p.parse_args(argv)
     return args.func(args)

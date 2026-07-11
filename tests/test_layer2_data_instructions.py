@@ -1,6 +1,0 @@
-"""★ data_instructions = resolved recipe (column/agg/source per field)."""
-import pytest  # noqa
-
-
-def test_placeholder():
-    pytest.skip("TODO(v48): implement")
