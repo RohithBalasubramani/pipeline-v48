@@ -1,0 +1,125 @@
+"""validation/runner.py — the PARALLEL PROMPT EXECUTOR: run corpus cases against /api/run with per-lane concurrency,
+auto-throttle, full artifact capture, and per-case judgment. Every case leaves a replayable record on disk:
+
+  sessions/<sid>/cases/<case_id>.json   {case, request, parsed, judgment, raw_path, elapsed_s, attempt}
+  sessions/<sid>/raw/<case_id>.json     the FULL /api/run response (payloads included) — the SSR/replay input
+  sessions/<sid>/manifest.json          run manifest (config, clamps, throttle events, counts)
+
+THROTTLE: vLLM contention manufactures fake 'llm timeout' failures above ~3 concurrent /api/run. The lane starts at
+min(requested, RUN_CONCURRENCY_MAX); if the rolling error rate of the last THROTTLE_WINDOW calls exceeds
+THROTTLE_ERROR_RATE the lane halves (floor 1) and the event is recorded in the manifest — the framework must expose
+real failures, never manufacture contention ones. Nothing fails silently: every transport error/timeout becomes a
+case record with stage='transport'."""
+from __future__ import annotations
+
+import json
+import os
+import threading
+import time
+import urllib.request
+from concurrent.futures import ThreadPoolExecutor, as_completed
+
+from validation import config
+from validation.response import parse, ascii_safe
+from validation.checks.expectations import judge
+
+
+def _post(path: str, body: dict, timeout: float) -> dict:
+    req = urllib.request.Request(config.BASE_URL + path, data=json.dumps(body).encode(),
+                                 headers={"Content-Type": "application/json"})
+    with urllib.request.urlopen(req, timeout=timeout) as r:
+        return json.loads(r.read().decode("utf-8", "replace"))
+
+
+class _Throttle:
+    """Sliding-window error-rate governor over the /api/run lane."""
+
+    def __init__(self, start: int):
+        self.limit = max(1, start)
+        self.sem = threading.Semaphore(self.limit)
+        self._window: list[bool] = []
+        self._lock = threading.Lock()
+        self.events: list[dict] = []
+
+    def record(self, ok: bool):
+        with self._lock:
+            self._window.append(ok)
+            if len(self._window) > config.THROTTLE_WINDOW:
+                self._window.pop(0)
+            if (len(self._window) >= config.THROTTLE_WINDOW and self.limit > 1
+                    and self._window.count(False) / len(self._window) > config.THROTTLE_ERROR_RATE):
+                for _ in range(self.limit - max(1, self.limit // 2)):
+                    self.sem.acquire()                       # shrink by holding permits (never released)
+                self.events.append({"t": time.time(), "from": self.limit, "to": max(1, self.limit // 2)})
+                self.limit = max(1, self.limit // 2)
+                self._window.clear()
+
+
+def run_cases(cases: list[dict], session_id: str, concurrency: int | None = None,
+              progress=None) -> dict:
+    """Execute `cases` and return the manifest. `progress(done, total, case_result)` is an optional callback."""
+    sdir = config.session_dir(session_id)
+    os.makedirs(os.path.join(sdir, "raw"), exist_ok=True)
+    requested = concurrency or config.RUN_CONCURRENCY_DEFAULT
+    lane = min(requested, config.RUN_CONCURRENCY_MAX)
+    throttle = _Throttle(lane)
+    results: list[dict] = []
+    lock = threading.Lock()
+
+    def one(case: dict) -> dict:
+        body = {"prompt": case["prompt"]}
+        t0 = time.time()
+        rec = {"case": case, "request": body, "attempt": 1}
+        throttle.sem.acquire()
+        try:
+            raw = _post("/api/run", body, config.RUN_TIMEOUT_S)
+            ok_transport = True
+        except Exception as e:
+            raw, ok_transport = None, False
+            rec["transport_error"] = f"{type(e).__name__}: {ascii_safe(e)[:200]}"
+        finally:
+            throttle.sem.release()
+        rec["elapsed_s"] = round(time.time() - t0, 2)
+        throttle.record(ok_transport and bool((raw or {}).get("ok", True)))
+        if raw is not None:
+            raw_path = os.path.join(sdir, "raw", f"{case['id']}.json")
+            with open(raw_path, "w") as f:
+                json.dump(raw, f)
+            rec["raw_path"] = raw_path
+            rec["parsed"] = parse(raw)
+            rec["judgment"] = judge(case, rec["parsed"])
+        else:
+            rec["parsed"] = None
+            rec["judgment"] = {"pass": False, "stage": "transport", "why": rec.get("transport_error", "no response")}
+        with open(os.path.join(sdir, "cases", f"{case['id']}.json"), "w") as f:
+            json.dump(rec, f, sort_keys=True)
+        return rec
+
+    with ThreadPoolExecutor(max_workers=max(2, requested)) as ex:
+        futs = {ex.submit(one, c): c for c in cases}
+        for fut in as_completed(futs):
+            try:
+                rec = fut.result()
+            except Exception as e:                            # belt-and-braces: a runner bug is itself a record
+                c = futs[fut]
+                rec = {"case": c, "judgment": {"pass": False, "stage": "runner", "why": ascii_safe(e)[:200]},
+                       "parsed": None, "elapsed_s": None}
+                with open(os.path.join(sdir, "cases", f"{c['id']}.json"), "w") as f:
+                    json.dump(rec, f, sort_keys=True)
+            with lock:
+                results.append(rec)
+                if progress:
+                    progress(len(results), len(cases), rec)
+
+    manifest = {
+        "session": session_id, "total": len(cases),
+        "requested_concurrency": requested, "run_lane_start": lane, "run_lane_end": throttle.limit,
+        "throttle_events": throttle.events,
+        "passed": sum(1 for r in results if (r.get("judgment") or {}).get("pass")),
+        "failed": sum(1 for r in results if not (r.get("judgment") or {}).get("pass")),
+        "config": {"base": config.BASE_URL, "run_timeout_s": config.RUN_TIMEOUT_S},
+        "finished_at": time.strftime("%Y-%m-%dT%H:%M:%S"),
+    }
+    with open(os.path.join(sdir, "manifest.json"), "w") as f:
+        json.dump(manifest, f, indent=1, sort_keys=True)
+    return manifest
