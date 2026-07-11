@@ -77,7 +77,10 @@ def parse(resp: dict) -> dict:
         "outcome": outcome,
         "ok_transport": bool(r.get("ok", True)),
         "run_id": r.get("run_id"),
-        "page_key": ascii_safe(cards[0].get("page_key") if cards else r.get("page_key")) or None,
+        # page identity lives on the TOP-LEVEL `page` object (page.page_key) — cards do NOT carry it (verified on live
+        # responses; reading cards[0].page_key silently zeroed the page-coverage matrix).
+        "page_key": ascii_safe((r.get("page") or {}).get("page_key") if isinstance(r.get("page"), dict)
+                               else r.get("page_key")) or None,
         "elapsed_ms": r.get("elapsed_ms"),
         "asset_how": asset.get("how") if isinstance(asset, dict) else None,
         "asset_name": ascii_safe(resolved.get("name")) or None,
