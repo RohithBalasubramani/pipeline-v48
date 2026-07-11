@@ -22,6 +22,7 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 from validation import config
 from validation.response import parse, ascii_safe
 from validation.checks.expectations import judge
+from validation.stagelogs import capture as stage_capture
 
 
 def _post(path: str, body: dict, timeout: float) -> dict:
@@ -55,6 +56,47 @@ class _Throttle:
                 self._window.clear()
 
 
+def _resume_leg(case: dict, raw: dict | None, sdir: str, throttle: "_Throttle") -> dict | None:
+    """UNEXPECTED-PICKER diagnostic: the FE's real workflow after a picker is 'pick a candidate, re-POST pinned' —
+    so when a cards-expecting case lands on the picker, re-POST the same prompt pinned to the first has_data candidate
+    and record whether the pipeline COMPLETES after a pick (resolvable ambiguity) or fails outright. The original
+    judgment STANDS — this leg is diagnostic, never a pass-rescue. Bounded: fires only on unexpected-picker failures.
+    Runs inside the throttle lane (it is a full /api/run). Its stage logs land under stagelogs/<case>/resume/ —
+    the re-POST reuses the same deterministic run_id, which is exactly why the first leg was captured before this."""
+    cands = ((raw or {}).get("asset") or {}).get("candidates") or []
+    pick = next((c for c in cands if isinstance(c, dict) and c.get("has_data")),
+                cands[0] if cands and isinstance(cands[0], dict) else None)
+    if not pick or pick.get("mfm_id") is None:
+        return None
+    out = {"asset_id": pick["mfm_id"], "asset_name": ascii_safe(pick.get("name"))[:80]}
+    t0 = time.time()
+    throttle.sem.acquire()
+    try:
+        raw2 = _post("/api/run", {"prompt": case["prompt"], "asset_id": pick["mfm_id"]}, config.timeout_for(case))
+    except Exception as e:
+        out["transport_error"] = f"{type(e).__name__}: {ascii_safe(e)[:200]}"
+        out["elapsed_s"] = round(time.time() - t0, 2)
+        return out
+    finally:
+        throttle.sem.release()
+    out["elapsed_s"] = round(time.time() - t0, 2)
+    try:
+        raw_path = os.path.join(sdir, "raw", f"{case['id']}.resume.json")
+        with open(raw_path, "w") as f:
+            json.dump(raw2, f)
+        out["raw_path"] = raw_path
+    except OSError:
+        pass
+    out["parsed"] = parse(raw2)
+    out["judgment"] = judge(case, out["parsed"])
+    try:
+        out["stagelogs"] = stage_capture(sdir, case["id"], out["parsed"].get("run_id"),
+                                         not out["judgment"].get("pass"), subdir="resume")
+    except Exception:
+        out["stagelogs"] = None
+    return out
+
+
 def run_cases(cases: list[dict], session_id: str, concurrency: int | None = None,
               progress=None) -> dict:
     """Execute `cases` and return the manifest. `progress(done, total, case_result)` is an optional callback."""
@@ -68,11 +110,15 @@ def run_cases(cases: list[dict], session_id: str, concurrency: int | None = None
 
     def one(case: dict) -> dict:
         body = {"prompt": case["prompt"]}
+        if case.get("pin") is not None:
+            body["asset_id"] = case["pin"]              # pinned single-asset lane (the FE picker re-POST semantics)
+        if case.get("pins"):
+            body["asset_ids"] = list(case["pins"])      # pinned multi-asset compare lane
         t0 = time.time()
         rec = {"case": case, "request": body, "attempt": 1}
         throttle.sem.acquire()
         try:
-            raw = _post("/api/run", body, config.RUN_TIMEOUT_S)
+            raw = _post("/api/run", body, config.timeout_for(case))
             ok_transport = True
         except Exception as e:
             raw, ok_transport = None, False
@@ -91,6 +137,15 @@ def run_cases(cases: list[dict], session_id: str, concurrency: int | None = None
         else:
             rec["parsed"] = None
             rec["judgment"] = {"pass": False, "stage": "transport", "why": rec.get("transport_error", "no response")}
+        # snapshot this run's per-stage logs NOW — run_id is deterministic from the prompt, so any later fire of the
+        # same prompt (replay / determinism repeat / the resume leg below) OVERWRITES outputs/logs/*<rid>*.
+        failed = not rec["judgment"].get("pass")
+        try:
+            rec["stagelogs"] = stage_capture(sdir, case["id"], (rec.get("parsed") or {}).get("run_id"), failed)
+        except Exception:
+            rec["stagelogs"] = None
+        if failed and (rec.get("parsed") or {}).get("outcome") == "picker":
+            rec["resume"] = _resume_leg(case, raw, sdir, throttle)
         with open(os.path.join(sdir, "cases", f"{case['id']}.json"), "w") as f:
             json.dump(rec, f, sort_keys=True)
         return rec
@@ -117,6 +172,8 @@ def run_cases(cases: list[dict], session_id: str, concurrency: int | None = None
         "throttle_events": throttle.events,
         "passed": sum(1 for r in results if (r.get("judgment") or {}).get("pass")),
         "failed": sum(1 for r in results if not (r.get("judgment") or {}).get("pass")),
+        "resume_legs": sum(1 for r in results if r.get("resume")),
+        "resume_completed": sum(1 for r in results if ((r.get("resume") or {}).get("judgment") or {}).get("pass")),
         "config": {"base": config.BASE_URL, "run_timeout_s": config.RUN_TIMEOUT_S},
         "finished_at": time.strftime("%Y-%m-%dT%H:%M:%S"),
     }

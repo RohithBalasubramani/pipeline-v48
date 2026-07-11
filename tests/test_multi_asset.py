@@ -189,7 +189,9 @@ def test_assemble_cards_no_table_or_outage_is_empty():
 # ── source-lock: the single-asset spine is guarded (shared-template lanes never re-route) ────────────────────────────
 
 def test_run_pipeline_single_path_untouched_and_reroute_gated():
-    src = inspect.getsource(H.run_pipeline)
+    # the OBS boundary split run_pipeline into a thin wrapper + _run_pipeline_inner (2026-07-12) — the shared-template
+    # gating lives in the inner body now; inspect it there (fall back to the wrapper if the split is ever undone).
+    src = inspect.getsource(getattr(H, "_run_pipeline_inner", H.run_pipeline))
     # the injection is present and the re-route steps are gated on it (the shared-template lane keeps ONE page)
     assert "_shared_template = layer1a is not None" in src
     assert "if not _shared_template:" in src                    # reconcile + preflight both gated

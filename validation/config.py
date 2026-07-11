@@ -21,6 +21,15 @@ FRAME_CONCURRENCY = int(os.environ.get("V48_VALIDATE_FRAME_CONC", "8"))
 # timeouts (s). A cold /api/run with LLM + tunnel can take ~200s; the framework treats a timeout as a FAILURE record
 # (stage='transport'), never a crash.
 RUN_TIMEOUT_S = float(os.environ.get("V48_VALIDATE_RUN_TIMEOUT", "420"))
+# multi-asset compares (resolve N names + author-once-per-class + executor per asset) legitimately run past 420s at
+# low concurrency — a tight client timeout MANUFACTURES 'transport' failures for healthy runs (compare_recheck: two
+# 420.1s TimeoutErrors on runs the server completed). Compare categories get a longer leash.
+COMPARE_TIMEOUT_S = float(os.environ.get("V48_VALIDATE_COMPARE_TIMEOUT", "900"))
+
+
+def timeout_for(case: dict) -> float:
+    """The /api/run client timeout for one corpus case — compare lanes get COMPARE_TIMEOUT_S."""
+    return COMPARE_TIMEOUT_S if str((case or {}).get("category", "")).startswith("compare") else RUN_TIMEOUT_S
 FRAME_TIMEOUT_S = float(os.environ.get("V48_VALIDATE_FRAME_TIMEOUT", "120"))
 
 # auto-throttle: if the rolling error-rate of the last WINDOW /api/run calls exceeds RATE, halve the run lane (floor 1)
@@ -32,6 +41,12 @@ _ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 OUT_DIR = os.environ.get("V48_VALIDATE_OUT", os.path.join(_ROOT, "outputs", "validation"))
 CORPUS_PATH = os.path.join(OUT_DIR, "corpus.jsonl")
 PIPELINE_LOG_DIR = os.path.join(_ROOT, "outputs", "logs")   # the pipeline's own per-run artifacts (correlate by run_id)
+NOTES_DIR = os.path.join(_ROOT, "outputs", "notes")          # reflect-loop notes (obs/notes.py) — captured per case
+
+# stage-log capture (stagelogs.py): ai_<rid>.jsonl carries FULL LLM request/response bodies (MBs on big emit pages) —
+# 'fail' archives it only for failed / payload_error cases; 'all' always; 'never' skips it (pipeline_/failures_ jsonl
+# and notes are KB-scale and always captured).
+ARCHIVE_AI = os.environ.get("V48_VALIDATE_ARCHIVE_AI", "fail")
 
 
 def session_dir(session_id: str) -> str:

@@ -51,22 +51,35 @@ def named_full_rows(prompt, cands=None):
     p = _norm(prompt)
     if not p:
         return []
-    # position of the FIRST discriminator hit → order rows by where the user mentioned them (stable, human-readable)
+    # position + LENGTH of each row's best (longest) discriminator hit → order rows by first mention AND drop a row
+    # whose every hit is an INFIX of another row's longer hit [phantom-alias fix]: 'Chiller Panel-1 Main INC' contains
+    # the PCC alias 'panel1', so the PCC-Panel-1 row false-hit INSIDE the chiller's name — a 5-chiller compare detected
+    # 9 rows, the phantom panels' sub-prompts resolved empty, and the whole compare silently degraded to single.
+    # A hit only counts as its OWN mention when its span is NOT strictly contained in a longer row's span.
     aidx = _panel_alias_index()
     hits = []
     for c in cands:
-        best = None
+        spans = []
         # registry-name discriminators + this panel's typed aliases ('pcc-1a'/'panel-2a') so an alias-named panel counts
         discs = list(_discriminators(c[1])) + [_norm(a) for a in aidx.get(_norm(c[1]), [])]
         for d in discs:
             if d and d in p:
-                pos = p.find(d)
-                best = pos if best is None else min(best, pos)
-        if best is not None:
-            hits.append((best, c))
-    hits.sort(key=lambda x: x[0])
+                start = p.find(d)
+                spans.append((start, start + len(d)))
+        if spans:
+            hits.append((spans, c))
+    # longest hit per row; a row survives only if SOME hit of its is not strictly inside another row's longer hit
+    def _contained(s, others):
+        return any(o[0] <= s[0] and s[1] <= o[1] and (o[1] - o[0]) > (s[1] - s[0]) for o in others)
+    all_spans = [s for spans, _c in hits for s in spans]
+    kept = []
+    for spans, c in hits:
+        own = [s for s in spans if not _contained(s, [o for o in all_spans if o not in spans])]
+        if own:
+            kept.append((min(s[0] for s in own), c))
+    kept.sort(key=lambda x: x[0])
     out, seen = [], set()
-    for _pos, c in hits:
+    for _pos, c in kept:
         if c[0] not in seen:
             seen.add(c[0])
             out.append(c)

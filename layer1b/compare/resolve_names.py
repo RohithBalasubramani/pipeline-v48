@@ -23,7 +23,7 @@ from layer1b.compare.detect import named_full_rows
 # a confident single resolution: an asset was pinned by NAME (or named-but-empty no_data) with NO open picker list.
 # collision_gate_fullname = the deterministic full-name pin (user spelled one colliding row out in full) — also a
 # confident single resolution (a pin with no picker), so a compare sub-prompt that full-name-pins keeps its pin.
-_CONFIDENT_HOW = {"AI", "user-choice", "no_data", "collision_gate_fullname"}
+from layer1b.how import RESOLVED_ANY as _CONFIDENT_HOW
 
 
 # token separator inside a typed asset name: ANY short run of non-alphanumerics — names carry '(', ')', '[', ']',
@@ -85,12 +85,28 @@ def _gic_prefix(name):
 def _sub_prompt(prompt, keep_row, other_rows):
     """The original prompt with the OTHER assets' names removed, keeping only `keep_row`'s asset name — so resolve_asset
     sees ONE specific asset (the AI's confident-pin then fires on that single name). The compare conjunctions left
-    behind ('and', 'vs') are harmless to the resolver; the kept name stays verbatim so the model resolves it cleanly."""
+    behind ('and', 'vs') are harmless to the resolver; the kept name stays verbatim so the model resolves it cleanly.
+
+    KEPT-NAME MASK [phantom-alias fix]: an OTHER row's pattern can match INSIDE the kept name — PCC-Panel-2's alias
+    'panel-2' is an infix of the kept 'Chiller Panel-2 Main INC', so stripping the others mutilated the kept name
+    ('Chiller Main Inc') or erased it outright, and the sub-prompt resolved empty (the live 5-chiller compare pinned
+    single). Mask the kept row's FIRST span with a sentinel before stripping, restore after — the kept name is
+    untouchable by construction."""
     out = prompt
+    sentinel = "\x00KEEP\x00"
+    kept_text = None
+    krx = _span_regex(keep_row[1])
+    if krx:
+        m = krx.search(out)
+        if m:
+            kept_text = m.group(0)
+            out = out[: m.start()] + sentinel + out[m.end():]
     for r in other_rows:
         rx = _span_regex(r[1])
         if rx:
             out = rx.sub(" ", out)
+    if kept_text is not None:
+        out = out.replace(sentinel, kept_text, 1)
     out = re.sub(r"\s+", " ", out).strip()
     return out or prompt
 
