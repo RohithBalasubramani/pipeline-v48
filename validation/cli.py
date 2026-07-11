@@ -149,6 +149,27 @@ def cmd_generate(args) -> int:
     return 0
 
 
+def cmd_stats(args) -> int:
+    """Per-category corpus counts vs prompt_category budgets — shortfalls are REPORTED, never silently padded."""
+    cases = _load_corpus()
+    if not cases:
+        return 1
+    by_cat: dict[str, int] = {}
+    mutated = 0
+    for c in cases:
+        by_cat[c.get("category") or "?"] = by_cat.get(c.get("category") or "?", 0) + 1
+        if (c.get("meta") or {}).get("mutation"):
+            mutated += 1
+    ok, s = _call_flex("validation.corpus.store", "store", [()])
+    budgets = (s or {}).get("categories", {}) if ok and isinstance(s, dict) else {}
+    for cat in sorted(by_cat):
+        b = (budgets.get(cat) or {}).get("budget")
+        short = f"  (short of budget {b})" if isinstance(b, int) and by_cat[cat] < b else ""
+        _say(f"  {cat:16s} {by_cat[cat]:6d}{short}")
+    _say(f"total {len(cases)} cases ({mutated} mutation variants) source={((s or {}).get('source') if ok else '?')}")
+    return 0
+
+
 def cmd_run(args) -> int:
     cases = _filter_cases(_load_corpus(), args.category, args.limit)
     if not cases:
@@ -251,6 +272,7 @@ def main(argv: list[str] | None = None) -> int:
     sub = p.add_subparsers(dest="cmd", required=True)
 
     sub.add_parser("generate", help="build corpus -> config.CORPUS_PATH").set_defaults(func=cmd_generate)
+    sub.add_parser("stats", help="per-category corpus counts vs budgets").set_defaults(func=cmd_stats)
 
     r = sub.add_parser("run", help="execute corpus cases and build reports")
     r.add_argument("--limit", type=int, default=None)
