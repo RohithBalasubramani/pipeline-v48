@@ -26,21 +26,48 @@ from layer1b.compare.detect import named_full_rows
 _CONFIDENT_HOW = {"AI", "user-choice", "no_data", "collision_gate_fullname"}
 
 
+def _toks(src):
+    return [t for t in re.split(r"[^a-z0-9]+", str(src or "").lower()) if t]
+
+
 def _span_regex(name):
-    """A tolerant regex matching THIS asset's name / GIC-node prefix in the ORIGINAL (un-normalized) prompt, so the
-    OTHER names can be stripped out to isolate one asset per sub-prompt. Built from the same discriminators used to
-    detect the full-name mention: the whole registry name and the 'GIC-01-N3' node prefix. Punctuation/space/case
-    insensitive (each gap → `[-_ ]*`). None when the name yields no usable discriminator."""
+    """A tolerant regex matching THIS asset's name in the ORIGINAL (un-normalized) prompt — every SPELLING the user
+    could have typed — so the OTHER names can be stripped out to isolate one asset per sub-prompt. Patterns
+    (longest-first alternation; each token gap → `[-_ ]*`):
+      · the whole registry name ('gic 01 n3 ups 01 cl 600kva');
+      · the GIC-node prefix WITH AN OPTIONAL NAME TAIL — mandatory 'gic-01-n3' then each following name token as a
+        NESTED OPTIONAL (gic[-_ ]*01[-_ ]*n3(?:[-_ ]*ups(?:[-_ ]*01(?:…)?)?)?). The user types 'GIC-01-N3-UPS-01'
+        without the 'CL:600KVA' rating tail; a prefix-only strip left a DANGLING bare '-UPS-01' in the sub-prompt — a
+        5-way homonym the resolver now (correctly) refuses to pin, silently killing the compare. The optional tail
+        consumes exactly as much of the real name as the prompt carries — anchored on literal tokens, so surrounding
+        words ('and', the other asset) are never swallowed;
+      · every pcc_panel_alias spelling of a PCC panel ('pcc-2a' / 'panel-2a' / 'pcc-2' …) — the registry name
+        'PCC-Panel-2' never appears in 'compare PCC-1A and PCC-2A', so name-token stripping alone left BOTH names in
+        BOTH sub-prompts (the AI pinned the same panel twice → 1 confident → the compare silently degraded to single).
+    None when the name yields no usable discriminator."""
     pats = []
-    for src in (name, _gic_prefix(name)):
-        if not src:
-            continue
-        toks = [t for t in re.split(r"[^a-z0-9]+", str(src).lower()) if t]
-        if toks:
-            pats.append(r"[-_ ]*".join(re.escape(t) for t in toks))
+    name_toks = _toks(name)
+    if name_toks:
+        pats.append(r"[-_ ]*".join(re.escape(t) for t in name_toks))
+    gp = _gic_prefix(name)
+    if gp:
+        ptoks = _toks(gp)
+        tail = name_toks[len(ptoks):]                      # the name tokens after the GIC prefix (ups, 01, cl, …)
+        chain = ""
+        for t in reversed(tail):                           # nested optionals: consume as much tail as is present
+            chain = r"(?:[-_ ]*" + re.escape(t) + chain + r")?"
+        pats.append(r"[-_ ]*".join(re.escape(t) for t in ptoks) + chain)
+    try:                                                   # PCC panel alias spellings (raw; fail-open to none)
+        from layer1b.compare.detect import _panel_alias_index
+        for alias in _panel_alias_index().get(_norm(name), []):
+            atoks = _toks(alias)
+            if atoks:
+                pats.append(r"[-_ ]*".join(re.escape(t) for t in atoks))
+    except Exception:
+        pass
     if not pats:
         return None
-    return re.compile("(" + "|".join(sorted(pats, key=len, reverse=True)) + ")", re.IGNORECASE)
+    return re.compile("(" + "|".join(sorted(set(pats), key=len, reverse=True)) + ")", re.IGNORECASE)
 
 
 def _gic_prefix(name):
