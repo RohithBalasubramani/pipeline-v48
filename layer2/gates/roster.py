@@ -37,7 +37,45 @@ def _gate_section_split(i, r, s, real):
         norm["column"] = s["column"]
     return True, issues, norm
 
-def gate_roster(roster, roster_spec, basket):
+def _section_overlay(normalized, toks):
+    """★ SECTION-COMPARE OVERLAY GUARANTEE [sections]: the prompt DETERMINISTICALLY compares bus sections of this
+    panel (1b compare_sections stamp → the caller's `sections` tokens), so every shipped series-family slot renders
+    PER SECTION: the recipe's own `columns` entries are duplicated per token (key '<base>_<a|b>', match
+    {'sections':[tok]}, `_base`/`_section` markers for the pres synthesis) and elements slots gain the member's own
+    section attr. Applied AFTER validation/backfill so it composes with whatever the AI emitted (an AI-authored
+    series_split ships untouched; an already-matched key is never re-split); BASE keys stay in the data — when the
+    pres synthesis finds nothing to patch the card renders exactly as today (render-safe). Slots with `derived`
+    stay untouched (their sums reference base keys). Recipe-derived + dictionary tokens only — zero card knowledge."""
+    out = []
+    for s in normalized:
+        if not isinstance(s, dict):
+            out.append(s); continue
+        mode = s.get("mode")
+        # `section_split` CAPABILITY FLAG (DB fact, per recipe slot): several CMD_V2 charts map series through a CLOSED
+        # accessor vocabulary (EventTimelineCard's stackValueFor knows exactly sag/swell/current/neutral) — a variant
+        # key there is `value: undefined` → an SSR crash, verified live. Only a slot whose recipe row declares
+        # "section_split": true (its component maps series generically, or the host ships a sections-aware wrapper)
+        # gets the per-section columns split; unflagged slots keep the union render (honest, crash-free).
+        if (mode == "series" and s.get("section_split") and isinstance(s.get("columns"), list)
+                and s["columns"] and not s.get("derived")):
+            cols = list(s["columns"])
+            for c in s["columns"]:
+                if not (isinstance(c, dict) and c.get("key")) or c.get("match"):
+                    continue
+                for tok in toks:
+                    cols.append({**c, "key": f"{c['key']}_{str(tok)[-1].lower()}",
+                                 "match": {"sections": [tok]}, "_base": c["key"], "_section": tok})
+            out.append({**s, "columns": cols})
+        elif mode == "elements":
+            el = {k: v for k, v in (s.get("element") or {}).items()}
+            el.setdefault("section", {"a": "section", "b": "attr"})
+            out.append({**s, "element": el})
+        else:
+            out.append(s)
+    return out
+
+
+def gate_roster(roster, roster_spec, basket, sections=None):
     """Validate + normalize data_instructions.roster against the card's card_fill_recipe row. [package §2d]
 
     Returns (ok, issues, normalized_roster). The recipe row is AUTHORITATIVE — the AI's ONLY authority is the COLUMN
@@ -118,4 +156,14 @@ def gate_roster(roster, roster_spec, basket):
     # backfill: recipe slots the AI omitted ship VERBATIM (deterministic fail-open — full roster even on emit failure)
     emitted = {r.get("slot") for r in (roster or []) if isinstance(r, dict)}
     normalized += [dict(s) for slot, s in spec_slots.items() if slot not in emitted]
+    # ★ SECTION-COMPARE OVERLAY [sections]: prompt-fact-driven (see _section_overlay) — runs over the FULLY normalized
+    # roster so backfilled slots split too (the guarantee holds even when the AI emitted nothing).
+    if sections:
+        normalized = _section_overlay(normalized, [str(t).strip().upper() for t in sections if t])
+    # `_gated` stamp [single normalization home]: the executor's recipe.roster_for re-folds RAW emissions against the
+    # recipe (defense for paths that bypass this gate) — that re-fold must NOT revert the gate's own sanctioned output
+    # (section overlay / series_split). A stamped slot is trusted verbatim downstream.
+    for s in normalized:
+        if isinstance(s, dict):
+            s["_gated"] = True
     return (not issues), issues, normalized

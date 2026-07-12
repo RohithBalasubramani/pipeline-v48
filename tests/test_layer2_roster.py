@@ -34,7 +34,10 @@ def test_conforming_emission_folds_column_choice():
     assert e["kw"] == {"b": "col", "c": "active_power_r_kw"}              # AI column folded in
     assert e["kwh"] == {"b": "delta", "c": "active_energy_import_kwh"}    # untouched keys = recipe verbatim
     assert e["utilizationPct"]["b"] == "null"                             # honest-null preserved
-    assert got["rail.vm.kpis"] == _SPEC["slots"][1]                       # non-element slot verbatim
+    # non-element slot verbatim — modulo the `_gated` trust stamp (the executor's roster_for skips its re-fold on
+    # gate-normalized slots so sanctioned deviations, e.g. the section-compare overlay, survive [sections])
+    assert got["rail.vm.kpis"].get("_gated") is True
+    assert {k: v for k, v in got["rail.vm.kpis"].items() if k != "_gated"} == _SPEC["slots"][1]
 
 
 def test_bare_string_shorthand_is_a_col_binding():

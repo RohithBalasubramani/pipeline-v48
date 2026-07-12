@@ -229,6 +229,11 @@ def run_roster(payload, roster, ctx, default_payload=None):
     except Exception:
         pass
     try:
+        from ems_exec.executor.roster_pres_sections import apply_section_pres
+        apply_section_pres(payload, state.get("roster"))        # section-split keys get their pres entries [sections]
+    except Exception:
+        pass
+    try:
         _attach_coverage(payload, state)
     except Exception:
         pass

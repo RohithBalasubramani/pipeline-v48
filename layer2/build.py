@@ -140,7 +140,18 @@ def _finalize_inner(ci, raw, swap, *, reemit_of=None):
     r_issues = []
     roster_honest_blank = None
     if _rspec or di.get("roster"):
-        _ok_r, r_issues, di["roster"] = gate_roster(di.get("roster") or [], _rspec, basket)
+        # ★ SECTION-COMPARE tokens [sections overlay]: 1b stamped compare_sections when the prompt compares bus
+        # sections of THIS panel ('pcc 1a and pcc 1b') — the gate turns them into the per-section split guarantee.
+        _sec_toks = None
+        _sc_asset = ci.get("asset") or {}
+        if isinstance(_sc_asset, dict) and _sc_asset.get("compare_sections"):
+            try:
+                from data.equipment.sections import token as _sec_token
+                _sec_toks = [t for t in (_sec_token(_sc_asset.get("name"), s)
+                                         for s in _sc_asset["compare_sections"]) if t] or None
+            except Exception:
+                _sec_toks = None
+        _ok_r, r_issues, di["roster"] = gate_roster(di.get("roster") or [], _rspec, basket, sections=_sec_toks)
         # HONEST-BLANK ROSTER NORMALIZATION [empty-roster payload_error, sweep card 21]: when the AI emits a roster on a
         # card whose recipe carries NO roster_spec, gate_roster ALREADY drops it to [] — the card's member data rides
         # its backend_strategy consumer's panel-member fan-out (or honest-blanks per member), NOT a roster_spec. That

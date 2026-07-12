@@ -116,7 +116,14 @@ def roster_for(data_instructions, card_id):
     normalized = []
     for s in spec_slots:
         ai = by_slot.get(s.get("slot"))
-        normalized.append(_fold(ai, s) if ai else copy.deepcopy(s))
+        # `_gated` slots [sections overlay / single normalization home]: layer2/gates/roster.py already normalized
+        # this emission recipe-first AND may carry its sanctioned deviations (section-overlay split columns, the
+        # member section attr, an AI-authored series_split). Re-folding here would REVERT them ("unknown key →
+        # recipe stands") — trust the gate's output verbatim; the re-fold stays for RAW (ungated) emissions.
+        if isinstance(ai, dict) and ai.get("_gated"):
+            normalized.append(copy.deepcopy(ai))
+        else:
+            normalized.append(_fold(ai, s) if ai else copy.deepcopy(s))
     return normalized
 
 

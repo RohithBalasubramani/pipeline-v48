@@ -74,6 +74,18 @@ def panel_section(prompt, panel_name):
     return next(iter(found)) if len(found) == 1 else None
 
 
+def compare_sections(prompt, panel_name):
+    """The 2+ BUS SECTIONS the PROMPT compares for `panel_name` — sorted ['A','B'] when TWO OR MORE of that panel's
+    sectioned aliases appear ('compare pcc 1a and pcc 1b'), None otherwise. The deterministic trigger the Layer-2 user
+    message turns into the ★ BUS-SECTION COMPARE OVERLAY directive (the AI authors the per-section split; this stamp
+    only states the FACT that the prompt is a section compare). [sections overlay]"""
+    p = _norm(prompt)
+    if not p or not panel_name:
+        return None
+    found = {sec for al, (pn, sec) in _pcc_section_index().items() if pn == panel_name and al in p}
+    return sorted(found) if len(found) >= 2 else None
+
+
 def _pcc_alias_index():
     """{normalized_alias: canonical_panel_name} from cmd_catalog.pcc_panel_alias (the CMD_V2 PCC panel naming brought
     into our DB — PCC-1A/1B/2A…/Panel-N → PCC-Panel-N). {} on the equipment.alias knob being off or any outage — a
@@ -111,6 +123,9 @@ def resolve_asset(prompt, asset_id_override=None, cands=None):
             _sec = panel_section(prompt, _pa.get("name"))
             if _sec:
                 _pa["section"] = _sec                       # bus-section view: 'pcc-1b' rolls SECTION B members only
+            _cmp = compare_sections(prompt, _pa.get("name"))
+            if _cmp:
+                _pa["compare_sections"] = _cmp              # section COMPARE fact → the L2 overlay directive [sections]
         return pinned
 
     # CLASS PRIOR: infer the equipment class from the prompt subject/metric and narrow the listing shown to the AI, so
@@ -155,8 +170,35 @@ def resolve_asset(prompt, asset_id_override=None, cands=None):
         """The prior-class listing, data-bearing first (dead-meter-honest picker default)."""
         return [c for c in listed if c[6]] or listed
 
+    def _alias_rescue(outcome):
+        """★ ALIAS-DICTIONARY RESCUE [sections]: the model returned AMBIGUOUS between PCC panels, but every sectioned
+        panel alias the prompt spells maps to ONE canonical panel row (cmd_catalog.pcc_panel_alias — dictionary FACTS,
+        not a lexical heuristic): 'pcc 1a and pcc 1b' IS PCC-Panel-1, its two bus sections. A dictionary-clear mention
+        is not genuine ambiguity — the model was observed flip-flopping this exact prompt (pin one run, Panel-1-vs-
+        Panel-2 picker the next). POST-AI only: a confident pin is NEVER overridden (the deleted pre-AI collision gate
+        stays deleted); the rescue fires only on an all-panel ambiguous outcome, and fail-opens to the model's own
+        candidate list."""
+        try:
+            if outcome.get("asset") is not None or outcome.get("how") != "ambiguous":
+                return outcome
+            cands_out = outcome.get("candidates") or []
+            if not cands_out or any(str(c.get("class") or "").strip().lower() != "panel" for c in cands_out):
+                return outcome
+            p = _norm(prompt)
+            hit = {pn for al, (pn, _sec) in _pcc_section_index().items() if al in p}
+            if len(hit) != 1:
+                return outcome
+            row = by_name.get(next(iter(hit)))
+            if row is None or _is_ghost(row):
+                return outcome
+            asset = confident_pin(row, cands)
+            return no_data_outcome(asset, cands) or {"asset": asset, "how": "alias-dictionary", "candidates": []}
+        except Exception:
+            return outcome
+
     def _finish(outcome):
         """Attach the resolution telemetry every outcome carries (surfaced by run/harness stage + the FE picker)."""
+        outcome = _alias_rescue(outcome)
         outcome["class_prior"] = prior
         outcome["llm_failed"] = llm_failed
         outcome["class_mismatch"] = class_mismatch(prior, outcome.get("asset"), outcome.get("candidates"))
@@ -169,6 +211,9 @@ def resolve_asset(prompt, asset_id_override=None, cands=None):
             _sec = panel_section(prompt, asset.get("name"))
             if _sec:
                 asset["section"] = _sec                     # bus-section view: 'pcc-1b' rolls SECTION B members only
+            _cmp = compare_sections(prompt, asset.get("name"))
+            if _cmp:
+                asset["compare_sections"] = _cmp            # section COMPARE fact → the L2 overlay directive [sections]
         return outcome
 
     # listing has NO id column: the model must reason over name/class/load_group only, never registry ids. The

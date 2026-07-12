@@ -10,6 +10,13 @@ import React from "react";
 import { EventTimelineCard } from "@cmd-v2/pages/electrical/lt-pcc/panel-overview/voltage-current/Cards";
 import type { PeriodBucket } from "@cmd-v2/pages/electrical/lt-pcc/panel-overview/voltage-current/types";
 import type { EventTimelinePoint } from "@cmd-v2/pages/electrical/lt-pcc/panel-overview/voltage-current/EventTimelineChart";
+import { withSectionSplit } from "../../section-split";
+
+// sections-aware switch [sections overlay]: a bus-section compare payload carries pres.sectionSplit + per-section
+// series keys (sag_a/sag_b …) the ORIGINAL card's closed accessor record cannot map (`value: undefined` → chart
+// throw). The wrapper renders the SAME CMD_V2 chart primitive with key-generic accessors; without the marker the
+// original component renders byte-identically.
+const Timeline0 = withSectionSplit(EventTimelineCard);
 
 import {
   bundleFrom,
@@ -34,7 +41,7 @@ function TimelineCard({ trend }: { trend: any }) {
   const pres = trend?.pres ?? defaultPresentation().timeline;
   return (
     <div className="h-full">
-      <EventTimelineCard
+      <Timeline0
         pres={pres}
         period={period}
         points={points}

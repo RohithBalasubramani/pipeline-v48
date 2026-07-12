@@ -256,6 +256,17 @@ def _spec_match(member, match):
         return True
     if lg and lg in {str(x).strip().lower() for x in (match.get("load_groups") or [])}:
         return True
+    # BUS-SECTION match [sections overlay]: `sections: ["1A"]` scopes a key to the members of ONE bus section
+    # (equipment.mfm token via data/equipment/sections — dictionary lookup, zero card knowledge). Mirrors
+    # roster_modes_series._member_match; the section-compare split's per-key member subset rides this.
+    secs = {str(x).strip().upper() for x in (match.get("sections") or []) if x}
+    if secs:
+        try:
+            from data.equipment.sections import section_of
+            if str(section_of(member.get("table")) or "").upper() in secs:
+                return True
+        except Exception:
+            pass
     if any(sub and str(sub).strip().lower() in hay for sub in (match.get("name_contains") or [])):
         return True
     return False

@@ -230,6 +230,34 @@ def _build(card_in, *, oversize=False):
     _pm = panel_members_block(asset)                        # verbatim panel topology facts (panels only; '' otherwise)
     if _pm:
         parts += ["", _pm]
+    # ★ SECTION-COMPARE DIRECTIVE [sections overlay]: 1b DETERMINISTICALLY detected that the prompt compares 2+ bus
+    # sections of THIS panel (compare_sections stamp). The overlay contract itself lives in the system prompt's ROSTER
+    # section (★ BUS-SECTION COMPARE OVERLAY); a rule buried in a 63K-char system prompt is not salient enough on its
+    # own (verified live: rule present, facts present, zero splits emitted) — this per-run trigger makes it BINDING.
+    _cmp_secs = (asset or {}).get("compare_sections") if isinstance(asset, dict) else None
+    if _pm and _cmp_secs:
+        try:
+            from data.equipment.sections import token as _sec_token
+            _sec_toks = [_sec_token(asset.get("name"), s) for s in _cmp_secs]
+        except Exception:
+            _sec_toks = []
+        _sec_toks = [t for t in _sec_toks if t] or [f"1{s}" for s in _cmp_secs]
+        parts += ["",
+                  f"★ BUS-SECTION COMPARE — REQUIRED FOR THIS RUN: the prompt compares bus sections "
+                  f"{' vs '.join(_cmp_secs)} of THIS panel. Apply the BUS-SECTION COMPARE OVERLAY rule (ROSTER section "
+                  f"of the system prompt) to THIS card — this is an instruction, not an option:",
+                  f"  · every roster SERIES slot: re-emit as mode \"series_split\" with one series PER SECTION, match "
+                  f"{{\"sections\": [\"<token>\"]}} using the tokens VERBATIM from the PANEL MEMBERS `section=` facts "
+                  f"above (e.g. {_sec_toks}); key = \"<origkey>_{_cmp_secs[0].lower()}\"/\"<origkey>_"
+                  f"{_cmp_secs[-1].lower()}\".",
+                  "  · PAIR every split with its pres morphs in exact_metadata: duplicate the matching stackSeries/"
+                  "lineSeries entry per section (suffixed key, label \"<orig> — Sec A/B\", DISTINCT color per section), "
+                  "extend stackOrder/lineOrder, list every changed path in _morphed. A split without these morphs "
+                  "renders NOTHING.",
+                  "  · every roster ELEMENT slot: keep the recipe and ADD \"section\": {\"a\":\"section\",\"b\":\"attr\"} "
+                  "so each row/spoke declares its section; morph pres columns with {\"id\":\"section\",\"header\":\"Sec\"} "
+                  "when the card's columns are payload-driven.",
+                  "  · non-roster leaves stay unchanged; a section with no members in the facts is never invented."]
     parts += [
         "",
         "THIS CARD (cmd_catalog row):",

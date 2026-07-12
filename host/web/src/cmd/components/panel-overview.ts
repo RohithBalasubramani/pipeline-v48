@@ -9,6 +9,7 @@ import { RealTimeMonitoringRail as Cmp1 } from "@cmd-v2/pages/electrical/lt-pcc/
 import { QuickStats as Cmp4, SupplyCard as Cmp2, TrendCard as Cmp3 } from "@cmd-v2/pages/electrical/lt-pcc/panel-overview/realtime-monitoring/RealTimeMonitoringRailCards";
 import { AiSummaryCard as Cmp10, CurrentDistributionCard as Cmp12, EventTimelineCard as Cmp11, OtherPanelsTable as Cmp13 } from "@cmd-v2/pages/electrical/lt-pcc/panel-overview/voltage-current/Cards";
 import { EventsTopStrip as Cmp9 } from "@cmd-v2/pages/electrical/lt-pcc/panel-overview/voltage-current/EventsTopStrip";
+import { withSectionSplit } from "../section-split";
 
 export const COMPONENTS: Record<number, React.ComponentType<any>> = {
   7: Cmp1,
@@ -23,7 +24,7 @@ export const COMPONENTS: Record<number, React.ComponentType<any>> = {
   17: Cmp8,
   18: Cmp9,
   19: Cmp10,
-  20: Cmp11,
+  20: withSectionSplit(Cmp11), // sections-aware: a bus-section compare renders per-section series [sections overlay]
   21: Cmp12,
   22: Cmp13,
   23: Cmp14,
