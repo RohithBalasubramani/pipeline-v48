@@ -14,7 +14,8 @@ DATA PATH (ems_exec — 2026-07-02): each card's `payload` is the COMPLETED CMD_
 ems_exec.serve.run.run_card(exact_metadata, data_instructions, asset_table, db_link, window). run_card fills the payload
 skeleton from NEURACT directly (real where the AI named a column/fn, honest None/'—' else; every seed number stripped) —
 NO ws/mfm frame-fetch, NO Layer 2 frontend-fill, NO Layer 3. Feeder + asset + panel cards ALL go through run_card
-per-card (panel-aggregate leaves simply honest-blank; aggregation deferred). `frames` is emitted EMPTY for back-compat.
+per-card (panel-aggregate leaves simply honest-blank; aggregation deferred). The page-level `frames` wire field is
+RETIRED (F14, 2026-07-12 — it was always {}); the honest fetch-reason lives per-card (card.frame_status/render.reason).
 Layer 3 is RETIRED (archive/layer3_archive_20260702.tar.gz) and the legacy EMS backend is retired too — neither is imported.
 
 THIS FILE = the HTTP surface (Handler + build_response + the response dump). The serve-boundary seams are atomic host
@@ -88,7 +89,7 @@ def build_response(prompt, asset_id=None, date_window=None):
     _attach_l2_notes(cards, l2)   # B1: serve data_note + l2_answerability per card (additive; see the helper)
     from obs.stage import stage
     stage(out.get("run_id") or "-", "RESPONSE", page=page_key, cards=len(cards),
-          with_payload=sum(1 for c in cards if c.get("has_payload")), frames=[],
+          with_payload=sum(1 for c in cards if c.get("has_payload")),
           rendered=sum(1 for c in cards if (c.get("render") or {}).get("verdict") in ("render", "partial")),
           partial=sum(1 for c in cards if (c.get("render") or {}).get("verdict") == "partial"),
           blank=sum(1 for c in cards if (c.get("render") or {}).get("verdict") == "honest_blank"),
