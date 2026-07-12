@@ -54,6 +54,10 @@ def natural_compare_ids(prompt):
             # DIFFERENT sections of that one panel, the user is comparing SECTIONS: two lanes of the same panel, each
             # fan-out filtered to its section's members (equipment.mfm.section). Deterministic — no AI resolution
             # needed (the aliases already pin the panel).
+            # BUS-SECTION MENTIONS OF ONE PANEL ['compare pcc 1a and pcc 1b'] stay on the SINGLE page [user 2026-07-12:
+            # "2 sections should never be there"]: the panel page's cards are MEMBER-driven (both sections' bays are
+            # its members), so the honest render is ONE page over the union — the in-chart per-section overlay
+            # (per-section series, section-coloured members) is the roster-interpreter follow-up, not a page split.
             if len(rows) == 1:
                 from layer1b.resolve.asset_resolve import _pcc_section_index
                 from layer1b.compare.discriminators import _norm
@@ -62,8 +66,7 @@ def natural_compare_ids(prompt):
                 secs = sorted({sec for al, (pn, sec) in _pcc_section_index().items()
                                if pn == panel_name and al in p})
                 if len(secs) >= 2:
-                    _tel(decision="section_compare", panel=panel_name[:24], sections=secs)
-                    return [{"id": rows[0][0], "section": s} for s in secs]
+                    _tel(decision="single_page_section_union", panel=panel_name[:24], sections=secs)
             if "compare" in str(prompt).lower():          # only narrate prompts that LOOK like compares (low noise)
                 _tel(decision="single", rows=len(rows), detected=[str(r[1])[:30] for r in rows])
             return []
