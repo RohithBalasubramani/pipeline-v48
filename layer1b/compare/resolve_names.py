@@ -15,9 +15,9 @@ Never raises: a per-name resolve failure is isolated (that name simply isn't con
 """
 import re
 
-from run.parallel import run_parallel
+from lib.parallel import run_parallel   # primitive's home (run/parallel is its facade; cycle-kill 2026-07-12)
 from layer1b.resolve.asset_resolve import resolve_asset
-from layer1b.compare.discriminators import _discriminators, _norm
+from layer1b.compare.discriminators import _norm
 from layer1b.compare.detect import named_full_rows
 
 # a confident single resolution: an asset was pinned by NAME (or named-but-empty no_data) with NO open picker list.
@@ -116,6 +116,8 @@ def resolve_compare(prompt, cands=None):
     {confident, ambiguous, resolutions}: `confident` = mfm_ids that resolved to exactly one meter (dedup, order kept);
     `ambiguous` = names that stayed a picker on their own sub-prompt. The caller routes to the multi-asset compare only
     when len(confident) >= 2 (and no name went ambiguous — every named asset must pin, or the picker is the honest answer)."""
+    from layer1b.resolve.asset_candidates import asset_candidates
+    cands = cands if cands is not None else asset_candidates()   # ONE probe, shared by detection AND every sub-resolve
     rows = named_full_rows(prompt, cands)
     if len(rows) < 2:
         return {"confident": [], "ambiguous": [], "resolutions": []}
@@ -124,7 +126,9 @@ def resolve_compare(prompt, cands=None):
     for i, r in enumerate(rows):
         others = [o for o in rows if o[0] != r[0]]
         sub = _sub_prompt(prompt, r, others)
-        thunks[i] = (lambda p=sub: resolve_asset(p))
+        # share the SAME candidate list: N concurrent sub-resolves re-probing has_data over the tunnel (3-5 parallel
+        # 250-table sweeps) contended and flap-errored -> ambiguous -> silent single-path [compare-share fix]
+        thunks[i] = (lambda p=sub: resolve_asset(p, cands=cands))
 
     results = run_parallel(thunks)
 

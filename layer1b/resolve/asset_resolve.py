@@ -6,17 +6,18 @@ deterministically (exact, then space/punctuation/case-insensitive), so the reada
 is looked up, never guessed. [spec section 2 L1b, #14; batch root-cause: asset_name_mismatch (11/66)]
 
 HARDENING (silent-empty family): an implied-asset prompt can no longer dead-end in how='empty' —
-  · an LLM transport failure ({} from fail-open call_qwen) is retried ONCE (guardrail/retry_one) and, if still dead,
+  · a TRANSIENT LLM transport failure is retried once (llm/transient_retry — deterministic timeouts fail fast) and, if still dead,
     surfaces the browse picker via empty_fallback (class-narrowed when a prior exists) + llm_failed telemetry;
   · `confident` DEFAULTS FALSE when the key is absent (a half-parsed emission is not a confident nothing);
   · paraphrased/typo'd names recover as AMBIGUOUS candidates via guardrail/spelling_recovery (never a confident pin);
   · every outcome carries class_prior + class_mismatch telemetry (guardrail/same_family_gate — telemetry, NOT a gate).
 """
 import os
+from llm.prompt_load import load as _prompt_load
 import re
 
 from llm.client import call_qwen
-from layer1b.resolve.asset_candidates import asset_candidates, as_asset
+from layer1b.resolve.asset_candidates import asset_candidates
 from layer1b.resolve.no_data_gate import no_data_outcome
 from layer1b.resolve.pinned_skip import pinned_skip
 from layer1b.resolve.class_from_subject import class_from_subject, candidates_of_class
@@ -25,7 +26,7 @@ from layer1b.resolve.ambiguous_candidates import ambiguous_candidates
 from layer1b.resolve.member_scope import member_scope
 from layer1b.resolve.empty_fallback import empty_fallback
 from layer1b.resolve.answer_schema import asset_answer_schema
-from layer1b.guardrail.retry_one import retry_once
+from llm.transient_retry import retry_transient_result
 from layer1b.guardrail.spelling_recovery import fuzzy_rows
 from layer1b.guardrail.same_family_gate import class_mismatch
 
@@ -33,13 +34,10 @@ _HERE = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 
 def _load_prompt(name):
-    with open(os.path.join(_HERE, "prompts", name)) as f:
-        return f.read()
+    return _prompt_load(_HERE, name)   # the ONE loader (llm/prompt_load, D8); errors="replace" house default
 
 
-def _norm(s):
-    """space/punctuation/case-insensitive match key: 'PCC Panel 2 A' == 'pcc panel 2a' == 'PCC-Panel-2A'."""
-    return re.sub(r"[^a-z0-9]+", "", str(s).lower())
+from layer1b.normalize import norm as _norm  # the ONE asset-name match key (D9)
 
 
 def _is_ghost(row):
@@ -64,8 +62,13 @@ def _pcc_alias_index():
         return {}
 
 
-def resolve_asset(prompt, asset_id_override=None):
-    cands = asset_candidates()
+def resolve_asset(prompt, asset_id_override=None, cands=None):
+    # `cands` [compare-share fix]: the natural-compare per-name resolver fans 3-5 CONCURRENT resolve_asset calls; each
+    # re-running asset_candidates() fired 3-5 simultaneous ~250-table has_data probes over the flaky :5433 tunnel —
+    # slow, contending, and outage-raising (two probes flapped -> two sub-resolves errored -> the compare silently
+    # bailed to single). The caller that already HOLDS the candidate list passes it; default None keeps every other
+    # call site byte-identical.
+    cands = cands if cands is not None else asset_candidates()
     by_id = {str(c[0]): c for c in cands}
 
     # PIPELINE_ASSET_ID round-trip: the user already picked -> skip resolution (delegated to pinned_skip: honors the
@@ -154,8 +157,22 @@ def resolve_asset(prompt, asset_id_override=None):
     # json_schema [item 17, DEFAULT OFF]: asset_answer_schema() reads the flag row llm.guided_json.asset_resolve —
     # 'off'/absent → None → the request is byte-identical to before; 'on' → vLLM guided decoding pins the reply to
     # {"names":[...],"confident":bool,"candidates":[...]} so an unparseable emission is impossible.
-    res, llm_failed = retry_once(lambda: call_qwen(system, user, stage="asset_resolve",
-                                                   json_schema=asset_answer_schema()))
+    # transient-only retry [no-retry rule]: a deterministic timeout/truncation fails FAST (retrying doubles the
+    # hang); a transport blip is re-sent once. llm_failed = the model was NEVER HEARD (marker survived every attempt).
+    # DECISION INSPECTOR: the class-narrowed registry listing IS the option set shown to the model — declared per
+    # attempt (call_qwen clears the context when it returns) so the llm event's `decision` carries it. The id column
+    # stays hidden from the candidates view too, matching the resolve-by-NAME contract.
+    from obs import llm_tap
+
+    def _call():
+        llm_tap.set_decision(kind="selection", candidate_kind="asset",
+                             candidates=[{"name": c[1], "class": c[5], "load_group": c[4], "has_data": bool(c[6]),
+                                          "aka": (c[10] if len(c) > 10 and c[10] else None)} for c in listed],
+                             class_prior=prior)
+        return call_qwen(system, user, stage="asset_resolve",
+                         json_schema=asset_answer_schema(), on_error="marker")
+
+    res, llm_failed = retry_transient_result(_call)
 
     if llm_failed:
         # the model was NEVER HEARD (transport/parse failure twice) — honest degrade to the browse picker (class-
