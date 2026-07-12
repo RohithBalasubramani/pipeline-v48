@@ -107,6 +107,13 @@ def run_cases(cases: list[dict], session_id: str, concurrency: int | None = None
     throttle = _Throttle(lane)
     results: list[dict] = []
     lock = threading.Lock()
+    # DEAD-SERVER CIRCUIT BREAKER [campaign2_volume post-mortem]: the target server was killed mid-run and the runner
+    # burned through 745 remaining cases in minutes — each an instant Connection-refused 'failure' (garbage session,
+    # wasted corpus). N CONSECUTIVE transport failures = dead-server shape (per-case flakiness resets the count) =>
+    # abort the remainder: skipped cases record stage='aborted' and the manifest carries aborted=true so a report can
+    # never be mistaken for a real sweep.
+    breaker = {"consec": 0, "tripped": False}
+    breaker_n = int(os.environ.get("V48_VALIDATE_BREAKER_N", "10"))
 
     def one(case: dict) -> dict:
         body = {"prompt": case["prompt"]}
@@ -116,6 +123,12 @@ def run_cases(cases: list[dict], session_id: str, concurrency: int | None = None
             body["asset_ids"] = list(case["pins"])      # pinned multi-asset compare lane
         t0 = time.time()
         rec = {"case": case, "request": body, "attempt": 1}
+        if breaker["tripped"]:
+            rec["parsed"] = None
+            rec["judgment"] = {"pass": False, "stage": "aborted", "why": "run aborted: dead-server circuit breaker"}
+            with open(os.path.join(sdir, "cases", f"{case['id']}.json"), "w") as f:
+                json.dump(rec, f, sort_keys=True)
+            return rec
         throttle.sem.acquire()
         try:
             raw = _post("/api/run", body, config.timeout_for(case))
@@ -127,6 +140,10 @@ def run_cases(cases: list[dict], session_id: str, concurrency: int | None = None
             throttle.sem.release()
         rec["elapsed_s"] = round(time.time() - t0, 2)
         throttle.record(ok_transport and bool((raw or {}).get("ok", True)))
+        with lock:
+            breaker["consec"] = 0 if ok_transport else breaker["consec"] + 1
+            if breaker["consec"] >= breaker_n:
+                breaker["tripped"] = True
         if raw is not None:
             raw_path = os.path.join(sdir, "raw", f"{case['id']}.json")
             with open(raw_path, "w") as f:
@@ -170,6 +187,8 @@ def run_cases(cases: list[dict], session_id: str, concurrency: int | None = None
         "session": session_id, "total": len(cases),
         "requested_concurrency": requested, "run_lane_start": lane, "run_lane_end": throttle.limit,
         "throttle_events": throttle.events,
+        "aborted": breaker["tripped"],
+        "aborted_cases": sum(1 for r in results if (r.get("judgment") or {}).get("stage") == "aborted"),
         "passed": sum(1 for r in results if (r.get("judgment") or {}).get("pass")),
         "failed": sum(1 for r in results if not (r.get("judgment") or {}).get("pass")),
         "resume_legs": sum(1 for r in results if r.get("resume")),
