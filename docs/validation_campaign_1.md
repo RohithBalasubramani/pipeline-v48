@@ -29,10 +29,22 @@ byte-deterministic regeneration; budgets are DB rows). Coverage from the 36-case
 3. **Kept-name mutilation** — an OTHER row's pattern could strip text *inside* the kept name
    ('Chiller Panel-2 Main INC' → 'Chiller Main Inc'). Fix: sentinel-mask the kept span
    (`cf1590c`). **Replay proof: BPDB 5-way = 6 groups / 24 cards; HHF lowercase 5-way = 5 groups.**
-4. **Resolver lexical-neighbor substitution** — prompt named 'GIC-25-N14-Air Compressor Cooling
-   Pumps' verbatim; the model returned 'GIC-24-N8-Air Compressor Panel' (different asset),
-   mis-generalizing prefer-data-bearing. Fix: ★ no-substitution rule in `asset_system.md`
-   (`d516f7f`). Re-replay pending at time of writing.
+4. **The pump 3-way — a six-layer excavation** (one corpus case, six independent seams hardened,
+   each exposed only after the previous fix; every layer committed):
+   1. client timeout at 420s → compare-lane 900s (`cf1590c`)
+   2. resolver substituted a lexical neighbor ('Cooling Pumps' → 'Air Compressor Panel') →
+      ★ no-substitution rule (`d516f7f`)
+   3. concurrent sub-resolves each re-ran the ~250-table candidate probe; two flap-errored →
+      ONE shared probe (`f68ff38`)
+   4. model hedged AMBIGUOUS on the explicitly-named NO-DATA row → verbatim-name-is-never-a-homonym
+      rule (`6ccb58f`)
+   5. the natural-compare gate bailed SILENTLY → decision telemetry (`c92d4db`)
+   6. a named-but-DARK member's single-path picker-affordance flipped it ambiguous → how='no_data'
+      counts CONFIDENT; the dark lane joins the compare and honest-blanks (`8cb3ff3`)
+   **Final replay (round 8, isolated :8771): `decision=compare rows=3 confident=3` →
+   compare, 3 groups, 9 cards, 0 payload errors. CLOSED.**
+   (Rounds 6–7 died to a real :5433 outage + parallel-session server restarts — bonus live
+   certification of the honest data_unavailable terminal, telemetry naming the exact cause.)
 
 ### Framework defects (fixed)
 5. **Client timeouts manufactured failures** — two "failures" were 420.1s client timeouts on
