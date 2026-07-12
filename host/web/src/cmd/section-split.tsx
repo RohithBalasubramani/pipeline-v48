@@ -67,3 +67,58 @@ export function withSectionSplit(Orig: React.ComponentType<any>): React.Componen
     return props?.pres?.sectionSplit ? <EventTimelineSections {...props} /> : <Orig {...props} />;
   };
 }
+
+// ── SECTION RADAR — a payload-driven view over the CMD_V2 ComparisonRadarChart primitive. ─────────────────────────
+// The executor stamps `<subtree>.sectionCompare` (the bus-section tokens) on a section-compare run; each member row
+// carries its own `section` attr. Series = one polygon per section (+ 'Common' for bus-level members) over the SAME
+// member spokes — an off-section member draws 0 A from that section (physically true, never fabricated). Labels and
+// colors are AI-MORPHABLE via `pres.sections` ([{token,label,color}]) with a deterministic fallback palette; spoke
+// labels reuse pres.spokeLabelReplacements; the header reuses titlePrefix/titleConnector/period.label. Without the
+// stamp the ORIGINAL card renders byte-identically.
+import { ComparisonRadarChart } from "@cmd-v2/components/charts/primitives";
+
+const SECTION_PALETTE = ["#7a4e13", "#4A6FA5", "#9aa3ab"];
+
+const applyRepl = (s: string, repl: any[]) =>
+  (Array.isArray(repl) ? repl : []).reduce(
+    (acc, r) => (r && typeof r.from === "string" ? acc.split(r.from).join(r.to ?? "") : acc),
+    String(s ?? ""));
+
+export function SectionRadar({ distribution }: { distribution: any }) {
+  const pres = distribution?.pres ?? {};
+  const period = distribution?.period ?? {};
+  const toks: string[] = (distribution?.sectionCompare ?? []).map((t: any) => String(t).toUpperCase());
+  const rows = (Array.isArray(period.panels) ? period.panels : [])
+    .filter((r: any) => r && r.amps != null && r.role !== "incoming");
+  const secOf = (r: any) => {
+    const s = String(r?.section ?? "").toUpperCase();
+    return toks.includes(s) ? s : null;
+  };
+  const spokes = rows.map((r: any) => applyRepl(r.panel ?? r.id, pres.spokeLabelReplacements));
+  // series spec: AI-morphable pres.sections wins; deterministic fallback = one per token + Common when present
+  const spec: Array<{ token: string | null; label: string; color: string }> =
+    (Array.isArray(pres.sections) && pres.sections.length
+      ? pres.sections.map((s: any, i: number) => ({
+          token: s?.token != null ? String(s.token).toUpperCase() : null,
+          label: String(s?.label ?? s?.token ?? `Series ${i + 1}`),
+          color: String(s?.color ?? SECTION_PALETTE[i % SECTION_PALETTE.length]) }))
+      : [
+          ...toks.map((t, i) => ({ token: t, label: `Sec ${t.slice(-1)}`, color: SECTION_PALETTE[i % SECTION_PALETTE.length] })),
+          ...(rows.some((r: any) => secOf(r) == null)
+            ? [{ token: null, label: "Common", color: SECTION_PALETTE[2] }]
+            : []),
+        ]);
+  const series = spec.map((s) => ({
+    key: s.token ?? "common",
+    name: s.label,
+    color: s.color,
+    values: rows.map((r: any) => (secOf(r) === s.token ? num(r.amps) : 0)),
+  }));
+  return (
+    <BodyCard title={`${pres.titlePrefix ?? ""}${pres.titleConnector ?? ""}${period.label ?? ""}`}>
+      <div className="h-full min-h-0">
+        <ComparisonRadarChart spokes={spokes} series={series} />
+      </div>
+    </BodyCard>
+  );
+}

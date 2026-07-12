@@ -103,21 +103,58 @@ def _patch_container(d, variants):
         d["sectionSplit"] = True
 
 
+def _element_sections_of(roster):
+    """{payload_root_key: [section tokens]} for elements-mode slots the gate marked `_sections` — the compare surface
+    an element-roster card (radar spokes / table rows) exposes to the host's payload-driven renderers."""
+    out = {}
+    for s in roster or []:
+        if isinstance(s, dict) and s.get("mode") == "elements" and s.get("_sections") and s.get("slot"):
+            root = str(s["slot"]).split(".")[0].replace("[]", "")
+            out[root] = [str(t) for t in s["_sections"]]
+    return out
+
+
+def _stamp_element_compare(payload, roster):
+    """Stamp each marked elements slot's payload ROOT subtree with `sectionCompare` (the tokens) and apply the
+    GENERIC pres morphs a section compare rides on payload-driven components:
+    - a DataTable-family pres (eventModeOrder + eventColumn.shortByMode — the component renders one column per listed
+      row FIELD, `render: (panel) => panel[m]`) gains a leading 'section' column ('Sec') so every row declares its
+      bus section — a pure payload morph, the component is untouched.
+    The host's sections-aware renderers (e.g. the comparison radar) key on the `sectionCompare` stamp; components
+    that ignore unknown keys render exactly as before."""
+    for root, toks in _element_sections_of(roster).items():
+        sub = payload.get(root)
+        if not isinstance(sub, dict):
+            continue
+        sub["sectionCompare"] = list(toks)
+        pres = sub.get("pres")
+        if isinstance(pres, dict):
+            emo = pres.get("eventModeOrder")
+            ec = pres.get("eventColumn")
+            if isinstance(emo, list) and isinstance(ec, dict) and isinstance(ec.get("shortByMode"), dict) \
+                    and "section" not in emo:
+                pres["eventModeOrder"] = ["section"] + list(emo)
+                ec["shortByMode"] = {**ec["shortByMode"], "section": "Sec"}
+
+
 def apply_section_pres(payload, roster):
-    """Walk the payload and patch every pres container for the roster's section-split variant keys. In-place,
-    fail-open (an exception leaves the payload exactly as it was — the base keys still render)."""
+    """Walk the payload and patch every pres container for the roster's section-split variant keys, then stamp the
+    elements-slot compare surface. In-place, fail-open (an exception leaves the payload exactly as it was — the base
+    keys still render)."""
     try:
-        variants = _variants_of(roster)
-        if not variants or not isinstance(payload, dict):
+        if not isinstance(payload, dict):
             return payload
-        stack = [payload]
-        while stack:
-            node = stack.pop()
-            if isinstance(node, dict):
-                _patch_container(node, variants)
-                stack.extend(node.values())
-            elif isinstance(node, list):
-                stack.extend(node)
+        variants = _variants_of(roster)
+        if variants:
+            stack = [payload]
+            while stack:
+                node = stack.pop()
+                if isinstance(node, dict):
+                    _patch_container(node, variants)
+                    stack.extend(node.values())
+                elif isinstance(node, list):
+                    stack.extend(node)
+        _stamp_element_compare(payload, roster)
     except Exception:
         pass
     return payload

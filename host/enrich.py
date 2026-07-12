@@ -146,6 +146,28 @@ def _sub_period(text, label):
     return text
 
 
+def _fill_period_labels(payload, label):
+    """Fill EMPTY `<subtree>.period.label` leaves with the operative window label ('Today' / 'Last 7 Days') — the
+    CMD_V2 in-card title is `pres.titlePrefix + connector + period.label`, and the seed-strip resets that label to ''
+    as a data key, so the card header rendered 'Current Distribution at ' (dangling). CHROME ONLY, never a reading:
+    only an empty/None label is filled; a REAL selected-bucket label the executor wrote stays untouched. In-place,
+    fail-open."""
+    try:
+        stack = [payload]
+        while stack:
+            node = stack.pop()
+            if isinstance(node, dict):
+                per = node.get("period")
+                if isinstance(per, dict) and "label" in per and (per.get("label") in ("", None)):
+                    per["label"] = label
+                stack.extend(node.values())
+            elif isinstance(node, list):
+                stack.extend(node)
+    except Exception:
+        pass
+    return payload
+
+
 def _enrich_card(card, page_key, val_by_id, l2_out, completed=None, run_ok=True, run_why=None, endpoint_override=None,
                  asset_table=None, asset=None, handling=None, date_window=None):
     """Build the FE card. The `payload` is the COMPLETED CMD_V2 payload from ems_exec.run_card (`completed`) — real
@@ -224,6 +246,7 @@ def _enrich_card(card, page_key, val_by_id, l2_out, completed=None, run_ok=True,
         reason = (run_why if not run_ok else None) or (
             zero_real_reason if n_real == 0 else (gap_note or "some metrics have no live data"))
 
+    _fill_period_labels(payload, _period_label(date_window))    # empty in-card 'at {label}' chrome ← window label
     return {
         "card_id": cid,
         "render_card_id": render_card_id,

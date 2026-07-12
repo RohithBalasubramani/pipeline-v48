@@ -69,7 +69,9 @@ def _section_overlay(normalized, toks):
         elif mode == "elements":
             el = {k: v for k, v in (s.get("element") or {}).items()}
             el.setdefault("section", {"a": "section", "b": "attr"})
-            out.append({**s, "element": el})
+            # `_sections` marker: the executor's pres pass turns it into the payload-side compare surface
+            # (sectionCompare stamp + generic pres morphs) the host's payload-driven renderers key on.
+            out.append({**s, "element": el, "_sections": list(toks)})
         else:
             out.append(s)
     return out

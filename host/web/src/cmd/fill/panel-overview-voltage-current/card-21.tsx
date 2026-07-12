@@ -9,6 +9,7 @@ import React from "react";
 
 import { CurrentDistributionCard } from "@cmd-v2/pages/electrical/lt-pcc/panel-overview/voltage-current/Cards";
 import type { PeriodBucket } from "@cmd-v2/pages/electrical/lt-pcc/panel-overview/voltage-current/types";
+import { SectionRadar } from "../../section-split";
 
 import {
   bundleFrom,
@@ -18,6 +19,17 @@ import {
 } from "./view-model";
 
 function DistributionCard({ distribution }: { distribution: any }) {
+  // SECTION COMPARE [sections overlay]: the executor stamped `sectionCompare` — render the payload-driven comparison
+  // radar (CMD_V2 ComparisonRadarChart primitive, one polygon per bus section, AI-morphable labels/colors via
+  // pres.sections). Without the stamp the original card renders byte-identically below.
+  if (Array.isArray(distribution?.sectionCompare) && distribution.sectionCompare.length >= 2
+      && Array.isArray(distribution?.period?.panels) && distribution.period.panels.length > 0) {
+    return (
+      <div className="h-full">
+        <SectionRadar distribution={distribution} />
+      </div>
+    );
+  }
   // 1) payload (Layer-2 completed — real or honest-blank).
   let period: PeriodBucket = distribution?.period;
   let selectedPanelId: string = distribution?.selectedPanelId;

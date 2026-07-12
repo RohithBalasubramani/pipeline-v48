@@ -119,6 +119,9 @@ comparison INSIDE each card, never as duplicate pages.
 - ELEMENT slots (member rows/spokes): keep the recipe as-is and ADD `"section": {"a":"section","b":"attr"}` to the
   element map (members carry a real `section` attr) so each row/spoke declares its section; morph the pres columns
   list with a {"id":"section","header":"Sec"} entry when the card's columns are payload-driven.
+- You MAY morph `pres.sections` on an element card: [{"token":"1A","label":"Sec A","color":"#7a4e13"}, …] — the
+  host's comparison renderers use it for per-section polygon/series labels + colors (tokens VERBATIM from the member
+  facts; omit it and a deterministic palette applies). List the path in `_morphed` like any pres morph.
 - Sections with NO members in the facts are never invented; a one-section prompt is NOT a compare (no split).
 <!--ROSTER:END-->
 
