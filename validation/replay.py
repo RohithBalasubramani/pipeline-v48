@@ -28,12 +28,12 @@ def _load_json(path: str):
         return None
 
 
-def _post_run(body: dict) -> tuple[dict | None, str | None]:
+def _post_run(body: dict, timeout: float | None = None) -> tuple[dict | None, str | None]:
     """POST body to /api/run (runner.py pattern). Returns (raw, transport_error)."""
     try:
         req = urllib.request.Request(config.BASE_URL + "/api/run", data=json.dumps(body).encode(),
                                      headers={"Content-Type": "application/json"})
-        with urllib.request.urlopen(req, timeout=config.RUN_TIMEOUT_S) as r:
+        with urllib.request.urlopen(req, timeout=timeout or config.RUN_TIMEOUT_S) as r:
             return json.loads(r.read().decode("utf-8", "replace")), None
     except Exception as e:
         return None, f"{type(e).__name__}: {ascii_safe(e)[:200]}"
@@ -68,7 +68,7 @@ def replay(case_id: str, session_id: str, quiet: bool = False) -> dict:
     body = rec.get("request") or {"prompt": case.get("prompt", "")}
 
     t0 = time.time()
-    raw, transport_error = _post_run(body)
+    raw, transport_error = _post_run(body, config.timeout_for(case))
     elapsed_s = round(time.time() - t0, 2)
 
     replay_raw_path = None
