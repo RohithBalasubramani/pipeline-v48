@@ -113,10 +113,13 @@ def _run_on(conn, sql):
     import psycopg2
     conn.autocommit = True
     if _first_keyword(sql) in _COPYABLE:
+        # psql-engine parity: psql runs "SELECT 42;" fine but COPY (SELECT 42;) is a syntax error — shed the
+        # statement terminator before wrapping (COPY branch only; the plain execute path takes sql verbatim).
+        copy_sql = sql.rstrip().rstrip(";")
         buf = io.StringIO()
         with conn.cursor() as cur:
             try:
-                cur.copy_expert(f"COPY ({sql}) TO STDOUT (FORMAT csv)", buf)
+                cur.copy_expert(f"COPY ({copy_sql}) TO STDOUT (FORMAT csv)", buf)
                 return [r for r in csv.reader(io.StringIO(buf.getvalue())) if r]
             except psycopg2.errors.FeatureNotSupported:
                 pass                                           # e.g. a data-modifying CTE — plain path below
@@ -146,7 +149,13 @@ def _connection_dead(conn, exc):
 def _q_pool(db, sql):
     import time
     t0 = time.time()
-    conn, fresh = _checkout(db)
+    try:
+        conn, fresh = _checkout(db)
+    except Exception as e:
+        # fresh-connect failure at checkout is the honest outage too — normalize it like EVERY other failure so the
+        # RuntimeError contract holds (replay tape records it; the psycopg2 wording rides `err`, so the degrade-gate
+        # fingerprints in data/outage.py still match).
+        return _q_fail(db, sql, t0, e)
     try:
         rows = _run_on(conn, sql)
     except Exception as e:

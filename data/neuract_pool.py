@@ -61,10 +61,17 @@ def conn(readonly=False):
 
 
 def drop(readonly=False):
-    """Forget the pooled connection (a broken conn must not be reused); the next conn() call reconnects."""
+    """Forget the pooled connection (a broken conn must not be reused); the next conn() call reconnects. The popped
+    conn is closed (outside the lock) so its FD is released now, not whenever GC gets to it."""
+    c = None
     with _LOCK:
         try:
-            _POOL.pop(_key(readonly), None)
+            c = _POOL.pop(_key(readonly), None)
+        except Exception:
+            pass
+    if c is not None:
+        try:
+            c.close()
         except Exception:
             pass
 
