@@ -131,11 +131,24 @@ def run_cases(cases: list[dict], session_id: str, concurrency: int | None = None
             return rec
         throttle.sem.acquire()
         try:
-            raw = _post("/api/run", body, config.timeout_for(case))
-            ok_transport = True
-        except Exception as e:
             raw, ok_transport = None, False
-            rec["transport_error"] = f"{type(e).__name__}: {ascii_safe(e)[:200]}"
+            for attempt in (1, 2):
+                rec["attempt"] = attempt
+                try:
+                    raw = _post("/api/run", body, config.timeout_for(case))
+                    ok_transport = True
+                    break
+                except Exception as e:
+                    rec["transport_error"] = f"{type(e).__name__}: {ascii_safe(e)[:200]}"
+                    # CONNECTION-REFUSED BACKOFF [supervised-server gap]: the target restarts in ~3s under a supervisor;
+                    # an instant-refused burst let the runner burn through the breaker threshold INSIDE that gap. One
+                    # 4s backoff + retry rides out a restart; a genuinely dead server still fails both attempts and
+                    # feeds the breaker. Timeouts are NOT retried (a slow run is not a dead server).
+                    if attempt == 1 and ("Connection refused" in rec["transport_error"]
+                                         or "RemoteDisconnected" in rec["transport_error"]):
+                        time.sleep(4)
+                        continue
+                    break
         finally:
             throttle.sem.release()
         rec["elapsed_s"] = round(time.time() - t0, 2)
