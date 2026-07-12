@@ -43,11 +43,18 @@ def build_basket(prompt, asset, intent="snapshot"):
     # layer1b.has_data_window_rows), so an intermittent column that is merely null at the single latest sample isn't
     # dishonestly flagged N ('Prefer has_data=Y' then biased the AI away from a real column).
     hasdata = window_nonnull(table)
-    # AGGREGATE PANEL only: when the panel's OWN table is an empty stub (pcc_panel_N_feedbacks) but it HAS feeders, build
-    # the basket from a representative feeder's schema so the Sankey/total cards' metrics (active_power_total_kw, …)
-    # resolve instead of hallucinating. A REAL meter (transformer/incomer) keeps its OWN columns — its table has data,
-    # so we must NOT override it (doing so emptied the basket). leaf → no feeders → unchanged.
-    if not hasdata and asset.get("has_feeders") and asset.get("mfm_id"):
+    # AGGREGATE PANEL only: when the panel's OWN table carries NO canonical ELECTRICAL columns but it HAS feeders,
+    # build the basket from a representative feeder's schema so the Sankey/total cards' metrics (active_power_total_kw,
+    # …) resolve instead of hallucinating. THE TRIGGER IS ELECTRICAL-NESS, NOT VALUES [feedbacks-stub fix]: the old
+    # `not hasdata` gate assumed pcc_panel_N_feedbacks is value-empty — it is NOT (breaker/relay feedback BITS are
+    # non-null), so the substitution never fired and the basket AI was honestly shown 34 relay columns for a
+    # voltage/current prompt → feasible=[] probable=[] (live section-compare inspector, 2026-07-12). A canonical
+    # electrical column is one the dictionary DESCRIBES (non-empty label/unit — describe() knows voltage_avg, not
+    # tf_inc_2_acb_on_fb). A REAL meter (transformer/incomer) keeps its OWN columns — its table HAS electrical
+    # columns, so it is never overridden. leaf → no feeders → unchanged.
+    def _has_electrical(t):
+        return any((c[1] or c[3]) for c in col_dict(t))       # any column with a dictionary label OR unit
+    if asset.get("has_feeders") and asset.get("mfm_id") and not _has_electrical(table):
         ft = feeder_table(asset["mfm_id"])
         if ft:
             table = ft
