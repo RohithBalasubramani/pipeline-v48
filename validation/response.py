@@ -62,6 +62,10 @@ def parse(resp: dict) -> dict:
         outcome = "refused"
     elif r.get("kind") == "knowledge" or (r.get("answer") and not cards):
         outcome = "knowledge"
+    elif (r.get("asset_no_data") or r.get("asset_pending")) and candidates:
+        # the FE OPENS THE PICKER over any cards for a no-data / pending resolution (a dark meter resolves to the
+        # honest no-data picker with alternatives) — classifying by cards>0 mislabeled it 'cards' [replay 00004c55ac7d]
+        outcome = "picker"
     elif len(groups) >= 2:
         outcome = "compare"
     elif cards:
