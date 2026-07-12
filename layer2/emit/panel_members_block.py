@@ -52,6 +52,18 @@ def _member_suffix(tbl):
         return ""
 
 
+def _section_suffix(tbl):
+    """' | section=1A' — the member's bus-section token [sections overlay]: the AI splits series/elements per section
+    (roster series_split match {"sections": [...]}) when the prompt compares bus sections ('pcc 1a and pcc 1b'). ''
+    on unmapped/outage so the line stays byte-identical for unsectioned plants."""
+    try:
+        from data.equipment.sections import section_of
+        s = section_of(tbl)
+        return f" | section={s}" if s else ""
+    except Exception:
+        return ""
+
+
 def _lines(members):
     out = []
     for m in members:
@@ -59,7 +71,7 @@ def _lines(members):
         last = _member_last_ts(tbl)
         out.append(f"    {m.get('name')} | table={tbl or '(no table)'} | "
                    f"has_data={'Y' if _member_has_data(tbl) else 'N'} | last={last or '—'}"
-                   f"{_member_suffix(tbl)}")
+                   f"{_section_suffix(tbl)}{_member_suffix(tbl)}")
     return out
 
 

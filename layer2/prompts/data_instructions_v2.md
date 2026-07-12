@@ -106,6 +106,20 @@ Some cards render ONE ELEMENT PER PANEL MEMBER (feeder rosters, SLD nodes, heatm
 - The executor iterates the panel's members itself (supply = role=='incoming', load = everything else). You never enumerate members, tables, or per-member values.
 Shorthand: an element value may be a bare column name — it means {"b":"col","c":"<column>"}.
 Each roster entry: {"slot": "<recipe slot verbatim>", "scope": "members", "element": {<element key>: <binding|bare column>, …}} (+ optionally role_filter/group_by/order/cap/agg repeated verbatim from the recipe).
+★ BUS-SECTION COMPARE OVERLAY (the ONE exception to fixed recipe structure — allowed ONLY when the prompt compares
+bus sections of THIS panel, e.g. 'pcc 1a and pcc 1b', AND the PANEL MEMBERS facts carry `section=` tokens): render the
+comparison INSIDE each card, never as duplicate pages.
+- SERIES slots (mode 'series'/'columns'): re-emit the slot as mode "series_split" with one series PER SECTION —
+  {"mode":"series_split","slot":"<verbatim>","column":"<the recipe column>","series":[{"key":"<origkey>_a","match":{"sections":["1A"]}},{"key":"<origkey>_b","match":{"sections":["1B"]}}]}
+  (section tokens VERBATIM from the member facts; key suffix _a/_b lowercased section letter).
+- PAIR EVERY split with the pres MORPHS that make it render: duplicate the matching pres.stackSeries/lineSeries entry
+  per section (key = the suffixed key, label = "<orig label> — Sec <A|B>", a DISTINCT color per section reusing the
+  page palette), extend stackOrder/lineOrder with the new keys, and list every changed path in `_morphed`. A split
+  without its pres morphs renders nothing (the component maps series by key) — emit both or neither.
+- ELEMENT slots (member rows/spokes): keep the recipe as-is and ADD `"section": {"a":"section","b":"attr"}` to the
+  element map (members carry a real `section` attr) so each row/spoke declares its section; morph the pres columns
+  list with a {"id":"section","header":"Sec"} entry when the card's columns are payload-driven.
+- Sections with NO members in the facts are never invented; a one-section prompt is NOT a compare (no split).
 <!--ROSTER:END-->
 
 RECOVERY LIBRARY (the closed fn set for kind=derived, per R14 — generated LIVE from the executor's own derivation registry, so every fn listed is exactly what the executor can compute):

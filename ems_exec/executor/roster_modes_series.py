@@ -240,6 +240,17 @@ def _member_match(member, match):
         return True
     if lg and lg in {str(x).strip().lower() for x in (match.get("load_groups") or [])}:
         return True
+    # BUS-SECTION match [sections overlay]: `sections: ["1A"]` selects members by their equipment.mfm section token
+    # (data/equipment/sections) — the dimension a section-compare prompt splits series/elements by. AI-drivable: the
+    # L2 roster emission names the sections; this stays a dictionary lookup, zero card knowledge.
+    secs = {str(x).strip().upper() for x in (match.get("sections") or [])}
+    if secs:
+        try:
+            from data.equipment.sections import section_of
+            if str(section_of(member.get("table")) or "").upper() in secs:
+                return True
+        except Exception:
+            pass
     if any(sub and str(sub).strip().lower() in hay for sub in (match.get("name_contains") or [])):
         return True
     return False
@@ -271,7 +282,9 @@ def _series_split_slot(payload, spec, state, default_payload):
         if key is None:
             continue
         subset = [(m, r) for (m, r) in scope_pairs if _member_match(m, sd.get("match"))]
-        rolled = _members.bucketed_rolled_members(subset, column, state["window"],
+        # per-series column override [sections overlay]: one split slot can carry ALL point-keys x sections
+        # (sag_a/sag_b/current_a/... each naming its own column); falls back to the slot-level column.
+        rolled = _members.bucketed_rolled_members(subset, sd.get("column") or column, state["window"],
                                                   sampling=sampling, reduce=reduce)
         by_t = {}
         for pt in rolled:

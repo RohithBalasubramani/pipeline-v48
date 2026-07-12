@@ -56,6 +56,11 @@ def resolve(mfm_id, section_token=None):
             continue
         seen.add(mid)
         reg = _meter_row(mid)
+        try:
+            from data.equipment.sections import section_of as _section_of
+            _sec = _section_of(m.get("neuract_table"))
+        except Exception:
+            _sec = None
         members.append({
             "mfm_id": mid,
             "name": m.get("name"),
@@ -63,6 +68,7 @@ def resolve(mfm_id, section_token=None):
             "role": m.get("role"),
             "type": reg.get("type_code"),
             "load_group": reg.get("load_group"),
+            "section": _sec,                              # bus-section token ('1A'/'1B'/…) — element-bindable [sections]
         })
     if section_token:
         from data.equipment.sections import section_of

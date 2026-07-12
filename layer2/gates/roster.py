@@ -1,6 +1,42 @@
 """layer2/gates/roster.py — gate_roster: recipe-authoritative roster validation/normalization."""
 from layer2.gates.basket import _bindable
 
+
+def _gate_section_split(i, r, s, real):
+    """Validate ONE sanctioned section-overlay split (see the call-site note). Returns (ok, issues, normalized_slot).
+    The normalized slot is built RECIPE-FIRST: window/sampling/role_filter/t_key/label keys ship from the recipe; the
+    AI contributes ONLY the series list (key + sections match + an optional recipe-or-basket column)."""
+    issues = []
+    recipe_cols = set()
+    if s.get("column"):
+        recipe_cols.add(s["column"])
+    for c in (s.get("columns") or []):
+        if isinstance(c, dict) and c.get("column"):
+            recipe_cols.add(c["column"])
+    series_norm = []
+    for j, sd in enumerate(r.get("series") or []):
+        if not isinstance(sd, dict) or not sd.get("key"):
+            issues.append(f"roster[{i}].series[{j}] missing key"); continue
+        match = sd.get("match")
+        secs = (match or {}).get("sections") if isinstance(match, dict) else None
+        if not (isinstance(match, dict) and list(match.keys()) == ["sections"]
+                and isinstance(secs, list) and secs and all(isinstance(x, str) for x in secs)):
+            issues.append(f"roster[{i}].series[{j}] match must be exactly {{'sections': [...]}}"); continue
+        col = sd.get("column") or s.get("column")
+        if not col:
+            issues.append(f"roster[{i}].series[{j}] names no column"); continue
+        if col not in recipe_cols and col not in real:
+            issues.append(f"roster[{i}].series[{j}] column {col!r} not recipe/basket-real"); continue
+        series_norm.append({"key": str(sd["key"]), "match": {"sections": [str(x) for x in secs]}, "column": col})
+    if not series_norm or issues:
+        return False, issues, None
+    norm = {k: s[k] for k in ("slot", "scope", "role_filter", "sampling", "t_key", "label_key", "label_fmt",
+                              "range", "null_value") if k in s}
+    norm.update(mode="series_split", series=series_norm)
+    if "column" in s:
+        norm["column"] = s["column"]
+    return True, issues, norm
+
 def gate_roster(roster, roster_spec, basket):
     """Validate + normalize data_instructions.roster against the card's card_fill_recipe row. [package §2d]
 
@@ -21,6 +57,21 @@ def gate_roster(roster, roster_spec, basket):
         s = spec_slots.get(r.get("slot"))
         if s is None:
             issues.append(f"roster[{i}] slot {r.get('slot')!r} not in card recipe"); continue
+        # ★ SANCTIONED SECTION-OVERLAY SPLIT [sections]: a series-family recipe slot may be re-emitted as
+        # mode='series_split' with one series PER BUS SECTION — the ONE AI-authored structural deviation (prompt ★ rule:
+        # the user compared bus sections of this panel). VALIDATION stays strict: every series match must be EXACTLY a
+        # {'sections': [...]} selector (dictionary lookup — an unknown section rolls zero members → honest nulls, never
+        # invented data); every named column must be the recipe's own or basket-real; the recipe's window/sampling/
+        # role_filter/t_key ship verbatim (the AI cannot move them). Everything else about the slot stays recipe truth.
+        if (r.get("mode") == "series_split" and s.get("mode") in ("series", "columns")
+                and isinstance(r.get("series"), list) and r.get("series")):
+            ok_split, split_issues, split_norm = _gate_section_split(i, r, s, real)
+            issues += split_issues
+            if ok_split:
+                normalized.append(split_norm)
+            else:
+                normalized.append(dict(s))                     # non-conforming split → the recipe truth ships
+            continue
         if r.get("scope") not in (None, "members"):
             issues.append(f"roster[{i}] bad scope {r.get('scope')!r}")
         for k in ("role_filter", "group_by", "order"):
@@ -32,6 +83,12 @@ def gate_roster(roster, roster_spec, basket):
         merged = {k: (dict(v) if isinstance(v, dict) else v) for k, v in (s.get("element") or {}).items()}
         for k, v in (r.get("element") or {}).items():
             if k not in merged:
+                # ★ SANCTIONED 'section' element key [sections]: an ADDED element key is allowed ONLY when it is the
+                # member's own bus-section attr binding VERBATIM ({'a':'section','b':'attr'}) — pure member metadata,
+                # nothing inventable. Every other added key stays rejected.
+                if k == "section" and isinstance(v, dict) and v.get("b") == "attr" and v.get("a") == "section":
+                    merged[k] = dict(v)
+                    continue
                 issues.append(f"roster[{i}].element key {k!r} not in recipe (invented)"); continue
             b = {"b": "col", "c": v} if isinstance(v, str) else (v if isinstance(v, dict) else {})
             spec_b = merged[k] if isinstance(merged[k], dict) else {}
