@@ -31,11 +31,16 @@ def _num(x):
 # ═══════════════════════════════════════════════════════════════════════════════════════════════════════════════════
 #  resolution — the fan-out door (data.neuract_live edges + the recursing has-data leaf set for honest coverage)
 # ═══════════════════════════════════════════════════════════════════════════════════════════════════════════════════
-def resolve(mfm_id):
+def resolve(mfm_id, section_token=None):
     """(members, coverage) for a panel. `members` = the DEDUPED union of outgoing (feeder) + incoming (source) member
     meters, each {mfm_id, name, table, role, type, load_group}; a member with no gic_* table is kept but honest-nulls
     its electrical. `coverage` = {reporting, expected, verdict} from the recursing panel_members door (the honest
-    denominator). An orphan / unknown panel → ([], honest_blank). Never raises."""
+    denominator). An orphan / unknown panel → ([], honest_blank). Never raises.
+
+    `section_token` [bus-section view, e.g. '1B']: keep ONLY members whose equipment.mfm section matches exactly —
+    'pcc-1b' means SECTION B of PCC-Panel-1, not the whole panel. Common/bus-level gear (section '1') and unmapped
+    members stay in the FULL panel view only (per-section inclusion would double-count couplers/incomers in a
+    section-vs-section compare). Coverage is recomputed over the SECTION's member set (the honest denominator)."""
     if mfm_id is None:
         return [], _agg.coverage_verdict(0, 0)
     try:
@@ -59,6 +64,15 @@ def resolve(mfm_id):
             "type": reg.get("type_code"),
             "load_group": reg.get("load_group"),
         })
+    if section_token:
+        from data.equipment.sections import section_of
+        members = [m for m in members if section_of(m.get("table")) == str(section_token).upper()]
+        try:
+            from data.value_probe import tables_with_data
+            live = tables_with_data([m["table"] for m in members if m.get("table")])
+            return members, _agg.coverage_verdict(sum(1 for m in members if m.get("table") in live), len(members))
+        except Exception:
+            return members, _agg.coverage_verdict(0, len(members))
     try:
         from data.lt_panels.panel_members import panel_members as _panel_members
         pm = _panel_members(int(mfm_id))

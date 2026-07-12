@@ -49,11 +49,15 @@ def assemble_cards(out, asset, date_window=None):
             sp.set_degradation(failed_fills=n_fail)
     # OBS `renderer` stage span: the FE card build + per-leaf render verdict attachment
     with stage_span("renderer", inputs={"page_key": page_key, "n_cards": len(l1a.get("cards") or [])}) as sp:
+        from host.exec_cards import _special_handling_map
+        _handling = _special_handling_map([c.get("card_id") for c in (l1a.get("cards") or []) if c.get("card_id")])
         cards = [_enrich_card(c, page_key, val_by_id, l2.get(c.get("card_id")),
                               completed=completed_by_id.get(c.get("card_id")),
                               run_ok=(status_by_id.get(c.get("card_id")) or {}).get("ok", True),
                               run_why=(status_by_id.get(c.get("card_id")) or {}).get("why"),
-                              asset_table=asset_table, asset=asset)  # asset → the per-card /api/frame refetch bundle [RC1]
+                              asset_table=asset_table, asset=asset,   # asset → the per-card /api/frame refetch bundle [RC1]
+                              handling=_handling.get(c.get("card_id")),   # panel_aggregate = date-navigable by construction
+                              date_window=date_window)                    # '{period}' title token → the window label
                  for c in (l1a.get("cards") or [])]
         verdicts = {}
         for c in cards:

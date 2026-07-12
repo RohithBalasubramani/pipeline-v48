@@ -47,6 +47,33 @@ def _is_ghost(row):
     return len(row) > 9 and not row[9]
 
 
+def _pcc_section_index():
+    """{normalized_alias: (canonical_panel_name, section)} for SECTIONED aliases only ('pcc-1b' → ('PCC-Panel-1','B')).
+    The A/B are the panel's BUS SECTIONS — one registry row, two member sets (equipment.mfm.section). {} fail-open."""
+    try:
+        from data.db_client import q
+        return {_norm(a): (pn, str(s).strip().upper())
+                for a, pn, s in q("cmd_catalog",
+                                  "SELECT alias, panel_name, section FROM pcc_panel_alias WHERE section IS NOT NULL")
+                if a and pn and s}
+    except Exception:
+        return {}
+
+
+def panel_section(prompt, panel_name):
+    """The BUS SECTION the PROMPT addresses for `panel_name` — 'A'/'B' when EXACTLY ONE of that panel's sectioned
+    aliases appears ('voltage for pcc-1b' → 'B'), None otherwise (unsectioned mention, or BOTH sections named — the
+    compare path handles the two-section case). Deterministic prompt-derived stamp, the member_scope pattern. [sections]"""
+    p = _norm(prompt)
+    if not p or not panel_name:
+        return None
+    found = set()
+    for al, (pn, sec) in _pcc_section_index().items():
+        if pn == panel_name and al in p:
+            found.add(sec)
+    return next(iter(found)) if len(found) == 1 else None
+
+
 def _pcc_alias_index():
     """{normalized_alias: canonical_panel_name} from cmd_catalog.pcc_panel_alias (the CMD_V2 PCC panel naming brought
     into our DB — PCC-1A/1B/2A…/Panel-N → PCC-Panel-N). {} on the equipment.alias knob being off or any outage — a
@@ -81,6 +108,9 @@ def resolve_asset(prompt, asset_id_override=None, cands=None):
         _pa = pinned.get("asset")
         if isinstance(_pa, dict):
             _pa["member_scope"] = member_scope(prompt)
+            _sec = panel_section(prompt, _pa.get("name"))
+            if _sec:
+                _pa["section"] = _sec                       # bus-section view: 'pcc-1b' rolls SECTION B members only
         return pinned
 
     # CLASS PRIOR: infer the equipment class from the prompt subject/metric and narrow the listing shown to the AI, so
@@ -136,6 +166,9 @@ def resolve_asset(prompt, asset_id_override=None, cands=None):
         asset = outcome.get("asset")
         if isinstance(asset, dict):
             asset["member_scope"] = member_scope(prompt)
+            _sec = panel_section(prompt, asset.get("name"))
+            if _sec:
+                asset["section"] = _sec                     # bus-section view: 'pcc-1b' rolls SECTION B members only
         return outcome
 
     # listing has NO id column: the model must reason over name/class/load_group only, never registry ids. The

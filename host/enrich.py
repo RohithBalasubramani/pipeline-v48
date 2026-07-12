@@ -123,8 +123,31 @@ def _merge_emit_gaps(gaps, emit_gaps, payload):
     return out or None
 
 
+_PERIOD_LABELS = {"today": "Today", "yesterday": "Yesterday", "this-week": "This Week", "this-month": "This Month",
+                  "last-7-days": "Last 7 Days", "last-30-days": "Last 30 Days", "last-24-hours": "Last 24 Hours",
+                  "custom-range": "Custom Range"}
+
+
+def _period_label(date_window):
+    """The human window label a '{period}' title token renders as — the OPERATIVE window's range prettified, 'Today'
+    when no window is set (the page's resting read is today/latest). Never raises."""
+    try:
+        rng = str((date_window or {}).get("range") or "").strip().lower().replace("_", "-")
+        return _PERIOD_LABELS.get(rng) or (rng.replace("-", " ").title() if rng else "Today")
+    except Exception:
+        return "Today"
+
+
+def _sub_period(text, label):
+    """Substitute a literal '{period}' template token in a chrome string ('Event Timeline at {period}') — the token is
+    CARD METADATA the AI/coherence passes never fill, so it rendered literally/blank. Chrome-only, never a reading."""
+    if isinstance(text, str) and "{period}" in text:
+        return text.replace("{period}", label)
+    return text
+
+
 def _enrich_card(card, page_key, val_by_id, l2_out, completed=None, run_ok=True, run_why=None, endpoint_override=None,
-                 asset_table=None, asset=None):
+                 asset_table=None, asset=None, handling=None, date_window=None):
     """Build the FE card. The `payload` is the COMPLETED CMD_V2 payload from ems_exec.run_card (`completed`) — real
     neuract leaves + honest-blank else, seed numbers stripped. If Layer 2 emitted nothing (no exact_metadata) the
     executor was skipped and payload is None (the FE shows it not-rendered — honest, not masked). On an accepted swap the
@@ -204,14 +227,16 @@ def _enrich_card(card, page_key, val_by_id, l2_out, completed=None, run_ok=True,
     return {
         "card_id": cid,
         "render_card_id": render_card_id,
-        "title": card.get("title"),
+        "title": _sub_period(card.get("title"), _period_label(date_window)),
         "story": card.get("analytical_story"),
         "role": card.get("role_in_story"),
         "slot": card.get("slot"),
         "size": card.get("size"),
         "payload": payload,                                  # the ems_exec-COMPLETED CMD_V2 payload (FE renders directly)
         "endpoint": endpoint,                                # informational label + per-card date-nav key
-        "is_history": consumer.get("is_history"),            # date-navigable card?
+        # date-navigable = the endpoint's history flag OR a panel_aggregate card (its member fan-out is window-driven
+        # BY CONSTRUCTION — the endpoint label marks the live/history SCREEN split, not executor capability).
+        "is_history": bool(consumer.get("is_history")) or handling == "panel_aggregate",
         # INTERACTIVE DATE RE-FETCH bundle [RC1]: everything /api/frame needs to re-fill THIS card for a new window that
         # the consumer/payload does NOT carry — the RENDERED card identity, the resolved neuract table + asset name (the
         # panel member fan-out resolves its lt_mfm id from these, NOT consumer.mfm_id — a different id-space), the panel
@@ -221,7 +246,7 @@ def _enrich_card(card, page_key, val_by_id, l2_out, completed=None, run_ok=True,
                      "asset_name": (asset or {}).get("name"),
                      "member_scope": (asset or {}).get("member_scope") or OUTGOING,
                      "_default_payload": l2.get("_default_payload")}
-                    if consumer.get("is_history") else None),
+                    if (consumer.get("is_history") or handling == "panel_aggregate") else None),
         "swap": swap,
         "conforms": l2.get("conforms"),
         "fill_source": "ems_exec",                           # DATA filled server-side by the per-card NEURACT executor
@@ -239,7 +264,7 @@ def _enrich_card(card, page_key, val_by_id, l2_out, completed=None, run_ok=True,
             "answerability": _v["answerability"],
             "reason": reason,                                # honest machine/human reason for a blank/partial
             "coverage_note": None,                           # aggregation deferred (panel leaves honest-blank per-card)
-            "date_control": "enabled" if consumer.get("is_history") else "disabled",
+            "date_control": "enabled" if (consumer.get("is_history") or handling == "panel_aggregate") else "disabled",
             "slots": None,                                   # per-slot channel retired with Layer 3
             "gaps": gaps or None,                            # per-leaf honest-gap records [{slot, cause, metric, reason}]
             "leaf_stats": {"real": n_real, "data": n_data, "undeclared": _v["n_undeclared"]},  # filled / total / undeclared-blank

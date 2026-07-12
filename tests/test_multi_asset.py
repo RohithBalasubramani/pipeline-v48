@@ -170,7 +170,7 @@ def test_assemble_cards_faithful_to_inline_executor(monkeypatch):
         return ({1: {"filled": True}}, {1: {"ok": True, "why": "ok"}})
 
     def fake_enrich(card, page_key, val_by_id, l2_out, completed=None, run_ok=True, run_why=None, asset_table=None,
-                    asset=None):
+                    asset=None, handling=None, date_window=None):
         return {"card_id": card["card_id"], "completed": completed, "asset_table": asset_table, "page_key": page_key}
 
     monkeypatch.setattr(A, "_run_cards", fake_run_cards)

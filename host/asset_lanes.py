@@ -12,8 +12,20 @@ def resolve_assets(asset_ids):
     by_id = {str(c[0]): c for c in asset_candidates()}
     out, seen = [], set()
     for aid in (asset_ids or []):
-        key = str(aid)
-        if key in by_id and key not in seen:
+        # BUS-SECTION LANE [sections]: an entry may be {"id": X, "section": "A"} — the SAME canonical panel compared
+        # section-vs-section ('compare pcc 1a and pcc 1b'). The lane asset keeps the real mfm_id/table (execution is
+        # identical) plus a `section` stamp (the member fan-out filter) and a sectioned display name; dedup is by
+        # (id, section) so two sections of one panel are two lanes.
+        section = None
+        if isinstance(aid, dict):
+            section = (str(aid.get("section")).strip().upper() or None) if aid.get("section") else None
+            aid = aid.get("id")
+        key = (str(aid), section)
+        if str(aid) in by_id and key not in seen:
             seen.add(key)
-            out.append(as_asset(by_id[key]))
+            a = as_asset(by_id[str(aid)])
+            if section:
+                a["section"] = section
+                a["name"] = f"{a.get('name')} — Section {section}"
+            out.append(a)
     return out

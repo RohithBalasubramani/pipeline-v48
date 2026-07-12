@@ -49,6 +49,21 @@ def natural_compare_ids(prompt):
         cands = asset_candidates()                        # ONE probe shared by detection + every sub-resolve
         rows = named_full_rows(prompt, cands)
         if len(rows) < 2:
+            # BUS-SECTION COMPARE [sections]: 'compare pcc 1a and pcc 1b' — BOTH aliases are the SAME canonical panel
+            # (A/B are its bus sections), so detection honestly collapses to ONE row. When the prompt names >=2
+            # DIFFERENT sections of that one panel, the user is comparing SECTIONS: two lanes of the same panel, each
+            # fan-out filtered to its section's members (equipment.mfm.section). Deterministic — no AI resolution
+            # needed (the aliases already pin the panel).
+            if len(rows) == 1:
+                from layer1b.resolve.asset_resolve import _pcc_section_index
+                from layer1b.compare.discriminators import _norm
+                p = _norm(prompt)
+                panel_name = str(rows[0][1])
+                secs = sorted({sec for al, (pn, sec) in _pcc_section_index().items()
+                               if pn == panel_name and al in p})
+                if len(secs) >= 2:
+                    _tel(decision="section_compare", panel=panel_name[:24], sections=secs)
+                    return [{"id": rows[0][0], "section": s} for s in secs]
             if "compare" in str(prompt).lower():          # only narrate prompts that LOOK like compares (low noise)
                 _tel(decision="single", rows=len(rows), detected=[str(r[1])[:30] for r in rows])
             return []
@@ -103,7 +118,9 @@ def build_response_multi(prompt, asset_ids, date_window=None):
             lane_i = {**lane, "layer2": rebind_consumer(recipe, asset)}   # point the recipe at THIS asset's meter
             cards_i = assemble_cards(lane_i, asset, date_window)          # fill from THIS asset's own neuract table
             _attach_l2_notes(cards_i, lane_i["layer2"])                   # B1 disclosures per card (same as single path)
-            tag = {"id": asset.get("mfm_id"), "name": asset.get("name"), "class": asset.get("class")}
+            # sectioned lanes share one mfm_id — the GROUPING id must still be distinct per lane [sections]
+            _tid = (f"{asset.get('mfm_id')}{asset.get('section')}" if asset.get("section") else asset.get("mfm_id"))
+            tag = {"id": _tid, "name": asset.get("name"), "class": asset.get("class")}
             for c in cards_i:
                 c["asset"] = tag                                          # FE groups + labels by this (additive)
             all_cards.extend(cards_i)

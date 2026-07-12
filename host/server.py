@@ -22,7 +22,6 @@ THIS FILE = the HTTP surface (Handler + build_response + the response dump). The
 siblings, re-exported byte-compatibly: host/enrich.py (the FE card build + blank-reason wording + emit-gap merge),
 host/exec_cards.py (the parallel per-card executor fan-out), host/payload_store.py (the skeleton/raw-default caches).
 """
-from obs.errfmt import fmt_exc as _fmt_exc   # the ONE exception string [EH F4]
 import json
 import os
 import sys
@@ -30,11 +29,13 @@ import time
 import traceback
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
-# pipeline_v48 root = parent of host/
+# pipeline_v48 root = parent of host/ — MUST run before any pipeline import (python3 host/server.py puts host/,
+# not the repo root, on sys.path[0])
 _ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 if _ROOT not in sys.path:
     sys.path.insert(0, _ROOT)
 
+from obs.errfmt import fmt_exc as _fmt_exc                  # noqa: E402  the ONE exception string [EH F4]
 from run.harness import run_pipeline                       # noqa: E402
 from config.app_config import cfg                          # noqa: E402  DB-tunable operational knobs
 from config import neuract_dsn as _neuract_dsn             # noqa: E402  DB-driven neuract DSN (code-default fallback)
@@ -195,7 +196,7 @@ class Handler(BaseHTTPRequestHandler):
         self.send_header("Content-Type", "application/json")
         self.send_header("Content-Length", str(len(body)))
         self.send_header("Access-Control-Allow-Origin", "*")
-        self.send_header("Access-Control-Allow-Headers", "Content-Type")
+        self.send_header("Access-Control-Allow-Headers", "Content-Type, X-V48-Token")  # token header must be preflight-allowed once api.token is enabled
         self.send_header("Access-Control-Allow-Methods", "POST, GET, OPTIONS")
         self.end_headers()
         self.wfile.write(body)
@@ -303,12 +304,16 @@ def handle_frame(req):
         if isinstance(date_window, dict) and date_window.get("range") and isinstance(consumer, dict):
             consumer = dict(consumer); consumer["range"] = date_window.get("range")
             data_instructions = {**data_instructions, "consumer": consumer}
-        window = _date_window_for(consumer, date_window)
         # SPECIAL DISPATCH [RC1] — a panel_aggregate/topology/narrative/3d card must NOT be re-filled by a plain
-        # run_card (a panel trend card is is_history=true today → its date control is enabled). Route through the
-        # SAME fill_one_card the page fan-out uses; derive the lt_mfm member id from the table/name (NOT
-        # consumer.mfm_id — a different id-space).
+        # run_card. Route through the SAME fill_one_card the page fan-out uses; derive the lt_mfm member id from the
+        # table/name (NOT consumer.mfm_id — a different id-space). Computed BEFORE the window gate (it feeds it).
         handling_class = _special_handling_map([render_card_id]).get(int(render_card_id)) if render_card_id else None
+        # panel_aggregate cards are window-driven by construction — force the endpoint-label is_history gate open
+        # for them (same rule as the initial fan-out). [panel-events date-nav]
+        if handling_class == "panel_aggregate":
+            window = date_window
+        else:
+            window = _date_window_for(consumer, date_window)
         mfm_id = _registry_mfm_id({"table": asset_table, "name": asset_name})
         payload = fill_one_card(cid=render_card_id, render_card_id=render_card_id, handling_class=handling_class,
                                 exact_metadata=exact_metadata, data_instructions=data_instructions,

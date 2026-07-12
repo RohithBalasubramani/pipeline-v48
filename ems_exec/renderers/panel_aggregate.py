@@ -194,11 +194,19 @@ def render(asset, card, ctx):
     # threaded via host/exec_cards). 'outgoing' (default) rolls the fed feeders/bays; 'incomer' rolls the supply side.
     scope = (asset or {}).get("member_scope") or ctx.get("member_scope")
     role_filter = _members.role_filter_for(scope)
+    # BUS-SECTION VIEW ['pcc-1b' = SECTION B of PCC-Panel-1]: a sectioned alias stamps `section` on the resolved asset
+    # (layer1b prompt-derived, like member_scope); the fan-out then rolls ONLY that section's members — the honest
+    # reading of a section-addressed prompt, and the lane unit of a section-vs-section compare.
+    _section = (asset or {}).get("section") or ctx.get("section")
+    _section_token = None
+    if _section:
+        from data.equipment.sections import token as _section_token_of
+        _section_token = _section_token_of((asset or {}).get("name"), _section)
 
     if payload is None:
         return None                                       # no payload skeleton to fill → host falls back (run_special)
 
-    members, coverage = _members.resolve(mfm_id)          # ([], honest_blank) on an orphan / None panel
+    members, coverage = _members.resolve(mfm_id, section_token=_section_token)   # ([], honest_blank) on orphan/None
 
     # orphan / no-member panel → honest-blank the data leaves (executor strip) + honest coverage badge, never fabricate.
     if not members:

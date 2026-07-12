@@ -15,11 +15,27 @@ const bySlot = (a: Card, b: Card) => (a.slot?.slot_order ?? 0) - (b.slot?.slot_o
 // MULTI-ASSET compare: cards carry `card.asset` (id/name/class). When 2+ distinct assets are present, stack one full
 // page-grid per asset under an asset header (each group reuses the SAME shared template — 1a ran once). A single asset
 // (or an untagged single-asset run) falls straight through to the normal grid below. [author-once-per-class]
-function AssetHeader({ name, cls }: { name?: string | null; cls?: string | null }) {
+// COMPARE-GROUP ACCENTS [sections/compare]: each compared group carries a DISTINCT accent (dot + header tint + left
+// rail) so lanes read apart at a glance — 'which panel/section am I looking at' should never need reading the header
+// text. Deterministic by group INDEX (stable within a response: assetIds order = card order), brand-adjacent muted
+// tones that keep the neutral page background.
+const GROUP_ACCENTS = [
+  { dot: "#7a9e6e", tint: "#eef3ea", rail: "#7a9e6e" },   // sage    — group 1 (also the single-asset default)
+  { dot: "#4e7ca6", tint: "#e9f0f6", rail: "#4e7ca6" },   // steel   — group 2
+  { dot: "#b0813a", tint: "#f6efe2", rail: "#b0813a" },   // amber   — group 3
+  { dot: "#8a6d9e", tint: "#f0ebf5", rail: "#8a6d9e" },   // heather — group 4
+  { dot: "#a6564e", tint: "#f6e9e8", rail: "#a6564e" },   // clay    — group 5
+  { dot: "#4e9e94", tint: "#e8f4f2", rail: "#4e9e94" },   // teal    — group 6
+];
+
+function AssetHeader({ name, cls, accent }: { name?: string | null; cls?: string | null;
+                                              accent?: typeof GROUP_ACCENTS[number] }) {
+  const a = accent ?? GROUP_ACCENTS[0];
   return (
-    <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "9px 16px", background: "#f3efe6",
-                  borderBottom: "1px solid #e6e0d4", fontFamily: "var(--font-mono, ui-monospace, monospace)" }}>
-      <span style={{ width: 8, height: 8, borderRadius: "50%", background: "var(--sage-400, #7a9e6e)" }} />
+    <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "9px 16px", background: a.tint,
+                  borderBottom: "1px solid #e6e0d4", borderLeft: `4px solid ${a.rail}`,
+                  fontFamily: "var(--font-mono, ui-monospace, monospace)" }}>
+      <span style={{ width: 8, height: 8, borderRadius: "50%", background: a.dot }} />
       <span style={{ fontWeight: 600, color: "var(--teal-900, #1f3d3a)", fontSize: 14 }}>{name || "Asset"}</span>
       {cls && <span style={{ color: "var(--slate-500, #6b7280)", fontSize: 12, letterSpacing: 0.3 }}>{cls}</span>}
     </div>
@@ -34,12 +50,14 @@ export function CardGrid({ cards, layout }: { cards: Card[]; layout?: PageLayout
   if (assetIds.length > 1) {
     return (
       <div style={{ display: "flex", flexDirection: "column", height: "100%", overflowY: "auto", background: "#faf8f3" }}>
-        {assetIds.map((aid) => {
+        {assetIds.map((aid, gi) => {
           const group = cards.filter((c) => c.asset?.id === aid);
           const a0 = group[0]?.asset;
+          const accent = GROUP_ACCENTS[gi % GROUP_ACCENTS.length];
           return (
-            <section key={String(aid)} style={{ flex: "none", height: "90vh", minHeight: 520, display: "flex", flexDirection: "column", borderBottom: "1px solid #e6e0d4" }}>
-              <AssetHeader name={a0?.name} cls={a0?.class} />
+            <section key={String(aid)} style={{ flex: "none", height: "90vh", minHeight: 520, display: "flex", flexDirection: "column",
+                                                borderBottom: "1px solid #e6e0d4", borderLeft: `4px solid ${accent.rail}` }}>
+              <AssetHeader name={a0?.name} cls={a0?.class} accent={accent} />
               <div style={{ flex: 1, minHeight: 0 }}>
                 <CardGrid cards={group} layout={layout} />
               </div>

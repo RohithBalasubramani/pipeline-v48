@@ -135,7 +135,7 @@ def fill_one_card(**kw):
 
 def _fill_one_card_raw(*, cid, render_card_id, handling_class, exact_metadata, data_instructions, asset_table,
                        db_link=None, window=None, requested_window=None, default_payload=None, mfm_id=None,
-                       asset_name=None, member_scope=OUTGOING, page_key=None, metric=None, intent=None):
+                       asset_name=None, member_scope=OUTGOING, section=None, page_key=None, metric=None, intent=None):
     """Fill ONE card's payload from NEURACT — the SHARED seam used by BOTH the parallel page fan-out (_run_cards._fill)
     AND the interactive /api/frame per-card date re-fetch. Dispatches run_special for a SPECIAL handling_class
     (asset_3d / topology_sld / narrative_ai / panel_aggregate) else run_card. This dispatch is the reason /api/frame
@@ -147,13 +147,14 @@ def _fill_one_card_raw(*, cid, render_card_id, handling_class, exact_metadata, d
     raises up here (run_card / run_special honest-degrade)."""
     if handling_class in _special_kinds():                   # asset_3d / topology_sld / narrative_ai / panel_aggregate / …
         from ems_exec.renderers import run_special
-        a = {"mfm_id": mfm_id, "name": asset_name, "table": asset_table, "member_scope": member_scope}
+        a = {"mfm_id": mfm_id, "name": asset_name, "table": asset_table, "member_scope": member_scope,
+             "section": section}                            # bus-section view [sections]: None = whole panel
         # panel_aggregate fills the card's OWN skeleton from the member-aggregated row; topology/narrative/asset_3d build
         # widgets from scratch and ignore the extra keys. shape_ref = the RAW harvested default for the RENDERED card
         # (the shape oracle fill()/fab_guards need so the panel path does not over-blank order/layout metadata).
         ctx = {"asset_table": asset_table, "mfm_id": mfm_id, "db_link": db_link,
                "window": window, "requested_window": requested_window, "page_key": page_key,
-               "metric": metric, "intent": intent, "member_scope": member_scope}
+               "metric": metric, "intent": intent, "member_scope": member_scope, "section": section}
         card = {"card_id": cid, "render_card_id": render_card_id, "card_handling": handling_class,
                 "exact_metadata": exact_metadata, "data_instructions": data_instructions,
                 "_default_payload": default_payload, "shape_ref": _raw_default_payload(render_card_id)}
@@ -185,6 +186,7 @@ def _run_cards(l2, asset_table, db_link=None, date_window=None, run_id="-", asse
     special = _special_handling_map(list(tasks.keys()))       # {card_id: kind} for the SPECIAL renderer cards
     reg_mfm = _registry_mfm_id(asset)                         # the lt_mfm.id for topology/narrative membership
     asset_name = (asset or {}).get("name")
+    section = (asset or {}).get("section")                    # bus-section view [sections]: 'pcc-1b' -> 'B', else None
     member_scope = (asset or {}).get("member_scope") or OUTGOING  # PANEL READING DIRECTION [panel_overview]: the
     # incomer-vs-outgoing side the prompt asked for (stamped by layer1b/resolve/member_scope). Threaded to the
     # panel_aggregate renderer so its member fan-out sums the RIGHT side (default 'outgoing' → behaviour unchanged).
@@ -194,7 +196,14 @@ def _run_cards(l2, asset_table, db_link=None, date_window=None, run_id="-", asse
     def _fill(cid, o):
         t_start[cid] = time.time()
         di = o.get("data_instructions") or {}
-        window = _date_window_for(di.get("consumer") or {}, date_window)
+        kind = special.get(cid)
+        # panel_aggregate fills are WINDOW-DRIVEN BY CONSTRUCTION (the member fan-out accepts any span) — their
+        # date-navigability must not ride the ems_backend endpoint LABEL (consumer.is_history), which marks the
+        # live/history SCREEN split, not executor capability. [panel-events date-nav]
+        if kind == "panel_aggregate" and date_window:
+            window = date_window
+        else:
+            window = _date_window_for(di.get("consumer") or {}, date_window)
         rid = (o.get("swap_decision") or {}).get("swap_to_id") or cid  # the RENDERED card's identity (swap target)
         # ONE shared seam for every card kind (dispatches run_special vs run_card) — see fill_one_card. `requested_window`
         # carries what the FE asked REGARDLESS of is_history (honest narrative label + future windowed-facts) while
@@ -205,12 +214,12 @@ def _run_cards(l2, asset_table, db_link=None, date_window=None, run_id="-", asse
         with stage_span("executor.card", card_id=cid,
                         inputs={"render_card_id": rid, "handling": special.get(cid),
                                 "asset_table": asset_table, "window": window}) as sp:
-            payload = fill_one_card(cid=cid, render_card_id=rid, handling_class=special.get(cid),
+            payload = fill_one_card(cid=cid, render_card_id=rid, handling_class=kind,
                                     exact_metadata=o.get("exact_metadata"), data_instructions=di,
                                     asset_table=asset_table,
                                     db_link=db_link, window=window, requested_window=date_window,
                                     default_payload=o.get("_default_payload"), mfm_id=reg_mfm,
-                                    asset_name=asset_name, member_scope=member_scope, page_key=page_key,
+                                    asset_name=asset_name, member_scope=member_scope, section=section, page_key=page_key,
                                     metric=metric, intent=intent)
             sp.set_outputs(filled=payload is not None)
             return payload
