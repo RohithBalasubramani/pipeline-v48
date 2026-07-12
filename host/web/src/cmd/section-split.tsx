@@ -10,6 +10,7 @@
 import React from "react";
 import { EventTimelineChart } from "@cmd-v2/pages/electrical/lt-pcc/panel-overview/voltage-current/EventTimelineChart";
 import { BodyCard, CardBodySkeleton, composeMetricHeader } from "@cmd-v2/components/charts/primitives";
+import { fmtNum } from "./prim/shared";
 
 const baseOf = (k: string) => k.replace(/_[a-z]$/, "");
 const num = (v: unknown) => {
@@ -61,25 +62,34 @@ export function EventTimelineSections({ pres, period, points, selectedLabel, sel
                   value: (p: any) => (abs ? Math.abs(num(p?.[s.key])) : num(p?.[s.key])),
                   opacity: lineDim(s.tileKey) }] : [];
   });
+  // LEGEND — rendered by THIS wrapper (a compact horizontal row BELOW the chart), not EventTimelineChart's own
+  // legend: its internal `flex-col` makes the chart `flex-1`, and a tall section legend (8 series) collapses that
+  // flex-1 to zero height — the chart vanished. Owning the layout keeps the chart on `flex-1` and the legend a fixed
+  // one-line row. showLegend on the primitive stays FALSE so it returns the bare fill-the-parent chart.
+  const legendItems = pres?.showLegend === false ? []
+    : [...stackSeries, ...lineSeries].map((s: any) => ({ color: s.color, label: s.label }));
   return (
     <BodyCard title={cmpTitle(pres?.titlePrefix, pres?.titleConnector, period?.label, pres?.sectionCompare)}>
       {availability === "loading" ? (
         <CardBodySkeleton />
       ) : (
-        <div className="h-full min-h-0">
-          <EventTimelineChart
-            points={points ?? []}
-            xLabel={(p: any) => p?.label}
-            stackSeries={stackSeries}
-            lineSeries={lineSeries}
-            showLegend={pres?.showLegend !== false}
-            showHoverTooltip
-            selectedLabel={selectedLabel}
-            onPointClick={onPeriodSelect}
-            leftAxisLabel={pres?.leftAxisLabel}
-            rightAxisLabel={composeMetricHeader({
-              label: pres?.rightAxis?.label, unit: pres?.rightAxis?.unit, unitStyle: pres?.rightAxis?.unitStyle })}
-          />
+        <div className="flex h-full min-h-0 flex-col">
+          <div className="min-h-0 flex-1">
+            <EventTimelineChart
+              points={points ?? []}
+              xLabel={(p: any) => p?.label}
+              stackSeries={stackSeries}
+              lineSeries={lineSeries}
+              showLegend={false}
+              showHoverTooltip
+              selectedLabel={selectedLabel}
+              onPointClick={onPeriodSelect}
+              leftAxisLabel={pres?.leftAxisLabel}
+              rightAxisLabel={composeMetricHeader({
+                label: pres?.rightAxis?.label, unit: pres?.rightAxis?.unit, unitStyle: pres?.rightAxis?.unitStyle })}
+            />
+          </div>
+          <SectionLegend items={legendItems} />
         </div>
       )}
     </BodyCard>
@@ -138,15 +148,28 @@ export function SectionRadar({ distribution }: { distribution: any }) {
     name: s.label,
     color: s.color,
     values: rows.map((r: any) => (secOf(r) === s.token ? num(r.amps) : 0)),
+    total: rows.reduce((a: number, r: any) => a + (secOf(r) === s.token ? num(r.amps) : 0), 0),
   }));
-  // only legend the sections that actually place a member (an empty section adds noise, not information)
-  const legend = spec.filter((s) => series.find((x) => x.key === (s.token ?? "common"))?.values.some((v) => v > 0))
-    .map((s) => ({ color: s.color, label: s.label }));
+  // PER-SECTION RAIL [sections]: the spokes/sections are often DISJOINT (each section's own feeders) with a big
+  // outlier, so the overlaid polygons read sparse — the honest, always-legible comparison is the per-section CURRENT
+  // TOTAL as a number. Only sections that actually place a member show (empty section = noise, not information).
+  const railRows = series.filter((s) => s.values.some((v: number) => v > 0));
+  const unit = pres.unit ?? "A";
   return (
     <BodyCard title={cmpTitle(pres.titlePrefix, pres.titleConnector, period.label, toks)}>
-      <div className="flex h-full min-h-0 flex-col">
-        <div className="min-h-0 flex-1"><ComparisonRadarChart spokes={spokes} series={series} /></div>
-        <SectionLegend items={legend} />
+      <div className="flex h-full min-h-0 gap-3">
+        <div className="min-w-0 flex-1"><ComparisonRadarChart spokes={spokes} series={series} /></div>
+        <div className="flex w-32 shrink-0 flex-col justify-center gap-3 border-l pl-3">
+          {railRows.map((s) => (
+            <div key={s.key}>
+              <div className="flex items-center gap-1.5" style={{ fontSize: 11, opacity: 0.75 }}>
+                <span style={{ width: 10, height: 10, background: s.color, borderRadius: 2, display: "inline-block" }} />
+                {s.name}
+              </div>
+              <div style={{ fontSize: 18, fontWeight: 600 }}>{fmtNum(s.total, 0, unit)}</div>
+            </div>
+          ))}
+        </div>
       </div>
     </BodyCard>
   );
