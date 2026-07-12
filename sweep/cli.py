@@ -185,6 +185,25 @@ def cmd_run(args) -> int:
         _say("no cases to run (empty corpus or over-narrow filter)")
         return 1
     session_id = args.session or time.strftime("%Y%m%d_%H%M%S")
+    # --resume [reboot-resilience]: a host reboot/hibernate mid-run kills the runner but the per-case records survive;
+    # resuming skips every case whose record already exists in the session (stratified selection is deterministic, so
+    # the SAME case set reappears and only the un-run remainder executes). Aborted/transport records are RE-run
+    # (they carry no real verdict).
+    if getattr(args, "resume", False) and args.session:
+        import glob as _glob
+        done_ids = set()
+        for cp in _glob.glob(os.path.join(config.session_dir(session_id), "cases", "*.json")):
+            try:
+                with open(cp) as f:
+                    rec = json.load(f)
+                st = (rec.get("judgment") or {}).get("stage")
+                if st not in ("aborted", "transport"):
+                    done_ids.add((rec.get("case") or {}).get("id"))
+            except (OSError, ValueError):
+                pass
+        before = len(cases)
+        cases = [c for c in cases if c.get("id") not in done_ids]
+        _say(f"resume: {before - len(cases)} already recorded, {len(cases)} remaining")
 
     def progress(done: int, total: int, rec: dict) -> None:
         j = rec.get("judgment") or {}
@@ -368,6 +387,7 @@ def main(argv: list[str] | None = None) -> int:
     r.add_argument("--concurrency", type=int, default=None)
     r.add_argument("--category", action="append", default=None)
     r.add_argument("--session", default=None)
+    r.add_argument("--resume", action="store_true", help="skip cases already recorded in --session (reboot recovery)")
     r.set_defaults(func=cmd_run)
 
     for name, func, hlp in (("report", cmd_report, "rebuild reports for an existing session"),
