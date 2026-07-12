@@ -6,6 +6,7 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc -b && vite build",
+    "card-values": "vite-node scripts/card_values.mjs --",
     "ssr-gate": "vite-node scripts/ssr_gate.mjs --",
     "client-gate": "vite-node scripts/client_repro.tsx --gate",
     "layout-gate": "vite-node scripts/layout_gate.mjs",

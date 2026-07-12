@@ -8,6 +8,7 @@ import { dateControlProps } from "../date-adapter";
 import { HonestBlankTile as HonestBlank } from "../../components/HonestBlankTile";
 import type { Card, RenderVerdict } from "../../types";
 import { FILL } from "./fill-loader";
+import { PRIM } from "../prim";
 import { unwrap } from "./unwrap";
 import { forceBlank } from "./force-blank";
 import { withGaps } from "./gap-info";
@@ -62,6 +63,11 @@ export function renderCmd(
   //    letting COMPONENTS shadow FILL bypassed every guard the fill was built to apply.
   // The fill fns keep their historical (payload, frame?, onDateChange?, pageFrame?) arity — the frame slots are
   // permanently undefined now (retired wire fields); fills fill from the payload alone.
+  // 2a. PRIM — the PRIMITIVES-ONLY registry [no-page-cards port, 2026-07-12]: payload → CMD_V2 primitive adapters
+  //     (docs/primitives_inventory/PORT_CONTRACT.md); header/legends/colors/values all ride the payload. Wins over the
+  //     legacy page-card tiers; those survive only for ids not yet ported and are deleted when the port completes.
+  if (PRIM[id]) return withGaps(PRIM[id](pg, onDateChange), rv.gaps, dnote, l2ans);
+
   if (FILL[id]) return withGaps(FILL[id](pg, undefined, onDateChange, undefined), rv.gaps, dnote, l2ans);
 
   // 3. COMPONENTS — DIRECT render of the card's REAL CMD V2 component from the completed payload (cards whose props are

@@ -17,8 +17,8 @@ const num = (v: unknown) => {
   return Number.isFinite(n) ? n : 0;
 };
 
-function EventTimelineSections({ pres, period, points, selectedLabel, selectedTileKey, onPeriodSelect,
-                                 availability = "ready" }: any) {
+export function EventTimelineSections({ pres, period, points, selectedLabel, selectedTileKey, onPeriodSelect,
+                                        availability = "ready" }: any) {
   const stackDim = (key: string) =>
     selectedTileKey == null || selectedTileKey === key || selectedTileKey === baseOf(key)
       ? 1 : (pres?.dimOpacity?.stack ?? 1);
