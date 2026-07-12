@@ -50,7 +50,8 @@ mid-implementation **985 passed / 0 failed / 4 skipped / 60 deselected**; final 
   reader; live RTM/PQ bands come from cmd_equipment via `data/equipment/ratings.py`).
 - `db/fix_deadend_knobs_20260712.sql` written + APPLIED: deleted `topology.trend_deadband` + 34 `band.%` rows from
   `data_quality_policy` (all reader-less; restore = snapshot or the retired seed).
-- NOT dropped (owner-gated, snapshots ready): the six reader-less tables. NOT retired: `seed_asset_render_map.sql`
+- NOT dropped at the time of this batch (owner-gated, snapshots ready) — since DROPPED, see THIRD PASS below
+  (owner-authorized ~07:50; verified 2026-07-12 ~08:15: `to_regclass` NULL for all six). NOT retired: `seed_asset_render_map.sql`
   (self-documents card_render_map as a deliberate planning/metadata table) and `seed_schema_and_endpoints.py`
   (seeds the LIVE schema_slot_map too — needs the F6-style split first).
 
@@ -103,7 +104,8 @@ mid-implementation **985 passed / 0 failed / 4 skipped / 60 deselected**; final 
    frontend.md F14; wide surface over `host/server.py` (actively churning tonight: replay + obs wiring) + 8 FE
    files + all fill signatures. Do as its own quiet-tree pass, then run the three FE gates + a live sweep.
 6. **Table drops** for the six reader-less tables + the `seed_schema_and_endpoints.py` split (dead-code F6) —
-   owner-gated; snapshots are ready in `archive/db_snapshots_20260712/`.
+   was owner-gated; ✅ APPLIED in the THIRD PASS below (~07:50, owner authorized; snapshots archived in
+   `archive/db_snapshots_20260712/`; seed script's endpoint_policy half retired).
 7. **v47-only tables** (`payload_shapes`, `nameplate_config`, `derived_metrics`) — deprecate when v47 is formally
    retired.
 
@@ -149,8 +151,9 @@ The parallel campaign session went idle (~40 min quiet); all previously-deferred
   Facades keep their public APIs, per-door replay tape kinds (sql.nx / sql.reg / sql.regd) and sql_trace. SIDE
   EFFECT (intended): the registries door's plain-dict schema cache — still poisonable on a tunnel flap (audit H2)
   — now shares the TTL never-cache-empty probe. 102 targeted tests green.
-- **Owner-gated DROP script** written, NOT applied: `db/retire_unused_tables_20260712.sql.owner_gated`
-  (rename to arm; snapshots in archive/db_snapshots_20260712/).
+- **Owner-gated DROP script** written, NOT applied at second-pass time: `db/retire_unused_tables_20260712.sql.owner_gated`
+  (rename to arm; snapshots in archive/db_snapshots_20260712/). ✅ Since renamed to `.sql` and APPLIED — see
+  THIRD PASS below (verified 2026-07-12 ~08:15: all six tables `to_regclass` NULL on live cmd_catalog).
 
 **Live verification (new code):** host :8770 restarted on the new tree; `/api/health` ok; ambiguous prompt
 ("UPS-01") correctly returns the 5-candidate picker; pinned prompt ("energy and power of GIC-01-N3-UPS-01 last

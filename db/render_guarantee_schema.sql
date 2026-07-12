@@ -69,6 +69,9 @@ CREATE TABLE IF NOT EXISTS reason_template (
     template text                                 -- human template ('no data logged for {asset}', …)
 );
 
+-- ── endpoint_policy RETIRED 2026-07-12 (unused-code audit): seeded, never read; do NOT wire to endpoint_registry
+--    (different shape); table DROPPED (db/retire_unused_tables_20260712.sql; snapshot archive/db_snapshots_20260712/).
+/*
 -- ── endpoint_policy ── per (page,scope) endpoint + expected frame shape + is_history + pre-validation [ER-1/2/4/5/7/8]
 CREATE TABLE IF NOT EXISTS endpoint_policy (
     page_key       text,                          -- ems page code
@@ -78,6 +81,7 @@ CREATE TABLE IF NOT EXISTS endpoint_policy (
     is_history     boolean,                       -- date-navigable history endpoint?
     PRIMARY KEY (page_key, resolver_scope)
 );
+*/
 
 -- (render_spec REMOVED 2026-07-02 — it was the retired Layer 3's output cache; the render verdict is now derived
 --  in host/server.py::_card_leaf_stats from the ems_exec-completed payload. Rows archived: archive/render_spec_rows_*.json)

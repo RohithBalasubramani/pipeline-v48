@@ -17,7 +17,7 @@ Wrap map (from outputs/notes/latency_profiler_map.md, verified 2026-07-12):
                 run.harness.run_pipeline
   ai            llm.client.call_qwen (stage-tagged), ems_exec.renderers._insight._post
   database      data.db_client.q + pg_connect, ems_exec.data.neuract._run,
-                registries.neuract._db.rows/dicts, validate.payload_lookup.*
+                data.neuract_live._db.rows/dicts, validate.payload_lookup.*
 
 Per-card wrappers execute inside the ThreadPool worker that runs the card, so
 setting spans.current_stage there attributes nested DB/AI calls correctly without
@@ -68,7 +68,7 @@ def install():
     neuract_ts = importlib.import_module("ems_exec.data.neuract")
     _wrap(neuract_ts, "_run", "database", meta_fn=lambda a, kw: {"db": "neuract_ts"})
 
-    neuract_meta = importlib.import_module("registries.neuract._db")
+    neuract_meta = importlib.import_module("data.neuract_live._db")
     _wrap(neuract_meta, "rows", "database", meta_fn=lambda a, kw: {"db": "neuract_meta"})
     _wrap(neuract_meta, "dicts", "database", meta_fn=lambda a, kw: {"db": "neuract_meta"})
 

@@ -126,7 +126,7 @@ def _name_for(mfm_id):
     if mfm_id is None:
         return None
     try:
-        from registries.neuract import meters as _meters
+        from data.neuract_live import meters as _meters
         return _meters.name_for(mfm_id)
     except Exception:
         return None

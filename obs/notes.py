@@ -12,15 +12,20 @@ _DIR = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
 
 
 def record(run_id, notes):
-    """Persist + log the run's reflect-loop notes. No-op for an empty notes set (no substitutions, no gaps)."""
-    loop1 = notes.get("loop1") or []
-    loop2 = notes.get("loop2")
-    if not loop1 and not loop2:
-        return notes
-    os.makedirs(_DIR, exist_ok=True)
-    with open(os.path.join(_DIR, f"{run_id}.json"), "w") as f:
-        json.dump({"run_id": run_id, **notes}, f, indent=1)
-    stage(run_id, "notes", loop1=len(loop1), loop2=bool(loop2),
-          partial=sum(1 for n in loop1 if n.get("answerability") == "partial"),
-          gap=sum(1 for n in loop1 if n.get("answerability") == "none"))
+    """Persist + log the run's reflect-loop notes. No-op for an empty notes set (no substitutions, no gaps).
+    Telemetry only — never raises into the harness [OBS-4]: run/harness.py calls this bare at the END of an
+    otherwise-successful run, so an unwritable outputs/ must degrade silently (obs/stage.py fail-open style)."""
+    try:
+        loop1 = notes.get("loop1") or []
+        loop2 = notes.get("loop2")
+        if not loop1 and not loop2:
+            return notes
+        os.makedirs(_DIR, exist_ok=True)
+        with open(os.path.join(_DIR, f"{run_id}.json"), "w") as f:
+            json.dump({"run_id": run_id, **notes}, f, indent=1)
+        stage(run_id, "notes", loop1=len(loop1), loop2=bool(loop2),
+              partial=sum(1 for n in loop1 if n.get("answerability") == "partial"),
+              gap=sum(1 for n in loop1 if n.get("answerability") == "none"))
+    except Exception:
+        pass
     return notes

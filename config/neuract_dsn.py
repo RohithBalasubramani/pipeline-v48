@@ -68,7 +68,7 @@ def dsn():
 
 def conn_kwargs():
     """psycopg2.connect(**kwargs) for the neuract DB — used by BOTH pooled doors (ems_exec/data/neuract.py and
-    registries/neuract/_db.py), so a knob edited here moves both.
+    data/neuract_live/_db.py), so a knob edited here moves both.
 
     HALF-DEAD-TUNNEL GUARD [2026-07-12]: the neuract DB rides an SSH tunnel on :5433 that is documented to flap
     (config/databases.py). Without these, a half-open socket (TCP established, forwarding dead) parks a connect for the

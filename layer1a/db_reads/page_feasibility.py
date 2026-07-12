@@ -5,7 +5,7 @@ A card WITHOUT a card_feasibility row counts as live-but-renderable (it is NOT u
 verdict that explicitly says drop/no_data, never on a missing signal. [renderability gate — Layer 1a; user 2026-07-02]
 """
 from data.db_client import q
-from config.feasibility import UNRENDERABLE_VERDICTS
+from config import feasibility as _feas   # lazy module attrs — read per call so DB row edits reach the gate live
 
 
 def read_page_feasibility(page_keys, db="cmd_catalog"):
@@ -14,7 +14,7 @@ def read_page_feasibility(page_keys, db="cmd_catalog"):
     if not keys:
         return {}
     inlist = ",".join(f"$a${k}$a$" for k in keys)
-    verds = ",".join(f"$a${v}$a$" for v in UNRENDERABLE_VERDICTS) or "$a$__none__$a$"
+    verds = ",".join(f"$a${v}$a$" for v in _feas.UNRENDERABLE_VERDICTS) or "$a$__none__$a$"
     rows = q(
         db,
         f"""

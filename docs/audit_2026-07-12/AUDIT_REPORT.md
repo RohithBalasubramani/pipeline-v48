@@ -50,7 +50,7 @@ owner prefers. **Nine safe fixes were implemented in this pass** (see §Fixes Ap
 | 2 | No connect/statement timeout on pooled neuract doors → tunnel flap wedges the host | concurrency, database, performance, exec | Critical | **Fixed** (connect+keepalives; stmt-timeout wired opt-in) |
 | 3 | Executor wall-clock budget is dead code (`as_completed` has no timeout) | performance, concurrency, exec | High | **Fixed** (R1) |
 | 4 | Single shared psycopg2 connection serializes the whole "parallel" fan-out | database, performance, concurrency, exec, platform | High | Recommended (§R2) |
-| 5 | `::timestamptz` cast defeats the btree index → all reads are seq scans | database, performance | Critical | Recommended (§R3) |
+| 5 | `::timestamptz` cast defeats the btree index → all reads are seq scans | database, performance | Critical | **Applied** (sixth pass #23; live-verified ~08:15: 240 `ts_imm` expression indexes + `neuract.ts_imm()` on :5433, knob `neuract.ts_index_fn=ts_imm`) |
 | 6 | Executor schema/logged caches poison permanently on a flap | exec, performance, concurrency, testing | High | **Fixed** |
 | 7 | No global LLM admission control; per-run cap doesn't compose across users | ai, performance, concurrency, api | High | **Fixed** (R4, default-off) |
 | 8 | No auth on any port + wildcard CORS (host, copilot, Django, vLLM) | security, api, django | High | Recommended (§R6) |
@@ -268,8 +268,8 @@ Note: R7 (contextvar run-id + wired obs trace layer) was implemented by a **conc
 
 17. **R10 FE contract** (`host/web/src/types.ts`, `api.ts`). `PipelineResult` is now a discriminated union
     (`DashboardResult | KnowledgeResult` on `kind`); dead never-sent fields made optional; `api.ts` checks `res.ok`
-    before `res.json()`. `tsc --noEmit` clean. *(Note: the server doesn't yet stamp `kind:"dashboard"` on the wire —
-    left optional + flagged; host/enrich.py should add it.)*
+    before `res.json()`. `tsc --noEmit` clean. *(The "server doesn't yet stamp `kind:"dashboard"`" note is CLOSED —
+    see #24; both response paths now stamp it.)*
 18. **H11 + django-3 permission gate** (`ems_backend/backend/settings.py`). `CHANNEL_LAYERS` is env-driven
     (`DJANGO_REDIS_URL` → RedisChannelLayer, else the unchanged InMemory — the horizontal-scale path); `DEFAULT_
     PERMISSION_CLASSES` is env-driven (`DJANGO_REQUIRE_AUTH=1` → IsAuthenticated, else the unchanged AllowAny so
@@ -314,6 +314,8 @@ env-driven permission gate covers its endpoints).
     flap just means a re-run resumes.*
 24. **`kind:"dashboard"` stamp DONE** (`host/server.py:97` + `host/web/src/types.ts`). `build_response` now stamps the
     discriminant; the FE `DashboardResult.kind` is now REQUIRED — the union is fully discriminated. `tsc` clean.
+    *(Multi-asset parity landed too — verified 2026-07-12 ~08:15: `host/multi_asset.py:119` stamps the same
+    discriminant, so BOTH response paths satisfy the required field.)*
 25. **SECRET_KEY generated + `.env` plumbing** (`ems_backend/.env`, `.env.example`, `.gitignore`; `settings.py` loads
     `.env` via django-environ, fail-open). A strong `DJANGO_SECRET_KEY` is generated and wired (the `manage.py check`
     dev-key warning is gone); `.env` is gitignored so the secret never lands in git; every knob is documented in
@@ -341,10 +343,10 @@ hangs become fast honest-blanks. Pairs with the fix-3 timeouts to fully close C4
 parameterized shim (keeps the list-of-lists contract) and memoize page-scoped catalog reads. Removes H6, H8, the 18×
 `_esc`, and the ~200× subprocess tax in one seam. *Risky (warm paths), behavior-preserving.*
 
-**R3 — Expression index for `::timestamptz`.** Generate `CREATE INDEX CONCURRENTLY … ((timestamp_utc::timestamptz) DESC)`
-for the ~302 gic_* tables from `information_schema`; gate on a per-table text-format uniformity check. Then optionally
-set `neuract.statement_timeout_ms` (the knob is already wired). *Needs DDL on the plant schema — coordinate with the
-logger owner. No code change.*
+**R3 — Expression index for `::timestamptz`.** ✅ APPLIED (sixth pass #23). Live-verified 2026-07-12 ~08:15 on :5433
+(read-only): `neuract.ts_imm()` IMMUTABLE wrapper exists, **240 `ts_imm` expression indexes** in schema neuract, and
+`app_config.neuract.ts_index_fn = ts_imm` so `_tsexpr()` emits the indexable form. Remaining tail: the handful of
+not-yet-indexed tables degrade to the old seq scan (safe); optionally set `neuract.statement_timeout_ms` (knob wired).
 
 **R4 — Global admission control.** One process-wide `BoundedSemaphore(cfg('llm.global_concurrency', 8))` acquired inside
 `llm/client.call_qwen`, plus a small cap on concurrent `/api/run` bodies returning `429 Retry-After`. Add a cheap

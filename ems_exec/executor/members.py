@@ -2,7 +2,7 @@
 knowledge: every column set arrives as a parameter (the caller reads them from app_config roster.* rows / the validated
 roster instruction) — no card ids, no root keys, no element-key names, no thresholds here.
 
-One concern: given a panel's registry mfm_id, resolve its member meters (registries.neuract edges — incomers_of +
+One concern: given a panel's registry mfm_id, resolve its member meters (data.neuract_live edges — incomers_of +
 outgoers_of, roles preserved), read each member's declared columns from ems_exec.data.neuract (present-tolerant), select
 subsets by role/reporting, and roll the electrical up into the aggregated superset row the per-card executor fills
 scalar leaves from (Σ for extensive magnitudes, mean for intensities, windowed-delta Σ for the energy counter).
@@ -29,7 +29,7 @@ def _num(x):
 
 
 # ═══════════════════════════════════════════════════════════════════════════════════════════════════════════════════
-#  resolution — the fan-out door (registries.neuract edges + the recursing has-data leaf set for honest coverage)
+#  resolution — the fan-out door (data.neuract_live edges + the recursing has-data leaf set for honest coverage)
 # ═══════════════════════════════════════════════════════════════════════════════════════════════════════════════════
 def resolve(mfm_id):
     """(members, coverage) for a panel. `members` = the DEDUPED union of outgoing (feeder) + incoming (source) member
@@ -39,7 +39,7 @@ def resolve(mfm_id):
     if mfm_id is None:
         return [], _agg.coverage_verdict(0, 0)
     try:
-        from registries.neuract import members as _members
+        from data.neuract_live import members as _members
         out_side = _members.outgoers_of(mfm_id) or []
         in_side = _members.incomers_of(mfm_id) or []
     except Exception:

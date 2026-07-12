@@ -46,6 +46,7 @@ from host.payload_store import _skeleton_payload, _raw_default_payload, _as_json
 # SB_BASE + _attach_l2_notes HOME moved to host/notes.py — multi_asset shares them and the only way in was a lazy
 # back-import of this module (server↔multi_asset cycle). Re-exported so tests/callers keep working. [cycle-kill 2026-07-12]
 from host.notes import SB_BASE, _attach_l2_notes           # noqa: E402,F401  (shared serve-boundary home)
+from lib.api_auth import require_token as _require_token   # noqa: E402  shared-secret gate (api.token knob; default-off) [R6]
 
 from config.endpoints import HOST_PORT as PORT         # noqa: E402  the ONE :8770 home (config F7)
 
@@ -150,6 +151,19 @@ def _dump_response(resp):
         pass
 
 
+def _stamp_trace_id(resp):
+    """Stamp the CURRENT obs trace_id on the response BEFORE _dump_response writes the disk copy, so the
+    outputs/logs/response_<run_id>.json artifact joins obs traces directly (run_ids are prompt-hashed and collide
+    across executions). The middleware's later setdefault yields to this value. Never raises. [host-api OBS-4]"""
+    try:
+        from obs import trace as _obs_trace
+        t = _obs_trace.current()
+        if isinstance(resp, dict) and t is not None:
+            resp["trace_id"] = t["trace_id"]
+    except Exception:
+        pass
+
+
 def _traced_captured(kind, path, req, fn):
     """Wrap one request body in the obs trace (obs/middleware) + the replay capture session (replay/capture) —
     fn() -> (code, resp dict); the wrappers see the RESP dict (trace summary / bundle artifact) while the HTTP code
@@ -192,6 +206,8 @@ class Handler(BaseHTTPRequestHandler):
         self._send(204, {})
 
     def do_GET(self):
+        if not _require_token(self.headers):              # api.token knob set + header mismatch → 401 (default-off) [R6]
+            return self._send(401, {"ok": False, "error": "unauthorized"})
         if self.path.startswith("/api/health"):
             return self._send(200, {"ok": True, "sb_base": SB_BASE})
         # ASSET RESOLUTION — empty/browse state: the FULL asset registry in the SAME shape as the ambiguous
@@ -241,6 +257,8 @@ class Handler(BaseHTTPRequestHandler):
         return self._send(404, {"ok": False, "error": "not found"})
 
     def do_POST(self):
+        if not _require_token(self.headers):              # api.token knob set + header mismatch → 401 (default-off) [R6]
+            return self._send(401, {"ok": False, "error": "unauthorized"})
         try:
             n = int(self.headers.get("Content-Length", "0"))
             req = json.loads(self.rfile.read(n) or b"{}")
@@ -303,7 +321,9 @@ def handle_frame(req):
         return 200, {"ok": True, "why": "ok", "endpoint": consumer.get("endpoint"), "payload": payload}
     except Exception as e:
         traceback.print_exc()
-        return 500, {"ok": False, "error": _fmt_exc(e)}
+        # `errors` (plural) is the key run_traced's status derivation reads (obs/middleware) — without it a handled
+        # 500 was traced status="ok". `error` (singular) stays the FE contract key (api.ts). [host-api OBS-2]
+        return 500, {"ok": False, "error": _fmt_exc(e), "errors": {"http_500": _fmt_exc(e)}}
 
 
 def handle_run(req):
@@ -347,6 +367,7 @@ def handle_run(req):
                        answer_chars=len(_k.get("answer") or ""))
                 resp = {"ok": True, "prompt": prompt, "run_id": _rid, "kind": "knowledge",
                         "answer": _k["answer"], "refused": _k["refused"]}
+                _stamp_trace_id(resp)                     # BEFORE the dump — same OBS-4 join as the dashboard leg
                 _dump_response(resp)
                 return 200, resp
             # NATURAL COMPARE [multi-asset gap fix]: a fresh 'compare A and B' prompt naming 2+ SPECIFIC full asset
@@ -364,11 +385,13 @@ def handle_run(req):
             resp = build_response_multi(prompt, asset_ids, date_window=date_window)
         else:
             resp = build_response(prompt, asset_id=asset_id, date_window=date_window)
+        _stamp_trace_id(resp)                             # BEFORE the dump so the disk artifact joins obs traces [OBS-4]
         _dump_response(resp)                              # persist server-side FIRST (robust to a client-side curl timeout)
         return 200, resp
     except Exception as e:
         traceback.print_exc()
-        return 500, {"ok": False, "error": _fmt_exc(e)}
+        # same failure-telemetry key as handle_frame — see the OBS-2 note there. [host-api OBS-2]
+        return 500, {"ok": False, "error": _fmt_exc(e), "errors": {"http_500": _fmt_exc(e)}}
 
 
 class _Server(ThreadingHTTPServer):
@@ -383,6 +406,11 @@ class _Server(ThreadingHTTPServer):
 
 
 def main():
+    try:
+        from obs.retention import ensure_started          # outputs/logs prune daemon (idempotent; module may not
+        ensure_started()                                   # exist yet — guard keeps boot safe either way) [OBS-6]
+    except Exception:
+        pass
     srv = _Server(("0.0.0.0", PORT), Handler)
     print(f"[host] V48 preview API on http://0.0.0.0:{PORT}  (storybook={SB_BASE})  [backlog={_Server.request_queue_size}]", flush=True)
     try:

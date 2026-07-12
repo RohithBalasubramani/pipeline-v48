@@ -7,13 +7,10 @@ import re
 
 from layer2.card_input import build_card_input, build_swap_target_input
 from layer2.emit.emit import emit
-from layer2.emit.metadata.producer import produce, metadata_reference, undeclared_morphs
-from layer2.emit.morphmap.producer import apply as morphmap_apply
 from layer2.emit.instructions.consumer_binding import build as consumer_build
 from layer2.resolve.column_override import apply as override_columns
 from layer2.swap.decide import gate as swap_gate
-from layer2.gates import (gate_exact_metadata, gate_data_instructions, gate_roster, enforce_exact_metadata,
-                          enforce_free_metadata)
+from layer2.gates import gate_data_instructions, gate_roster
 from layer2.schema import validate_layer2_card_output
 from data.db_client import q
 

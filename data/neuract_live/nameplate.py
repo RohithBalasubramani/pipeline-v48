@@ -1,4 +1,4 @@
-"""registries/neuract/nameplate.py — a meter's NAMEPLATE / rating / limit params from lt_parameter + lt_config_field/value.
+"""data/neuract_live/nameplate.py — a meter's NAMEPLATE / rating / limit params from lt_parameter + lt_config_field/value.
 
 Single concern: for a given MFM (or its type), assemble the rated-capacity / limit / threshold params the plant defines
 for it, honest-degrading around the parts that are empty.
@@ -18,8 +18,8 @@ whether a value is real-per-meter or a declared default. Honest-degrade: unknown
 """
 from __future__ import annotations
 
-from registries.neuract import _db
-from registries.neuract import meters as _meters
+from data.neuract_live import _db
+from data.neuract_live import meters as _meters
 
 
 def _num(x):

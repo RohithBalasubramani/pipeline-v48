@@ -7,7 +7,7 @@ own atomic renderer with the uniform signature:
     render(asset, card, ctx) -> payload
 
 where ctx carries {asset_table, mfm_id, db_link, window, page_key}. Every renderer:
-  · reads DATA from NEURACT ONLY (ems_exec.data.neuract + data.lt_panels.panel_members + registries.neuract) — never a
+  · reads DATA from NEURACT ONLY (ems_exec.data.neuract + data.lt_panels.panel_members + data.neuract_live) — never a
     premier_energies simulator;
   · HONEST-DEGRADES a missing number / model / member to the frontend's own empty/placeholder state — never fabricated;
   · reads its knobs from a DB-driven config/* accessor with a code-default fallback.

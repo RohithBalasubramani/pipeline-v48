@@ -116,6 +116,8 @@ def build_response_multi(prompt, asset_ids, date_window=None):
           cards=len(all_cards), data_unavailable=bool(unavail), elapsed_ms=int((time.time() - t0) * 1000))
     return {
         "ok": bool(all_cards) or bool(shared_1a.get("cards")),
+        "kind": "dashboard",                                  # FE PipelineResult discriminant — parity with the
+        # single-asset build_response stamp (host/server.py); types.ts declares it REQUIRED. [R10/OBS-1]
         "prompt": prompt,
         "run_id": multi.get("run_id"),
         "elapsed_ms": int((time.time() - t0) * 1000),

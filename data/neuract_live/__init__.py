@@ -1,4 +1,4 @@
-"""registries/neuract/ — the NEURACT METADATA REGISTRY (READ-ONLY over target_version1.neuract, framework-light).
+"""data/neuract_live/ — the NEURACT METADATA REGISTRY (READ-ONLY over target_version1.neuract, framework-light).
 
 One atomic file per concern, all reading solely through config/neuract_dsn.py (DB-driven DSN, code-default fallback) via
 the pooled read door _db.py. Honest-degrade everywhere: an unknown / empty / missing source → [] or None, never a
@@ -17,10 +17,10 @@ asset_3d_model / lt_asset_3d are currently empty and honest-degrade.
 """
 from __future__ import annotations
 
-# Re-exports are LAZY (PEP-562, same pattern as config/): the eager `from registries.neuract.members import …` block
-# made this __init__ + all five submodules ONE import SCC — each submodule's `from registries.neuract import _db`
+# Re-exports are LAZY (PEP-562, same pattern as config/): the eager `from data.neuract_live.members import …` block
+# made this __init__ + all five submodules ONE import SCC — each submodule's `from data.neuract_live import _db`
 # re-entered a partially-initialized package, and it worked only by import-order luck. Now importing the package
-# executes nothing; `from registries.neuract import member_tables` resolves through __getattr__ on first use.
+# executes nothing; `from data.neuract_live import member_tables` resolves through __getattr__ on first use.
 # [cycle-kill 2026-07-12]
 
 # public name → owning submodule (the ONE dispatch table; extend it when a concern gains a public name)
@@ -44,9 +44,9 @@ __all__ = sorted(_EXPORTS)
 def __getattr__(name):
     mod = _EXPORTS.get(name)
     if mod is None:
-        raise AttributeError(f"module 'registries.neuract' has no attribute {name!r}")
+        raise AttributeError(f"module 'data.neuract_live' has no attribute {name!r}")
     from importlib import import_module
-    return getattr(import_module(f"registries.neuract.{mod}"), name)
+    return getattr(import_module(f"data.neuract_live.{mod}"), name)
 
 
 def __dir__():

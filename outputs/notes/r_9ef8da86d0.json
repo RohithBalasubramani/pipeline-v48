@@ -1,0 +1,30 @@
+{
+ "run_id": "r_9ef8da86d0",
+ "loop1": [
+  {
+   "card_id": 7,
+   "title": "Context Rail Header (Overview / Section / Feeder)",
+   "answerability": "partial",
+   "note": "Showing PCC-Panel-1 context rail; 2 of 8 primary feeders (GIC-02-N6-UPS-05, GIC-02-N7-UPS-06) are dark (no data), so their breakdown values are omitted."
+  },
+  {
+   "card_id": 5,
+   "title": "Real Time Monitoring (Feeder Heatmap)",
+   "answerability": "partial",
+   "note": "Showing live power distribution across 7 active feeders (UPS-01 to UPS-04, BPDB-01, BPDB-02); UPS-05, UPS-06, and Solar Incomers are dark (no data) and render as blank rows."
+  },
+  {
+   "card_id": 9,
+   "title": "Total Feeder Consumption / Supply",
+   "answerability": "partial",
+   "note": "Showing total active power \u2014 contracted supply limit is unknown for this asset, so the consumption percentage is not calculated."
+  },
+  {
+   "card_id": 10,
+   "title": "Consumption Trend / Supply Trend",
+   "answerability": "partial",
+   "note": "Showing panel-summed active power trend and peak; per-member breakdown is rendered by the panel-aggregate renderer from member meters."
+  }
+ ],
+ "loop2": null
+}

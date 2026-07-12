@@ -1,7 +1,7 @@
 """data/neuract_pool.py — THE pooled psycopg2 door to neuract (dedup D1, refactor campaign 2026-07-12).
 
 One concern: the pooled-connection lifecycle both neuract doors used to copy wholesale — `ems_exec/data/neuract.py`
-(the time-series facade) and `registries/neuract/_db.py` (the metadata facade) each carried byte-identical
+(the time-series facade) and `data/neuract_live/_db.py` (the metadata facade) each carried byte-identical
 `_key()/_conn()` + the execute→fetchall→pop-broken-conn read, so every tunnel-flap/lifecycle fix (connect timeouts,
 keepalives, never-cache-empty) had to land twice or drift. The facades keep their public APIs, their obs/replay
 seams (per-door tape kinds + sql_trace) and their own semantics; THIS module owns the pool.

@@ -104,7 +104,7 @@ def db_q(raw, db, sql):
     return rows
 
 
-# ── psycopg2 read doors (registries/neuract/_db.rows + ems_exec/data/neuract._run) ───────────────────────────────────
+# ── psycopg2 read doors (data/neuract_live/_db.rows + ems_exec/data/neuract._run) ───────────────────────────────────
 
 def db_rows(raw, door, sql, params=None):
     """door: 'sql.reg' | 'sql.nx'. Both raws honest-degrade to [] and never raise."""

@@ -54,8 +54,10 @@ here. Never raises; a guard that cannot decide leaves the leaf untouched (never 
 #   class4_seed.py      CLASS 4 seed-leak wall + the chrome vocabulary
 #   restore.py          restore_chrome — the EARLY chrome-restoration pass
 #   apply.py            apply() — the ONE post-fill entry (fill.py)
-# This __init__ re-exports the original module surface byte-compatibly; _ROWS_CACHE is the SAME dict object
-# class23_source owns (tests .clear() it — never rebind it).
+# This __init__ re-exports the consumed module surface (every name any external caller/test imports — verified by
+# tree-wide grep 2026-07-12; a few HEAD-private names with zero external consumers, e.g. the pre-split _mag_re/
+# _MAGNITUDE_RE and the *_DEFAULT vocab constants, are deliberately NOT re-exported: import them from their owning
+# submodule). _ROWS_CACHE is the SAME dict object class23_source owns (tests .clear() it — never rebind it).
 from ems_exec.executor.fab_guards.knobs import (                        # noqa: F401
     _epoch_floor, _guard_on, _time_axis_suffixes, _time_axis_exact, _is_time_axis_key, _reason, _add_gap, _is_num)
 from ems_exec.executor.fab_guards.class1_epoch import _is_epoch_scalar, _is_epoch_array, _apply_class1   # noqa: F401

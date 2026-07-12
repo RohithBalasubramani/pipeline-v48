@@ -5,18 +5,28 @@ card from a page we don't serve. [contract 4, #13, user 2026-06-30 'only these c
 RENDER-CAPABLE FILTER [META-05, FR-5]: every candidate must ALSO (a) have a RECOVERABLE default payload (own or
 component-sibling — a target with none would ship an ungated example payload) and (b) be a REGISTERED front-end
 renderer id (quality_policy 'registered_card_ids' row; empty row = fail-open) — a target with no renderer is a
-permanent 'not wired' blank. Applied HERE, before the AI (or the force-renderable enforcer) ever sees the pool, via
-grounding.swap_settle.swappable_pool. Both policies are editable DB rows, not code lists."""
+permanent 'not wired' blank. Applied HERE, inline in pool(), before the AI (or the force-renderable enforcer) ever
+sees the pool (the old grounding.swap_settle.swappable_pool helper was dead code, deleted 2026-07-12). Both policies
+are editable DB rows, not code lists."""
 from data.db_client import q
 from config.app_config import cfg
-from config.swap import SIZE_TOLERANCE, SWAP_POOL_MAX
+from config import swap as _swap   # lazy module attrs — read per call so DB row edits reach the pool live
 from config.available_pages import available_page_keys
 from grounding.swap_settle import is_registered
 from grounding.default_assemble import has_default
 
-# feasibility verdicts a swap TARGET may carry — the renderable-pool side of config.feasibility's vocab (DB knob
-# cmd_catalog.app_config 'feasibility.pool_verdicts'), NOT a hardcoded list in the SQL. Default: render_real only.
-POOL_VERDICTS = tuple(str(v) for v in cfg("feasibility.pool_verdicts", ["render_real"]))
+
+def _pool_verdicts():
+    """Feasibility verdicts a swap TARGET may carry — the renderable-pool side of config.feasibility's vocab (DB knob
+    cmd_catalog.app_config 'feasibility.pool_verdicts'), NOT a hardcoded list in the SQL. Default: render_real only.
+    Read per call (an import-time read pinned the boot value for process life)."""
+    return tuple(str(v) for v in cfg("feasibility.pool_verdicts", ["render_real"]))
+
+
+def __getattr__(name):
+    if name == "POOL_VERDICTS":         # kept as a module attr (tests read it) — re-reads the DB knob per access
+        return _pool_verdicts()
+    raise AttributeError(f"module 'layer2.swap.candidates' has no attribute {name!r}")
 
 # The generic metric-affinity vocabulary/score HOME moved to domain/metric_affinity.py (grounding/swap_settle replays
 # the same re-rank and must not import a layer — the settle↔candidates lazy-import cycle is dead). Aliased under the
@@ -48,13 +58,14 @@ def pool(card_id, page_key, template_card_ids, *, width=None, height=None, metri
             width, height = int(r[0][0]), int(r[0][1])
     if not width or not height:
         return []
-    lo_w, hi_w = width * (1 - SIZE_TOLERANCE), width * (1 + SIZE_TOLERANCE)
-    lo_h, hi_h = height * (1 - SIZE_TOLERANCE), height * (1 + SIZE_TOLERANCE)
+    tol, pool_max = _swap.SIZE_TOLERANCE, _swap.SWAP_POOL_MAX   # per-call reads (PEP-562 lazy knobs)
+    lo_w, hi_w = width * (1 - tol), width * (1 + tol)
+    lo_h, hi_h = height * (1 - tol), height * (1 + tol)
     page_ids = {int(x[0]) for x in q("cmd_catalog",
                 f"SELECT card_id FROM page_layout_cards WHERE page_key=$a${page_key}$a$ AND card_id IS NOT NULL") if x and x[0]}
     forbidden = page_ids | {int(t) for t in (template_card_ids or [])} | {int(card_id)}
     available = _available_card_ids()                              # ★ only swap among cards on the available pages
-    verdict_in = ",".join(f"$a${v}$a$" for v in POOL_VERDICTS)     # renderable-pool verdicts = the DB knob, not a literal
+    verdict_in = ",".join(f"$a${v}$a$" for v in _pool_verdicts())  # renderable-pool verdicts = the DB knob, not a literal
     rows = q("cmd_catalog", f"""
         SELECT g.card_id, c.title, coalesce(c.analytical_role,''), coalesce(c.card_purpose,''),
                coalesce(c.visualization,''), g.width_px, g.height_px
@@ -81,7 +92,7 @@ def pool(card_id, page_key, template_card_ids, *, width=None, height=None, metri
         if not tokens:
             # no metric → today's behavior exactly: closest-first, early-break at the cap (byte-identical output).
             out.append(cand)
-            if len(out) >= SWAP_POOL_MAX:
+            if len(out) >= pool_max:
                 break
         else:
             # metric present → materialize ALL size-fit renderable survivors (no early break) so a metric-relevant
@@ -93,4 +104,4 @@ def pool(card_id, page_key, template_card_ids, *, width=None, height=None, metri
     # sort is stable, so equal-affinity candidates retain closest-first size order). Truncate AFTER ranking so a
     # voltage-role card outranks a size-closer off-metric one, yet no size-fit candidate is dropped before ranking.
     out.sort(key=lambda t: -t[0])
-    return [cand for _aff, cand in out[:SWAP_POOL_MAX]]
+    return [cand for _aff, cand in out[:pool_max]]

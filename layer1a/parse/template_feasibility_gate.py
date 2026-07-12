@@ -10,7 +10,7 @@ least-unrenderable template so the router never routes to nothing (honest degrad
 A page with unknown counts (no page_layout_cards / total == 0) is treated as unrenderable_frac == 0 (kept) — the gate
 only drops on an EXPLICIT majority-unrenderable signal, never on missing data.
 """
-from config.feasibility import TEMPLATE_MAX_UNRENDERABLE_FRAC
+from config import feasibility as _feas   # lazy module attrs — read per call so DB row edits reach the gate live
 
 
 def _frac(counts, page_key):
@@ -31,7 +31,7 @@ def filter_renderable_templates(specs, counts, threshold=None):
     """
     if not specs:
         return specs, []
-    thr = TEMPLATE_MAX_UNRENDERABLE_FRAC if threshold is None else threshold
+    thr = _feas.TEMPLATE_MAX_UNRENDERABLE_FRAC if threshold is None else threshold
     kept, dropped = [], []
     for s in specs:
         if _frac(counts, s["page_key"]) >= thr:

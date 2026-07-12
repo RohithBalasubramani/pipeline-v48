@@ -12,10 +12,14 @@ in code.
 
 2. **cmd_catalog — pipeline knobs + policy tables.** The pipeline's own brain.
    - Scalar/JSON knobs: `app_config` rows via `cfg(key, default)` (`config/app_config.py` — lazy `_load()`, highest
-     fan-in in the system). TTL-cached; a missing row = the code default, never an error.
+     fan-in in the system). A missing row = the code default, never an error.
    - Structured policy tables: one reader module per table (the atomic-structure rule) — see the map below.
-   Editable by operators; changes need no restart (TTL) unless a module froze the value at import (the 2026-07-12
-   campaign converted the known freezes to lazy PEP-562 attributes — keep new modules lazy).
+   CACHE SEMANTICS (verified against app_config.py 2026-07-12): the table is loaded ONCE per process and cached
+   **on success only** — there is NO TTL. A FAILED load is never cached (never-cache-empty): code defaults serve
+   for a 5 s backoff, then the next `cfg()` retries, so an outage self-heals. But a row EDIT does NOT reach an
+   already-running process — restart the service (or call `config.app_config.reload()` /
+   `_load.cache_clear()` in-process, e.g. from a seed script) to pick it up. Lazy PEP-562 module attributes
+   (the 2026-07-12 campaign) remove IMPORT-time freezes, not the process cache — keep new modules lazy anyway.
 
 3. **neuract — PLANT config (`lt_config_field` / `lt_config_value` via `MFM.get_config()` in the registry path).**
    Describes the SITE (ratings, wiring, panel facts), not the pipeline. V48 treats it as read-only ground truth:
@@ -54,6 +58,16 @@ deliberately KEPT: both packages are the shared foundation, the module-level gra
 splitting bootstrap-config from policy-readers today would churn ~14 freshly-refactored modules for layering
 aesthetics. Revisit only if a real import cycle (not a package pair) reappears — the graph gate in
 `tests` / the audit extractor will say so.
+
+## Knobs added 2026-07-12 (audit hardening — both default-inert)
+
+- `api.token` (text, default EMPTY = auth OFF) — the shared-secret gate for the :8770/:8790 HTTP surfaces
+  (`lib/api_auth.require_token`, header `X-V48-Token`; declared by `db/seed_api_token.sql`). Empty/absent row =
+  every request flows exactly as before; fail-open (a config-read error never locks out the API). NB: like every
+  `cfg()` knob it is served from the process cache — setting it requires a restart/reload to take effect.
+- `obs.file_retention_days` (int, code default 14; ≤0 = keep forever) — age-based prune of the per-run FILE
+  telemetry under `outputs/logs/` + `outputs/traces/` (`obs/retention.py`, 6 h daemon the host wires at boot).
+  Distinct from `obs.retention_days` (30 — the obs_* pg-row purge in `obs/sink_pg.py`).
 
 ## Rules for new knobs
 

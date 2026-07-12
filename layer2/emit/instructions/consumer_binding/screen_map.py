@@ -6,16 +6,18 @@ the endpoint_registry route table (legacy-EMS-derived), so this follows it autom
 from layer2.emit.instructions.endpoint_registry import PAGE_PRIMARY
 from config.app_config import cfg
 
-# FRONTEND page-tail → endpoint page CODE, ONLY where the names differ (a frontend naming convention, NOT endpoint
-# truth): the Harmonics/PQ tab is `harmonics-pq` in the FE but the ems page code is `power-quality`; the SLD tab is
-# `overview-sld-3d` → the `overview` screen. Every other tail already equals its ems page code. [config → DB]
-_PAGE_TAIL_ALIAS = cfg("routes.page_tail_alias", {"harmonics-pq": "power-quality", "overview-sld-3d": "overview"})
+def _page_tail_alias():
+    """FRONTEND page-tail → endpoint page CODE, ONLY where the names differ (a frontend naming convention, NOT endpoint
+    truth): the Harmonics/PQ tab is `harmonics-pq` in the FE but the ems page code is `power-quality`; the SLD tab is
+    `overview-sld-3d` → the `overview` screen. Every other tail already equals its ems page code. [config → DB]
+    Read per call (an import-time read pinned the boot value for process life)."""
+    return cfg("routes.page_tail_alias", {"harmonics-pq": "power-quality", "overview-sld-3d": "overview"})
 
 
 def page_endpoint(page_key):
     """FE page_key → its LIVE fetch endpoint (derived from PAGE_PRIMARY). Back-compat page-level live_frame."""
     tail = (page_key or "").rsplit("/", 1)[-1]
-    return PAGE_PRIMARY.get(_PAGE_TAIL_ALIAS.get(tail, tail), tail)
+    return PAGE_PRIMARY.get(_page_tail_alias().get(tail, tail), tail)
 
 
 def canonical_screen(backend_strategy):

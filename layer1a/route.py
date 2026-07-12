@@ -12,7 +12,7 @@ from llm.prompt_load import load as _prompt_load
 
 from llm.client import call_qwen
 from config.app_config import cfg
-from config.metrics import METRIC_VOCAB
+from config import metrics as _metrics   # lazy module attrs — read per call so DB row edits reach the router live
 from config.available_pages import filter_to_available
 from layer1a.catalog_compress import merge_story
 from layer1a.db_reads.page_specs import read_page_specs
@@ -75,8 +75,9 @@ def route(prompt, db="cmd_catalog", feedback=None, exclude_page_key=None):
     keys = [s["page_key"] for s in specs]
     # the metric/intent enum lines are generated from the SAME DB-driven vocab config/metrics.py + config/intents.py
     # read, so the prompt can never drift from the vocabulary the clamp enforces. [hardening: metric vocab drift]
+    _metric_vocab = _metrics.METRIC_VOCAB   # per-call read (PEP-562 lazy knob) — one value for prompt/decision/schema
     system = (_load_prompt("system.md")
-              .replace("{{METRIC_VOCAB}}", ", ".join(METRIC_VOCAB))
+              .replace("{{METRIC_VOCAB}}", ", ".join(_metric_vocab))
               .replace("{{INTENT_VOCAB}}", " | ".join(cfg("intents.vocab", ["trend", "distribution", "snapshot", "table", "events"]))))
     user = "PAGES:\n" + _candidate_block(specs, titles) + f"\n\nPROMPT: {prompt!r}\n"
     if feedback:                                        # reflect-loop: the prior template couldn't be answered → re-route
@@ -98,10 +99,10 @@ def route(prompt, db="cmd_catalog", feedback=None, exclude_page_key=None):
     from obs import llm_tap
     llm_tap.set_decision(kind="selection", candidate_kind="page_key",
                          candidates=[{"page_key": s["page_key"], "title": s["title"]} for s in specs],
-                         vocab={"metric": list(METRIC_VOCAB), "intent": _intent_vocab},
+                         vocab={"metric": list(_metric_vocab), "intent": _intent_vocab},
                          excluded_page_key=excluded, reroute=bool(feedback))
     r = call_qwen(system, user, stage="route",
-                  json_schema=route_answer_schema(keys, METRIC_VOCAB, _intent_vocab))
+                  json_schema=route_answer_schema(keys, _metric_vocab, _intent_vocab))
     if not r:
         # fail-closed: call_qwen is fail-open ({} on ANY transport/parse error) — never emit a keys[0] route for it.
         # The message carries an outage fingerprint (run/degrade_gate.py) → honest data_unavailable terminal.

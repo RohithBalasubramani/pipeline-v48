@@ -11,7 +11,7 @@ Ports backend2 core/resolver.py:58-144 resolve_viewer onto V48's NEURACT-only st
   · object    — layer2/emit/metadata/asset_3d.emit_asset_3d(asset, page_key): the 4-tier most-specific-first resolver
                 over lt_asset_3d (override → rating-variant → type-default → global-default), already carrying the
                 ABSOLUTE GLB url via config.asset3d_media.glb_url. REALITY today: the neuract asset_3d tables are EMPTY
-                and every *_asset_3d_id FK is NULL (registries.neuract.assets3d.model_for → None), so the resolver binds
+                and every *_asset_3d_id FK is NULL (data.neuract_live.assets3d.model_for → None), so the resolver binds
                 NOTHING → object=null → the FE shows its own ComingSoon3D / placeholder. NEVER a fabricated model.
   · viewer    — deep_merge (lib.dict_merge.deep_merge) of the global viewer_defaults baseline (a DB-driven
                 config/viewer_policy knob) with the asset's own preset. backend2 _merge, per-leaf override.

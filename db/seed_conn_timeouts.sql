@@ -3,7 +3,7 @@
 -- half-open socket can wedge a pooled psycopg2 connection (and thus every executor thread behind its lock) before the
 -- read fails fast and the honest-degrade path renders `data_unavailable`. Code-default mirrors live in
 -- config/neuract_dsn.conn_kwargs() — this file only makes them editable without a code change, and behaves identically
--- to the code until an operator tunes a row. Both pooled doors (ems_exec/data/neuract.py + registries/neuract/_db.py)
+-- to the code until an operator tunes a row. Both pooled doors (ems_exec/data/neuract.py + data/neuract_live/_db.py)
 -- read the same conn_kwargs(), so a knob edited here moves both.
 --
 -- DECLARATION seed: ON CONFLICT DO NOTHING (never clobber an operator-tuned value on re-run — audit finding F3).

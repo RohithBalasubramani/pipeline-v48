@@ -60,6 +60,7 @@ export function CmdCard({ card, h }: { card: Card; h?: number }) {
     node = renderCmd(rc, onDateChange);
   } catch (e: any) {
     renderErr = String(e?.message ?? e);
+    console.error("[card", card.card_id, "] render error:", e);   // operator signal — the tile alone is silent [OBS-7]
   }
 
   // The render-guarantee reason channel: an honest blank/partial verdict, an empty/mismatched frame `why`, or a caught
@@ -88,7 +89,7 @@ export function CmdCard({ card, h }: { card: Card; h?: number }) {
         <span title={reason}
           style={{ position: "absolute", top: 6, left: 6, zIndex: 5, fontSize: 10, opacity: 0.55, cursor: "help" }}>ⓘ</span>
       ) : null}
-      <ErrorBoundary fallback={(err) => (
+      <ErrorBoundary onCatch={(e) => console.error("[card", card.card_id, "]", e)} fallback={(err) => (
         <HonestBlankTile title={card.title} reason={rv.reason || rv.coverage_note || err} />
       )}>{node}</ErrorBoundary>
     </div>

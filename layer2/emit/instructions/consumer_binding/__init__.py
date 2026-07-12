@@ -21,8 +21,17 @@ re-exported them)."""
 from layer2.emit.instructions.endpoint_registry import PAGE_PRIMARY, HISTORY_BY_DOMAIN, HISTORY_ENDPOINTS  # noqa: F401
 
 from layer2.emit.instructions.consumer_binding.screen_map import page_endpoint, canonical_screen
-from layer2.emit.instructions.consumer_binding.domain import domain_endpoints, RETIRED_ENDPOINTS
+from layer2.emit.instructions.consumer_binding.domain import domain_endpoints
 from layer2.emit.instructions.consumer_binding.builder import build
+
+
+def __getattr__(name):
+    # RETIRED_ENDPOINTS is a DB knob (routes.retired_endpoints) — delegated per access instead of from-imported at
+    # package import (which pinned the boot value for process life), so a row edit reaches a running process.
+    if name == "RETIRED_ENDPOINTS":
+        from layer2.emit.instructions.consumer_binding import domain
+        return domain.RETIRED_ENDPOINTS
+    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
 
 __all__ = [
     "page_endpoint",

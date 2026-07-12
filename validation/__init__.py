@@ -9,8 +9,12 @@ New code must import `sweep.*` directly. Output paths (outputs/validation/) are 
 """
 import sweep as _home
 
-# submodule search resolves through sweep/'s directory: `-m validation.cli` and `import validation.x.y` both load
-# sweep's files (their internal imports all point at sweep.*, so state lives in ONE place).
+# submodule search resolves through sweep/'s directory. NOT identity-preserving for the `import validation.x` form:
+# that creates a SECOND module object from the same file (`validation.cli is sweep.cli` == False) with its own
+# module-level state — unlike the tree's sys.modules[...] facades. Safe in practice because sweep modules import
+# each other as sweep.* (shared state lives in the sweep.* instances) and `-m validation.cli` runs as __main__;
+# but never `import validation.x` in new code — use `from validation import x` (returns the sweep module via
+# __getattr__ until a submodule import shadows it) or, better, import sweep.* directly. [refactor-integrity OBS-2]
 __path__ = _home.__path__
 
 

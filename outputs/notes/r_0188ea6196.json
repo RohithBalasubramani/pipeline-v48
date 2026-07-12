@@ -1,0 +1,30 @@
+{
+ "run_id": "r_0188ea6196",
+ "loop1": [
+  {
+   "card_id": 14,
+   "title": "Cumulative Energy",
+   "answerability": "partial",
+   "note": "Showing this-month cumulative energy for PRIMARY outgoing feeders (UPS-07, UPS-08, UPS-10, UPS-11, UPS-12); BPDB feeders are dark (no data)."
+  },
+  {
+   "card_id": 16,
+   "title": "Energy Consumption Trend",
+   "answerability": "partial",
+   "note": "Showing total active and reactive energy \u2014 per-feeder breakdown is aggregated from member meters (UPS-07, UPS-08, UPS-10, UPS-11, UPS-12) which have data; BPDB feeders are dark and omitted from the trend."
+  },
+  {
+   "card_id": 15,
+   "title": "Today live power analysis",
+   "answerability": "partial",
+   "note": "Showing total apparent power (kVA) and active/reactive power (kW/kVAr) from outgoing feeders; capacity and load-factor metrics are honest-blanked because the panel's rated_kva is unknown and load factor is not measured on member meters."
+  },
+  {
+   "card_id": 17,
+   "title": "Daily Power Demand by Feeder",
+   "answerability": "partial",
+   "note": "Showing UPS and BPDP demand trends by feeder; Load Factor and Critical Threshold are omitted as they require unavailable nameplate/energy data for this panel aggregate."
+  }
+ ],
+ "loop2": null
+}

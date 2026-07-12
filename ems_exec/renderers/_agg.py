@@ -1,6 +1,6 @@
 """ems_exec/renderers/_agg.py — PURE panel-aggregate MATH (no I/O, no DB, no neuract read).
 
-The panel_aggregate renderer fans a panel out to its member meters (registries.neuract edges) and rolls the members'
+The panel_aggregate renderer fans a panel out to its member meters (data.neuract_live edges) and rolls the members'
 REAL electrical up by QUANTITY. This module is the shared, honest-null-safe arithmetic that rollup needs — factored out
 of topology_sld's _sum_kw / _avg_pf / _sum_col / _node_kwh so the SLD renderer and the KPI/table/radar/sankey aggregate
 renderer compute the SAME way (magnitude → Σ, PF/voltage/THD → mean, current → Σ).

@@ -1,6 +1,6 @@
 """ems_exec/executor/roster.py — THE GENERIC ROSTER INTERPRETER (generalization package §3). ONE capability, ZERO card
 knowledge: given a validated roster instruction list (the AI emission folded into the card_fill_recipe row — see
-recipe.py), it resolves the panel's members ONCE (registries.neuract edges, roles preserved), reads each member's
+recipe.py), it resolves the panel's members ONCE (data.neuract_live edges, roles preserved), reads each member's
 declared columns (ems_exec.data.neuract), builds one element per member from the closed binding vocabulary
 (bindings.py), groups / orders / caps per the instruction, reduces aggregate KPIs (reducers.py → _agg math), and writes
 every result at the instruction's slot path — per-leaf honest-null throughout. NO card ids, NO root-key literals, NO

@@ -1,0 +1,37 @@
+{
+ "run_id": "r_2f702e503b",
+ "loop1": [
+  {
+   "card_id": 23,
+   "title": "PQ Issues KPI Strip (Total Issues / I-THD Events / V-THD Events / PF Gap Feeders / Neutral Stress / Worst I-THD / Worst V-THD)",
+   "answerability": "partial",
+   "note": "Showing total power quality issues and specific THD event counts for panel-3; some harmonic and diagnosis columns are not measured for this asset."
+  },
+  {
+   "card_id": 24,
+   "title": "Harmonics & PQ Timeline",
+   "answerability": "partial",
+   "note": "Showing event timeline for 7 out of 7 primary members; 2 members (BPDB-06 Lam-11&12, BPDB-05 Lam-09&10) have no data and render as blanks."
+  },
+  {
+   "card_id": 25,
+   "title": "AI Summary",
+   "answerability": "partial",
+   "note": "Showing AI narrative summary for PCC-Panel-3 feeders; roster identifiers updated to real member names (UPS-07, UPS-08, BPDB-06, BPDB-05, UPS-10, UPS-11, UPS-12). Some members (BPDB-06, BPDB-05, UPS-10) have no live data and will render as dark/blank in the roster."
+  },
+  {
+   "card_id": 26,
+   "title": "Feeder PQ At {period}",
+   "answerability": "partial",
+   "note": "Showing per-feeder I-THD and V-THD from member meters; some feeders (BPDB-06, BPDB-05, UPS-10) have no live data and are blanked."
+  },
+  {
+   "card_id": 27,
+   "title": "Signature",
+   "answerability": "partial",
+   "note": "Showing harmonic distortion (H5, H7, I-THD, V-THD) and power metrics for the panel's outgoing feeders; 3rd harmonic, K-factor, and peak-THD are not measured by this meter's member assets."
+  }
+ ],
+ "loop2": null,
+ "reconcile": "asset 'PCC-Panel-3' has_feeders=True but the routed page 'individual-feeder-meter-shell/power-quality' is the single-meter granularity \u2014 reconciled to 'panel-overview-shell/harmonics-pq'"
+}

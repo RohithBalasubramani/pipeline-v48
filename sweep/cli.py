@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import argparse
 import glob
+import inspect
 import json
 import os
 import time
@@ -23,21 +24,30 @@ def _say(*parts) -> None:
     print(" ".join(ascii_safe(p) for p in parts), flush=True)
 
 
-def _call_flex(mod_name: str, fn_name: str, shapes: list[tuple]) -> tuple:
-    """Import mod_name lazily and call fn(*args) trying each arg shape in order.
+def _call_flex(mod_name: str, fn_name: str, shapes: list[tuple], kwargs: dict | None = None) -> tuple:
+    """Import mod_name lazily and call fn(*args, **kwargs) with the FIRST shape that BINDS to fn's signature
+    (inspect.signature.bind — so a TypeError raised INSIDE fn is a real failure, never a silent shape skip).
     Returns (ok, value_or_reason). Never raises — a missing/drifted sibling is an honest note, not a crash."""
     try:
         mod = __import__(mod_name, fromlist=[fn_name])
         fn = getattr(mod, fn_name)
     except Exception as e:
         return False, f"{mod_name}.{fn_name} unavailable ({type(e).__name__}: {ascii_safe(e)[:120]})"
+    kwargs = kwargs or {}
+    try:
+        sig = inspect.signature(fn)
+    except (TypeError, ValueError):
+        sig = None                                    # non-introspectable callable — call the first shape as-is
     last = "no call shape accepted"
     for args in shapes:
+        if sig is not None:
+            try:
+                sig.bind(*args, **kwargs)
+            except TypeError as e:
+                last = f"TypeError: {ascii_safe(e)[:120]}"
+                continue
         try:
-            return True, fn(*args)
-        except TypeError as e:
-            last = f"TypeError: {ascii_safe(e)[:120]}"
-            continue
+            return True, fn(*args, **kwargs)
         except Exception as e:
             return False, f"{mod_name}.{fn_name} failed ({type(e).__name__}: {ascii_safe(e)[:160]})"
     return False, f"{mod_name}.{fn_name} signature mismatch ({last})"
@@ -117,17 +127,16 @@ def _analyze_and_report(session_id: str) -> None:
     if not results:
         _say("session", session_id, "has no case records - nothing to analyze")
         return
-    bundle: dict = {"session": session_id, "n_cases": len(results)}
-    for mod, fn, key in (("validation.metrics", "compute", "metrics"),
-                         ("validation.coverage", "analyze", "coverage"),
-                         ("validation.failures", "collect", "failures")):
-        ok, val = _call_flex(mod, fn, [(results,), (results, sdir), (sdir,)])
-        if ok:
-            bundle[key] = val
-        else:
+    # analyzers all take the session ID (they resolve + write their own sessions/<sid>/*.json artifacts);
+    # passing results/sdir here zeroed metrics and stamped absolute paths as session ids (audit OBS-3)
+    for mod, fn in (("sweep.metrics", "compute"),
+                    ("sweep.coverage", "analyze"),
+                    ("sweep.failures", "collect")):
+        ok, val = _call_flex(mod, fn, [(session_id,)])
+        if not ok:
             _say("note:", val)
-    for mod, name in (("validation.report_json", "report.json"), ("validation.report_html", "report.html")):
-        ok, val = _call_flex(mod, "build", [(sdir, bundle), (results, sdir), (sdir,), (bundle,)])
+    for mod, name in (("sweep.report_json", "report.json"), ("sweep.report_html", "report.html")):
+        ok, val = _call_flex(mod, "build", [(session_id,)])
         if ok:
             _say("report:", val if isinstance(val, str) else os.path.join(sdir, name))
         else:
@@ -141,7 +150,7 @@ def _analyze_and_report(session_id: str) -> None:
 # ---------------------------------------------------------------- subcommands
 
 def cmd_generate(args) -> int:
-    ok, val = _call_flex("validation.corpus.generate", "write", [(config.CORPUS_PATH,)])
+    ok, val = _call_flex("sweep.corpus.generate", "write", [(config.CORPUS_PATH,)])
     if not ok:
         _say("generate failed:", val)
         return 1
@@ -160,7 +169,7 @@ def cmd_stats(args) -> int:
         by_cat[c.get("category") or "?"] = by_cat.get(c.get("category") or "?", 0) + 1
         if (c.get("meta") or {}).get("mutation"):
             mutated += 1
-    ok, s = _call_flex("validation.corpus.store", "store", [()])
+    ok, s = _call_flex("sweep.corpus.store", "store", [()])
     budgets = (s or {}).get("categories", {}) if ok and isinstance(s, dict) else {}
     for cat in sorted(by_cat):
         b = (budgets.get(cat) or {}).get("budget")
@@ -204,9 +213,7 @@ def cmd_replay(args) -> int:
     sid = _resolve_session(args)
     if not sid:
         return 1
-    sdir = config.session_dir(sid)
-    ok, val = _call_flex("validation.replay", "replay",
-                         [(args.case_id, sid), (args.case_id, sdir), (args.case_id,)])
+    ok, val = _call_flex("sweep.replay", "replay", [(args.case_id, sid)])
     if not ok:
         _say("replay failed:", val)
         return 1
@@ -223,7 +230,7 @@ def cmd_replay_failed(args) -> int:
     sid = _resolve_session(args)
     if not sid:
         return 1
-    ok, val = _call_flex("validation.replay", "replay_failed", [(sid,)])
+    ok, val = _call_flex("sweep.replay", "replay_failed", [(sid,)])
     if not ok:
         _say("replay-failed failed:", val)
         return 1
@@ -240,7 +247,7 @@ def cmd_regress(args) -> int:
     if sid == args.baseline:
         _say("regress: session equals baseline (", sid, ") - pass --session or run a new sweep first")
         return 1
-    ok, rep = _call_flex("validation.regression", "compare", [(args.baseline, sid)])
+    ok, rep = _call_flex("sweep.regression", "compare", [(args.baseline, sid)])
     if not ok or not isinstance(rep, dict):
         _say("regress failed:", rep if not ok else "comparator returned non-dict")
         return 1
@@ -259,8 +266,7 @@ def cmd_coverage(args) -> int:
     sid = _resolve_session(args)
     if not sid:
         return 1
-    results = _load_results(config.session_dir(sid))
-    ok, cov = _call_flex("validation.coverage", "analyze", [(results,), (results, config.session_dir(sid))])
+    ok, cov = _call_flex("sweep.coverage", "analyze", [(sid,)])
     if not ok or not isinstance(cov, dict):
         _say("coverage failed:", cov if not ok else "analyzer returned non-dict")
         return 1
@@ -291,8 +297,8 @@ def cmd_determinism(args) -> int:
                 sample.append(by_cat[cat][i])
         i += 1
     sid = args.session or time.strftime("determinism_%Y%m%d_%H%M%S")
-    ok, val = _call_flex("validation.checks.determinism", "run_determinism",
-                         [(sample, sid, args.repeats), (sample, args.repeats), (sample,)])
+    ok, val = _call_flex("sweep.checks.determinism", "run_determinism",
+                         [(sample, args.repeats)], kwargs={"session_id": sid})
     if not ok:
         _say("determinism failed:", val)
         return 1
@@ -316,9 +322,12 @@ def cmd_datesync(args) -> int:
     if not raws:
         _say("session", sid, "has no raw responses")
         return 1
-    ok, _mod = _call_flex("validation.checks.datesync", "check_response", [({},)])  # probe availability only
+    try:                                              # real availability check: import only, never a fake call
+        from sweep.checks.datesync import check_response
+    except Exception as e:
+        _say("datesync unavailable:", f"{type(e).__name__}: {ascii_safe(e)[:120]}")
+        return 1
     totals = {"responses": 0, "n_history": 0, "reslices": 0, "as_of_latest": 0, "failures": [], "snapshot_violations": []}
-    from sweep.checks.datesync import check_response
     for p in raws:
         try:
             with open(p) as f:

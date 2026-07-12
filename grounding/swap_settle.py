@@ -1,16 +1,16 @@
 """grounding/swap_settle.py — the deterministic swap SETTLE post-pass that runs AFTER the parallel Layer-2 emits.
-ZERO AI. Two jobs:
+ZERO AI.
 
-  1. POOL FILTER (before the AI ever sees the pool) — restrict the swap candidate pool to targets that can actually
-     render: a card must have a RECOVERABLE default (own or component-sibling, via grounding.default_assemble) AND be a
-     REGISTERED renderer id. This blocks a swap toward a card that would ship an ungated example payload [META-05] or a
-     card with no front-end renderer (white-screen / permanent 'not wired' blank) [FR-5].
+SETTLE — the production runner runs each card's swap emit CONCURRENTLY with an EMPTY `already_chosen` [META-04], so
+two slots can independently swap to the SAME off-page target (duplicate card), or a slot can swap to a target another
+slot already claimed. This pass replays the swaps DETERMINISTICALLY in a stable order, threading an accumulating
+`already_chosen` set: the FIRST (highest-confidence, then lowest card_id) claim wins each target; every later
+colliding swap is REVERTED to KEEP (its own byte-identical default still renders).
 
-  2. SETTLE (after all parallel emits) — the production runner runs each card's swap emit CONCURRENTLY with an EMPTY
-     `already_chosen` [META-04], so two slots can independently swap to the SAME off-page target (duplicate card), or a
-     slot can swap to a target another slot already claimed. This pass replays the swaps DETERMINISTICALLY in a stable
-     order, threading an accumulating `already_chosen` set: the FIRST (highest-confidence, then lowest card_id) claim
-     wins each target; every later colliding swap is REVERTED to KEEP (its own byte-identical default still renders).
+The POOL FILTER policy (a swap target must be a REGISTERED renderer id [FR-5] AND have a RECOVERABLE default — never
+an ungated example payload [META-05]) is enforced on the LIVE path by layer2/swap/candidates.pool, which reads
+is_registered() below + grounding.default_assemble.has_default. (The uncalled swappable_pool re-implementation that
+lived here was deleted 2026-07-12 — audit layer2-grounding OBS-5 — so the two copies can't drift.)
 
 Every policy (the registered-renderer id set) is an EDITABLE ROW read via config accessors — no hardcoded id list.
 Covers: META-04, META-05, FR-5.
@@ -19,7 +19,6 @@ from __future__ import annotations
 
 from config import quality_policy as qp
 from config import reason_templates as rt
-from grounding import default_assemble
 
 
 # ── registered-renderer id set (editable policy) [FR-5] ───────────────────────────────────────────
@@ -41,36 +40,6 @@ def is_registered(card_id):
     # empty policy → fail-open (don't block swaps if the registry policy row is unset), so the pipeline never dead-locks
     # on a missing config; the has-default gate still applies.
     return (not reg) or (int(card_id) in reg)
-
-
-# ── pool filter [META-05, FR-5] ───────────────────────────────────────────────────────────────────
-def swappable_pool(pool, page_key, *, metric=None):
-    """Filter a swap candidate pool (list of {card_id, ...}) to targets that can actually render:
-      · has a RECOVERABLE default (own or component-sibling) — never an ungated example payload [META-05], and
-      · is a REGISTERED renderer id [FR-5].
-    Returns the filtered list. When `metric` (the pipeline's 1a metric) is given, a SOFT metric-affinity re-rank runs
-    over the survivors (metric-relevant cards first, existing order kept as a stable tiebreak) so a metric-aware pool
-    stays metric-ranked after the renderable filter; `metric=None` preserves the incoming order exactly. Non-renderable
-    candidates are dropped up front so the AI can never choose one."""
-    keep = []
-    for c in pool or []:
-        cid = c.get("card_id")
-        if cid is None:
-            continue
-        if not is_registered(cid):
-            continue
-        if not default_assemble.has_default(cid, page_key):
-            continue
-        keep.append(c)
-    if metric and keep:
-        # the ONE generic affinity vocabulary/score (domain/metric_affinity — shared with the pool builder; its old
-        # home in layer2.swap.candidates forced a lazy-import cycle here). Stable sort → equal-affinity order is
-        # preserved. [cycle-kill 2026-07-12]
-        from domain.metric_affinity import metric_tokens, affinity
-        tokens = metric_tokens(metric)
-        if tokens:
-            keep.sort(key=lambda c: -affinity(c, tokens))
-    return keep
 
 
 # ── settle collisions [META-04] ─────────────────────────────────────────────────────────────────

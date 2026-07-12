@@ -5,7 +5,7 @@ ROOT-RELATIVE since 2026-07-12 [legacy-EMS retirement]: the v48 web origin ITSEL
 page was loaded from (localhost or a LAN IP alike — the old ``http://localhost:8890`` legacy-EMS default broke every
 off-box browser). No Django media server, no extra port, no CORS.
 
-DB-DRIVEN: the base is the editable ``viewer_policy`` __knob__ row ``viewer.glb_media_base`` (rides the same table the
+DB-DRIVEN: the base is the editable app_config row ``viewer.glb_media_base`` (consolidated from the retired viewer_policy __knob__ sentinel, config F6 phase-2 2026-07-12; read through the same
 rest of the asset_3d viewer knobs use); the code default below mirrors it. fail-open: DB down / row absent → the code
 default, so the emit builds the same url either way. NEVER fabricates a url for a missing file — the caller only calls
 glb_url() when it has a real ``file`` path. [#1 asset_3d]

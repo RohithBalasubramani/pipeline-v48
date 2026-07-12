@@ -151,20 +151,27 @@ deliberately deferred (marked ⏸).
 - **Fixed en passant**: obs/decision_view.py had its domain.fetch_spec import spliced INSIDE the module docstring
   (concurrent-edit artifact) — every l2_emit decision view silently degraded to view_error:NameError;
   test_decision_inspector now green. Full offline suite after all of the above: **998 passed, 0 failed** (5 skipped).
+- **Full client-gate sweep (212 archived responses)**: 209 fully clean; 3 findings in 2 files, BOTH July-7
+  captures predating the campaign, neither on a changed surface — response_r_f9787f915f cards 7/10 THROW inside
+  vendored CMD_V2 TrendCard (`RT_DIR_PRESETS[stat.trend.dir].color`, dir unguarded — a payload-shape condition;
+  candidate follow-up: the RTM-rail fill fn should default trend.dir before it reaches the vendored component)
+  and response_r_1bc17049b9 card 47 NaN-attr (the pre-Batch-6 PQ placeholder era). PRE-EXISTING, not regressions:
+  the DG/feeder V&C + RTM-heatmap surfaces changed today gate byte-identical.
 - **NOT executed, with reasons**: D1 + F5-quantity/F14-FE landed by the concurrent session (recorded above);
   FE F11/F12 (registry/guards splits — order-sensitive walk arrays, do with the gates in a quiet tree);
   EH F7 (llm/parse extract_json — needs the replay-corpus parity proof; _insight is a certified port);
   measurable-role vocab consolidation (DB rows); `registries/neuract/` → `data/neuract_live/` (optional 17-file
   churn, skipped while the tree is hot).
 
-## Follow-ups (recommended, NOT executed)
+## Follow-ups (status ledger — ✅ = executed since first written; unmarked = still open)
 
-1. ⏸ `validation/` → `sweep/` rename (structure C1): the package was mid-construction by the concurrent session —
-   rename before `outputs/validation/` paths calcify.
-2. ⏸ `data/ttl_cache.py` → `lib/ttl_cache.py`: deferred — the concurrent session was actively adding importers.
-3. ⏸ D1 neuract pool dedup (`ems_exec/data/neuract.py` vs `registries/neuract/_db.py` — byte-identical pool/read
-   mechanics): high value (the TTL/never-cache-empty fixes must otherwise be applied twice) but the file was being
-   hardened live by the concurrent session.
+1. ✅ EXECUTED (concurrent session; verified in-tree 2026-07-12 ~08:20) — `validation/` → `sweep/` rename done;
+   `validation/` is now a compat-alias package (`validation/__init__.py`) so `python3 -m validation.cli` keeps
+   working; output paths (`outputs/validation/`) unchanged.
+2. ✅ EXECUTED (Batch 8 above; verified in-tree) — home is `lib/ttl_cache.py`; `data/ttl_cache.py` is a
+   byte-compatible re-export facade.
+3. ✅ EXECUTED (APPLY_LOG second pass; verified in-tree) — `data/neuract_pool.py` is THE pooled psycopg2 door;
+   both `ems_exec/data/neuract.py:18` and `registries/neuract/_db.py:15` import it.
 4. `registries/neuract/` → `data/neuract_live/` (structure C2, optional): 17-file import churn; names should state
    the live-vs-mirror transport split.
 5. Monoliths F4–F10: indexed_families step B (delete the sys.meta_path import-hook, wire route_series_families as
@@ -180,10 +187,11 @@ deliberately deferred (marked ⏸).
    session, which may land equivalents.
 8. Error-handling F7: `llm/parse.py` shared extract_json (client.py vs _insight.py think-strip divergence; needs a
    replay-corpus parity proof — _insight is a certified port).
-9. Frontend F4 (vc-sanitize unification — needs client-gate verification over saved DG responses), F11/F12
-   (registry/guards package splits — mind the import.meta.glob path and walk-order array), F14 (dead frames/liveFrame
-   plumbing — grep-confirmed server always serves frames:{} / live_frame:null; wide but mechanical), F16 (RTM
-   heatmap body dedup).
+9. Frontend F11/F12 remain (registry/guards package splits — mind the import.meta.glob path and walk-order array).
+   ✅ F14 EXECUTED (APPLY_LOG second pass; verified in-tree 2026-07-12 ~08:20: server.py/multi_asset.py no longer
+   emit page-level frames/frame_status/live_frame, types.ts:127 records the retirement, and a live archived
+   response has none of the keys — per-card `frame_status` kept). ✅ F4 EXECUTED (`cmd/fill/shared/vc-sanitize.ts`,
+   Batch 8). ✅ F16 EXECUTED (`cmd/rtm/HeatmapSections.tsx`, Batch 8).
 10. ✅ CLOSED by owner decisions (2026-07-12, later): Hardcoding **F7** — owner picked **0.9** as the PF-of-record;
     `nameplate.nominal_pf` seeded 0.9 (db/seed_pf_of_record.sql, APPLIED) + code mirror flipped 0.8→0.9 in
     derivations/nameplate.py (INTENDED behavior change: feeder_rated_kw path renders rated kW 12.5% higher, now

@@ -167,7 +167,7 @@ def test_panel_members_suffix_and_primary_preserved(monkeypatch):
     assert lines[1].endswith("| last=—")                         # no-table member line byte-identical (no suffix)
 
     members = [{"mfm_id": 1, "name": "M1", "neuract_table": "gic_x", "role": "outgoing"}]
-    import registries.neuract.members as rm
+    import data.neuract_live.members as rm
     monkeypatch.setattr(rm, "incomers_of", lambda mid: [])
     monkeypatch.setattr(rm, "outgoers_of", lambda mid: copy.deepcopy(members))
     pmb._block_for.cache_clear()

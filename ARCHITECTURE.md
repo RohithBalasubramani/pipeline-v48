@@ -63,7 +63,7 @@ otherwise-surprising structure in the repo.
 Every leaf of every card must be traceable to a real database value, or be blanked (`None` / `"—"`) with a
 machine-readable reason (`cmd_catalog.reason_template` rows: `column_absent`, `structurally_null`,
 `derivation_unbound`, `no_nameplate`, `denorm_garbage`, …). Fabrication is treated as a *class* of bug and killed by
-class-level guards (`ems_exec/executor/fab_guards.py`), not per-card patches. A whole-DB outage is just the extreme
+class-level guards (`ems_exec/executor/fab_guards/`), not per-card patches. A whole-DB outage is just the extreme
 case of "no data" and gets the same honest treatment (`run/degrade_gate.py`).
 
 ### 2.2 AI authors → deterministic code runs → deterministic code verifies
@@ -86,12 +86,12 @@ extracted. Prompts are separate `.md` files; policies are separate DB rows. Ther
 
 ### 2.5 DB-driven configuration with code-default fallback
 Every threshold, timeout, vocabulary, feature flag, and human-readable reason sentence is an editable row in
-`cmd_catalog` (mostly `app_config`, 316 rows) read through a `config/*` accessor that falls back to a code default and
+`cmd_catalog` (mostly `app_config`, ~370 rows) read through a `config/*` accessor that falls back to a code default and
 **never caches a failed load** (see §13). Behavior changes are DB edits, not deploys.
 
 ### 2.6 Fail-open observation, fail-loud data
 Observability, replay capture, and caches must never break a request (`try/except` + fail-open everywhere in `obs/`,
-`replay/`, `data/ttl_cache.py`). Data reads are the opposite: `data/db_client.q` **raises** on a psql error rather
+`replay/`, `data/ttl_cache.py`). Data reads are the opposite: `data/db_client.q` **raises** on a DB error rather
 than returning `[]`, because a silent empty result masquerades as "no data" and lies to the user.
 
 ### 2.7 Never-cache-empty + TTL (the cache-poison lesson)
@@ -118,14 +118,13 @@ flowchart LR
     end
 
     subgraph "LLM serving"
-        VLLM["vLLM :8200<br/>Qwen3.6-35B-A3B-FP8<br/>(systemd vllm.service)"]
+        VLLM["vLLM :8200<br/>Qwen3.6-35B-A3B-FP8<br/>(USER systemd vllm.service)"]
         VLLM2["vLLM :8201<br/>Qwen3-4B-Instruct (copilot only)"]
     end
 
     subgraph "PostgreSQL"
         CAT[("cmd_catalog<br/>local :5432<br/>public + equipment schemas")]
         NEU[("target_version1.neuract<br/>SSH tunnel :5433 → plant<br/>373 tables, live meter data")]
-        META[("meta_data_version1<br/>:5433, device registry")]
     end
 
     CMDV2["/home/rohith/CMD_V2<br/>frozen React card components<br/>(read-only import)"]
@@ -138,7 +137,6 @@ flowchart LR
     COP --> VLLM2
     HOST --> CAT
     HOST --> NEU
-    HOST --> META
     ADMS --> CAT
     COP --> NEU
 ```
@@ -149,33 +147,37 @@ flowchart LR
 | Frontend dev server | **:5188** | `host/web` (Vite + React 19) | Renders the cards; proxies `/api`, `/copilot`, `/admin/api` |
 | Admin console API | **:8790** (`V48_ADMIN_PORT`) | `admin/server.py` | Run browser, traces, AI usage, failures, replay launcher |
 | Copilot | **:8772** (`COPILOT_PORT`) | `copilot/server.py` | Prompt-bar typeahead; fully decoupled from the pipeline |
-| Pipeline LLM | **:8200** | vLLM, `Qwen/Qwen3.6-35B-A3B-FP8` (temp 0, JSON mode) | All 5 pipeline AI calls + knowledge answers |
+| Pipeline LLM | **:8200** | vLLM, `Qwen/Qwen3.6-35B-A3B-FP8` (temp 0, JSON mode); USER unit `vllm.service` (`systemctl --user`) | All 5 pipeline AI calls + knowledge answers |
 | Copilot LLM | **:8201** | vLLM, `Qwen/Qwen3-4B-Instruct-2507-FP8` | Copilot suggestion generation only |
 | Catalog DB | **:5432** | Postgres `cmd_catalog` | The "brain": card/page catalog, defaults, config, obs |
-| Live data DB | **:5433** | SSH tunnel (`ops/db-tunnel.service`) → plant Postgres | `target_version1` schema `neuract` (live meters) + `meta_data_version1` (device registry) |
+| Live data DB | **:5433** | SSH tunnel (`ops/db-tunnel.service`, system unit) → plant Postgres | `target_version1` schema `neuract` (live meters). The old `meta_data_version1` shadow device registry is RETIRED as a pipeline source — the asset universe now comes from the `cmd_catalog` `registry_*` mirror (live-neuract fallback), see §6.3/§9 |
 
 ---
 
 ## 4. Repository layout
 
-Root: `/home/rohith/desktop/BFI/backend/layer2/pipeline_v48` (432 Python files; the React app lives in `host/web`).
+Root: `/home/rohith/desktop/BFI/backend/layer2/pipeline_v48` (~590 Python files excl. archive/outputs, ~474 excl.
+tests — counted 2026-07-12; the React app lives in `host/web`).
 
 ```
 pipeline_v48/
 ├── run/            Orchestrator: harness (entrypoint), 1a∥1b parallel join, per-card L2 fan-out,
 │                   reflect (one re-route), degrade gate, run ids, granularity reconcile.
 ├── layer1a/        AI page router + per-card story writer. db_reads/ (catalog queries),
-│                   parse/ (deterministic clamps/gates on the AI answer), partition_inputs/
-│                   (edge sources for group detection), prompts/ (*.md system prompts).
+│                   parse/ (deterministic clamps/gates on the AI answer), partition/ (union-find
+│                   interdependency-group detection) + partition_inputs/ (its 4 edge sources —
+│                   both moved here from the root, refactor 2026-07-12), prompts/ (*.md system prompts).
 ├── layer1b/        AI asset resolver + column basket. resolve/ (candidates, confident pin,
 │                   ambiguity, has_data, member scope), basket/ (real-column basket + AI pick),
 │                   guardrail/ (retry, same-family gate, spelling recovery), compare/ (multi-asset
 │                   "compare A and B" detection), prompts/.
 ├── layer2/         AI per-card morph-emit. catalog/ (7 single-purpose cmd_catalog readers),
-│                   emit/ (the ONE per-card LLM call + metadata producer + morph map + consumer
-│                   binding), swap/ (candidate pool + decision gates), gates.py (byte-identity),
-│                   resolve/ (column override), schema.py (output contract), prompts/.
-├── partition/      Union-find interdependency-group detection over 4 edge sources.
+│                   emit/ (the ONE per-card LLM call + metadata producer + morph map; instructions/
+│                   authors data_instructions + consumer binding), swap/ (candidate pool + decision
+│                   gates), gates/ (byte-identity package), resolve/ (column override),
+│                   schema.py (output contract), prompts/.
+├── domain/         The shared-vocabulary kernel (quantity_class, metric_affinity, asset_3d) —
+│                   the no-dependency home that broke the ems_exec↔layer2 import cycles.
 ├── grounding/      Deterministic grounding transforms: harvested-default assembly (skeletons),
 │                   schema fingerprint/route (slot→column per table shape), swap settle post-pass.
 ├── ems_exec/       THE EXECUTOR. data/ (the only door to live gic_* tables), executor/ (per-field
@@ -184,16 +186,19 @@ pipeline_v48/
 │                   asset_3d, topology SLD, narrative), serve/ (run_card facade).
 ├── validate/       Pass-1 validation (pre-Layer-2, pandas): per-column data verdicts, payload
 │                   supply-vs-demand, topology feasibility; post-fill render verdict.
-├── validation/     The WALL harness: prompt corpus generator + parallel /api/run runner +
-│                   determinism/datesync/expectation checks + HTML/JSON reports.
+├── sweep/          The WALL harness (renamed from validation/ 2026-07-12): prompt corpus generator +
+│                   parallel /api/run runner + determinism/datesync/expectation checks + HTML/JSON reports.
+├── validation/     COMPAT ALIAS package for sweep/ (`python3 -m validation.cli` still works;
+│                   new code imports sweep.*).
 ├── host/           Serve boundary: server.py (:8770 HTTP), exec_cards (parallel executor fan-out),
 │                   assemble (per-asset card assembly), enrich (FE card build + reasons), multi_asset
 │                   (compare lanes), payload_store (skeleton/default caches), web/ (React app).
 ├── admin/          Admin console API (:8790) over outputs/ logs + obs tables + replay.
 ├── copilot/        Standalone prompt-typeahead service (:8772 + its own 4B model on :8201).
 ├── knowledge/      The one-call knowledge layer: route+answer+refuse conceptual questions.
-├── data/           Cross-cutting DB clients: db_client.q (psql, fail-loud), ttl_cache,
-│                   equipment/ (cmd_catalog.equipment bridge), lt_panels/ (panel members),
+├── data/           Cross-cutting DB clients: db_client.q (pooled psycopg2, fail-loud),
+│                   neuract_pool (THE pooled door both neuract facades share), ttl_cache (facade →
+│                   lib/), equipment/ (cmd_catalog.equipment bridge), lt_panels/ (panel members),
 │                   registry/ (lt_mfm reader).
 ├── registries/     neuract/ registry readers: meters (lt_mfm), members, topology, nameplate, 3D.
 ├── config/         ~30 single-purpose DB-driven config accessors (see §13). databases.py is the
@@ -210,19 +215,22 @@ pipeline_v48/
 ├── scripts/        Operational one-offs: stripped-payload builds, registry sync, wf_*.js
 │                   (multi-agent workflow scripts used during certification sweeps).
 ├── tools/          Developer tools: payload_diff (deep payload comparison), asset_sweep,
-│                   morphmap A/B, seed_quantity_vocab, tunnel_monitor, wall corpus replay.
-├── tests/          91 pytest files (unit + wired + live-DB acceptance; see §8.5).
+│                   morphmap A/B, stack_monitor, wall corpus replay (seed_quantity_vocab → scripts/,
+│                   tunnel_monitor → ops/, refactor 2026-07-12).
+├── tests/          112 pytest files (unit + wired + live-DB acceptance + property/; see §8.5).
 ├── docs/           Design specs (V48_BUILD_SPEC*.md, V48_DESIGN_NOTES.md), FE contract
 │                   (docs/fe_contract/), audits, findings, open items.
 ├── outputs/        Run artifacts: logs/ (ai_*.jsonl, pipeline_*.jsonl), traces/ (replay bundles),
 │                   notes/, validation/, batch/, cert_*/ sweeps, host.log.
-├── ops/            db-tunnel.service (systemd unit for the :5433 SSH tunnel).
-├── archive/        Retired subsystems (layer3, workers, legacy-EMS) — do not reuse.
-└── services/       tiny shared helpers (dict_merge).
+├── ops/            SERVICES.md (the port map), db-tunnel.service (:5433 SSH tunnel, system unit),
+│                   v48-host/v48-admin/v48-web.service (user units) + install-units.sh, tunnel_monitor.py.
+├── lib/            Homeless shared primitives: dict_merge, ttl_cache, blank, leaf_paths, parallel,
+│                   api_auth (replaced the old root services/, refactor 2026-07-12).
+└── archive/        Retired subsystems (layer3, workers, legacy-EMS) — do not reuse.
 ```
 
-Empty/vestigial: `contracts/` (JSON schemas moved into per-layer `schema.py` + docs), `ems_compat/` (superseded —
-v48 reads neuract directly), `outputs/backups`, `err.log`.
+(The formerly-vestigial `contracts/` and `ems_compat/` directories were removed/relocated by the 2026-07-12
+refactor campaign — real contract home is each layer's `schema.py`.)
 
 ---
 
@@ -346,9 +354,11 @@ Output contract: `layer1a/schema.py::Layer1aOutput` — `{page_key, metric, inte
 physical meter (a `neuract.gic_*` table) or an honest "which one?" question — and, before any card is authored, an
 honest inventory of which *real columns* that meter logs. 1b produces both, card-agnostically.
 
-- `resolve/` — builds the candidate universe from the `meta_data_version1` device registry
-  (`app_devices ⋈ app_device_tables ⋈ app_gateways`), tags value-aware `has_data` (latest row must have ≥3 non-null
-  metric columns) and `has_feeders`; **AI #3** resolves by verbatim name (ids hidden from the model). Outcomes
+- `resolve/` — builds the candidate universe from the CANONICAL registry (`asset_candidates.py`: the `cmd_catalog`
+  `registry_*` mirror, live-neuract fallback, via `data/registry/lt_mfm.py`; ids are canonical `lt_mfm.id` — the SAME
+  id-space every topology edge and panel fan-out resolves against; this replaced the old private row_number() id-space
+  over `meta_data_version1`, whose collisions mis-flagged panels), tags value-aware `has_data` (latest row must have
+  ≥3 non-null metric columns) and `has_feeders`; **AI #3** resolves by verbatim name (ids hidden from the model). Outcomes
   (`how`): `AI` (confident pin) / `user-choice` (picker pin) / `ambiguous` (candidate list → FE picker) / `empty` /
   `no_data` (honest notice). `member_scope.py` resolves panel prompts to incomer vs outgoing member sets.
 - `basket/` — reads the pinned table's real columns from `information_schema` (`col_dict.py`; BFS to a representative
@@ -378,9 +388,9 @@ flowchart TD
     OUT --> SG["swap/decide.py gates:<br/>no-dup · confidence · pool-valid ·<br/>vague-reject · force-renderable · combo-cascade"]
     SG -->|accepted swap| REEMIT["re-emit for the swap target's shape"] --> PROD
     SG -->|keep| PROD["emit/metadata/producer.py<br/>strip default to placeholders,<br/>overlay ONLY declared _morphed leaves"]
-    PROD --> GATES["gates.py — byte-identity enforcement:<br/>undeclared drift reverted;<br/>gate_data_instructions · gate_roster"]
+    PROD --> GATES["gates/ — byte-identity enforcement:<br/>undeclared drift reverted;<br/>gate_data_instructions · gate_roster"]
     GATES --> OVR["resolve/column_override.py<br/>unit-guard snap hallucinated columns"]
-    OVR --> BIND["emit/data/consumer_binding<br/>fetch spec (endpoint, mfm_id, window)"]
+    OVR --> BIND["emit/instructions/consumer_binding<br/>fetch spec (endpoint, mfm_id, window)"]
     BIND --> FIN["Layer2CardOutput<br/>(schema.py validated)"]
 ```
 
@@ -390,7 +400,7 @@ Key mechanics:
   2026-07-08; `emit.py` is always-v2). The `{{RECOVERY_LIBRARY}}` placeholder is *generated from the live derivation
   registry* (`ems_exec.derivations.registry.catalog()`) so the AI-visible function list can never drift from code.
 - **Byte-identity**: `exact_metadata` starts as the card's harvested default stripped to typed placeholders
-  (`grounding/default_assemble.py`); the AI may only change leaves it *declares* in `_morphed`; `gates.py` reverts
+  (`grounding/default_assemble.py`); the AI may only change leaves it *declares* in `_morphed`; `layer2/gates/` reverts
   anything else. This is what makes "0 fabrication" auditable — every byte is either the verified default or a
   declared, gated morph.
 - **`data_instructions`**: per-slot field declarations `{slot, kind: raw|derived|const|text|event, column|fn,
@@ -432,7 +442,7 @@ flowchart TD
     FILL --> SER["series slots → bucketed date_trunc-AVG series<br/>(series_fill + window_policy + xaxis/yscale)"]
     FILL --> ROSTER["roster interpreter (recipe.py merge):<br/>list/group/sankey/agg modes"]
     RAW & DER & CONST & EV & SER & ROSTER --> POST["post passes: graft containers · norm_series ·<br/>display · freshness · trend_badge · view_select"]
-    POST --> FAB["fab_guards.py — CLASS killers:<br/>epoch-millis leak · null-column-as-reading ·<br/>no-source value"]
+    POST --> FAB["fab_guards/ — CLASS killers:<br/>epoch-millis leak · null-column-as-reading ·<br/>no-source value"]
     FAB --> RESCUE["measurable rescues (DB-verified only):<br/>scalar_mean · scalar_tile · load_factor"]
     RESCUE --> GAPS["gaps channel: per-leaf machine reasons<br/>(column_absent, derivation_unbound, …)"]
     GAPS --> DONE["completed payload → host enrich"]
@@ -454,7 +464,8 @@ Key properties:
   live 2026-07-08 with the equipment-schema work), `asset_3d.py` (GLB viewer envelope), the topology SLD, and
   `narrative_ai.py` (`_story/` computes page-specific facts in Python; `_insight.py` only rephrases — AI decides
   nothing). `serve/run.py` also runs the last-word sankey sweep: a null-endpoint link never ships (d3-sankey crash).
-- **`fab_guards.py`** — deterministic post-fill **fabrication-class killers**, slot-name-independent (see §2.1). They
+- **`fab_guards/`** — deterministic post-fill **fabrication-class killers**, slot-name-independent (see §2.1; a
+  package since 2026-07-12: knobs / class1_epoch / class23_source / class4_seed / restore / apply). They
   run after all honest fills, so they can never fight one; the three measurable *rescues* that follow only add
   DB-verified values to now-blank leaves.
 - **The gaps channel** — every blanked leaf gets a machine-readable reason record (`gaps.py` `GAPS_KEY`), popped at
@@ -481,13 +492,13 @@ supply-vs-demand over the harvested defaults (`payload_validate.py`); computes t
 Layer 2 consumes: failed columns become unbindable in the emit gates. Policy is annotate-only (`FAILURE_POLICY`); the
 "chilled" gate blocks Layer 2 only when the basket had columns and zero passed.
 
-### 8.2 Pass 2 — in/post-emit (`layer2/gates.py`, `grounding/swap_settle.py`)
+### 8.2 Pass 2 — in/post-emit (`layer2/gates/`, `grounding/swap_settle.py`)
 Emission conformance: byte-identity enforcement on `exact_metadata`, structural gates on `data_instructions` and
 rosters, column unit-guards, swap gates, deterministic swap settle. A gate failure triggers one feedback re-prompt;
 persistent failure degrades honestly (skeleton payload + reason).
 
 ### 8.3 Fill-time and post-fill (`ems_exec`)
-Denorm/sign verification on every raw read (`executor/verify.py`), fabrication-class guards (`fab_guards.py`), the
+Denorm/sign verification on every raw read (`executor/verify.py`), fabrication-class guards (`fab_guards/`), the
 per-leaf gaps channel, and the deterministic render verdict (`validate/render_verdict.py`) — `render` (all declared
 leaves real) / `partial` / `honest_blank`. Note the certified rule: *the verdict is telemetry* — a `render` verdict
 is NOT proof of data (a card can render entirely from chrome); real-vs-empty audits diff the filled payload against
@@ -497,12 +508,13 @@ the seed instead (see `docs/` audit notes).
 `run/degrade_gate.py` (infra outage → `data_unavailable` + reason sentence) and the 1b asset gate
 (`no_data` / `ambiguous` / `empty` → notice or picker, Layer 2 skipped).
 
-### 8.5 Offline walls — `tests/`, `validation/`, FE gates, `replay/`
-- **`tests/`** — 91 pytest files spanning unit gates, wired seams, and live-DB acceptance (`test_fab_guards.py`,
+### 8.5 Offline walls — `tests/`, `sweep/`, FE gates, `replay/`
+- **`tests/`** — 112 pytest files (95 in tests/ + 17 in tests/property/) spanning unit gates, wired seams, and
+  live-DB acceptance (`test_fab_guards.py`,
   `test_family_h_render_safety.py`, `test_layer1a_routing.py`, `test_ems_exec_roster.py`, …). The certified suite
   stood at ~880 green tests at the 2026-07-08 equipment-wiring cert. Many tests hit the live catalog DB; run with
   services up.
-- **`validation/`** (the *wall harness*, distinct from `validate/`) — generates a prompt corpus
+- **`sweep/`** (the *wall harness*, distinct from `validate/`; `validation/` is its compat alias) — generates a prompt corpus
   (`corpus/universe|templates|generate|mutate`), runs it against `/api/run` in parallel with auto-throttle (vLLM
   contention manufactures fake timeouts above ~3 concurrent runs — the runner halves its lane instead of reporting
   lies), applies checks (determinism, datesync, expectations), and emits HTML/JSON reports. Every case leaves a
@@ -522,12 +534,12 @@ with an explicit honesty contract:
 
 | Door | File | Contract |
 |---|---|---|
-| Catalog/registry SQL | `data/db_client.py::q(db, sql)` | psql subprocess, CSV; **raises** on error (never a silent `[]`); replay-hooked |
+| Catalog/registry SQL | `data/db_client.py::q(db, sql)` | pooled psycopg2 (default engine; CSV-parity via server-side `COPY … TO STDOUT (FORMAT csv)`; `V48_DB_ENGINE=psql` is the instant rollback to the historical subprocess path); **raises** on error (never a silent `[]`); replay-hooked |
 | Live time-series | `ems_exec/data/neuract.py` | THE only door to `gic_*` tables. Pooled psycopg2; introspects columns and pads missing → None (never a SQL crash); latest/window/bucketed reads ordered by `timestamp_utc::timestamptz`; TTL + never-cache-empty schema caches |
 | Meter registry | `registries/neuract/` (`meters`, `members`, `topology`, `nameplate`, `assets3d`) | `lt_mfm` (320 rows) is the join key of everything; membership comes from `lt_mfm_incoming/outgoing` edges (NOT `panel_id`, which is empty — a documented ground-truth gotcha) |
 | Panel membership | `data/lt_panels/panel_members.py` | TTL-cached, never-cache-empty (the 2026-07-09 poison fix) |
 | Equipment KB | `data/equipment/` (`bridge`, `db`, `ratings`, `edges`, `kitpreview`) | Bridges `cmd_catalog.equipment` (22 tables) to canonical meters by `table_name` only (id spaces differ!); per-row identity gate stops a bay meter claiming its host panel's identity; all fns fail-open None/[]/{} |
-| Device universe | `layer1b/resolve/asset_candidates.py` | `meta_data_version1.app_devices ⋈ app_device_tables ⋈ app_gateways` |
+| Device universe | `layer1b/resolve/asset_candidates.py` | canonical `cmd_catalog` `registry_*` mirror (live-neuract fallback) via `data/registry/lt_mfm.py`; ids are canonical `lt_mfm.id` (the old `meta_data_version1` row_number id-space is RETIRED) |
 | Config | `config/*` accessors | DB row → cast → code default; never-cache-empty (§13) |
 
 **Models / contracts.** v48 has no ORM. The "models" are (a) the per-layer output contracts —
@@ -545,7 +557,8 @@ Three live databases; all wiring in `config/databases.py` (PG_* env overrides).
 
 ### 10.1 `cmd_catalog` (local :5432) — the brain
 
-61 tables in `public` + 22 in the `equipment` schema. Grouped by concern:
+56 tables in `public` + 22 in the `equipment` schema (live count 2026-07-12 — six reader-less tables were
+dropped that morning, see the Config-as-data row). Grouped by concern:
 
 ```mermaid
 erDiagram
@@ -569,10 +582,10 @@ erDiagram
 |---|---|---|
 | Routing & pages | `pages`, `page_specs` (75), `routable_pages`, `page_layout_cards`, `page_control`, `prompt_category`, `prompt_template`, `prompt_vocab` | layer1a routing + layout; the FE grid template |
 | Cards & handling | `cards` (145), `card_handling` (145: handling_class = single-asset / panel_aggregate / asset_3d / topology_sld / narrative_ai / nav), `card_grid_size`, `card_data_recipe`, `card_fill_recipe` (roster specs), `card_feasibility`, `card_controls`, `card_link`, `card_combo` + `card_combo_member` | layer2 catalog readers; executor recipe merge; partition edges |
-| Ground-truth payloads | `card_payloads` (155 — the harvested byte-faithful Storybook defaults + `payload_stripped` skeletons), `card_component_usage`, `payload_shapes`, `card_render_map`, `card_rendering`, `components`, `contract_components`, `contract_capabilities`, `card_contract_binding` | grounding/default_assemble; L2 byte-identity; host/payload_store |
-| Config-as-data | `app_config` (316 rows — every knob), `reason_template`, `schema_slot_map`, `metric_class`, `derivation_binding`, `data_quality_policy`, `event_threshold`, `endpoint_policy`, `endpoint_recipe_map`, `live_window_policy`, `band_policy`, `limit_override`, `nameplate_config`, `viewer_policy`, `render_guarantee_matrix` + `render_guarantee_page_phrase`, `asset_class_default`, `pcc_panel_alias` | the `config/*` accessors (§13) |
-| Asset registry mirror | `registry_lt_mfm(_incoming/_outgoing/_type)`, `registry_asset(_type)`, `registry_device_mappings`, `registry_sync_meta`, `asset_nameplate` (320: real ratings or honest NULL), `asset_3d_registry` | synced from neuract by `scripts/sync_neuract_registry.py`; nameplate consts; 3D |
-| Observability | `obs_traces`, `obs_stage_events`, `obs_llm_calls`, `obs_db_queries` | obs pg sink; admin console |
+| Ground-truth payloads | `card_payloads` (155 — the harvested byte-faithful Storybook defaults + `payload_stripped` skeletons), `card_component_usage`, `payload_shapes`, `components`, `contract_components`, `contract_capabilities`, `card_contract_binding` | grounding/default_assemble; L2 byte-identity; host/payload_store |
+| Config-as-data | `app_config` (~370 rows — every knob), `reason_template`, `schema_slot_map`, `metric_class`, `derivation_binding`, `derived_metrics` (v47-era, kept while v47 lives), `data_quality_policy`, `event_threshold`, `endpoint_recipe_map`, `nameplate_config`, `viewer_policy`, `render_guarantee_matrix` + `render_guarantee_page_phrase`, `asset_class_default`, `pcc_panel_alias` | the `config/*` accessors (§13). Six reader-less tables (`endpoint_policy`, `band_policy`, `limit_override`, `live_window_policy`, `card_rendering`, `card_render_map`) were DROPPED 2026-07-12 (owner-authorized; snapshots in `archive/db_snapshots_20260712/`) |
+| Asset registry mirror | `registry_lt_mfm(_incoming/_outgoing/_type)`, `registry_asset(_type/_parameter)`, `registry_device_mappings`, `registry_sync_meta`, `asset_nameplate` (320: real ratings or honest NULL), `asset_3d_registry` | synced from neuract by `scripts/sync_neuract_registry.py`; nameplate consts; 3D |
+| Observability & migrations | `obs_traces`, `obs_stage_events`, `obs_llm_calls`, `obs_db_queries`, `schema_migrations` (the `db/apply.py` ledger) | obs pg sink; admin console |
 
 **`equipment` schema** (22 tables: `equipment`, `mfm`, `feeder`, `breaker`, `nameplate`, `asset_meter`,
 `asset_threshold`, `rtm_threshold`, `bms_meter(_limit)`, `core_assettype`, `core_paneltype`, `data_source`,
@@ -594,9 +607,11 @@ consumers are on.
   (membership truth; `panel_id`/`role` columns are empty — never trust them).
 - **`lt_config_field` / `lt_config_value`** — plant-side config used for nameplate defaults.
 
-### 10.3 `meta_data_version1` (:5433) — the device registry
-`app_devices` / `app_device_tables` / `app_gateways` → layer1b's 320-device candidate universe (mfm_id contract =
-row_number in table order).
+### 10.3 `meta_data_version1` (:5433) — the RETIRED shadow device registry
+`app_devices` / `app_device_tables` / `app_gateways` — the old layer1b candidate source with a PRIVATE
+row_number-in-table-order id-space. RETIRED (`config/databases.py`; its id collisions mis-flagged panels):
+layer1b's candidate universe now comes from the canonical `cmd_catalog` `registry_*` mirror (live-neuract
+fallback) with `lt_mfm.id` as the one shared id-space — see §6.3 and `layer1b/resolve/asset_candidates.py`.
 
 ---
 
@@ -682,10 +697,10 @@ Three tiers, in precedence order:
 1. **Environment variables** — deployment wiring only: `PG_*` (DB endpoints), `V48_LLM_URL`/`V48_LLM_MODEL`,
    `V48_HOST_PORT`/`V48_ADMIN_PORT`/`COPILOT_*`, `V48_EXEC_BUDGET_S`, `V48_ALLOW_ENV_PIN` (gate for the
    `PIPELINE_ASSET_ID` CLI pin — ignored by the long-running host so a launch-time env can't pin every user's asset).
-2. **`cmd_catalog` rows** — all behavior: `app_config` (316 rows: `llm.timeout.l2_emit`, `layer2.emit_concurrency`,
+2. **`cmd_catalog` rows** — all behavior: `app_config` (~370 rows: `llm.timeout.l2_emit`, `layer2.emit_concurrency`,
    `ems_exec.card_budget_s`, `cache.resolution_ttl_s`, `knowledge.enabled`, `reflect.reroute_on`, `site.name`,
    `chart.*`, `consts.*` thresholds, feature flags …) plus the typed policy tables (`reason_template`,
-   `schema_slot_map`, `derivation_binding`, `band_policy`, …).
+   `schema_slot_map`, `derivation_binding`, `data_quality_policy`, …).
 3. **Code defaults** — every accessor takes a default; the system boots and runs (degraded but honest) with the
    catalog DB down.
 
@@ -746,10 +761,11 @@ Knowing what was *removed* explains the current shape (and the `archive/` folder
 | **L2 prompt v1 trio** (`swap/metadata/data_instructions.md`) | 3 composed system prompts | single `data_instructions_v2.md` | 2026-07-08 |
 | **name-collision gate** in 1b | deterministic collision veto | pure-AI resolution + guardrails | 2026-07-09 |
 
-Legacy artifacts you will still see: `frames: {}` in responses (FE back-compat), `fill_source='live-frontend'`
+Legacy artifacts you will still see: `fill_source='live-frontend'`
 labels from the superseded "Option A" era (the fill actually happens server-side in ems_exec), a few stale docstrings
 (`emit.py` still says "3 atomic prompt parts"), and orphaned `grounding/` engines whose *policies* live on as
-cmd_catalog tables. Relative to **v47** (`../pipeline_v47` — a single-file pipeline with L1–L6 layers and its own
+cmd_catalog tables. (The page-level `frames: {}` back-compat field was retired 2026-07-12 — frontend F14; the honest
+fetch-reason is per-card `frame_status`.) Relative to **v47** (`../pipeline_v47` — a single-file pipeline with L1–L6 layers and its own
 host), v48 is the ground-up atomic rebuild: per-card AI emits against byte-identical defaults, a deterministic
 executor, and DB-driven everything. **v49** (Hermes agent) is being planned separately in `../v49/`.
 
@@ -780,7 +796,7 @@ executor, and DB-driven everything. **v49** (Hermes agent) is being planned sepa
 | **group / interdependency** | cards that must stay in sync (shared date controls); union-find over catalog edges |
 | **run_id / trace_id** | `r_<sha1(prompt)[:10]>` (log correlation, collides across executions) vs the unique per-execution replay identity |
 | **fab guard** | a slot-name-independent post-fill killer of one fabrication *class* |
-| **wall** | a bulk validation sweep of the prompt corpus against `/api/run` (`validation/`) |
+| **wall** | a bulk validation sweep of the prompt corpus against `/api/run` (`sweep/`) |
 
 ---
 
@@ -789,8 +805,8 @@ executor, and DB-driven everything. **v49** (Hermes agent) is being planned sepa
 ### Start the stack (order matters only for the tunnel)
 ```bash
 # 0. Postgres :5432 (cmd_catalog) is local; the plant tunnel is a systemd unit:
-systemctl status db-tunnel        # ops/db-tunnel.service → 127.0.0.1:5433
-systemctl status vllm             # Qwen3.6-35B on :8200
+systemctl status db-tunnel        # ops/db-tunnel.service → 127.0.0.1:5433 (system unit)
+systemctl --user status vllm      # Qwen3.6-35B on :8200 (USER unit — the system vllm.service is disabled)
 
 cd /home/rohith/desktop/BFI/backend/layer2/pipeline_v48
 python3 host/server.py            # API :8770  (V48_HOST_PORT)
@@ -804,7 +820,7 @@ the host terminal (`obs/stage.py` lines) — that stream is the fastest mental m
 ### Run it headless
 ```bash
 python3 -c "from host.server import build_response; import json; \
-print(json.dumps(build_response({'prompt':'voltage health of AHU-5'}), default=str)[:2000])"
+print(json.dumps(build_response('voltage health of AHU-5'), default=str)[:2000])"
 ```
 
 ### Tests and gates

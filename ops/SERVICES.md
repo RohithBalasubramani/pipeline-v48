@@ -12,7 +12,7 @@ If you add a service or move a port: update this file + the unit in `ops/` (or `
 | 8790  | admin console API    | `admin/server.py`                       | `ops/v48-admin.service` (user unit) | run outputs + obs traces (file-backed) |
 | 8772  | copilot API          | `copilot/server.py`                     | `copilot/deploy/ems-copilot.service`| 8201 (its own model), 5433 (read-only) |
 | 8201  | copilot LLM          | vLLM Qwen3-4B-Instruct-2507-FP8         | `copilot/deploy/vllm-copilot.service`| GPU |
-| 8200  | pipeline LLM         | vLLM Qwen3.6-35B-A3B-FP8 (64K ctx)      | SYSTEM `vllm.service`               | GPU |
+| 8200  | pipeline LLM         | vLLM Qwen3.6-35B-A3B-FP8 (64K ctx)      | USER `vllm.service` (`systemctl --user`; the SYSTEM unit of the same name is disabled/inactive) | GPU |
 | 5432  | Postgres (local)     | cmd_catalog                             | system postgres                     | — |
 | 5433  | Postgres tunnel      | ssh -L → 10.90.200.91:5432 (neuract)    | SYSTEM `ops/db-tunnel.service` (hardened 2026-07-07) | FortiClient VPN |
 | 3107  | CMD_V2 app           | separate repo `/home/rohith/CMD_V2`     | separate project                    | same DBs; NOT called by V48 |
@@ -48,7 +48,9 @@ browser ── :5188 vite ──proxy /api──────► :8770 host ─�
 ```bash
 bash ops/install-units.sh          # user units: v48-host, v48-admin, v48-web (+ copilot pair)
 systemctl --user enable --now v48-host v48-admin v48-web
-# system units (root): db-tunnel.service (ops/), vllm.service (already installed)
+# system unit (root): db-tunnel.service (ops/)
+# vLLM :8200 is ALSO a user unit (verified 2026-07-12): status/restart via `systemctl --user {status,restart} vllm`
+# — `systemctl status vllm` reports the DISABLED system unit and reads inactive while :8200 is up.
 ```
 
 Stop hand-run terminal copies first — they hold the ports. The historical `host_restart.log` / `vite_restart.log`

@@ -1,4 +1,4 @@
-"""partition/group_detect.py — transitive-closure grouping -> interdependency groups + standalone. [spec section 6]"""
+"""layer1a/partition/group_detect.py — transitive-closure grouping -> interdependency groups + standalone. [spec section 6]"""
 from layer1a.partition.coupling_lookup import gather_edges
 from layer1a.partition.fallback_edges import attach_orphans
 

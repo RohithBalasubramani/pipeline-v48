@@ -24,8 +24,17 @@ AI's own value is preserved as `ai_confidence` for audit. Without the stamp a fo
 from config.app_config import cfg
 from config import feasibility as _feas   # lazy module attrs — read per call so DB row edits reach the gate live
 
-# settle-ordering priority for a FORCED swap — must exceed any AI confidence (the AI emits within [0,1]).
-FORCED_SWAP_CONFIDENCE = cfg("swap.forced_swap_confidence", 2.0)
+
+def _forced_confidence():
+    """Settle-ordering priority for a FORCED swap — must exceed any AI confidence (the AI emits within [0,1]).
+    Read per call (an import-time cfg() read pinned the boot value for process life)."""
+    return cfg("swap.forced_swap_confidence", 2.0)
+
+
+def __getattr__(name):
+    if name == "FORCED_SWAP_CONFIDENCE":   # kept as a module attr (tests read it) — re-reads the DB knob per access
+        return _forced_confidence()
+    raise AttributeError(f"module 'layer2.swap.gate_force_renderable' has no attribute {name!r}")
 
 
 def is_unrenderable(verdict):
@@ -68,7 +77,7 @@ def enforce(decision, *, verdict, pool, already_chosen=None, answerability=None)
                  # swap one honest-empty card for another (a whole-page data dead-end keeps the honest original). [#1]
                  forced_dataless=_dataless,
                  # MANDATORY swap outranks every optional stylistic swap in the settle ordering [META-04 x rule 1]
-                 ai_confidence=d.get("confidence"), confidence=FORCED_SWAP_CONFIDENCE)
+                 ai_confidence=d.get("confidence"), confidence=_forced_confidence())
         return d, False
     # No renderable replacement offered — KEEP honestly (never invent a card) and flag for the marker/reflect-loop.
     d.update(action="keep", origin="kept", swap_to_id=None, swap_to_title=None,

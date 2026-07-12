@@ -1,4 +1,4 @@
-"""registries/neuract/meters.py — the lt_mfm METER REGISTRY (the 320-row name/table/type/panel dictionary).
+"""data/neuract_live/meters.py — the lt_mfm METER REGISTRY (the 320-row name/table/type/panel dictionary).
 
 Single concern: resolve a meter (MFM) by id OR name, and hand back the neuract gic_* `table_name` that meter physically
 logs its time-series to. lt_mfm is the join key for the whole registry — every edge/member row is an mfm id, and every
@@ -13,7 +13,7 @@ Honest-degrade: an unknown id/name → None; a meter with no table_name → None
 """
 from __future__ import annotations
 
-from registries.neuract import _db
+from data.neuract_live import _db
 
 # lt_mfm columns we surface (only ones that physically exist). type name is joined from lt_mfm_type.
 _SELECT = (

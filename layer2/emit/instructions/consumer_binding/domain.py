@@ -9,10 +9,18 @@ from layer2.emit.instructions.consumer_binding.screen_map import canonical_scree
 
 _HISTORY_BY_DOMAIN = HISTORY_BY_DOMAIN                                # alias for domain_endpoints() below
 
-# RETIRED legacy names (folded into power-quality-summary) — kept ONLY as PROMPT EMPHASIS (the AI confuses these with
-# real endpoints from its training). The ACTUAL rule is "must be a LIVE endpoint" (endpoint_registry.LIVE_ENDPOINTS);
-# build() does not snap (the AI owns the endpoint), so the prompt forbids these names + shows the live set as closed. [config → DB]
-RETIRED_ENDPOINTS = set(cfg("routes.retired_endpoints", ["power-quality-history", "distortion-harmonics", "harmonics-pq", "power-quality"]))
+def _retired_endpoints():
+    """RETIRED legacy names (folded into power-quality-summary) — kept ONLY as PROMPT EMPHASIS (the AI confuses these with
+    real endpoints from its training). The ACTUAL rule is "must be a LIVE endpoint" (endpoint_registry.LIVE_ENDPOINTS);
+    build() does not snap (the AI owns the endpoint), so the prompt forbids these names + shows the live set as closed.
+    [config → DB] Read per call (an import-time read pinned the boot value for process life)."""
+    return set(cfg("routes.retired_endpoints", ["power-quality-history", "distortion-harmonics", "harmonics-pq", "power-quality"]))
+
+
+def __getattr__(name):
+    if name == "RETIRED_ENDPOINTS":     # kept as a module attr (the package barrel re-exports it) — re-read per access
+        return _retired_endpoints()
+    raise AttributeError(f"module 'layer2.emit.instructions.consumer_binding.domain' has no attribute {name!r}")
 
 
 def domain_endpoints(backend_strategy):

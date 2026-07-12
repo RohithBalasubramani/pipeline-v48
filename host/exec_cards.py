@@ -247,6 +247,18 @@ def _run_cards(l2, asset_table, db_link=None, date_window=None, run_id="-", asse
         for fut, cid in futs.items():                           # every card that did NOT finish within the budget
             if cid in status_by_id:
                 continue
+            # BUDGET RACE [OBS-5]: a future can COMPLETE between as_completed's timeout raise and this sweep — its
+            # real payload is already in the future. Harvest it (result() returns immediately on a done future)
+            # instead of discarding fetched data as budget-exceeded; a raised task stays on the failure path.
+            if fut.done() and not fut.cancelled():
+                try:
+                    completed_by_id[cid] = fut.result()
+                    status_by_id[cid] = {"ok": True, "why": "ok"}
+                    stage(run_id, "exec", card=cid, ok=True, ms=_ms(cid))
+                except Exception as e:
+                    status_by_id[cid] = {"ok": False, "why": _fmt_exc(e)}
+                    stage(run_id, "exec", card=cid, ok=False, why=_fmt_exc(e), ms=_ms(cid))
+                continue
             fut.cancel()
             status_by_id[cid] = {"ok": False, "why": "executor budget exceeded"}
             stage(run_id, "exec", card=cid, ok=False, why="executor budget exceeded", ms=_ms(cid))

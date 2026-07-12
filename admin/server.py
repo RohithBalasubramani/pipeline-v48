@@ -17,6 +17,7 @@ if _ROOT not in sys.path:
 from admin import ai_usage, assets_log, coverage, explorer, failures_report        # noqa: E402
 from admin import latency, replay, runs, search, sql_report, store, trace, validation_log  # noqa: E402
 from admin.config import LOGS_DIR, PORT, RUN_ID_RE, window_params                  # noqa: E402
+from lib.api_auth import require_token as _require_token                           # noqa: E402  api.token gate (default-off) [R6]
 
 
 def _first(qs, key, default=None):
@@ -50,6 +51,8 @@ class Handler(BaseHTTPRequestHandler):
         self._send(204, {})
 
     def do_GET(self):
+        if not _require_token(self.headers):              # api.token knob set + header mismatch → 401 (default-off) [R6]
+            return self._send(401, {"ok": False, "error": "unauthorized"})
         try:
             self._route_get()
         except BrokenPipeError:
@@ -143,6 +146,8 @@ class Handler(BaseHTTPRequestHandler):
         return self._send(404, {"ok": False, "error": "unknown endpoint"})
 
     def do_POST(self):
+        if not _require_token(self.headers):              # api.token knob set + header mismatch → 401 (default-off) [R6]
+            return self._send(401, {"ok": False, "error": "unauthorized"})
         try:
             n = int(self.headers.get("Content-Length") or 0)
             body = json.loads(self.rfile.read(n) or b"{}") if n else {}

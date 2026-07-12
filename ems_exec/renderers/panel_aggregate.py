@@ -1,6 +1,6 @@
 """ems_exec/renderers/panel_aggregate.py — the PANEL-AGGREGATE fan-out renderer (the GENERIC legacy path).
 
-A panel_aggregate card is NOT a single meter read: it fans a PANEL out to its member feeders (registries.neuract edges,
+A panel_aggregate card is NOT a single meter read: it fans a PANEL out to its member feeders (data.neuract_live edges,
 the SAME door topology_sld used) and rolls the members' REAL neuract electrical up by QUANTITY (power/energy → Σ,
 pf/voltage/thd → mean, current/neutral → Σ).
 

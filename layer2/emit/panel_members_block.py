@@ -2,7 +2,7 @@
 
 Single concern: when the resolved asset is a PANEL (an aggregate device with topology members), render its REAL member
 meters — supply side (incomers: transformers / solar) + fed feeders (outgoers) — as verbatim facts
-(name | gic table | has_data | last=<newest sample ts>) from registries.neuract.members, so the AI grounds per-source / per-feeder claims (a
+(name | gic table | has_data | last=<newest sample ts>) from data.neuract_live.members, so the AI grounds per-source / per-feeder claims (a
 roster or sankey card's entity labels, per-member honest-blanks, the data_note) in the actual topology instead of
 guessing "per-source breakdown is not measured" (the PCC-1 loop1 defect: the supply members exist in topology; only
 their tables are dark). FACTS ONLY — no suggestions, no vocabulary, no ranking; has_data is measured (the member table's
@@ -66,7 +66,7 @@ def _lines(members):
 @lru_cache(maxsize=128)
 def _block_for(mfm_id, scope):
     try:
-        from registries.neuract import members as _members
+        from data.neuract_live import members as _members
         supply = _members.incomers_of(mfm_id) or []
         feeders = _members.outgoers_of(mfm_id) or []
     except Exception:

@@ -1,4 +1,4 @@
-"""registries/neuract/members.py — a panel's MEMBER meters (THE aggregation source the panel-aggregate stage calls).
+"""data/neuract_live/members.py — a panel's MEMBER meters (THE aggregation source the panel-aggregate stage calls).
 
 Single concern: given a panel reference (an MFM id or name — panel_id varchar is EMPTY in neuract, so a panel IS a meter
 row), resolve the member meters that make up that panel's aggregate, from the lt_mfm edge tables.
@@ -24,8 +24,8 @@ Honest-degrade: an unknown panel / a panel with no edges → [] (never a fabrica
 """
 from __future__ import annotations
 
-from registries.neuract import _db
-from registries.neuract import meters as _meters
+from data.neuract_live import _db
+from data.neuract_live import meters as _meters
 
 
 def _equipment_roster(panel_id, direction):

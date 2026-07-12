@@ -16,12 +16,14 @@ async function httpError(res: Response): Promise<Error> {
 export type SiteStatus = { ok?: boolean; site?: string | null; live?: boolean | null };
 export async function fetchSite(): Promise<SiteStatus> {
   const res = await fetch("/api/site");
+  if (!res.ok) throw await httpError(res);       // check res.ok BEFORE parsing — a proxy HTML 502 must not become a SyntaxError
   return (await res.json()) as SiteStatus;
 }
 
 /** GET /api/assets — the full pickable asset registry (same Candidate shape 1b serves). */
 export async function fetchAssets(): Promise<Candidate[]> {
   const res = await fetch("/api/assets");
+  if (!res.ok) throw await httpError(res);       // check res.ok BEFORE parsing — a proxy HTML 502 must not become a SyntaxError
   const body = await res.json();
   return body?.ok && Array.isArray(body.assets) ? (body.assets as Candidate[]) : [];
 }
@@ -35,6 +37,7 @@ export async function copilotSuggest(text: string, signal?: AbortSignal): Promis
     body: JSON.stringify({ text }),
     signal,
   });
+  if (!res.ok) throw await httpError(res);       // check res.ok BEFORE parsing — a proxy HTML 502 must not become a SyntaxError
   return (await res.json()) as Suggest;
 }
 
@@ -42,6 +45,7 @@ export async function copilotSuggest(text: string, signal?: AbortSignal): Promis
 export type StarterChip = { tag: string; text: string };
 export async function copilotStarters(): Promise<StarterChip[]> {
   const res = await fetch("/copilot/starters");
+  if (!res.ok) throw await httpError(res);       // check res.ok BEFORE parsing — a proxy HTML 502 must not become a SyntaxError
   const body = await res.json();
   return Array.isArray(body?.starters) ? (body.starters as StarterChip[]) : [];
 }

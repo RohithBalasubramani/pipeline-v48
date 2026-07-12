@@ -8,7 +8,7 @@
 -- CONSERVATIVE rule (only provably-empty families):
 --   (a) NO card_payloads row AND handling_class NOT IN (narrative_ai, topology_sld, panel_aggregate, nav_index)
 --        -> renders from a harvested default payload; with none, empty.  [30 cards]
---   (b) handling_class='asset_3d' AND registries.neuract.model_for(<asset key>) is None (neuract has 0 3D models)
+--   (b) handling_class='asset_3d' AND data.neuract_live.model_for(<asset key>) is None (neuract has 0 3D models)
 --        -> the viewer mounts ComingSoon (empty).  [2 cards]
 -- NOT marked (per rule): single_asset WITH a payload, panel_aggregate, topology_sld, narrative_ai.
 --

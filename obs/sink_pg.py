@@ -98,6 +98,11 @@ def _purge(conn):
 
 def _writer_loop():
     global _DOWN_UNTIL, DROPPED
+    try:                                                       # OBS-5: pin THIS thread's run id so the sink's own
+        from obs import ai_log                                 # <pg_connect> sql_trace legs land in sql_obs_sink.jsonl,
+        ai_log.set_context_run_id("obs_sink")                  # never in a live run's file (context-only, no global)
+    except Exception:
+        pass
     conn = None
     flush_s = float(_cfg("obs.flush_interval_s", 2.0) or 2.0)
     while True:

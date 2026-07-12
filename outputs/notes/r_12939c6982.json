@@ -1,0 +1,36 @@
+{
+ "run_id": "r_12939c6982",
+ "loop1": [
+  {
+   "card_id": 23,
+   "title": "PQ Issues KPI Strip (Total Issues / I-THD Events / V-THD Events / PF Gap Feeders / Neutral Stress / Worst I-THD / Worst V-THD)",
+   "answerability": "partial",
+   "note": "Showing aggregate event counts and worst-case member values from panel outgoing-feeders; scalar KPI tiles are unbound as no dedicated event-count or worst-case scalar columns exist on this meter."
+  },
+  {
+   "card_id": 24,
+   "title": "Harmonics & PQ Timeline",
+   "answerability": "partial",
+   "note": "Showing per-panel harmonic and event data from the 24 active outgoing feeders; 5 feeders are dark (no data) and render as honest blanks."
+  },
+  {
+   "card_id": 25,
+   "title": "AI Summary",
+   "answerability": "partial",
+   "note": "Showing AI narrative summary \u2014 numeric harmonic stats (I-THD, V-THD) are not directly measured by this meter's schema (only compliance flags and current THD % are available, which are used for the narrative but not exposed as scalar stats in this roster config)."
+  },
+  {
+   "card_id": 26,
+   "title": "Feeder PQ At {period}",
+   "answerability": "partial",
+   "note": "Showing I-THD and V-THD for feeders with live harmonic data; V-THD columns (thd_voltage_*) are not logged on this panel's feeders, so V-THD values are omitted."
+  },
+  {
+   "card_id": 27,
+   "title": "Signature",
+   "answerability": "partial",
+   "note": "Showing current distribution across outgoing feeders; harmonic signature data (THD) is not measured by this panel's aggregate meter."
+  }
+ ],
+ "loop2": null
+}

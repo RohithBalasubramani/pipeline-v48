@@ -6,7 +6,7 @@
 -- (payload_db/load_asset_payloads.py) inserted the 30 asset-card payload rows with page_key=NULL, so the
 -- lookup missed them and every payload-backed asset card was stamped 'no_data' — even though the byte-match
 -- defaults ARE harvested. The two asset_3d cards (60, 63) were stamped 'no_data' by rule (b)
--- (registries.neuract.assets3d.model_for → None: the neuract lt_asset_3d/asset_3d_model tables are empty),
+-- (data.neuract_live.assets3d.model_for → None: the neuract lt_asset_3d/asset_3d_model tables are empty),
 -- but an asset_3d card renders OUTSIDE the payload path via ems_exec/renderers/asset_3d.py run_special —
 -- the ViewerResolveResponse envelope always mounts (object=null → the FE's ComingSoon3D chrome), which is
 -- exactly the 'static_chrome' verdict (config/feasibility.py: renderable, NOT unrenderable) already used by

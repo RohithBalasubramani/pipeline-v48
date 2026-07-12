@@ -1,0 +1,31 @@
+{
+ "run_id": "r_3dd8c86f6c",
+ "loop1": [
+  {
+   "card_id": 14,
+   "title": "Cumulative Energy",
+   "answerability": "partial",
+   "note": "Showing cumulative energy for this month across panel members; SEC (kWh/t) is omitted as no production tonnage is measured for this asset."
+  },
+  {
+   "card_id": 16,
+   "title": "Energy Consumption Trend",
+   "answerability": "partial",
+   "note": "Showing total active and reactive energy trends for the 23 primary outgoing feeders; 3 feeders (Axial Fan Panel-2, Curing Line CSU-01, Fire Fighting System) are dark and omitted from the trend."
+  },
+  {
+   "card_id": 15,
+   "title": "Today live power analysis",
+   "answerability": "partial",
+   "note": "Showing live apparent power and active/reactive power breakdown; capacity marker and load factor are omitted because rated_kva is unknown and load factor metrics are not logged for this panel's members."
+  },
+  {
+   "card_id": 17,
+   "title": "Daily Power Demand by Feeder",
+   "answerability": "partial",
+   "note": "Showing Worst Peak and per-feeder demand series (UPS, BPDP, HHF); Load Factor and Critical Demand Threshold are omitted because the required computed ratio and nameplate rating are not available for this asset."
+  }
+ ],
+ "loop2": null,
+ "reconcile": "asset 'PCC-Panel-4' has_feeders=True but the routed page 'individual-feeder-meter-shell/energy-power' is the single-meter granularity \u2014 reconciled to 'panel-overview-shell/energy-power'"
+}

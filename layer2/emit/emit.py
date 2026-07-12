@@ -1,9 +1,11 @@
-"""layer2/emit/emit.py — the ONE Layer-2 per-card AI call. Composes the 3 atomic prompt parts (swap + metadata +
-data_instructions) into the system prompt, builds the user message, calls Qwen, returns the raw Layer2CardOutput. [PROMPTS §L2(a)(d)]
+"""layer2/emit/emit.py — the ONE Layer-2 per-card AI call. Builds the system prompt from the SINGLE always-v2 contract
+(prompts/data_instructions_v2.md — it subsumed the retired swap + metadata + data_instructions trio; the only optional
+composition left is the morphmap PART 2 override, see _system), builds the user message, calls Qwen, returns the raw
+Layer2CardOutput. [PROMPTS §L2(a)(d)]
 
 HARDENED [2026-07-03 emit findings]:
   · RECOVERY LIBRARY is GENERATED from the live derivation registry (ems_exec.derivations.registry.catalog()) into the
-    {{RECOVERY_LIBRARY}} placeholder in data_instructions.md — the AI-visible fn list can never drift from the code
+    {{RECOVERY_LIBRARY}} placeholder in data_instructions_v2.md — the AI-visible fn list can never drift from the code
     LIBRARY again (the static list was missing kpiKwLoadPctOfRated + the whole energy today/week/month family);
   · ONE bounded transport retry (app_config llm.transport_retry, default 1) when call_qwen fails — a 120s-graze under
     sweep load no longer silently ships a default-skeleton card;
@@ -160,10 +162,10 @@ def _system(card_in=None):
     from layer2.emit.morphmap.mode import use_morphmap_metadata as _use_mm
     _mm = _use_mm(card_in)
     parts = []
-    with open(os.path.join(_P, "data_instructions_v2.md"), errors="replace") as f:
+    with open(os.path.join(_P, "data_instructions_v2.md"), encoding="utf-8", errors="replace") as f:
         parts.append(f.read().strip())
     if _mm:
-        with open(_MORPHMAP_PROMPT, errors="replace") as f:
+        with open(_MORPHMAP_PROMPT, encoding="utf-8", errors="replace") as f:
             parts.append(
                 "════ PART 2 OVERRIDE — MORPH-MAP (supersedes R12's `_morphed` mechanism and PART 2's "
                 "exact_metadata retype for THIS card; every OTHER rule R1-R14 stands unchanged) ════\n"

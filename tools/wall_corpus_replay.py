@@ -21,7 +21,7 @@ reporting, per wall rule:
   · bypass counts ($ctx-sourced fields, group cards, rule-(i) const/frame/time exemptions).
 
 ACCEPTANCE HARNESS for every future wall change (standard: ALL fabrications caught, ZERO legit binds harmed):
-re-run this tool after touching layer2/gates.py / layer2/quantity_class.py / the quantity.* config rows and
+re-run this tool after touching layer2/gates/ / layer2/quantity_class.py / the quantity.* config rows and
 diff per_rule counts + false_positive_suspects against the committed baseline — new blanks must be real
 fabrications; vanished blanks must be intended releases.
 
@@ -182,7 +182,7 @@ def parse_roster_spec(um):
 
 
 # ── rule attribution ──────────────────────────────────────────────────────────────────────────────────────────────
-# reason substrings → wall rule, checked most-specific first (mirrors layer2/gates.py reason texts verbatim).
+# reason substrings → wall rule, checked most-specific first (mirrors layer2/gates/ reason texts verbatim).
 _RULE_MAP = [
     ("reused across distinct scalar slots", "rule_ii_reuse_smear"),
     ("axis slot bound to", "rule_iiib_axis_coherence"),
@@ -423,6 +423,20 @@ def _sha(path):
         return None
 
 
+def _sha_pkg(dirpath):
+    """Stable sha over a package dir: sorted .py basenames, contents concatenated. None when unreadable/empty
+    (matches _sha's None-on-OSError so the baseline never crashes on a moved tree)."""
+    try:
+        names = sorted(n for n in os.listdir(dirpath) if n.endswith(".py"))
+        h = hashlib.sha256()
+        for n in names:
+            with open(os.path.join(dirpath, n), "rb") as f:
+                h.update(f.read())
+        return h.hexdigest()[:16] if names else None
+    except OSError:
+        return None
+
+
 def build_baseline(res, globs):
     stats = res["stats"]
     rules = {k: {"fields_blanked": v["fields_blanked"], "emits_touched": len(v["emits"]),
@@ -434,7 +448,9 @@ def build_baseline(res, globs):
         "tool": "tools/wall_corpus_replay.py",
         "acceptance_standard": "all fabrications caught, zero legit binds harmed — diff per_rule + "
                                "false_positive_suspects against this baseline after every wall change",
-        "walls_provenance": {"layer2/gates.py": _sha(os.path.join(ROOT, "layer2", "gates.py")),
+        # key keeps its historical name (old/new baselines diff key-for-key); the VALUE is now the sha over the
+        # layer2/gates/ PACKAGE — gates.py was split into gates/ on 2026-07-12 and _sha on the dead path returned None.
+        "walls_provenance": {"layer2/gates.py": _sha_pkg(os.path.join(ROOT, "layer2", "gates")),
                              "layer2/quantity_class.py": _sha(os.path.join(ROOT, "layer2", "quantity_class.py"))},
         "corpus": {"globs": globs, "files": res["files"], **{k: stats[k] for k in sorted(stats) if k != "files"}},
         "totals": {

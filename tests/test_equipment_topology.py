@@ -2,7 +2,7 @@
 allowlisted rosters (two-sided guard), the lt_mfm/members merge, and knobs-off byte-identity.
 
 LOCAL-ONLY: every read is cmd_catalog :5432 (equipment schema + registry_* mirror); anything that could touch the
-:5433 tunnel (registries.neuract live meters/_db) is monkeypatched. The whole file passes with the tunnel down."""
+:5433 tunnel (data.neuract_live live meters/_db) is monkeypatched. The whole file passes with the tunnel down."""
 import pytest
 
 from config.databases import CMD_CATALOG
@@ -315,7 +315,7 @@ def test_lt_mfm_unbridged_panel_falls_back(monkeypatch):
     assert lt_mfm.outgoing_edges([other]) == raw
 
 
-# ═══ registries/neuract/members merge (live paths monkeypatched — :5433 never touched) ══════════════════════════════
+# ═══ data/neuract_live/members merge (live paths monkeypatched — :5433 never touched) ══════════════════════════════
 def _stub_meters(monkeypatch, members_mod):
     reg = {PANEL_CID: {"id": PANEL_CID, "name": "PCC-Panel-1", "table_name": PANEL_TABLE}}
 
@@ -336,7 +336,7 @@ def test_members_outgoers_use_roster_with_roles(monkeypatch):
     """Proof (1): outgoers_of serves the richer roster with role='outgoing' — role tagging stays in the caller so
     member_scope -> role_filter_for -> select('supply'|'load') is untouched."""
     _knobs(monkeypatch, enabled="on", allowlist=ALLOW_FULL)
-    from registries.neuract import members
+    from data.neuract_live import members
     _stub_meters(monkeypatch, members)
     monkeypatch.setattr(members._db, "table_exists", lambda t: False)          # live edge tables never consulted
     got = members.outgoers_of(PANEL_CID)
@@ -350,7 +350,7 @@ def test_members_incomers_fall_back_to_live_semantics(monkeypatch):
     """The panel's incoming roster guard-fails (pqm_* unbridgeable) -> incomers_of serves TODAY's live path
     (from_mfm_id WHERE to_mfm_id=panel), tagged role='incoming' -> select('supply') still picks exactly them."""
     _knobs(monkeypatch, enabled="on", allowlist=ALLOW_FULL)
-    from registries.neuract import members
+    from data.neuract_live import members
     _stub_meters(monkeypatch, members)
     monkeypatch.setattr(members._db, "table_exists", lambda t: t == "lt_mfm_outgoing")
     monkeypatch.setattr(members._db, "rows", lambda sql, p=None: [(17,), (19,), (164,), (166,)])
@@ -367,7 +367,7 @@ def test_members_knob_off_never_touches_equipment(monkeypatch):
     """Proof (3): at knobs-off the members door never consults the roster (spy explodes) and reads live as today."""
     _knobs(monkeypatch, enabled="off", allowlist=ALLOW_FULL)
     from data.equipment import edges
-    from registries.neuract import members
+    from data.neuract_live import members
 
     def boom(*a, **k):
         raise AssertionError("panel_roster consulted at knobs-off")

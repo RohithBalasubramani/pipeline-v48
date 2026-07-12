@@ -1,4 +1,4 @@
-"""registries/neuract/topology.py — the directed EDGE list for SLD / topology views (from the lt_mfm_* edge tables).
+"""data/neuract_live/topology.py — the directed EDGE list for SLD / topology views (from the lt_mfm_* edge tables).
 
 Single concern: hand back the plant's connectivity graph as [{source, target, kind}] where source/target are MFM ids and
 kind names the edge table it came from. This is the metadata a single-line-diagram / topology card draws from.
@@ -12,8 +12,8 @@ Honest-degrade: a missing edge table → skipped; no edges → []. Never fabrica
 """
 from __future__ import annotations
 
-from registries.neuract import _db
-from registries.neuract import meters as _meters
+from data.neuract_live import _db
+from data.neuract_live import meters as _meters
 
 # directed edges for the graph. OUTGOING = the canonical feed direction (parent→child); incoming is its mirror, so it is
 # deliberately excluded here to keep the directed graph free of duplicate reversed edges.

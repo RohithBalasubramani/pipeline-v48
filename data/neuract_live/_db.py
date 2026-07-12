@@ -1,4 +1,4 @@
-"""registries/neuract/_db.py — the ONE read door for the NEURACT metadata tables (framework-light, pooled, READ-ONLY).
+"""data/neuract_live/_db.py — the ONE read door for the NEURACT metadata tables (framework-light, pooled, READ-ONLY).
 
 Single concern: hand every registry accessor in this package a parameterized SELECT against the `neuract` schema and give
 back list-of-dicts (or [] on any failure — honest-degrade, never raise, never fabricate). This is the metadata twin of

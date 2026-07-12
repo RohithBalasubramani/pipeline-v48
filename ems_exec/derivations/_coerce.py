@@ -5,7 +5,7 @@ Home for the six byte-identical private `_f` copies that lived in energy/voltage
 
 Deliberately DIVERGENT variants that must NOT be repointed here (drift documented so nobody assumes interchangeable):
   · ems_exec/derivations/breaker.py `_num`     — treats ''/None as None BEFORE float() (accepts numeric 0 unchanged)
-  · registries/neuract/nameplate.py `_num`     — returns the ORIGINAL value on coercion failure
+  · data/neuract_live/nameplate.py `_num`     — returns the ORIGINAL value on coercion failure
   · config/nameplates.py                       — RAISES on non-numeric text (loud config error is the point)
   · ems_exec/renderers/_agg.py `num`           — finite-only (NaN/inf → None) for executor/renderer paths
   · ems_exec/executor/trend_badge.py           — is-number predicate, not a coercer

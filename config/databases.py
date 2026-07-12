@@ -1,11 +1,12 @@
-"""config/databases.py — THE SINGLE PLACE for DB wiring. Edit the connection HERE (or set the PG_* env vars); both the
-pipeline AND the legacy EMS service (BFI/backend, via a sys.path bootstrap) read this one module. Nothing else hard-codes
-a host/port/db/schema."""
+"""config/databases.py — THE SINGLE PLACE for DB wiring for the PIPELINE. Edit the connection HERE (or set the PG_* env
+vars); nothing else in the pipeline hard-codes a host/port/db/schema. The separate ems_backend Django service does NOT
+import this module (its DB wiring is env-driven, DJANGO_DB_*); the only coupling is indirect — db_link() strings seeded
+into registry rows that ems_backend pins per MFM."""
 import os
 
 # ═══════════════════════════════════════════════════════════════════════════════════════════════════════════════════
 #  THE LIVE LOGGING DB  —  edit these four (or the PG_* env vars) and everything follows
-#  target_version1 / schema `neuract` (321 tables, actively writing). archbox tunnel: 127.0.0.1:5433. postgres, no pwd.
+#  target_version1 / schema `neuract` (373 tables, actively writing). archbox tunnel: 127.0.0.1:5433. postgres, no pwd.
 # ═══════════════════════════════════════════════════════════════════════════════════════════════════════════════════
 PG_HOST     = os.environ.get("PG_HOST", "127.0.0.1")        # archbox tunnel host (local Postgres → "localhost")
 PG_PORT     = os.environ.get("PG_PORT", "5433")             # archbox tunnel port (local Postgres → "5432")

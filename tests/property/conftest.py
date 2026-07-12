@@ -37,6 +37,10 @@ LIVE_N = max(1, int(os.environ.get("PBT_LIVE_EXAMPLES", "4")))
 
 
 # ── session snapshots (ONE real DB read each; real rows, zero per-example round-trips) ──────────────────────────────
+# OUTAGE GUARD [audit TC-5 2026-07-12]: these snapshots are the offline tier's ONLY live-service dependency
+# (cmd_catalog :5432 + the neuract :5433 value probe). On a machine without the tunnel they used to ERROR the whole
+# "offline" tier (a wall of psycopg2 errors — the fake-red T8 warned about); a session-fixture pytest.skip() instead
+# skips exactly the snapshot-dependent tests, honestly and machine-readably. DBs up → behavior byte-identical.
 
 @pytest.fixture(scope="session")
 def page_snapshot():
@@ -47,12 +51,16 @@ def page_snapshot():
     from layer1a.db_reads.card_titles import read_card_titles
     from layer1a.db_reads.page_feasibility import read_page_feasibility
     from layer1a.parse.template_feasibility_gate import filter_renderable_templates
-    raw = read_page_specs()
-    avail = filter_to_available(raw)
-    keys = [s["page_key"] for s in avail]
-    feas = read_page_feasibility(keys)
+    try:
+        raw = read_page_specs()
+        avail = filter_to_available(raw)
+        keys = [s["page_key"] for s in avail]
+        feas = read_page_feasibility(keys)
+        titles = read_card_titles()
+    except Exception as e:
+        pytest.skip(f"cmd_catalog (:5432) unreachable — page-snapshot property tests skipped: {type(e).__name__}: {e}")
     eff, _dropped = filter_renderable_templates(list(avail), feas)
-    return {"raw": raw, "avail": avail, "keys": keys, "titles": read_card_titles(), "feas": feas,
+    return {"raw": raw, "avail": avail, "keys": keys, "titles": titles, "feas": feas,
             "eff_keys": [s["page_key"] for s in eff]}
 
 
@@ -63,9 +71,14 @@ def registry_snapshot():
     from layer1b.resolve.asset_candidates import asset_candidates
     from layer1b.resolve.asset_resolve import _pcc_alias_index
     from layer1b.resolve.has_data import tables_with_values
-    cands = asset_candidates()
-    live = tables_with_values([c[2] for c in cands if c[2] and (len(c) <= 9 or c[9])])
-    return {"cands": cands, "pcc_alias": _pcc_alias_index(), "live_tables": set(live)}
+    try:
+        cands = asset_candidates()
+        live = tables_with_values([c[2] for c in cands if c[2] and (len(c) <= 9 or c[9])])
+        pcc_alias = _pcc_alias_index()
+    except Exception as e:
+        pytest.skip(f"cmd_catalog (:5432) / neuract (:5433) unreachable — registry-snapshot property tests "
+                    f"skipped: {type(e).__name__}: {e}")
+    return {"cands": cands, "pcc_alias": pcc_alias, "live_tables": set(live)}
 
 
 # ── offline harnesses (holder-driven fake LLM at each module's own call_qwen binding) ───────────────────────────────

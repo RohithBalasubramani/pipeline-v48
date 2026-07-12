@@ -1,4 +1,4 @@
-"""registries/neuract/assets3d.py — the 3D MODEL registry (asset_3d_model / lt_asset_3d) + the per-asset resolution chain.
+"""data/neuract_live/assets3d.py — the 3D MODEL registry (asset_3d_model / lt_asset_3d) + the per-asset resolution chain.
 
 Single concern: resolve the glTF/GLB 3D model a viewer should mount for an asset — by a direct model key, by an
 asset_type, or by an MFM/asset row via its override→type-default chain.
@@ -17,8 +17,8 @@ Both model tables are consulted by id (lt_asset_3d first, then asset_3d_model) s
 """
 from __future__ import annotations
 
-from registries.neuract import _db
-from registries.neuract import meters as _meters
+from data.neuract_live import _db
+from data.neuract_live import meters as _meters
 
 # the two 3D model tables, in lookup order (both share the same shape). First one that has the id/key wins.
 _MODEL_TABLES = ("lt_asset_3d", "asset_3d_model")

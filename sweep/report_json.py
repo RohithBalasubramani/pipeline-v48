@@ -26,7 +26,7 @@ def _read_json(path: str):
 
 
 def _load_or_build(sdir: str, name: str, module: str, fn: str, session_id: str, sources: dict):
-    """sessions/<sid>/<name>.json if present; else call validation.<module>.<fn>(session_id) and re-read/use it."""
+    """sessions/<sid>/<name>.json if present; else call sweep.<module>.<fn>(session_id) and re-read/use it."""
     path = os.path.join(sdir, f"{name}.json")
     data = _read_json(path)
     if data is not None:
@@ -34,7 +34,7 @@ def _load_or_build(sdir: str, name: str, module: str, fn: str, session_id: str, 
         return data                                   # of the same session must be byte-identical
     try:
         import importlib
-        mod = importlib.import_module(f"validation.{module}")
+        mod = importlib.import_module(f"sweep.{module}")
         out = getattr(mod, fn)(session_id)
         data = _read_json(path)                       # builders persist to the session dir; prefer the file
         if data is None and isinstance(out, dict):
