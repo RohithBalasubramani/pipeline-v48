@@ -145,7 +145,11 @@ def resolve_compare(prompt, cands=None):
         mfm_id = asset.get("mfm_id")
         # CONFIDENT only when the sub-prompt pinned exactly ONE meter (a real asset, no open picker). A bare-token name
         # that stayed ambiguous on its own → NOT confident → falls through to the single-asset picker (no wrong auto-pin).
-        if how in _CONFIDENT_HOW and mfm_id is not None and not has_picker:
+        # EXCEPT how='no_data' [dark-member fix, validation r5 telemetry]: a named-but-DARK meter resolved to EXACTLY
+        # the named row — the alternatives list it carries is the SINGLE-path picker affordance, not resolution doubt.
+        # In a compare the user's pick is already explicit: the dark member JOINS the compare and its lane renders
+        # honest-blank (per-leaf degradation) instead of the whole compare silently single-pinning the first name.
+        if how in _CONFIDENT_HOW and mfm_id is not None and (not has_picker or how == "no_data"):
             if mfm_id not in seen:
                 seen.add(mfm_id)
                 confident.append(mfm_id)
