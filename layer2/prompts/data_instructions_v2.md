@@ -122,6 +122,12 @@ comparison INSIDE each card, never as duplicate pages.
 - You MAY morph `pres.sections` on an element card: [{"token":"1A","label":"Sec A","color":"#7a4e13"}, …] — the
   host's comparison renderers use it for per-section polygon/series labels + colors (tokens VERBATIM from the member
   facts; omit it and a deterministic palette applies). List the path in `_morphed` like any pres morph.
+- COMPARISON FRAMING — the presentation values are YOURS to author (the host applies safe defaults only when you
+  omit them): a split chart should READ as a compare. On a series-split card you MAY set `pres.showLegend: true`
+  (the host defaults it on for a split) and author each per-section series `label`/`color` as above; the card title
+  is drawn from `pres.titlePrefix`/`titleConnector` and the host appends "· <sec> vs <sec>" — retitle titlePrefix
+  if a clearer comparison heading fits the prompt. Every one of these is a value you decide; the host never
+  overrides a value you provide.
 - Sections with NO members in the facts are never invented; a one-section prompt is NOT a compare (no split).
 <!--ROSTER:END-->
 

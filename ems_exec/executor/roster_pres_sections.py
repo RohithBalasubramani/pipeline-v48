@@ -101,6 +101,14 @@ def _patch_container(d, variants):
             any_changed = True
     if any_changed:
         d["sectionSplit"] = True
+        # COMPARISON FRAMING [sections] — FAIL-OPEN DEFAULT, not an override: a split chart must READ as a comparison,
+        # so DEFAULT the series legend ON and carry the section tokens for the host title. `setdefault` — if Layer 2
+        # authored showLegend itself, the AI wins (the values are the AI's; this only guarantees a compare never
+        # silently renders legend-less). The tokens are a FACT (the variant `_section` markers), never invented.
+        d.setdefault("showLegend", True)
+        toks = sorted({str(t) for lst in variants.values() for (_vk, t) in lst})
+        if toks:
+            d["sectionCompare"] = toks
 
 
 def _element_sections_of(roster):
