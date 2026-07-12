@@ -109,17 +109,21 @@ def _guided_on(stage):
 # failures (and, because timeout is in no_retry_kinds, hard-fails cards → reflect re-routes that DOUBLE the load). This
 # bounds TOTAL in-flight vLLM calls per process regardless of how many runs fan out. DB-knob `llm.global_concurrency`;
 # DEFAULT 0 = DISABLED (byte-identical to today) so it is inert until an operator sets it, like neuract.statement_timeout.
-# Sized once from cfg on first use (after cfg is warm) and fixed for the process, like a connection-pool size.
+# Sized once ENABLED and fixed for the process, like a connection-pool size — but the DISABLED sentinel re-resolves
+# per call (cfg() fails open to the 0 default on a cmd_catalog blip, so pinning False at first use would silently
+# disable an operator-enabled cap for the process life). Only the False→semaphore transition exists; a live
+# semaphore is never resized or replaced.
 _ADMISSION = None                    # BoundedSemaphore once sized; False = disabled sentinel; None = not yet resolved
 _ADMISSION_LOCK = threading.Lock()
 
 
 def _admission_sem():
     global _ADMISSION
-    if _ADMISSION is not None:
-        return _ADMISSION
+    sem = _ADMISSION
+    if sem is not None and sem is not False:
+        return sem
     with _ADMISSION_LOCK:
-        if _ADMISSION is None:
+        if _ADMISSION is None or _ADMISSION is False:
             n = int(_cfg("llm.global_concurrency", 0) or 0)
             _ADMISSION = threading.BoundedSemaphore(n) if n > 0 else False
     return _ADMISSION
