@@ -33,17 +33,36 @@ def natural_compare_ids(prompt):
     and served as the honest data_unavailable terminal (200 + reason), never a raw error page."""
     if not bool(cfg("multi_asset.enabled", True)):
         return []
+    # STAGE TELEMETRY [silent-bail fix]: every decision this gate makes is now attributable in the run log — a compare
+    # that silently degrades to single (rows<2 / ambiguous member / <2 confident) previously left NO trace, making a
+    # live mis-route a forensic dig through polluted AI logs. stderr keeps the fail-open line for exceptions.
+    def _tel(**kw):
+        try:
+            import sys
+            sys.stderr.write("[natural_compare] " + " ".join(f"{k}={v}" for k, v in kw.items())[:300] + "\n")
+        except Exception:
+            pass
     try:
-        from layer1b.compare.detect import is_natural_compare
-        if not is_natural_compare(prompt):
+        from layer1b.resolve.asset_candidates import asset_candidates
+        from layer1b.compare.detect import named_full_rows
+        cands = asset_candidates()                        # ONE probe shared by detection + every sub-resolve
+        rows = named_full_rows(prompt, cands)
+        if len(rows) < 2:
+            if "compare" in str(prompt).lower():          # only narrate prompts that LOOK like compares (low noise)
+                _tel(decision="single", rows=len(rows), detected=[str(r[1])[:30] for r in rows])
             return []
         from layer1b.compare.resolve_names import resolve_compare
-        r = resolve_compare(prompt)
+        r = resolve_compare(prompt, cands)
         confident = r.get("confident") or []
+        ambiguous = r.get("ambiguous") or []
         # EVERY named asset must pin (no ambiguous name) AND 2+ confident — otherwise the honest answer is the single
         # picker for the unresolved name, not a partial auto-compare that silently drops it.
-        if r.get("ambiguous") or len(confident) < 2:
+        if ambiguous or len(confident) < 2:
+            _tel(decision="single", rows=len(rows), confident=len(confident),
+                 ambiguous=[str(a)[:30] for a in ambiguous],
+                 hows=[f"{str(x.get('name'))[:24]}:{x.get('how')}" for x in (r.get("resolutions") or [])])
             return []
+        _tel(decision="compare", rows=len(rows), confident=len(confident))
         return confident
     except Exception as e:
         import sys
@@ -54,7 +73,7 @@ def natural_compare_ids(prompt):
 def build_response_multi(prompt, asset_ids, date_window=None):
     """Compare the resolved `asset_ids` in one run and return the merged /api/run response (cards tagged `card.asset`,
     page from the shared template). The number of assets is capped by the DB knob multi_asset.max_assets (code default 6)."""
-    from host.server import _attach_l2_notes, SB_BASE       # lazy: server imports this module — break the cycle
+    from host.notes import _attach_l2_notes, SB_BASE        # shared serve-boundary home (was a lazy host.server back-import)
     from obs.stage import stage
     t0 = time.time()
     cap = max(1, int(cfg("multi_asset.max_assets", 6)))
@@ -63,6 +82,16 @@ def build_response_multi(prompt, asset_ids, date_window=None):
     groups = multi.get("groups") or []
     shared_1a = multi.get("layer1a") or {}
     lane0 = (groups[0]["lane"] if groups else {}) or {}
+
+    # PROMPT-DERIVED DATE WINDOW [api-design H4 parity, 2026-07-12]: 'compare A and B last week' — when the FE sent no
+    # explicit date_window, default it from the shared lane's 1a preset EXACTLY like build_response does (an explicit
+    # FE pick always wins). Without this the compare filled every card with date_window=None while the single path
+    # honored the asked range — the two response paths had silently drifted.
+    if not date_window:
+        from host.notes import window_from_preset
+        _prompt_window = window_from_preset(lane0.get("window"))
+        if _prompt_window:
+            date_window = _prompt_window
 
     all_cards = []
     for group in groups:
@@ -121,9 +150,6 @@ def build_response_multi(prompt, asset_ids, date_window=None):
             "payload_summary": (val.get("payload") or {}).get("summary"),
         },
         "cards": all_cards,
-        "frames": {},
-        "frame_status": {},
-        "live_frame": None,
         "date_window": date_window,
         "notes": lane0.get("notes") or {"loop1": [], "loop2": None},
         "errors": lane0.get("errors") or {},
