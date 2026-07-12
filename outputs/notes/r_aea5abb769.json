@@ -2,16 +2,10 @@
  "run_id": "r_aea5abb769",
  "loop1": [
   {
-   "card_id": 43,
-   "title": "Voltage Live Health",
-   "answerability": "partial",
-   "note": "Showing live phase voltages and deviation; Rate Change is not measured for this asset."
-  },
-  {
    "card_id": 44,
    "title": "Voltage History",
    "answerability": "partial",
-   "note": "Showing per-phase voltage history and deviation stats \u2014 sag/swell event counts and primary event details are not measured by this asset."
+   "note": "Showing per-phase voltage history and deviation stats; sag/swell event counts are not measured by this asset."
   }
  ],
  "loop2": null

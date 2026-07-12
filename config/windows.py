@@ -1,14 +1,29 @@
-"""config/windows.py — time-window presets (the worker binds :start/:end/:bucket from these). Add/remove here."""
+"""config/windows.py — time-window presets (the worker binds :start/:end/:bucket from these). Add/remove here.
+
+TIME_WINDOWS / DEFAULT_WINDOW / MIN_SPAN_DAYS are LAZY module attributes (PEP 562): each access re-reads cfg(), so a
+DB row edit + app_config.reload() (or a boot during a DB outage that later heals) reaches every consumer — the old
+import-time binding pinned whatever cfg() returned at first import for the process life."""
 from config.app_config import cfg
 
-TIME_WINDOWS = cfg("windows.time_windows", {
+_TIME_WINDOWS_DEFAULT = {
     "today":       {"lookback": "1 day",  "bucket": "hour"},
     "last-24h":    {"lookback": "24 hours", "bucket": "hour"},
     "last-7-days": {"lookback": "7 days", "bucket": "day"},
     "shift-8h":    {"lookback": "8 hours", "bucket": "15 min"},
     "live":        {"lookback": "30 min", "bucket": "minute"},
-})
-DEFAULT_WINDOW = cfg("windows.default_window", "today")
+}
+
+_LAZY = {
+    "TIME_WINDOWS":   lambda: cfg("windows.time_windows", _TIME_WINDOWS_DEFAULT),
+    "DEFAULT_WINDOW": lambda: cfg("windows.default_window", "today"),
+    "MIN_SPAN_DAYS":  lambda: cfg("windows.min_span_days", 1),
+}
+
+
+def __getattr__(name):
+    if name in _LAZY:
+        return _LAZY[name]()
+    raise AttributeError(f"module 'config.windows' has no attribute {name!r}")
 
 
 def site_tz():
@@ -25,12 +40,10 @@ def site_tz():
         return timezone.utc
 
 
-# The exclusive-end minimum span a resolved DATA window must cover: a counter-delta read is (end − start), so a
-# degenerate window whose end <= start folds EVERY member/bucket to a false 0.0 (card-12 'today' custom-range
-# resolved start==end==YYYY-MM-DD → member_delta over [today,today] == 0.0 while today genuinely carries kWh; the
-# real delta needs [today, today+1)). Code default 1 day (a single-calendar-day 'today' window spans the full day
-# to the next midnight); DB-tunable via app_config `windows.min_span_days` for a coarser floor. Never < a day.
-MIN_SPAN_DAYS = cfg("windows.min_span_days", 1)
+# MIN_SPAN_DAYS (lazy attr above): the exclusive-end minimum span a resolved DATA window must cover — a counter-delta
+# read is (end − start), so a degenerate window whose end <= start folds EVERY member/bucket to a false 0.0 (card-12
+# 'today' custom-range resolved start==end==YYYY-MM-DD → member_delta over [today,today] == 0.0 while today genuinely
+# carries kWh; the real delta needs [today, today+1)). Code default 1 day; DB-tunable via windows.min_span_days.
 
 
 def _parse_dt(v):
@@ -65,7 +78,7 @@ def ensure_nonzero_span(start, end):
     (a bare date stays a bare date, an ISO datetime stays ISO). Never raises."""
     try:
         from datetime import timedelta
-        span = timedelta(days=max(1, int(MIN_SPAN_DAYS or 1)))
+        span = timedelta(days=max(1, int(cfg("windows.min_span_days", 1) or 1)))
         s_dt, s_bare = _parse_dt(start)
         e_dt, _e_bare = _parse_dt(end)
         if s_dt is None:

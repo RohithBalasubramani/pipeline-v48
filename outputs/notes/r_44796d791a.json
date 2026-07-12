@@ -5,25 +5,25 @@
    "card_id": 70,
    "title": "Live Operations & Runtime",
    "answerability": "partial",
-   "note": "Showing live operational vitals (power, frequency, current, voltage) \u2014 runtime, service intervals, and availability counters are not measured by this asset's meter."
+   "note": "Showing load factor and efficiency as proxies for runtime, availability, and service metrics \u2014 no direct duration/count columns are measured for this asset."
   },
   {
    "card_id": 71,
    "title": "Runtime & Duty",
    "answerability": "partial",
-   "note": "Showing total active power as a proxy for runtime and load \u2014 per-phase power and start counts aren't measured for this asset."
+   "note": "Showing total active energy (proxy for run-hours) and average load factor \u2014 start counts and direct run-hours are not measured by this electrical meter."
   },
   {
    "card_id": 72,
    "title": "Energy & Reliability",
    "answerability": "partial",
-   "note": "Showing total active energy, reactive energy, and apparent power as proxies for energy metrics; MTBF and availability fractions are not measured by this asset."
+   "note": "Showing total active/reactive/apparent energy and power factor \u2014 MTBF/MTTR are not measured by this asset."
   },
   {
    "card_id": 73,
    "title": "Power Energy Analysis",
    "answerability": "partial",
-   "note": "Showing active, reactive, demand, and apparent energy metrics \u2014 autonomy, backup time, load pressure, and headroom scores are not measured by this meter."
+   "note": "Showing active, reactive, and apparent power history \u2014 capacity utilization scores (max/min/thresholds) are not measured by this meter."
   }
  ],
  "loop2": null

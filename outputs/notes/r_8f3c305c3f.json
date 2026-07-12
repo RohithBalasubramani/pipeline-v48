@@ -1,0 +1,12 @@
+{
+ "run_id": "r_8f3c305c3f",
+ "loop1": [
+  {
+   "card_id": 44,
+   "title": "Voltage History",
+   "answerability": "partial",
+   "note": "Showing per-phase voltage history and deviation \u2014 event counts (sag/swell) are narrative summaries derived from the AI summary function, not direct event counters."
+  }
+ ],
+ "loop2": null
+}

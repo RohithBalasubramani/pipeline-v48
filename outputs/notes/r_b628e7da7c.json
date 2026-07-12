@@ -1,0 +1,18 @@
+{
+ "run_id": "r_b628e7da7c",
+ "loop1": [
+  {
+   "card_id": 44,
+   "title": "Voltage History",
+   "answerability": "partial",
+   "note": "Showing per-phase voltage history (R/Y/B) with max/min bounds; sag/swell event counts are approximated via AI summary as direct event logs are not available for this meter."
+  },
+  {
+   "card_id": 46,
+   "title": "Current History",
+   "answerability": "partial",
+   "note": "Showing per-phase current history and stats \u2014 expected range lines are omitted because the asset's rated current is unknown."
+  }
+ ],
+ "loop2": null
+}

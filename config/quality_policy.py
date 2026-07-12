@@ -8,7 +8,13 @@ from data.db_client import q
 
 
 def num(key, default=None):
-    """The numeric knob for `key` (e.g. value_min=3, denorm_epsilon=1e-30), or `default` if the row is absent."""
+    """The numeric knob for `key` (e.g. value_min=3, denorm_epsilon=1e-30), or `default` if the row is absent.
+    app_config is consulted FIRST (the canonical scalar-knob home, config F6 2026-07-12 — type-discriminated so a
+    'text' row can't serve a num read); the legacy data_quality_policy read below keeps this module's deliberate
+    RAISING semantics on a dead DB (topology_policy documents wrapping it)."""
+    v = _appcfg(key)
+    if isinstance(v, (int, float)) and not isinstance(v, bool):
+        return float(v)
     rows = q("cmd_catalog", f"SELECT num_value FROM data_quality_policy WHERE key='{_esc(key)}'")
     if not rows or rows[0][0] in (None, "", "NULL"):
         return default
@@ -16,22 +22,15 @@ def num(key, default=None):
 
 
 def txt(key, default=None):
-    """The text-policy knob for `key` (e.g. pf_sign_policy='magnitude_plus_leadlag'), or `default`."""
+    """The text-policy knob for `key` (e.g. pf_sign_policy='magnitude_plus_leadlag'), or `default`. app_config
+    first (canonical home); the legacy data_quality_policy read keeps the RAISING semantics on a dead DB."""
+    v = _appcfg(key)
+    if isinstance(v, str) and v.strip() not in ("", "NULL"):
+        return v
     rows = q("cmd_catalog", f"SELECT txt_value FROM data_quality_policy WHERE key='{_esc(key)}'")
     if not rows or rows[0][0] in (None, "", "NULL"):
         return default
     return rows[0][0]
 
 
-def all_policy():
-    """{key: {num_value, txt_value, note}} — the whole policy set (for a diagnostic dump)."""
-    rows = q("cmd_catalog", "SELECT key, num_value, txt_value, note FROM data_quality_policy ORDER BY key")
-    out = {}
-    for k, nv, tv, note in rows:
-        out[k] = {"num_value": (None if nv in (None, "", "NULL") else float(nv)),
-                  "txt_value": (None if tv in (None, "", "NULL") else tv), "note": note}
-    return out
-
-
-def _esc(s):
-    return str(s).replace("'", "''")
+from config.policy_read import esc as _esc, _appcfg  # the ONE shared escape + app_config-first read  # noqa: E402

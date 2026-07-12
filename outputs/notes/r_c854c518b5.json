@@ -1,0 +1,36 @@
+{
+ "run_id": "r_c854c518b5",
+ "loop1": [
+  {
+   "card_id": 7,
+   "title": "Context Rail Header (Overview / Section / Feeder)",
+   "answerability": "partial",
+   "note": "Showing PCC-1A feeder context; some members (UPS-05, UPS-06, Solar Incomers, Transformers) are dark (no data) and honest-blank their slots."
+  },
+  {
+   "card_id": 5,
+   "title": "Real Time Monitoring (Feeder Heatmap)",
+   "answerability": "partial",
+   "note": "Showing real-time power distribution for active feeders (UPS, BPDB, Solar Incomers). HHF Reactive feeders are blank as no matching members were found in the panel topology. Load % is omitted as no rated_kva is available for the GIC-* meters."
+  },
+  {
+   "card_id": 9,
+   "title": "Total Feeder Consumption / Supply",
+   "answerability": "partial",
+   "note": "Showing total active power \u2014 per-phase power isn't measured for this asset; denominator (contracted capacity) is unknown for this asset."
+  },
+  {
+   "card_id": 10,
+   "title": "Consumption Trend / Supply Trend",
+   "answerability": "partial",
+   "note": "Showing total active power \u2014 per-phase power isn't measured for this asset; Power Factor uses kpi_true_pf (unsigned) to avoid reverse-CT sign inversion."
+  },
+  {
+   "card_id": 11,
+   "title": "Quick Stats",
+   "answerability": "partial",
+   "note": "Showing per-phase voltage, current unbalance, and total current for the 6 active outgoing feeders; 2 feeders (UPS-05, UPS-06) are dark and honest-blanked."
+  }
+ ],
+ "loop2": null
+}

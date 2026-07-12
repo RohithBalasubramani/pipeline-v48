@@ -1,5 +1,6 @@
 """layer1a/story_builder.py — per-card analytical_story (what each card tells wrt role/function + the prompt). AI. [spec section 2 L1a]"""
 import os
+from llm.prompt_load import load as _prompt_load
 import re
 
 from llm.client import call_qwen
@@ -9,8 +10,7 @@ _HERE = os.path.dirname(os.path.abspath(__file__))
 
 
 def _load_prompt(name):
-    with open(os.path.join(_HERE, "prompts", name)) as f:
-        return f.read()
+    return _prompt_load(_HERE, name)   # the ONE loader (llm/prompt_load, D8); errors="replace" house default
 
 
 def _norm_id(k):
@@ -34,6 +34,10 @@ def build_stories(prompt, page_key, metric, intent, db="cmd_catalog"):
     # (app_config llm.timeout.stories, base llm.timeout fallback). on_error='marker' distinguishes an OUTAGE from an
     # honest empty emission — before this, a transport failure set every story='' silently and that empty story rode
     # into every L2 emit unattributed (stage='-'). [AI_QUALITY_BACKLOG item 15]
+    # DECISION INSPECTOR: generative annotation (no option set) — the card roster it writes stories for rides as context.
+    from obs import llm_tap
+    llm_tap.set_decision(kind="generative", subject="per-card analytical_story",
+                         card_ids=[c["card_id"] for c in cards], page_key=page_key)
     r = call_qwen(system, user, stage="stories", on_error="marker")
     if isinstance(r, dict) and r.get("_llm_error"):
         try:  # telemetry only — the degrade path (every story '') is unchanged

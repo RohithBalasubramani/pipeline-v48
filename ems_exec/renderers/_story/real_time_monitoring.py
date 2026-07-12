@@ -67,7 +67,9 @@ def _load_pct_ceiling():
     denominator, not a real reading."""
     try:
         from config.app_config import cfg
-        v = cfg("story.load_pct_plausibility_ceiling", 200.0)
+        # ONE physical policy, ONE row: the derivation side already owns power.loading_plausible_max_pct (same 200.0
+        # default). The story-specific key was never seeded; reading the shared row keeps the wall from splitting.
+        v = cfg("power.loading_plausible_max_pct", cfg("story.load_pct_plausibility_ceiling", 200.0))
         return float(v) if v is not None else 200.0
     except Exception:
         return 200.0
@@ -135,7 +137,6 @@ def build(asset, card, ctx, members):
 def _single_feeder(subject, member, ctx, k, coverage):
     table = member.get("table") or ctx.get("asset_table")
     live = _facts.live_snapshot(table)
-    cols = _facts.LIVE_COLS + _TEMP_COLS
     if table:
         extra = {c: v for c, v in (_facts._nx.latest(table, _TEMP_COLS) or {}).items()}
         live = {**live, **extra}

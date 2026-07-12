@@ -52,11 +52,13 @@ def _skeleton_payload(render_card_id):
         cached = _SKELETON_CACHE[render_card_id]
         return copy.deepcopy(cached) if cached is not None else None
     skel = None
+    ok = False
     try:
         from data.db_client import q
         rows = q("cmd_catalog",
                  f"SELECT payload_stripped FROM card_payloads WHERE card_id='{int(render_card_id)}' "
                  f"ORDER BY is_subcard, story_id LIMIT 1")
+        ok = True                      # the read SUCCEEDED (row present or genuinely absent) → the result is trustworthy
         if rows:
             ps = _as_json(rows[0][0])
             # HONEST-BLANK skeleton: the stored seedless skeleton with its scalar data-leaf placeholders nulled (0.0 →
@@ -65,8 +67,9 @@ def _skeleton_payload(render_card_id):
             if isinstance(ps, dict):
                 skel = null_scalar_data_leaves(ps)
     except Exception:
-        skel = None
-    _SKELETON_CACHE[render_card_id] = skel
+        ok = False                     # DB hiccup — do NOT cache (caching None would pin this card to the generic
+    if ok:                             # HonestBlank tier for the process life; a real card row always re-reads as a dict)
+        _SKELETON_CACHE[render_card_id] = skel
     return copy.deepcopy(skel) if skel is not None else None
 
 
@@ -83,13 +86,16 @@ def _raw_default_payload(render_card_id):
     if render_card_id in _RAW_DEFAULT_CACHE:
         return _RAW_DEFAULT_CACHE[render_card_id]
     pl = None
+    ok = False
     try:
         from data.db_client import q
         rows = q("cmd_catalog", f"SELECT payload FROM card_payloads WHERE card_id='{int(render_card_id)}' "
                                 f"ORDER BY is_subcard, story_id LIMIT 1")
-        if rows:
+        ok = True                      # read SUCCEEDED → cacheable; a DB error must NOT pin None (loses the executor's
+        if rows:                       # shape oracle for yscale/xaxis/fab_guards until restart — same poison class)
             pl = _as_json(rows[0][0])
     except Exception:
-        pl = None
-    _RAW_DEFAULT_CACHE[render_card_id] = pl
+        ok = False
+    if ok:
+        _RAW_DEFAULT_CACHE[render_card_id] = pl
     return pl

@@ -46,17 +46,7 @@ _DEFAULT_FLAT_PAD_MIN = 1.0
 _DEFAULT_FLAT_PAD_PCT = 0.05
 
 
-def _cfg_num(key, default, positive=False):
-    """A DB-backed numeric knob (cmd_catalog.app_config), else `default` — the code-default mirror. `positive` rejects a
-    non-positive DB value and falls back. Never raises."""
-    try:
-        from config.app_config import cfg
-        v = float(cfg(key, default))
-        if positive:
-            return v if v > 0 else default
-        return v if v >= 0 else default
-    except Exception:
-        return default
+from config.failopen import cfg_num as _cfg_num   # THE guarded numeric knob reader (D3)
 
 
 def _nums(seq):

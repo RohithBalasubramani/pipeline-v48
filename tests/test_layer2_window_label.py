@@ -5,7 +5,7 @@
   (a) layer2/coherence.reconcile_window_labels — a period-declaring metadata leaf (periodLabel / range) that names a
       DIFFERENT period family than the fill window is morphed to the window truth (policy 'morph', default) or
       blanked; option-picker chrome and unclassified labels are never touched.
-  (b) layer2/build._backfill_default_window — the AI's OWN declared range (window.lookback / ems_backend.range) now
+  (b) layer2/build._backfill_default_window — the AI's OWN declared range (window.lookback / fetch.range) now
       drives the backfilled window bounds, so declared range == fill window by construction.
 
 Hermetic: cfg pinned to code defaults. All non-live, deterministic."""
@@ -75,7 +75,7 @@ def test_c16_declared_last_7_days_drives_the_backfilled_window():
     """The exact c16 shape: window {lookback:'last-7-days', sampling:'hourly'} with no bounds — the backfill now
     resolves the DECLARED range (7 days), not the DB default 24h, so the fill window agrees with the consumer range."""
     di = {"window": {"lookback": "last-7-days", "sampling": "hourly", "time_mode": "choice"},
-          "ems_backend": {"endpoint": "energy-power-history", "range": "last-7-days", "sampling": "hourly"}}
+          "fetch": {"endpoint": "energy-power-history", "range": "last-7-days", "sampling": "hourly"}}
     note = _backfill_default_window(di, None)
     w = di["window"]
     assert w["backfill"]["origin"] == "declared_range" and w["backfill"]["range"] == "last-7-days"

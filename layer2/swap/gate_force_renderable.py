@@ -22,7 +22,7 @@ OPTIONAL (its KEEP still renders), so a forced decision is stamped confidence = 
 AI's own value is preserved as `ai_confidence` for audit. Without the stamp a forced swap inherits the AI's KEEP
 (confidence 0.0), sorts LAST in the settle, loses every collision, and the unrenderable card ships. [META-04 x rule 1]"""
 from config.app_config import cfg
-from config.feasibility import UNRENDERABLE_VERDICTS, DATALESS_ANSWERABILITY, FORCE_SWAP_ON_DATALESS
+from config import feasibility as _feas   # lazy module attrs — read per call so DB row edits reach the gate live
 
 # settle-ordering priority for a FORCED swap — must exceed any AI confidence (the AI emits within [0,1]).
 FORCED_SWAP_CONFIDENCE = cfg("swap.forced_swap_confidence", 2.0)
@@ -30,15 +30,16 @@ FORCED_SWAP_CONFIDENCE = cfg("swap.forced_swap_confidence", 2.0)
 
 def is_unrenderable(verdict):
     """True iff this card cannot render at all. static_chrome renders (headers/controls) → renderable; render_real →
-    renderable; a missing/unknown verdict is treated as renderable (honest: we only force on a KNOWN unrenderable)."""
-    return verdict in UNRENDERABLE_VERDICTS
+    renderable; a missing/unknown verdict is treated as renderable (honest: we only force on a KNOWN unrenderable).
+    The vocab IS the config knob (config.feasibility.UNRENDERABLE_VERDICTS) — read lazily, no hardcoded list here."""
+    return verdict in _feas.UNRENDERABLE_VERDICTS
 
 
 def is_dataless(answerability):
     """True iff the AI declared THIS card WHOLLY unfillable for THIS asset (answerability='none') AND the dataless-swap
     knob is on. This is the per-asset render-gate the static verdict cannot express: a catalog-renderable card whose
     every data leaf honest-blanks because the asset's schema has no matching column. [#1 dataless swap]"""
-    return FORCE_SWAP_ON_DATALESS and answerability in DATALESS_ANSWERABILITY
+    return _feas.FORCE_SWAP_ON_DATALESS and answerability in _feas.DATALESS_ANSWERABILITY
 
 
 def enforce(decision, *, verdict, pool, already_chosen=None, answerability=None):

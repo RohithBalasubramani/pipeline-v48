@@ -5,6 +5,7 @@ import React from "react";
 // typed placeholder so every leaf is a guarded object/null-shape. No date control to wire → onDateChange ignored.
 import { PowerQualityCard } from "@cmd-v2/pages/electrical/tabs/power-quality/PowerQualityCard";
 import { buildPowerQualityPresentation } from "@cmd-v2/pages/electrical/tabs/power-quality/viewModel";
+import { PQ_LIMITS } from "@cmd-v2/pages/electrical/tabs/power-quality/tokens";
 import type { PowerQualitySnapshot } from "@cmd-v2/pages/electrical/tabs/power-quality/types";
 
 /** Fully-typed placeholder snapshot so the card ALWAYS draws (structure + typed-empty), never a blank/null card. Used
@@ -28,6 +29,12 @@ function placeholderSnapshot(): PowerQualitySnapshot {
     h7: { valuePct: null, limitPct: null, scaleMaxPct: null },
     flickerPst: { value: null, peakToday: null, limit: null, tone: null, statusBadge: null },
     crestFactor: { value: null, ideal: null, tone: null, statusBadge: null },
+    // IEEE defaults — the same pre-data placeholder CMD_V2's own usePowerQualityData ships (§B4 total field).
+    loadImpactWatch: {
+      pfTargetMin: PQ_LIMITS.minHealthyPF,
+      phaseAngleLagWatchDeg: PQ_LIMITS.phaseAngleLagWatchDeg,
+      kFactorWatch: PQ_LIMITS.kFactorWatch,
+    },
     likelySource: null,
     filterState: null,
     capacitorBank: null,

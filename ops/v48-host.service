@@ -1,0 +1,25 @@
+# V48 host API (:8770) — the pipeline's HTTP entry (host/server.py). [audit R4 2026-07-12]
+# The pipeline reads Postgres through the SYSTEM unit db-tunnel.service (:5433); user units cannot declare
+# dependencies on system units, so a down tunnel degrades honestly at runtime (data_unavailable terminal) instead.
+# Install as a user unit:
+#   cp ops/v48-host.service ~/.config/systemd/user/
+#   systemctl --user daemon-reload && systemctl --user enable --now v48-host
+#   journalctl --user -u v48-host -f
+[Unit]
+Description=V48 pipeline host API (:8770)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+WorkingDirectory=/home/rohith/desktop/BFI/backend/layer2/pipeline_v48
+ExecStart=/home/rohith/.pyenv/versions/3.12.12/bin/python3 host/server.py
+Environment=V48_HOST_PORT=8770
+Environment=PYTHONUNBUFFERED=1
+Restart=always
+RestartSec=3
+RestartSteps=4
+RestartMaxDelaySec=30
+
+[Install]
+WantedBy=default.target

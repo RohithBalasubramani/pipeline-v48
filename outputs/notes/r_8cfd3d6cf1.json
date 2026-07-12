@@ -5,26 +5,26 @@
    "card_id": 50,
    "title": "Battery Health",
    "answerability": "none",
-   "note": "This electrical meter does not measure battery SOC, temperature, or output-side voltage/current; the card cannot render the requested battery health snapshot."
+   "note": "This electrical meter does not measure battery SOC, temperature, or UPS output voltage/current; the card renders with no data."
   },
   {
    "card_id": 51,
    "title": "Battery Health History",
    "answerability": "partial",
-   "note": "Showing SOC, DC Bus Quality, and Thermal Score proxies (energy, voltage deviation, power) \u2014 true battery health scores are not measured by this electrical meter."
+   "note": "Showing battery health history skeleton \u2014 SOC, DC Bus, and Thermal scores are battery-domain quantities not measured by this electrical meter; the card renders its structural frame with honest blanks for the score series."
   },
   {
    "card_id": 52,
    "title": "Backup Readiness",
    "answerability": "partial",
-   "note": "Showing load factor as a proxy for autonomy envelope score \u2014 battery capacity and reserve margins are not measured by this electrical meter."
+   "note": "Showing backup readiness score and load-based proxies \u2014 battery-specific metrics (runtime, headroom, envelope) are not measured by this UPS meter."
   },
   {
    "card_id": 53,
    "title": "Backup Readiness History",
    "answerability": "partial",
-   "note": "Showing load factor as a proxy for autonomy/runtime/headroom scores \u2014 this UPS meter does not measure battery capacity or runtime directly."
+   "note": "Showing historical trend of autonomy index and contributing scores (backup time, load pressure, headroom) \u2014 these are battery-autonomy domain indices not directly derivable from this meter's electrical columns; proxying from active_power_total_kw."
   }
  ],
- "loop2": "'ups-asset-dashboard/battery-autonomy' answers the prompt as routed; these cards cover quantities not recorded for this asset and render honest-blank per-leaf with the reason: Battery Health (This electrical meter does not measure battery SOC, temperature, or output-side voltage/current; the card cannot render the requested battery health snapshot.)."
+ "loop2": "'ups-asset-dashboard/battery-autonomy' answers the prompt as routed; these cards cover quantities not recorded for this asset and render honest-blank per-leaf with the reason: Battery Health (This electrical meter does not measure battery SOC, temperature, or UPS output voltage/current; the card renders with no data.)."
 }

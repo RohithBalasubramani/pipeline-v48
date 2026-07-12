@@ -5,11 +5,12 @@ Classes mirror layer1b's name-pattern fallback vocabulary (asset_candidates._NAM
 class-appropriate metrics ('fuel' only for DG, 'pressure' only for Compressor/Dryer...). UNIQUE names (exactly one
 registry row shares the class+unit token) drive confident-pin prompts; HOMONYM names (2+ rows) drive ambiguity prompts."""
 from __future__ import annotations
+from data.db_client import pg_bool
 
 import re
 from functools import lru_cache
 
-from validation.response import ascii_safe
+from sweep.response import ascii_safe
 
 _NAME_CLASS = (
     (("ups",), "UPS"), (("transformer", "xformer", "_tfr"), "Transformer"), (("ahu",), "AHU"),
@@ -42,7 +43,7 @@ def universe() -> dict:
     assets, by_class, tok_map = [], {}, {}
     for r in q("cmd_catalog", "SELECT id, name, table_name, table_exists FROM registry_lt_mfm ORDER BY id"):
         a = {"id": int(r[0]), "name": ascii_safe(r[1]), "table": r[2] or "",
-             "cls": _cls(r[2] or ""), "table_exists": str(r[3]).strip().lower() in ("t", "true", "1")}
+             "cls": _cls(r[2] or ""), "table_exists": pg_bool(r[3])}
         assets.append(a)
         by_class.setdefault(a["cls"], []).append(a)
         t = _unit_token(a["name"])

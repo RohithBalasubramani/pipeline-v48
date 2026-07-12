@@ -1,7 +1,7 @@
 /**
  * card 26 — PqFeederTable.
  *
- * PAYLOAD-DIRECT (ems_backend RETIRED — `frame` is always empty now). The Layer-2
+ * PAYLOAD-DIRECT (host-served RETIRED — `frame` is always empty now). The Layer-2
  * completed payload IS the render source: payload.table = { pres, period, selectedPanelId },
  * carrying REAL per-feeder priority rows or honest-blank. The old live snapshotFromFrame(frame)
  * branch AND the buildPQPeriods() fabrication fallback (synthetic harmonic waves — a seed leak)

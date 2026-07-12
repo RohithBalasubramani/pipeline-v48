@@ -14,6 +14,7 @@ are never cached (data/equipment/db.py retries next call). UTF-8 rule: no raw ro
 """
 import re
 import sys
+from data.db_client import pg_bool
 
 from data.equipment import db as _db
 
@@ -205,7 +206,7 @@ def _int(v):
 
 
 def _bool(v):
-    return str(v).strip().lower() in ("t", "true", "1")
+    return pg_bool(v)
 
 
 def clear_cache():

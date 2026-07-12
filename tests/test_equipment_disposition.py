@@ -42,9 +42,10 @@ def test_equipment_schema_single_door():
 
 
 def test_equipment_knobs_have_code_default_mirrors():
-    """Each knob read site passes an explicit code default to cfg() — grep-level proof the DB-down path is defined."""
+    """Each knob read site passes an explicit code default — grep-level proof the DB-down path is defined.
+    equipment_facts reads via flag_on (THE boolean-knob vocabulary, D6 2026-07-12) with its default-on preserved."""
     reads = {
-        "layer2/emit/equipment_facts.py": 'cfg("equipment.facts.enabled", "on")',
+        "layer2/emit/equipment_facts.py": 'flag_on("equipment.facts.enabled", True)',
         "layer1b/resolve/asset_candidates.py": 'cfg("equipment.alias.enabled", "on")',
     }
     for rel, needle in reads.items():

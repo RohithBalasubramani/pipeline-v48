@@ -5,6 +5,7 @@ each asset reuse ITS class recipe (rebind_consumer) + fill from ITS OWN neuract 
 TAG every card by asset → concat into ONE response the FE groups by `card.asset`. The single-asset build_response is
 NEVER touched: N==1 stays on that path byte-for-byte; this file is only reached when the picker returns 2+ ids. [atomic]
 """
+from obs.errfmt import record_exc as _record_exc   # failures-channel telemetry [EH F4]
 import time
 
 from config.app_config import cfg
@@ -67,6 +68,7 @@ def natural_compare_ids(prompt):
     except Exception as e:
         import sys
         sys.stderr.write(f"[natural_compare] fail-open to single path ({type(e).__name__}: {str(e)[:120]})\n")
+        _record_exc("host.multi_asset.natural_compare", e)
         return []
 
 

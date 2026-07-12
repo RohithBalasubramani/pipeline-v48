@@ -14,76 +14,51 @@ PER-CARD ONLY — this module does NOT know about panels, membership, or fan-out
 """
 from __future__ import annotations
 
-import threading
-
 from config import neuract_dsn as _dsn
+from data import neuract_pool as _pool          # THE pooled psycopg2 door (D1) — lifecycle + shared schema cache
+from data.ttl_cache import TTLCache
 
-# ── a tiny connection pool (thread-safe), keyed by the frozen conn kwargs so a DSN edit gets a fresh pool ─────────────
-_LOCK = threading.Lock()
-_POOL: dict = {}          # key -> psycopg2 connection
-_COLS_CACHE: dict = {}    # table -> frozenset(present columns)  (schema is stable per process)
-_LOGGED_CACHE: dict = {}  # (table, col) -> bool: does this present column carry ANY non-null value? (reason-channel)
-
-
-def _key():
-    kw = _dsn.conn_kwargs()
-    return tuple(sorted((k, str(v)) for k, v in kw.items()))
+# The logged cache rides the flaky :5433 tunnel, so it uses TTLCache — a tunnel flap during introspection can no
+# longer pin a false "unlogged" for the process life (the 2026-07-09 member-cache-poison class). The PRESENT-columns
+# cache (never-cache-empty) is shared with the registries door in data/neuract_pool. [2026-07-12]
+_LOGGED_CACHE = TTLCache()     # (table, col) -> bool: does this present column carry ANY non-null value? (reason-channel)
 
 
-def _conn():
-    """A live psycopg2 connection to neuract from the pool (reconnect if the pooled one died). None on any failure."""
-    import psycopg2
-    key = _key()
-    with _LOCK:
-        c = _POOL.get(key)
-        if c is not None and not getattr(c, "closed", 1):
-            return c
-        try:
-            c = psycopg2.connect(**_dsn.conn_kwargs())
-            c.autocommit = True
-            _POOL[key] = c
-            return c
-        except Exception:
-            return None
+try:
+    from replay import hooks as _replay_hooks                  # record/replay seam (fail-open; None → bare calls)
+except Exception:
+    _replay_hooks = None
 
 
 def _run(sql, params=None):
-    """Execute a read; return list-of-tuples (or [] on any error / dead connection — honest-degrade, never raise)."""
-    c = _conn()
-    if c is None:
-        return []
+    """Execute a read; return list-of-tuples (or [] on any error / dead connection — honest-degrade, never raise).
+    REPLAY SEAM [replay/hooks.py]: every time-series read (latest/window/series/bucketed/edges/delta SQL) is recorded
+    during a traced request and tape-served during a pinned replay — no :5433 tunnel needed to replay."""
+    if _replay_hooks is None:
+        return _run_raw(sql, params)
+    return _replay_hooks.db_rows(_run_raw, "sql.nx", sql, params)
+
+
+def _run_raw(sql, params=None):
+    import time as _time
+    from obs.sql_trace import record as _sql_trace   # per-run SQL leg of the observability triple (fail-open)
+    t0 = _time.time()
     try:
-        with c.cursor() as cur:
-            cur.execute(sql, params or ())
-            return cur.fetchall()
-    except Exception:
-        # a broken pooled connection → drop it so the next call reconnects; the read honest-degrades to empty
-        with _LOCK:
-            try:
-                _POOL.pop(_key(), None)
-            except Exception:
-                pass
-        return []
+        rows = _pool.run_read(sql, params)           # the pool drops a broken conn itself (D1)
+        _sql_trace("neuract", sql, params, rows=len(rows), ms=int((_time.time() - t0) * 1000))
+        return rows
+    except Exception as e:
+        _sql_trace("neuract", sql, params, ms=int((_time.time() - t0) * 1000), err=e)
+        return []                                    # honest-degrade to empty; next call reconnects
 
 
 # ═══════════════════════════════════════════════════════════════════════════════════════════════════════════════════
 #  column introspection — only-existing columns (a gic_* table has ~70 of the ~72 canonical cols; the rest are absent)
 # ═══════════════════════════════════════════════════════════════════════════════════════════════════════════════════
 def present_columns(table):
-    """The frozenset of columns that PHYSICALLY exist on `table` (cached per process). {} on error / missing table."""
-    if not table:
-        return frozenset()
-    hit = _COLS_CACHE.get(table)
-    if hit is not None:
-        return hit
-    rows = _run(
-        "SELECT column_name FROM information_schema.columns "
-        "WHERE table_schema = %s AND table_name = %s",
-        (_dsn.schema(), table),
-    )
-    cols = frozenset(r[0] for r in rows)
-    _COLS_CACHE[table] = cols
-    return cols
+    """The frozenset of columns that PHYSICALLY exist on `table` — the SHARED never-cache-empty probe
+    (data/neuract_pool, D1), riding THIS door's traced/replayed read. {} on error / missing table."""
+    return _pool.present_columns(table, _run)
 
 
 def column_logged(table, col):
@@ -135,8 +110,15 @@ def _qcol(col):
 
 
 def _tsexpr():
-    """The order/time expression: the ts column cast for time math (neuract stores ISO text → ::timestamptz)."""
-    return f'{_qcol(_dsn.ts_col())}{_dsn.ts_cast()}'
+    """The order/time expression for time math. Default: the ts column cast (neuract stores ISO text → ::timestamptz).
+    When the DB knob neuract.ts_index_fn is set (e.g. 'ts_imm'), use the schema-qualified IMMUTABLE wrapper instead so
+    the R3 expression index is HIT (the query expression must match the index expression exactly). Default = byte-
+    identical to before. [paired with db/create_neuract_ts_indexes.py]"""
+    col = _qcol(_dsn.ts_col())
+    fn = _dsn.ts_index_fn()
+    if fn:
+        return f'{_dsn.schema()}.{fn}({col})'
+    return f'{col}{_dsn.ts_cast()}'
 
 
 # ═══════════════════════════════════════════════════════════════════════════════════════════════════════════════════

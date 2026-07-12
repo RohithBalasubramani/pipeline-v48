@@ -1,5 +1,5 @@
 """config/databases.py — THE SINGLE PLACE for DB wiring. Edit the connection HERE (or set the PG_* env vars); both the
-pipeline AND ems_backend read this one module (ems_backend imports it via a sys.path bootstrap). Nothing else hard-codes
+pipeline AND the legacy EMS service (BFI/backend, via a sys.path bootstrap) read this one module. Nothing else hard-codes
 a host/port/db/schema."""
 import os
 
@@ -26,19 +26,9 @@ DATA_HAS_PANEL_ID = os.environ.get("DATA_HAS_PANEL_ID", "0") == "1"    # neuract
 
 
 def db_link():
-    """The libpq connection string ems_backend pins per MFM to read the time-series DATA (search_path=PG_SCHEMA)."""
+    """The libpq connection string the legacy EMS service pins per MFM to read the time-series DATA (search_path=PG_SCHEMA)."""
     opts = f"-c search_path={PG_SCHEMA}".replace(" ", "%20").replace("=", "%3D")
     return f"postgresql://{PG_USER}@{PG_HOST}:{PG_PORT}/{PG_DB}?options={opts}"
-
-
-def django_db():
-    """The ems_backend Django `DATABASES['default']` dict — same one connection."""
-    return {
-        "ENGINE": "django.db.backends.postgresql",
-        "NAME": PG_DB, "USER": PG_USER, "PASSWORD": PG_PASSWORD,
-        "HOST": PG_HOST, "PORT": PG_PORT,
-        "OPTIONS": {"options": f"-c search_path={PG_SCHEMA}"},
-    }
 
 
 # ── pipeline CATALOG db (card/page structure — separate metadata, NOT the logging DB above) ─────────────────────────
@@ -55,11 +45,6 @@ DATA_SCHEMA     = PG_SCHEMA
 CONSUMER_SCHEMA = PG_SCHEMA                                     # schema the column/data reads use (== the logging schema)
 TEST_DB     = os.environ.get("TEST_DB", "")                     # OPEN: built after the pipeline
 DB_TARGET   = os.environ.get("DB_TARGET", "live")              # "live" (DATA_DB) | "test" (TEST_DB fixture)
-
-
-def data_db():
-    """The time-series DATA database the Layer-2 worker/helper reads when DB_TARGET='live'."""
-    return TEST_DB if DB_TARGET == "test" and TEST_DB else DATA_DB
 
 
 # ── connection ROUTING — which endpoint each db lives on (the single source q() reads) ──────────────────────────────

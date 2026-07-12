@@ -223,8 +223,7 @@ def test_envelope_flag_on_no_dp_card_keeps_exact_metadata(monkeypatch):
 # The flags are NO LONGER mutually exclusive — flipping both on must not silently disable morph-map. ────────────────
 def _both_on(monkeypatch):
     import config.app_config as ac
-    monkeypatch.setattr(ac, "_load", lambda: {"llm.prompt_v2": ("true", "bool"),
-                                              "emit.morphmap_mode": ("on", "text")})
+    monkeypatch.setattr(ac, "_load", lambda: {"emit.morphmap_mode": ("on", "text")})
 
 
 def test_v2_plus_morphmap_dp_card_composes_override_and_morphs_envelope(monkeypatch):
@@ -249,6 +248,6 @@ def test_v2_plus_morphmap_no_dp_card_keeps_v2_full_author(monkeypatch):
 def test_v2_only_never_composes_morphmap(monkeypatch):
     import config.app_config as ac
     import layer2.emit.emit as E
-    monkeypatch.setattr(ac, "_load", lambda: {"llm.prompt_v2": ("true", "bool")})
+    monkeypatch.setattr(ac, "_load", lambda: {})  # v2 is the only prompt now; no flag needed
     s = E._system(_dp_card())
     assert "PART 2 OVERRIDE — MORPH-MAP" not in s and '"exact_metadata":{"_morphed":[]}' in s

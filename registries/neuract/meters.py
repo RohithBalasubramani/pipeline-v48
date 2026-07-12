@@ -98,10 +98,3 @@ def list_meters(type_code=None):
     return [r for r in _ALL if (r.get("type_code") or "").lower() == tc]
 
 
-def reset_cache():
-    """Drop the in-process caches (test hook / after a DSN rotate)."""
-    global _LOADED, _ALL
-    _BY_ID.clear()
-    _BY_NAME.clear()
-    _ALL = []
-    _LOADED = False

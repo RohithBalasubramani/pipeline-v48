@@ -14,9 +14,11 @@ ROOT = os.path.dirname(HERE)
 # NOTE: not listing config/llm/data/db — the copilot has its OWN same-dir config.py / llm.py
 # / db.py, so `import config` resolves to the copilot's, not the v48 package.
 FORBIDDEN = {
-    "layer1a", "layer1b", "layer2", "run", "validate", "workers",
-    "ems_backend", "ems_compat", "payload_db", "partition", "fe_contract",
-    "contracts", "obs", "host",
+    "layer1a", "layer1b", "layer2", "run", "validate",
+    "payload_db", "fe_contract",
+    "obs", "host", "grounding", "ems_exec", "registries",
+    # retired/moved package names kept defensively (workers/ems_compat/partition/contracts no longer exist at root)
+    "workers", "ems_compat", "partition", "contracts",
     # legacy v47 pipeline modules (kept for safety)
     "pipeline", "layer2_swap", "column_resolve", "panel_resolve", "l6", "l6_2",
 }

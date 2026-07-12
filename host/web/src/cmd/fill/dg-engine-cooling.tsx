@@ -9,7 +9,7 @@ import React from "react";
 // via SPECIAL[60] (Asset3dEnvelope → ComingSoon3D) — which `renderCmd` reaches BEFORE FILL. A FILL[60] entry was a dead
 // duplicate of that envelope render and has been DELETED.
 //
-// FRAMES=PAYLOADS [architecture]: ems_backend is RETIRED — the host emits `frames={}` EMPTY. So the ONLY data source is
+// FRAMES=PAYLOADS [architecture]: host-served is RETIRED — the host emits `frames={}` EMPTY. So the ONLY data source is
 // the Layer-2 `payload`; the old live-frame / mapper / assetPageSocket path is DELETED. Cards 61+62 render CMD V2's REAL
 // <Panel> via the tab's OWN buildEngineCoolingViewModel, overlaying the payload's real `chart` chrome onto CMD V2's OWN
 // typed-empty (all-zero) view-model — NEVER `return null` (a blank card), NEVER a seed/mock number (and NEVER CMD V2's

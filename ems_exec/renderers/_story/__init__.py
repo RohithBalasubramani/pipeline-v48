@@ -35,6 +35,9 @@ BUILDERS = {
 }
 
 # card_id → page_key fallback, for when ctx omits page_key (the 4 AI-summary cards this renderer serves).
+# Code-default MIRROR — the live map is app_config `renderers.narrative_card_page` (json; seed
+# db/seed_narrative_card_page.sql), so a NEW AI-summary card on an existing page dispatches with a row edit,
+# no code change. Read through card_page(), never directly.
 CARD_PAGE = {
     8: "real-time-monitoring",
     19: "voltage-current",
@@ -42,5 +45,21 @@ CARD_PAGE = {
     28: "individual-feeder",
 }
 
-__all__ = ["BUILDERS", "CARD_PAGE",
+
+def card_page(card_id):
+    """The fallback page_key for an AI-summary card: the DB map first (app_config renderers.narrative_card_page —
+    json keys arrive as strings), else the CARD_PAGE code mirror. Never raises (DB outage → mirror)."""
+    try:
+        from config.app_config import cfg
+        m = cfg("renderers.narrative_card_page", None)
+        if isinstance(m, dict):
+            got = m.get(str(card_id))
+            if got:
+                return str(got)
+    except Exception:
+        pass
+    return CARD_PAGE.get(card_id)
+
+
+__all__ = ["BUILDERS", "CARD_PAGE", "card_page",
            "energy_distribution", "voltage_current", "harmonics_pq", "real_time_monitoring"]

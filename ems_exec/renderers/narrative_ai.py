@@ -22,20 +22,24 @@ from __future__ import annotations
 import copy
 
 from ems_exec.renderers import _insight
-from ems_exec.renderers._story import BUILDERS, CARD_PAGE
+from ems_exec.renderers._story import BUILDERS, card_page
 from ems_exec.renderers._story import _facts
+
+# the card_handling classes this renderer serves — the package __init__ discovers this declaration (self-registration)
+HANDLING_CLASSES = ("narrative_ai",)
 
 _FIELDS = ["text"]
 
 
 # ── page/card resolution ─────────────────────────────────────────────────────────────────────────────────────────────
 def _page_key(card, ctx):
-    """The page_key to dispatch on: ctx first, else the card_id fallback map (the 4 AI-summary cards). None if unknown."""
+    """The page_key to dispatch on: ctx first, else the card_id fallback map (DB-editable via app_config
+    renderers.narrative_card_page, code mirror = the 4 AI-summary cards). None if unknown."""
     pk = (ctx or {}).get("page_key")
     if pk in BUILDERS:
         return pk
     cid = _card_id(card)
-    return CARD_PAGE.get(cid)
+    return card_page(cid)
 
 
 def _card_id(card):

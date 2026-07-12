@@ -13,6 +13,7 @@ from config import nameplates as _np
 from config import nameplate_slot_map as _slot_map
 from config import derivation_binding as _deriv
 from ems_exec.executor.paths import _toks, _has_path, _leaf_at
+from ems_exec.executor import blank as _blank
 from ems_exec.executor.derived import _derived_key
 from ems_exec.executor.series_fill import _element_value_key
 
@@ -29,10 +30,8 @@ def pop_gaps(payload):
 
 def _blank_val(v):
     """A leaf value that carries NO real data: None/'—'/'' scalars, and an empty or ALL-None series array (a bucketed
-    read over a present-but-never-logged column returns [None]*n — as blank as [])."""
-    if isinstance(v, list):
-        return not v or all(x is None for x in v)
-    return v is None or v == "—" or v == ""
+    read over a present-but-never-logged column returns [None]*n — as blank as []). [shared predicate: executor.blank]"""
+    return _blank.is_blank(v, all_none_list=True)
 
 
 def _gap_of(field, asset_table, present_cols, latest_row, asset_name=None):

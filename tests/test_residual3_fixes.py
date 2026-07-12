@@ -249,7 +249,7 @@ def test_backfill_uses_per_slot_range_consensus():
     from layer2.build import _backfill_default_window
     di = {"fields": [], "roster": [{"slot": "card.view.value", "range": "this-month"},
                                    {"slot": "card.view.metrics", "range": "this-month"}],
-          "window": {}, "ems_backend": {"range": None}}
+          "window": {}, "fetch": {"range": None}}
     _backfill_default_window(di, None)
     bf = di["window"]["backfill"]
     assert bf["origin"] == "declared_range" and bf["range"] == "this-month"

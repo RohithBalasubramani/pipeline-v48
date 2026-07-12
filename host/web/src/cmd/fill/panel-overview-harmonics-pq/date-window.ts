@@ -1,8 +1,8 @@
 /**
  * SHARED (date-wiring concern) — panel-overview-harmonics-pq.
  *
- * The ems_backend date-window vocabulary, the strip's standalone filter
- * selection default, and the strip-control → ems_backend window mapping. Only
+ * The host-served date-window vocabulary, the strip's standalone filter
+ * selection default, and the strip-control → host-served window mapping. Only
  * card 23 (PqTopStrip) owns a date control, so this is the one card that
  * imports selectionToWindow / defaultFilterSelection; DateWindow is shared by
  * the barrel's RenderFn signature.
@@ -15,8 +15,8 @@ import {
   type ResampleMode,
 } from "@cmd-v2/components/charts/primitives";
 
-/* ── ems_backend date-window vocabulary ───────────────────────────────────
- * The host's onDateChange takes a DateWindow the ems_backend understands:
+/* ── host-served date-window vocabulary ───────────────────────────────────
+ * The host's onDateChange takes a DateWindow the host-served understands:
  *   range    ∈ today | yesterday | last-7-days | this-month | custom-range
  *   sampling ∈ hourly | 2hour | shift | day | week
  *   start/end — bare ISO dates, only when range is custom-range. */
@@ -34,10 +34,10 @@ export function defaultFilterSelection(): EventFilterSelection {
   return { preset: "today", resample: "hourly", customDate: today, rangeStart: today, rangeEnd: today };
 }
 
-/* ── strip-control value → ems_backend window mapping ─────────────────────
+/* ── strip-control value → host-served window mapping ─────────────────────
  * The strip emits a CMD V2 EventPreset + ResampleMode (resolved through
  * resolveEventFilter, the SAME resolver the orchestrator uses). We translate
- * the resolved selection into the ems_backend DateWindow vocabulary. Presets
+ * the resolved selection into the host-served DateWindow vocabulary. Presets
  * the backend has no direct range word for (custom-date, last-month) collapse
  * to custom-range carrying the resolver's concrete start/end dates. */
 const PRESET_TO_RANGE: Record<EventPreset, string> = {
@@ -58,7 +58,7 @@ const RESAMPLE_TO_SAMPLING: Record<ResampleMode, string> = {
   "monthly": "week",
 };
 
-/* Resolve a strip filter selection into the ems_backend window. We always
+/* Resolve a strip filter selection into the host-served window. We always
  * carry start/end (the resolver computes them for every preset); for the
  * collapsed presets that became custom-range, start/end ARE the window. */
 export function selectionToWindow(selection: EventFilterSelection): DateWindow {

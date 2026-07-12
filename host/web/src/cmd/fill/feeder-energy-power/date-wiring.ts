@@ -2,7 +2,7 @@
 //
 // TodaysEnergyCard's header FilterPillSelect, PowerEnergyAnalysisChart's + LoadAnomaliesChart's PeriodSelect each emit
 // a single `period` LABEL string (one of data.periodOptions — "Today" / "This Week" / "This Month", or the mock
-// template's "Weekly"/"Monthly"/"Quarterly"). We translate that label → the ems_backend window vocabulary the host
+// template's "Weekly"/"Monthly"/"Quarterly"). We translate that label → the host window vocabulary the host
 // re-fetches JUST this card's frame against — mirroring CMD V2's own energyPowerHistoryParamsForPeriod():
 //   range    ∈ today | yesterday | last-7-days | this-month | custom-range
 //   sampling ∈ hourly | 2hour | shift | day | week

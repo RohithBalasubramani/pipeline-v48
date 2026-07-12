@@ -12,6 +12,9 @@ from __future__ import annotations
 from ems_exec.derivations import energy as E
 from ems_exec.derivations import power as P
 from ems_exec.executor import members as M
+# _export_col HOME moved to energy_registers (monoliths F7) — patch the defining module,
+# not the members re-export (a re-exported NAME patch never reaches the callee's globals).
+from ems_exec.executor import energy_registers as ER
 from ems_exec.renderers import panel_aggregate as PA
 
 
@@ -75,7 +78,7 @@ def test_roster_panel_kwh_rolls_up_export_for_reversed_ct(monkeypatch):
     present, window = _windowed(tables)
     monkeypatch.setattr(M._nx, "present_columns", present)
     monkeypatch.setattr(M._nx, "window", window)
-    monkeypatch.setattr(M, "_export_col", lambda: _EXP)          # config knob → export register wired
+    monkeypatch.setattr(ER, "_export_col", lambda: _EXP)          # config knob → export register wired
     pairs = [
         ({"mfm_id": 1, "table": "ups1", "role": "outgoing"}, {}),
         ({"mfm_id": 2, "table": "ups2", "role": "outgoing"}, {}),
@@ -94,7 +97,7 @@ def test_roster_panel_kwh_all_dark_is_none(monkeypatch):
     present, window = _windowed(tables)
     monkeypatch.setattr(M._nx, "present_columns", present)
     monkeypatch.setattr(M._nx, "window", window)
-    monkeypatch.setattr(M, "_export_col", lambda: _EXP)
+    monkeypatch.setattr(ER, "_export_col", lambda: _EXP)
     pairs = [({"mfm_id": 1, "table": "a", "role": "outgoing"}, {}),
              ({"mfm_id": 2, "table": "b", "role": "outgoing"}, {})]
     assert M.panel_kwh(pairs, (None, None), _IMP) is None
@@ -108,7 +111,7 @@ def test_roster_panel_kwh_import_only_when_export_unconfigured(monkeypatch):
     present, window = _windowed(tables)
     monkeypatch.setattr(M._nx, "present_columns", present)
     monkeypatch.setattr(M._nx, "window", window)
-    monkeypatch.setattr(M, "_export_col", lambda: None)          # no export register configured
+    monkeypatch.setattr(ER, "_export_col", lambda: None)          # no export register configured
     pairs = [({"mfm_id": 1, "table": "ups1", "role": "outgoing"}, {}),
              ({"mfm_id": 2, "table": "bpdb", "role": "outgoing"}, {})]
     assert M.panel_kwh(pairs, (None, None), _IMP) == 1000.0       # only bpdb's import delta

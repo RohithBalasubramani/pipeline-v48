@@ -20,10 +20,10 @@ from __future__ import annotations
 from config import metric_class as mc
 from config import quality_policy as qp
 from config.databases import DATA_DB, DATA_SCHEMA
-from data.db_client import q
+from data.db_client import q, pg_bool
 from grounding import schema_route as sr
 from grounding.schema_fingerprint import fingerprint, is_known
-from layer1b.resolve.has_data import value_counts, VALUE_MIN
+from data.value_probe import value_counts, VALUE_MIN   # probes' home (was layer1b.resolve.has_data — cycle-kill 2026-07-12)
 
 # power-family quantities whose magnitude must clear the meaningful floor (not padded-0 / not denorm garbage).
 _POWER_QUANTITIES = ("active_power", "apparent_power", "reactive_power")
@@ -100,7 +100,6 @@ def _meaningful_energy(table):
 
 def _meaningful_quantity(table, required_class, row_cache):
     """Is `required_class` MEANINGFULLY present on `table`'s latest row (not just non-null)?"""
-    slots = sr.columns_for_quantity(table, _canonical(required_class))
     # gather every routed column whose quantity satisfies this class (power spans active/apparent/reactive).
     routed = sr.routed_map(table)
     cols = [meta["column_name"] for meta in routed.values()
@@ -213,7 +212,7 @@ def _only_denorm_power(table, required, row_cache):
 def _has_rows(table):
     try:
         rows = q(DATA_DB, f'SELECT EXISTS(SELECT 1 FROM {DATA_SCHEMA}."{_esc(table)}")')
-        return bool(rows) and str(rows[0][0]).strip().lower() in ("t", "true", "1")
+        return bool(rows) and pg_bool(rows[0][0])
     except Exception:
         return False
 

@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { Candidate } from "../types";
+import { fetchAssets } from "../api";
 
 // Asset-resolution popup (implements Command Center.dc.html's resolution card). 1b couldn't pin ONE asset → the copilot
 // asks back. Four states: ambiguous (candidate list) · empty (search the full registry) · terminal (none → pipeline ends)
@@ -9,25 +10,8 @@ import type { Candidate } from "../types";
 type View = "ambiguous" | "empty" | "terminal" | "resolved";
 const idOf = (a: Candidate) => (a.mfm_id ?? a.id) as number;
 
-function Spark({ size = 17 }: { size?: number }) {
-  return (
-    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M12 3l1.9 5.6L19.5 10l-5.6 1.9L12 17.5l-1.9-5.6L4.5 10l5.6-1.4z" />
-    </svg>
-  );
-}
-const XIcon = () => (
-  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"><line x1="6" y1="6" x2="18" y2="18" /><line x1="18" y1="6" x2="6" y2="18" /></svg>
-);
-const Mag = () => (
-  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round"><circle cx="11" cy="11" r="7" /><line x1="21" y1="21" x2="16.65" y2="16.65" /></svg>
-);
-const Ban = () => (
-  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round"><circle cx="12" cy="12" r="9" /><line x1="6" y1="6" x2="18" y2="18" /></svg>
-);
-const Minus = () => (
-  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round"><line x1="5" y1="12" x2="19" y2="12" /></svg>
-);
+// shared chrome icons (ONE source — components/icons)
+import { Spark, XIcon, Mag, Ban, Minus } from "./icons";
 
 export function AssetResolution({
   candidates,
@@ -68,9 +52,8 @@ export function AssetResolution({
   useEffect(() => {
     if (base !== "empty") return;
     let alive = true;
-    fetch("/api/assets")
-      .then((r) => r.json())
-      .then((d) => { if (alive && d.ok && Array.isArray(d.assets)) setAllAssets(d.assets); })
+    fetchAssets()
+      .then((assets) => { if (alive && assets.length) setAllAssets(assets); })
       .catch(() => { /* leave empty; rows show "no match" */ });
     return () => { alive = false; };
   }, [base]);
@@ -194,7 +177,7 @@ export function AssetResolution({
           <>
             <div className="cc-ar-head">
               <div className="cc-ar-titlerow">
-                <span className="cc-ar-spark"><Spark /></span>
+                <span className="cc-ar-spark"><Spark size={17} /></span>
                 <div className="cc-ar-title">WHICH ASSET?</div>
                 <button className="cc-ar-x" onClick={onDismiss} aria-label="Dismiss"><XIcon /></button>
               </div>
@@ -210,7 +193,7 @@ export function AssetResolution({
           <>
             <div className="cc-ar-head tight">
               <div className="cc-ar-titlerow">
-                <span className="cc-ar-spark"><Spark /></span>
+                <span className="cc-ar-spark"><Spark size={17} /></span>
                 <div className="cc-ar-title">{noDataAsset ? (blockKind === "validation" ? "CAN'T RENDER THIS PAGE" : "NO METER DATA") : "NO ASSET IDENTIFIED"}</div>
                 <button className="cc-ar-x" onClick={onDismiss} aria-label="Dismiss"><XIcon /></button>
               </div>
@@ -255,7 +238,7 @@ export function AssetResolution({
           <>
             <div className="cc-ar-resolved">
               <div className="cc-ar-titlerow">
-                <span className="cc-ar-spark"><Spark /></span>
+                <span className="cc-ar-spark"><Spark size={17} /></span>
                 {/* the build view shows ALL selected assets (1 → open, 2+ → compare). */}
                 <div className="cc-ar-title">{selected.length >= 2 ? `COMPARING ${selected.length} ASSETS` : "ASSET RESOLVED"}</div>
               </div>

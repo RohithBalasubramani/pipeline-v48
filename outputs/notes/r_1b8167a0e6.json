@@ -5,13 +5,13 @@
    "card_id": 67,
    "title": "Voltage History",
    "answerability": "partial",
-   "note": "Showing per-phase voltage history and deviation spread \u2014 sag/swell counts and tick decimals are not measured by this asset."
+   "note": "Showing per-phase voltage history and deviation stats; sag/swell event counts and expected range bounds are not measured or available for this asset."
   },
   {
-   "card_id": 69,
-   "title": "Current History",
+   "card_id": 68,
+   "title": "Current Live Health",
    "answerability": "partial",
-   "note": "Showing per-phase current history and stats; rated reference lines are blank because the asset has no nameplate current rating."
+   "note": "Showing live per-phase currents (R, Y, B, N) and average current. Current unbalance metric (current_unbalance_pct) is not logged for this asset; showing voltage unbalance as a proxy for electrical health."
   }
  ],
  "loop2": null

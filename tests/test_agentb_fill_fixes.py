@@ -19,6 +19,9 @@ import pytest
 
 from ems_exec.executor import fill as F
 from ems_exec.executor import members as M
+# _export_col HOME moved to energy_registers (monoliths F7) — patch the defining module,
+# not the members re-export (a re-exported NAME patch never reaches the callee's globals).
+from ems_exec.executor import energy_registers as ER
 from ems_exec.executor import roster as R
 
 
@@ -42,7 +45,7 @@ def test_member_delta_picks_the_moving_register(monkeypatch):
     windows = {("ups", _IMP): (100.0, 100.0), ("ups", _EXP): (1000.0, 5691.0),
                ("bpdb", _IMP): (2647890.0, 2727560.0), ("bpdb", _EXP): (0.0, 0.0)}
     _pairs_fixture(monkeypatch, tables, windows)
-    monkeypatch.setattr(M, "_export_col", lambda: _EXP)
+    monkeypatch.setattr(ER, "_export_col", lambda: _EXP)
     ups = {"mfm_id": 1, "table": "ups", "role": "outgoing"}
     bpdb = {"mfm_id": 2, "table": "bpdb", "role": "outgoing"}
     # reversed-CT feeder: import delta 0, export moved 4691 → the member leaf reads 4691, never a false 0.0
@@ -65,7 +68,7 @@ def test_member_delta_unpaired_column_stays_legacy(monkeypatch):
 def test_bucketed_energy_delta_picks_mover_per_bucket(monkeypatch):
     _IMP, _EXP = "active_energy_import_kwh", "active_energy_export_kwh"
     monkeypatch.setattr(M._nx, "present_columns", lambda t: frozenset([_IMP, _EXP]))
-    monkeypatch.setattr(M, "_export_col", lambda: _EXP)
+    monkeypatch.setattr(ER, "_export_col", lambda: _EXP)
     series = {_IMP: [{"t": "2026-07-01", "value": 0.0}, {"t": "2026-07-02", "value": 0.0}],
               _EXP: [{"t": "2026-07-01", "value": 4691.0}, {"t": "2026-07-02", "value": 4703.0}]}
     monkeypatch.setattr(M._nx, "bucketed_delta", lambda t, c, s, e, sampling="day": list(series.get(c) or []))

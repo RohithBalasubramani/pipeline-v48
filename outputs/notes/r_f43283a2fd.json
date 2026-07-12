@@ -1,0 +1,30 @@
+{
+ "run_id": "r_f43283a2fd",
+ "loop1": [
+  {
+   "card_id": 39,
+   "title": "Today's Energy",
+   "answerability": "partial",
+   "note": "Showing monthly energy totals and progress \u2014 energy targets and subsidy limits are not configured for this asset."
+  },
+  {
+   "card_id": 40,
+   "title": "Power Energy Analysis",
+   "answerability": "partial",
+   "note": "one or more leaves could not be bound for this card on this asset \u2014 those leaves render an honest blank (per-leaf reasons attached), every other leaf fills"
+  },
+  {
+   "card_id": 41,
+   "title": "Input vs Output Energy",
+   "answerability": "partial",
+   "note": "Showing total active power and energy delta \u2014 per-phase power isn't measured for this asset; lossPct and efficiencyPct are derived from total power."
+  },
+  {
+   "card_id": 42,
+   "title": "Load Anomalies",
+   "answerability": "partial",
+   "note": "Showing actual load as % of rated capacity; dip/surge event counts are approximated via AI summary as dedicated event counters are not available in the basket."
+  }
+ ],
+ "loop2": null
+}

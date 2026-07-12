@@ -87,12 +87,15 @@ def efficiency_pct(ctx):
 
 
 def ai_loss_summary(ctx):
-    """Template AI prose from the recovered loss% vs the 3% expected band. real_exact. ctx as distribution_loss_pct."""
+    """Template AI prose from the recovered loss% vs the DB-driven expected band (energy_balance.expected_loss_band_pct,
+    default 3.0 — the SAME knob _single_feeder_loss_band_pct reads, so the verdict and the proxy can never contradict).
+    real_exact. ctx as distribution_loss_pct."""
     loss = distribution_loss_pct(ctx)
     if loss is None:
         return None
-    if loss >= 3.0:
-        return (f"{loss:.1f}% loss exceeds the 3% expected band — inspect winding temperature and phase loading.")
+    band = _single_feeder_loss_band_pct()
+    if loss >= band:
+        return (f"{loss:.1f}% loss exceeds the {band:.0f}% expected band — inspect winding temperature and phase loading.")
     return f"Loss at {loss:.1f}% is within the expected band. Distribution running normally."
 
 
@@ -118,11 +121,7 @@ def section_trend_sums(ctx):
 # physically trustworthy. Mirrors _io_values :237-287. The mode itself is the consumer's topology classification
 # ('loss' = has a modelled upstream input meter; 'share' = an outgoing feeder vs its panel incomers; 'output_only' = no
 # modelled upstream). Missing input → honest-degrade to output_only (never a guessed loss).
-def _f(x):
-    try:
-        return float(x)
-    except (TypeError, ValueError):
-        return None
+from ._coerce import f as _f
 
 
 def loss_pct_is_plausible(loss_pct):
@@ -136,57 +135,3 @@ def loss_pct_is_plausible(loss_pct):
     return lo <= v <= hi
 
 
-def io_resolution(ctx):
-    """Classify the input/output relationship for a meter and, when it is 'loss', GATE the loss on plausibility.
-    ADDITIVE port of feeder_energypower.py _io_values :237-287 (V48's distribution_loss_pct above stays the panel-level
-    Σ-incomer−Σ-outgoing recovery; this is the per-meter pairing variant). Returns a dict of io_* target fields, or None
-    to honest-degrade. ctx:
-      {mode:'loss', in_kw, out_kw}          → {io_mode, hv_input_kw, lv_output_kw, active_power_loss_kw,
-                                               active_power_loss_pct} when the loss is plausible; else downgrades to
-                                               {io_mode:'output_only', output_kw} (P1 #11 gate).
-      {mode:'share', feeder_kwh, incomers:[{name, kwh}]} → {io_mode:'share', io_feeder_kwh, io_panel_incoming_kwh,
-                                               io_share_pct, io_incomers}.
-      {mode:'output_only', out_kw}          → {io_mode:'output_only', output_kw}.
-    """
-    c = ctx or {}
-    mode = c.get("mode")
-
-    if mode == "loss":
-        in_kw, out_kw = _f(c.get("in_kw")), _f(c.get("out_kw"))
-        loss_pct = (round((in_kw - out_kw) / in_kw * 100.0, 2)
-                    if in_kw is not None and out_kw is not None and in_kw > 0 else None)
-        # Trust the loss block ONLY when the pairing is physically plausible (band from config); else the paired meter
-        # is not truly upstream — fall back to output_only rather than surface a bogus loss (P1 #11).
-        if not loss_pct_is_plausible(loss_pct):
-            return {"io_mode": "output_only",
-                    "output_kw": round(out_kw, 1) if out_kw is not None else None}
-        return {
-            "io_mode": "loss",
-            "hv_input_kw": round(in_kw, 1),
-            "lv_output_kw": round(out_kw, 1) if out_kw is not None else None,
-            "active_power_loss_kw": round(in_kw - out_kw, 1),
-            "active_power_loss_pct": loss_pct,
-        }
-
-    if mode == "share":
-        feeder = _f(c.get("feeder_kwh"))
-        incs, total = [], 0.0
-        for x in (c.get("incomers") or []):
-            e = _f((x or {}).get("kwh")) or 0.0
-            total += e
-            incs.append({"name": (x or {}).get("name"), "kwh": round(e, 1)})
-        for item in incs:
-            item["pct"] = round(item["kwh"] / total * 100.0, 2) if total > 0 else None
-        return {
-            "io_mode": "share",
-            "io_feeder_kwh": round(feeder, 1) if feeder is not None else None,
-            "io_panel_incoming_kwh": round(total, 1),
-            "io_share_pct": (round(feeder / total * 100.0, 2)
-                             if feeder is not None and total > 0 else None),
-            "io_incomers": incs,
-        }
-
-    # output_only (or an unrecognised/missing mode): no modelled upstream input meter → no loss block (honest-degrade).
-    out_kw = _f(c.get("out_kw"))
-    return {"io_mode": "output_only",
-            "output_kw": round(out_kw, 1) if out_kw is not None else None}

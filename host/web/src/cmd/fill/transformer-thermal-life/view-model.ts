@@ -1,7 +1,7 @@
 // payload → ALWAYS-DRAWABLE view-model slices for the transformer thermal-life fill cards.
 //
 // Page: transformer-asset-dashboard/thermal-life. Four cards, each rendered from its OWN Layer-2 payload (the harvested
-// Storybook story args → real neuract values + honest-blank '—'; ems_backend is RETIRED so `frame` is always empty and
+// Storybook story args → real neuract values + honest-blank '—'; host-served is RETIRED so `frame` is always empty and
 // the payload is the ONLY data source):
 //   74 ThermalLifeCard      ← payload.thermalLife    (stress + winding/oil/loss metric strip)
 //   75 LifeCapacityCard     ← payload.lifeCapacity   (life-remaining + derating bars)

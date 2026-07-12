@@ -6,8 +6,9 @@ it is FORCE-swapped to a render_real pool candidate — deterministically, overr
 (a) the STATIC card_feasibility.verdict IN drop/no_data (this KIND of card never renders); (b) the AI's own per-asset
 verdict answerability='none' (`answerability` kwarg) — a catalog-renderable card WHOLLY unfillable for THIS asset (every
 leaf honest-blanks: Fuel Tank on a fuel-less DG). No unclaimed candidate → honest KEEP. [gate_force_renderable, #1]"""
+from layer2.swap import vocab as _swapvocab   # the ONE swap vocab home [typing F5]
 from layer2.swap import (gate_confidence, gate_vague_reject, gate_pool_valid,
-                         gate_no_dup, gate_template_dedup, combo_cascade, gate_force_renderable)
+                         gate_no_dup, combo_cascade, gate_force_renderable)
 
 
 def gate(decision, *, pool_ids, template_card_ids, already_chosen, page_card_ids, current_card_id,
@@ -19,14 +20,15 @@ def gate(decision, *, pool_ids, template_card_ids, already_chosen, page_card_ids
     render_real + recoverable-default + registered renderer by candidates.py) that is NOT in `already_chosen`,
     or KEEP+flag if none. `pool` = the slot's swap_candidates (list of {card_id,title,...}); `pool_ids` = their ids."""
     d = dict(decision or {})
-    if d.get("action") != "swap":
+    if d.get("action") != _swapvocab.SWAP:
         d.update(action="keep", origin="kept", swap_to_id=None, swap_to_title=None)
     else:
         passes = (gate_confidence.ok(d)
                   and gate_vague_reject.ok(d)
                   and gate_pool_valid.ok(d, pool_ids)
+                  # gate_no_dup already folds template_card_ids into `forbidden`, so the sacred-template guard is here
+                  # too (the old separate gate_template_dedup was subsumed and removed, 2026-07-12).
                   and gate_no_dup.ok(d, template_card_ids, already_chosen, page_card_ids)
-                  and gate_template_dedup.ok(d, template_card_ids)
                   and combo_cascade.ok(d, pool_ids))
         if passes:
             d.update(action="swap", origin="swapped")

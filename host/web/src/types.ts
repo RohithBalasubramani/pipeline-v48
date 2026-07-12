@@ -1,4 +1,4 @@
-// Mirror of host/server.py build_response().
+// Mirror of the /api/run response: host/server.py build_response() (dashboard) + the knowledge envelope.
 
 export interface Slot {
   slot_order?: number | null;
@@ -19,13 +19,11 @@ export interface Size {
   size_source?: string | null;
 }
 
-export interface SubCard {
-  story_id: string | null;
-  component: { module: string; export: string } | null;
-  story_name: string | null;
-  storybook_url: string | null;
-  payload: unknown;
-}
+// One per-leaf honest-gap record (the (i) EXPLAINED-BLANKS marker renders from these; additive telemetry, never a
+// render gate). Declared here — the response mirror — and re-exported by cmd/registry for its consumers.
+export type GapRecord = {
+  slot?: string | null; cause?: string | null; metric?: string | null; fn?: string | null; reason?: string | null;
+};
 
 // The render-guarantee VERDICT (host/server.py _enrich_card `render`): the Layer-3 decision the FE safe-renderer obeys.
 export interface RenderVerdict {
@@ -34,9 +32,9 @@ export interface RenderVerdict {
   reason?: string | null;                       // machine/human reason for a blank/partial/frame-empty
   coverage_note?: string | null;                // 'N of M feeders reporting' for aggregates
   date_control?: "enabled" | "disabled" | null; // ER-7: history-less domains disable the date control
-  slots?: Record<string, { value?: unknown; blank_reason?: string | null; fidelity_note?: string | null; source?: unknown }> | null;
-  suppress_default_leaves?: string[];           // NO-SEED-LEAK: FE force-blanks these payload paths
+  suppress_default_leaves?: string[];           // NO-SEED-LEAK: FE force-blanks these payload paths (cmd/registry forceBlank)
   watermark?: string | null;                    // 'live' — a blanked slot carries null, never a seed number
+  gaps?: GapRecord[] | null;                    // per-leaf honest-gap reasons (the (i) marker)
 }
 
 export interface FrameStatus {
@@ -45,6 +43,9 @@ export interface FrameStatus {
   why?: string | null;                          // ER-6: empty/mismatched frame reason surfaced to the card
 }
 
+// A card (host/server.py _enrich_card). NOTE: the harvested-Storybook metadata the server used to carry — story_id,
+// story_name, variant, storybook_url, component, key_roles, subcards — was dead on the wire (no renderer reads it), so it
+// is dropped from this contract. The card renders its CMD V2 component directly from `payload`.
 export interface Card {
   card_id: number;
   render_card_id?: number;
@@ -57,14 +58,7 @@ export interface Card {
   role: string;
   slot: Slot;
   size: Size;
-  story_id: string | null;
-  story_name: string | null;
-  variant: string | null;
-  storybook_url: string | null;
-  component: { module: string; export: string } | null;
   payload: unknown;
-  key_roles: unknown;
-  subcards: SubCard[];
   validation: { verdict?: string; reasons?: string[] } | null;
   has_payload: boolean;
   payload_error: string | null;
@@ -84,12 +78,26 @@ export interface Candidate {
   [k: string]: unknown;
 }
 
-export interface PipelineResult {
+// Fields shared by EVERY /api/run response — the dashboard grid AND the knowledge answer. The heavy grid context
+// (page/asset/validation/cards) is declared here, not only on DashboardResult, because the host reads several of those
+// off an un-discriminated PipelineResult in its render path (host App) BEFORE it branches on `kind`; the knowledge
+// envelope omits them at runtime — so always gate on `kind === "knowledge"` before trusting answer/refused.
+interface PipelineResultBase {
   ok: boolean;
   prompt: string;
   run_id: string;
-  elapsed_ms: number;
-  sb_base: string;
+  trace_id?: string | null;                      // obs trace identity (obs/middleware) — deep-links the AI Decision Inspector
+  elapsed_ms?: number;                           // dashboard branch only; the knowledge envelope omits it
+  sb_base?: string;                              // dashboard branch only
+  // ASSET-RESOLUTION states (served by build_response): 1b could not pin one asset / the named asset has no data /
+  // validation blocked the run — the FE opens the resolution picker instead of the grid.
+  asset_pending?: boolean | null;
+  asset_no_data?: boolean | null;
+  validation_blocked?: boolean | null;
+  // HONEST OUTAGE terminal (e.g. the neuract tunnel dropped): show the outage notice, never a silent blank grid.
+  data_unavailable?: boolean | null;
+  degrade?: { kind?: string | null; reason?: string | null } | null;
+  notes?: unknown;
   page: {
     page_key: string | null;
     page_title: string | null;
@@ -116,12 +124,31 @@ export interface PipelineResult {
   cards: Card[];
   multi_asset?: boolean;                         // MULTI-ASSET compare: cards are tagged by `card.asset` → the FE renders a per-asset grouped grid
   assets?: Array<{ mfm_id?: number; name?: string; class?: string; table?: string }>; // the compared assets (order = card groups)
-  frames?: Record<string, unknown>;             // {endpoint: ems_backend frame} — FE feeds frames[card.endpoint] to the card's CMD V2 mapper
-  frame_status?: Record<string, FrameStatus>;   // {endpoint: {ok, why}} — the reason channel (ER-6)
-  live_frame?: unknown;                          // back-compat: the page-endpoint frame
+  // page-level frames/frame_status/live_frame RETIRED (F14, 2026-07-12): data rides on each card's payload; the
+  // honest fetch-reason is per-card (card.frame_status).
   date_window?: DateWindow | null;
   errors: Record<string, string>;
 }
+
+// DASHBOARD envelope (host/server.py build_response): the resolved card grid + page/asset/validation context.
+// build_response stamps kind:"dashboard" on the wire (server.py:97), so the discriminant is REQUIRED and the union
+// is fully discriminated. [R10 completed 2026-07-12]
+export interface DashboardResult extends PipelineResultBase {
+  kind: "dashboard";
+}
+
+// KNOWLEDGE envelope (host/server.py /api/run knowledge routing): {ok,prompt,run_id,kind,answer,refused} — a conceptual
+// electrical/mechanical answer or the domain refusal, NEVER a card grid. (It structurally inherits the grid fields so
+// the host's un-discriminated reads type-check; those fields are absent at runtime.)
+export interface KnowledgeResult extends PipelineResultBase {
+  kind: "knowledge";
+  answer?: string | null;
+  refused?: boolean | null;
+}
+
+// The /api/run result is one OR the other, discriminated on `kind`: `kind === "knowledge"` → KnowledgeResult (answer/
+// refused); anything else → DashboardResult (the card grid).
+export type PipelineResult = DashboardResult | KnowledgeResult;
 
 export interface DateWindow {
   range?: string | null;                        // today | yesterday | last-7-days | this-month | custom-range
@@ -129,3 +156,4 @@ export interface DateWindow {
   end?: string | null;
   sampling?: string | null;                     // hourly | 2hour | shift | day | week
 }
+export type OnDateChange = (dw: DateWindow) => void;

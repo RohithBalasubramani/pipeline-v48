@@ -5,17 +5,13 @@ from __future__ import annotations
 # app_config is guarded so this pure-fn module imports even without the pipeline config on the path (the load-factor
 # min-energized floor then uses its code default). Same fail-open pattern as derivations.nameplate.
 try:
-    from config.app_config import cfg as _cfg
-except Exception:  # pragma: no cover — import-safe without the pipeline config
+    from config.failopen import cfg_safe as _cfg   # THE guarded cfg reader (D3)
+except Exception:  # pragma: no cover — import-safe without the pipeline config on the path
     def _cfg(key, default):
         return default
 
 
-def _f(x):
-    try:
-        return float(x)
-    except (TypeError, ValueError):
-        return None
+from ._coerce import f as _f
 
 
 def _series(ctx, col):
@@ -210,26 +206,6 @@ def worst_peak_kw(ctx):
     return round(max(abs(v) for v in vals), 1) if vals else None
 
 
-def mean_active_power_kw(ctx):
-    """Average active power over the window = mean(|active_power_total_kw|) taken on the ENERGIZED samples only — the
-    'Avg Load' (kW) a Fuel-Log / runtime KPI means: the average power WHILE the asset is carrying load, not the day-mean
-    diluted by idle hours. Magnitude (abs) so a reversed-CT / export-convention meter logging power NEGATIVE (a UPS reads
-    −185..−203 kW) reports its real average load; abs() is a NO-OP for a positively-logged card. real_approx (depends on
-    window coverage). ctx: {series:[rows with active_power_total_kw]}.
-
-    ENERGIZED-ONLY MEAN [same rule as load_factor_pct, card 71 dg_1_mfm]: an intermittently-running standby genset reads a
-    HARD ZERO whenever stopped, so a mean over the WHOLE window smears its running load across the idle hours and returns
-    a meaningless ~4 kW day-average instead of the ~787 kW running load. _energized excludes standstill (below its
-    relative floor) so the mean is the average load while energized. A continuously-loaded UPS/feeder has no zero samples
-    → the filter is a NO-OP (its raw mean). A full-standstill window (nothing energized — the asset really was OFF) → None
-    (honest-blank; NEVER a fabricated / idle-diluted avg load). This is a kW MAGNITUDE, NOT a load-factor % (peak-relative
-    utilisation lives in load_factor_pct) — the two never collide (distinct fns, distinct _QUANTITY families)."""
-    vals = _energized([abs(v) for v in _series(ctx, "active_power_total_kw")])
-    if not vals:
-        return None
-    return round(sum(vals) / len(vals), 1)
-
-
 def worst_peak_at(ctx):
     """ts of the window's magnitude peak active power. real_exact. ctx: {series}. (MAGNITUDE so it matches worst_peak_kw —
     a negatively-logged UPS's largest |power| sample, not the least-negative one.)"""
@@ -313,30 +289,6 @@ def active_power_loss_pct(ctx):
     if hv is None or lv is None or hv == 0:
         return None
     return round((hv - lv) / hv * 100.0, 2)
-
-
-# ── GATED input/output loss (the loss-plausibility port) ─────────────────────────────────────────────────────────────
-# ADDITIVE [#4/#12]: the raw active_power_loss_kw/pct above compute the loss whenever both HV/LV legs are present. But a
-# plausible loss lives only inside a physical band [0,10]% (config.topology_policy); a bigger figure means the paired
-# 'input' leg is not truly upstream — the loss is bogus and must be dropped (P1 #11, feeder_energypower.py:247-249). The
-# gate delegates to derivations.topology.loss_pct_is_plausible so the band stays a single DB-driven knob, no magic number
-# here. These are NEW fns — the ungated ones keep their signatures for existing callers (rule #5). abs() load% is UNTOUCHED.
-def active_power_loss_kw_gated(ctx):
-    """Input−output active-power loss in kW, but ONLY when the computed loss% is physically plausible; else None
-    (honest-degrade — no bogus loss from a mis-paired input leg). Same HV/LV legs as active_power_loss_kw."""
-    from . import topology as _topo
-    pct = active_power_loss_pct(ctx)
-    if not _topo.loss_pct_is_plausible(pct):
-        return None
-    return active_power_loss_kw(ctx)
-
-
-def active_power_loss_pct_gated(ctx):
-    """Active-power loss as % of input, GATED to the plausible band [0,10]% (config.topology_policy); else None. Ports
-    the feeder_energypower.py:247-249 trust gate to the per-feeder loss column."""
-    from . import topology as _topo
-    pct = active_power_loss_pct(ctx)
-    return pct if _topo.loss_pct_is_plausible(pct) else None
 
 
 def rate_of_change_power_kw_per_min(ctx):

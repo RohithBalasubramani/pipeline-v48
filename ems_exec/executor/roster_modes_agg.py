@@ -118,3 +118,8 @@ def _entries_slot(payload, spec, state, default_payload):
         rebuilt.append(entry)
     for container, key, _marker in _targets(payload, default_payload, slot):
         container[key] = copy.deepcopy(rebuilt)
+
+
+# the slot MODES this module serves — roster.py's dispatch DISCOVERS this declaration from every roster_modes_* sibling
+# (self-registration): a NEW mode = a new roster_modes_<x>.py declaring MODES, no dispatch edit.
+MODES = {"aggregates": _aggregates_slot, "scalar": _scalar_slot, "entries": _entries_slot}

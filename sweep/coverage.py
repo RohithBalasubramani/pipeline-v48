@@ -11,8 +11,8 @@ from __future__ import annotations
 import json
 import os
 
-from validation import config
-from validation.response import ascii_safe
+from sweep import config
+from sweep.response import ascii_safe
 
 
 def _sort_key(v):
@@ -45,7 +45,7 @@ def _load_records(sdir: str) -> list[dict]:
 def _universe_or_empty() -> dict:
     """cmd_catalog may be unreachable (the :5433 tunnel) — coverage still reports the achieved side."""
     try:
-        from validation.corpus.universe import universe
+        from sweep.corpus.universe import universe
         return universe()
     except Exception:
         return {"assets": [], "by_class": {}, "pages": [], "cards": [], "card_handling": {},
@@ -116,7 +116,8 @@ def analyze(session_id: str) -> dict:
                 verdict_kinds.add(ascii_safe(cr["verdict"]))
 
     # --- universe side ---
-    from validation.corpus.templates import CATEGORIES
+    from sweep.corpus.store import store
+    CATEGORIES = store()["categories"]                    # live DB rows (code-default mirror when DB is down)
     u_pages = sorted({ascii_safe(p) for p in (u.get("pages") or []) if p})
     u_cards = sorted({c for c in (u.get("cards") or [])}, key=_sort_key)
     u_classes = sorted(ascii_safe(k) for k in (u.get("by_class") or {}))

@@ -3,7 +3,7 @@
 // VoltageRegulationCard + TapActivityCard each carry a SamplingPicker whose selection the card resolves through the
 // tab's OWN `tapSelectionToReq` (config.ts) into a backend `{ range, sampling, shift }` — the CMD V2 vocabulary
 // (range: today|yesterday|last_7d|this_month|last_month, sampling: hour|shift|day|week). Those arrive here via the
-// card's `onRequest(chart, params)`; we translate them into the ems_backend window vocabulary the host re-fetches
+// card's `onRequest(chart, params)`; we translate them into the host window vocabulary the host re-fetches
 // JUST this card's frame against — mirroring the feeder date-wiring:
 //   range    ∈ today | yesterday | last-7-days | this-month | custom-range
 //   sampling ∈ hourly | 2hour | shift | day | week

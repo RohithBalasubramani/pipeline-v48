@@ -1,7 +1,7 @@
 import React from "react";
 // Card 21 · Current Distribution (radar) — lt-pcc panel-overview Voltage&Current tab.
 //
-// PAYLOAD-DIRECT (ems_backend RETIRED — `frame` is always empty now). Priority:
+// PAYLOAD-DIRECT (host-served RETIRED — `frame` is always empty now). Priority:
 // payload → CMD V2 HONEST-EMPTY view-model. CurrentDistributionCard does
 // `period.panels.filter(...).map(...)`; if the payload elided the panels leaf, fall back to
 // the page's OWN honest-empty model (empty panels, chrome only, NO fabrication). NEVER null.

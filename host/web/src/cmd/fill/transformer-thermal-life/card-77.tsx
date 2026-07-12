@@ -2,7 +2,7 @@ import React from "react";
 // Card 77 — Insulation Aging & Loss of Life (page transformer-asset-dashboard/thermal-life). InsulationAgingCard fed its
 // OWN Layer-2 payload's `aging` slice → daily aging-factor (FAA) + cumulative loss-of-life.
 //
-// ems_backend is RETIRED → the payload IS the render source. ALWAYS-DRAWS [GOAL]: the daily aging-factor (FAA) +
+// host-served is RETIRED → the payload IS the render source. ALWAYS-DRAWS [GOAL]: the daily aging-factor (FAA) +
 // cumulative loss-of-life are purely insulation-DOMAIN metrics with NO neuract column today, so the payload carries no
 // aging series — this card renders the tab's OWN typed-empty view-model (single '—' bucket → flat blank line, valid dual
 // axes + legend + KPI scaffolding, all labels/colours). The chart STILL DRAWS its structure as an honest blank, never a

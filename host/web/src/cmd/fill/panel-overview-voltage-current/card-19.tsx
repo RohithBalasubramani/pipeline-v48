@@ -1,7 +1,7 @@
 import React from "react";
 // Card 19 · AI Summary — lt-pcc panel-overview Voltage&Current tab.
 //
-// PAYLOAD-DIRECT (ems_backend RETIRED — `frame` is always empty now). Priority:
+// PAYLOAD-DIRECT (host-served RETIRED — `frame` is always empty now). Priority:
 // payload → CMD V2 HONEST-EMPTY view-model. The AI-summary component reads period.panels,
 // so if the payload elided the panels leaf, we fall back to the page's OWN honest-empty
 // model (fallbackViewModel — periods:[], chrome only, NO fabricated data). NEVER null.

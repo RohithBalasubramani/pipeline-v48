@@ -2,7 +2,7 @@
 -- identical behavior until a row is edited — config-first, no code change to retune).
 --
 -- (C4) DUAL-OWNED metadata keys [RTM/HPQ fixture relocation]: the 'AI-default, data-overridable' metadata key-path
---      SUFFIXES. The GENERIC rule lives in layer2/prompts/metadata.md (DUAL-OWNED SLOTS); the per-card examples moved
+--      SUFFIXES. The GENERIC rule lives in layer2/prompts/data_instructions_v2.md (DUAL-OWNED SLOTS); the per-card examples moved
 --      OUT of the shared system prompt into exactly the cards whose own skeleton carries a matching path
 --      (layer2/emit/user_message._dual_owned_line — suffix match, no card ids). Today that is RTM card 5
 --      (heatmap.sectionContracts) and HPQ card 27 (signature.pres.spokes / signature.pres.selectedName).

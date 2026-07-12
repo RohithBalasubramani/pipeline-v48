@@ -30,15 +30,12 @@ ASSET_ANSWER_SCHEMA = {
     "required": ["confident"],
 }
 
-_ON = ("1", "true", "yes", "t", "on")     # same truthy vocabulary as config/app_config.py _cast('bool')
-
-
 def asset_answer_schema():
     """ASSET_ANSWER_SCHEMA when llm.guided_json.asset_resolve is on, else None (default: off / absent row / DB down —
     call_qwen then builds today's byte-identical json_object request). Never raises, never blocks import."""
     try:
-        from config.app_config import cfg
-        on = str(cfg("llm.guided_json.asset_resolve", "off")).strip().lower() in _ON
+        from config.app_config import flag_on
+        on = flag_on("llm.guided_json.asset_resolve")   # THE boolean-knob vocabulary (D6)
     except Exception:
         on = False
     return ASSET_ANSWER_SCHEMA if on else None

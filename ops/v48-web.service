@@ -1,0 +1,21 @@
+# V48 web frontend (:5188) — Vite dev server over host/web (renders real CMD_V2 cards). [audit R4 2026-07-12]
+# Dev-mode by design today (HMR for host/web; CMD_V2 watch disabled in vite.config.ts). For a static serve,
+# switch ExecStart to:  /usr/bin/npx vite preview --host --port 5188   (after `npx vite build`).
+# Install as a user unit:
+#   cp ops/v48-web.service ~/.config/systemd/user/
+#   systemctl --user daemon-reload && systemctl --user enable --now v48-web
+[Unit]
+Description=V48 web frontend (Vite :5188)
+After=network-online.target v48-host.service
+Wants=v48-host.service
+
+[Service]
+Type=simple
+WorkingDirectory=/home/rohith/desktop/BFI/backend/layer2/pipeline_v48/host/web
+Environment=PATH=/home/rohith/.local/share/fnm/node-versions/v22.22.0/installation/bin:/usr/bin:/bin
+ExecStart=/home/rohith/.local/share/fnm/node-versions/v22.22.0/installation/bin/npx vite --host --port 5188
+Restart=always
+RestartSec=3
+
+[Install]
+WantedBy=default.target

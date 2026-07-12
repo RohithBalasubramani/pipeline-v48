@@ -1,0 +1,30 @@
+{
+ "run_id": "r_accb494336",
+ "loop1": [
+  {
+   "card_id": 39,
+   "title": "Today's Energy",
+   "answerability": "partial",
+   "note": "Showing total active and reactive energy for the month \u2014 per-phase breakdown and energy targets are not configured for this asset."
+  },
+  {
+   "card_id": 40,
+   "title": "Power Energy Analysis",
+   "answerability": "partial",
+   "note": "Showing active and reactive power demand profile over the last 7 days; rated and contracted power limits are omitted as the asset's nameplate ratings are unknown."
+  },
+  {
+   "card_id": 41,
+   "title": "Input vs Output Energy",
+   "answerability": "partial",
+   "note": "Showing total active power and derived loss/efficiency metrics \u2014 per-phase power and dedicated loss-energy columns aren't measured for this asset; lossPct used for Delta Percent."
+  },
+  {
+   "card_id": 42,
+   "title": "Load Anomalies",
+   "answerability": "partial",
+   "note": "Showing actual load trend and load factor \u2014 expected load profiles, anomaly counts, and threshold lines are not measured by this asset."
+  }
+ ],
+ "loop2": null
+}

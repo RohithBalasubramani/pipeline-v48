@@ -4,6 +4,7 @@ routed page's SHELL granularity contradicts the RESOLVED asset (single meter on 
 versa), re-route 1a to the correct-granularity MIRROR page (same analytical tail) BEFORE Layer 2, so the page's cards
 can actually populate. Deterministic + DB-driven (layer1a.parse.granularity_reconcile owns the shell/tail policy);
 never raises — a reconcile hiccup must not sink an otherwise-fine page. Only fires on a CONFIDENT mismatch."""
+from obs.errfmt import fmt_exc as _fmt_exc   # the ONE exception string [EH F4]
 from layer1a.parse.granularity_reconcile import mirror_page_key
 from layer1a.db_reads.page_specs import read_page_specs
 from config.available_pages import filter_to_available
@@ -28,7 +29,7 @@ def apply(out, prompt, db, run_id):
         specs = filter_to_available(read_page_specs(db))
         mirror = mirror_page_key(routed_key, routed_shell, has_feeders, specs, asset_class)
     except Exception as e:
-        stage(run_id, "granularity_reconcile", ERROR=f"{type(e).__name__}: {e}")
+        stage(run_id, "granularity_reconcile", ERROR=_fmt_exc(e))
         return out
     if not mirror:
         return out
@@ -41,5 +42,5 @@ def apply(out, prompt, db, run_id):
               has_feeders=has_feeders, cards=len((out["layer1a"] or {}).get("cards") or []))
     except Exception as e:
         # keep the original route rather than sink the page — reconcile is a safety-net, not a hard gate
-        stage(run_id, "granularity_reconcile", ERROR=f"{type(e).__name__}: {e}", intended=mirror)
+        stage(run_id, "granularity_reconcile", ERROR=_fmt_exc(e), intended=mirror)
     return out

@@ -1,0 +1,24 @@
+{
+ "run_id": "r_34805794fe",
+ "loop1": [
+  {
+   "card_id": 14,
+   "title": "Cumulative Energy",
+   "answerability": "partial",
+   "note": "Showing month-to-date active and reactive energy for outgoing feeders; capacity and target values are not measured for this panel."
+  },
+  {
+   "card_id": 15,
+   "title": "Today live power analysis",
+   "answerability": "partial",
+   "note": "Showing apparent power (kVA), active power (kW), and reactive power (kVAr) from primary feeders; Load Factor, Rated Capacity, and Worst Peak markers are omitted because the member meters do not log load factor or rated capacity, and no windowed-peak reducer exists for worst-peak kVA."
+  },
+  {
+   "card_id": 17,
+   "title": "Daily Power Demand by Feeder",
+   "answerability": "partial",
+   "note": "Showing Worst Peak and Feeder Demand series (UPS, BPDB, HHF) aggregated from member meters; Load Factor and Critical Threshold are not measured by this asset's live data."
+  }
+ ],
+ "loop2": null
+}

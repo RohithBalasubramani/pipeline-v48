@@ -1,0 +1,18 @@
+{
+ "run_id": "r_b05cbedc52",
+ "loop1": [
+  {
+   "card_id": 61,
+   "title": "Thermal Timeline",
+   "answerability": "partial",
+   "note": "Showing thermal history (Coolant, Oil, Intake, Exhaust) and Over-Temp Event Count. Expected Range bands and specific Event timestamps are not measured by this asset's columns and are omitted."
+  },
+  {
+   "card_id": 62,
+   "title": "Pressure \u00b7 Speed \u00b7 Load",
+   "answerability": "partial",
+   "note": "Showing event timeline and current/voltage metrics for 7 active feeders; 2 feeders (GIC-02-N6-UPS-05, GIC-02-N7-UPS-06) are dark (no data) and will render as blanks."
+  }
+ ],
+ "loop2": null
+}

@@ -1,0 +1,24 @@
+{
+ "run_id": "r_ea45a6c00b",
+ "loop1": [
+  {
+   "card_id": 63,
+   "title": "Fuel Tank Anatomy",
+   "answerability": "partial",
+   "note": "This meter (dg_1_mfm) measures electrical parameters (power, current, voltage) but does not log fuel-specific quantities (fuel level, fuel temperature, fuel flow rate, or efficiency). The card renders its metadata frame with honest blanks for the fuel data."
+  },
+  {
+   "card_id": 64,
+   "title": "All Runs (Fuel Log)",
+   "answerability": "partial",
+   "note": "Showing total energy and average load \u2014 fuel consumption, run hours, starts, and faults are not measured by this electrical meter."
+  },
+  {
+   "card_id": 65,
+   "title": "Fuel & Tank \u2014 Composite",
+   "answerability": "partial",
+   "note": "Showing active power and efficiency/load \u2014 fuel level, burn rate, temperature, SFC, and cost are not measured by this asset's electrical meter."
+  }
+ ],
+ "loop2": null
+}

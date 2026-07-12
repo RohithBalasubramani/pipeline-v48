@@ -1,0 +1,18 @@
+{
+ "run_id": "r_f0d58cbc93",
+ "loop1": [
+  {
+   "card_id": 43,
+   "title": "Voltage Live Health",
+   "answerability": "partial",
+   "note": "Showing live phase voltages and deviation; statutory band marker is omitted as no dedicated band column is measured."
+  },
+  {
+   "card_id": 46,
+   "title": "Current History",
+   "answerability": "partial",
+   "note": "Showing per-phase current history and peak/average stats; expected range lines omitted because the asset's rated current nameplate is unknown."
+  }
+ ],
+ "loop2": null
+}

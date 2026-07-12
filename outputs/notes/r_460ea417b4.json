@@ -5,25 +5,25 @@
    "card_id": 39,
    "title": "Today's Energy",
    "answerability": "partial",
-   "note": "Showing year-to-date active and reactive energy totals \u2014 energy targets and subsidy limits are not configured for this asset."
+   "note": "Showing year-to-date active energy (import minus export) and total energy (active + reactive) \u2014 subsidy limits, targets, and SEC denominators are not configured for this asset."
   },
   {
    "card_id": 40,
    "title": "Power Energy Analysis",
    "answerability": "partial",
-   "note": "one or more leaves could not be bound for this card on this asset \u2014 those leaves render an honest blank (per-leaf reasons attached), every other leaf fills"
+   "note": "Showing cumulative active and reactive energy (kWh/kVArh) \u2014 rated and contracted power limits (kW/kVA) are not energy quantities and cannot be bound to energy slots."
   },
   {
    "card_id": 41,
    "title": "Input vs Output Energy",
    "answerability": "partial",
-   "note": "Showing total active energy import/export \u2014 per-phase energy isn't measured for this asset; efficiency and loss are derived from total power."
+   "note": "Showing YTD energy totals and loss \u2014 instantaneous power used for efficiency/loss % as a proxy for energy efficiency."
   },
   {
    "card_id": 42,
    "title": "Load Anomalies",
    "answerability": "partial",
-   "note": "Showing actual energy import trend and load factor \u2014 anomaly events, expected load/range, and thresholds are not measured by this meter."
+   "note": "Showing actual load trend and load factor \u2014 expected load, ranges, and event counts are not measured by this asset."
   }
  ],
  "loop2": null

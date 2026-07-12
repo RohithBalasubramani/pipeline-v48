@@ -1,5 +1,6 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { runPipeline } from "./api";
+import { Spark } from "./components/icons";
 import type { PipelineResult } from "./types";
 import { CommandHeader } from "./components/CommandHeader";
 import { SuggestedCommands } from "./components/SuggestedCommands";
@@ -8,6 +9,7 @@ import { DateSyncProvider } from "./components/DateSync";
 import { KnowledgeAnswer, type KnowledgeTurn } from "./components/KnowledgeAnswer";
 import { AssetResolution } from "./components/AssetResolution";
 import { DataUnavailable } from "./components/DataUnavailable";
+import { InspectorView } from "./components/InspectorView";
 import type { Seed } from "./components/PromptBar";
 
 // Command Center — the Neuract host shell. Header (brand + copilot bar + LIVE status) is always on; below it the
@@ -54,6 +56,19 @@ export function App() {
   // KNOWLEDGE conversation thread — the running Q&A turns (oldest-first). Carried back to the one AI layer as `history`
   // so a follow-up ("how is it measured") resolves in context; cleared the moment a prompt routes to the card pipeline.
   const [thread, setThread] = useState<KnowledgeTurn[]>([]);
+  // AI DECISION INSPECTOR — hash-synced view switch (no router lib, deliberately): #inspector is linkable and
+  // back-button-able; everything else stays the state-driven command view.
+  const [view, setView] = useState<"command" | "inspector">(() => (location.hash === "#inspector" ? "inspector" : "command"));
+  useEffect(() => {
+    const onHash = () => setView(location.hash === "#inspector" ? "inspector" : "command");
+    window.addEventListener("hashchange", onHash);
+    return () => window.removeEventListener("hashchange", onHash);
+  }, []);
+  const openView = (v: "command" | "inspector") => {
+    setView(v);
+    const want = v === "inspector" ? "#inspector" : "";
+    if (location.hash !== want) history.replaceState(null, "", location.pathname + location.search + want);
+  };
 
   const run = async (prompt: string, assetId?: number | number[]) => {
     setLoading(true);
@@ -67,12 +82,12 @@ export function App() {
       setResult(r);
       // persist a COMPLETED dashboard (cards present, nothing pending) so a page reload restores it instead of
       // resetting to the main screen; a pending/knowledge/empty result never overwrites the last good dashboard.
-      if ((r as any).kind !== "knowledge" && !(r as any).asset_pending && Array.isArray(r.cards) && r.cards.length) {
+      if (r.kind !== "knowledge" && !r.asset_pending && Array.isArray(r.cards) && r.cards.length) {
         _save(prompt, r);
       }
-      if ((r as any).kind === "knowledge") {
+      if (r.kind === "knowledge") {
         // append this turn to the thread (a refused/off-scope turn is shown too, as OUT OF SCOPE)
-        setThread((t) => [...t, { prompt, answer: (r as any).answer, refused: !!(r as any).refused }]);
+        setThread((t) => [...t, { prompt, answer: r.answer ?? "", refused: !!r.refused }]);
       } else {
         setThread([]);   // routed to the card/asset pipeline → new topic, drop the conversation
       }
@@ -80,7 +95,7 @@ export function App() {
       // when the named asset is NO-DATA (the picker opens with it greyed + alternatives; "None of these" → no-data
       // terminal). Everything no-data is resolved AT THE PICKER — it never proceeds to Layer 2. [no_data → picker, hybrid]
       // A multi-asset compare pins every asset up-front → go straight to the grouped grid (never the single "resolved" card).
-      setResolving(!isMulti && ((r as any).asset_pending === true || (r as any).asset_no_data === true || assetId != null));
+      setResolving(!isMulti && (r.asset_pending === true || r.asset_no_data === true || assetId != null));
     } catch (e) {
       setError(e instanceof Error ? e.message : String(e));
       setResult(null);
@@ -94,20 +109,23 @@ export function App() {
 
   // NO-DATA: 1b resolved the named asset but its neuract table is empty → handled IN the picker now (opens greyed +
   // alternatives; "None of these" → no-data terminal), so it never falls through to the card grid or reaches Layer 2.
-  const noData = !!result && (result as any).asset_no_data === true;
+  const noData = !!result && result.asset_no_data === true;
   // KNOWLEDGE pipeline (separate, 2026-07-06): a conceptual electrical/mechanical answer or the domain refusal —
   // rendered as ONE text panel, never the card grid.
-  const knowledge = !!result && (result as any).kind === "knowledge";
-  const hasCards = !!result && !knowledge && !(result as any).asset_pending && !noData && !loading && !resolving;
+  const knowledge = !!result && result.kind === "knowledge";
+  const hasCards = !!result && !knowledge && !result.asset_pending && !noData && !loading && !resolving;
   // HONEST OUTAGE: a data_unavailable terminal (e.g. the neuract tunnel dropped) OR a resolved run that produced ZERO
   // cards must show a clear notice — NOT a silent blank grid. Covers the single AND the multi-asset response.
-  const outage = hasCards && ((result as any).data_unavailable === true || (result!.cards?.length ?? 0) === 0);
+  const outage = hasCards && (result!.data_unavailable === true || (result!.cards?.length ?? 0) === 0);
 
   return (
     <div className="cc-shell">
-      <CommandHeader onRun={(p) => run(p)} loading={loading} seed={seed} />
+      <CommandHeader onRun={(p) => { openView("command"); run(p); }} loading={loading} seed={seed}
+                     onOpenInspector={() => openView("inspector")} />
 
-      {knowledge && !loading ? (
+      {view === "inspector" ? (
+        <InspectorView initialTraceId={result?.trace_id ?? null} onBack={() => openView("command")} />
+      ) : knowledge && !loading ? (
         <main className="cc-work">
           <KnowledgeAnswer turns={thread} />
         </main>
@@ -119,16 +137,11 @@ export function App() {
         </main>
       ) : hasCards ? (
         <div className="cc-results">
-          <ValidationBar validation={(result as any).validation} cards={result!.cards} />
+          <ValidationBar validation={result!.validation} cards={result!.cards} />
           <div className="cc-grid-fill">
             {/* DateSync keyed by run: one card's date pick re-fetches EVERY is_history card; a new prompt resets it */}
-            <DateSyncProvider key={(result as any).run_id || lastPrompt}>
-              <CardGrid
-                cards={result!.cards}
-                layout={(result as any).page?.layout}
-                frames={(result as any).frames}
-                liveFrame={(result as any).live_frame}
-              />
+            <DateSyncProvider key={result!.run_id || lastPrompt}>
+              <CardGrid cards={result!.cards} layout={result!.page?.layout} />
             </DateSyncProvider>
           </div>
         </div>
@@ -151,12 +164,13 @@ export function App() {
       <PoweredByNeuract />
 
       {/* ASSET RESOLUTION — gated BEFORE Layer 2. Pick → re-run pinned → "resolved" → Open dashboard reveals the cards.
-          None of these → terminal (pipeline ends). Dismiss → back to the empty state. */}
-      {resolving && result && (
+          None of these → terminal (pipeline ends). Dismiss → back to the empty state. (Command view only — the
+          inspector is a read-only surface and must never trap the resolution popup over it.) */}
+      {view === "command" && resolving && result && (
         <AssetResolution
           candidates={result.asset.candidates}
-          noDataAsset={((result as any).asset_no_data || (result as any).validation_blocked) ? (result.asset?.asset ?? null) : null}
-          blockKind={(result as any).validation_blocked ? "validation" : "no_data"}
+          noDataAsset={(result.asset_no_data || result.validation_blocked) ? (result.asset?.asset ?? null) : null}
+          blockKind={result.validation_blocked ? "validation" : "no_data"}
           prompt={lastPrompt}
           loading={loading}
           onPick={(id) => run(lastPrompt, id)}
@@ -219,12 +233,7 @@ function PoweredByNeuract() {
 function RunningCard({ query }: { query: string }) {
   return (
     <div className="cc-lastrun">
-      <span className="spark">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-          strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
-          <path d="M12 3l1.9 5.6L19.5 10l-5.6 1.9L12 17.5l-1.9-5.6L4.5 10l5.6-1.4z" />
-        </svg>
-      </span>
+      <span className="spark"><Spark /></span>
       <div style={{ flex: 1, minWidth: 0 }}>
         <div className="cc-lastrun-label">Working</div>
         <div className="cc-lastrun-q">{query}</div>

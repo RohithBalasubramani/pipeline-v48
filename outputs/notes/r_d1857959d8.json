@@ -1,0 +1,24 @@
+{
+ "run_id": "r_d1857959d8",
+ "loop1": [
+  {
+   "card_id": 47,
+   "title": "Power Quality",
+   "answerability": "partial",
+   "note": "Showing current and voltage THD, H5/H7 harmonics, and IEEE 519 compliance; flicker and crest factor are not measured for this asset."
+  },
+  {
+   "card_id": 48,
+   "title": "Distortion & Harmonic Profile",
+   "answerability": "partial",
+   "note": "Showing V-THD, I-THD, and H5/H7 trends \u2014 per-phase THD and harmonic order data is logged for this asset; scalar KPIs (yMax, yMin, averageStat) are omitted as they are not directly measured by this meter."
+  },
+  {
+   "card_id": 49,
+   "title": "Load Impact & Transformer Stress",
+   "answerability": "partial",
+   "note": "Showing PF Health and K-Stress trends; K-Watch, Lag Watch, and PF Target thresholds are omitted as they require nameplate/config constants not available for this asset."
+  }
+ ],
+ "loop2": "GIC-01-N2-Spare has no logged data \u2014 every card renders its real component with per-leaf-null leaves (honest empty). 262 data-bearing alternative(s) offered in the picker."
+}

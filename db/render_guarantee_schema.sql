@@ -73,7 +73,7 @@ CREATE TABLE IF NOT EXISTS reason_template (
 CREATE TABLE IF NOT EXISTS endpoint_policy (
     page_key       text,                          -- ems page code
     resolver_scope text,                          -- single_asset | panel_aggregate | topology (the resolved asset scope)
-    endpoint       text,                          -- the ems_backend WS endpoint to open
+    endpoint       text,                          -- the live fetch endpoint to open
     expected_shape text,                          -- queue | buckets | widgets (what the card's fill mapper reads)
     is_history     boolean,                       -- date-navigable history endpoint?
     PRIMARY KEY (page_key, resolver_scope)

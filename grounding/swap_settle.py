@@ -63,18 +63,14 @@ def swappable_pool(pool, page_key, *, metric=None):
             continue
         keep.append(c)
     if metric and keep:
-        # reuse the ONE generic affinity vocabulary/score from the pool builder (lazy import avoids the module-load
-        # cycle: candidates imports is_registered from here). Stable sort → equal-affinity order is preserved.
-        from layer2.swap.candidates import _metric_tokens, _affinity
-        tokens = _metric_tokens(metric)
+        # the ONE generic affinity vocabulary/score (domain/metric_affinity — shared with the pool builder; its old
+        # home in layer2.swap.candidates forced a lazy-import cycle here). Stable sort → equal-affinity order is
+        # preserved. [cycle-kill 2026-07-12]
+        from domain.metric_affinity import metric_tokens, affinity
+        tokens = metric_tokens(metric)
         if tokens:
-            keep.sort(key=lambda c: -_affinity(c, tokens))
+            keep.sort(key=lambda c: -affinity(c, tokens))
     return keep
-
-
-def swappable_ids(pool, page_key, *, metric=None):
-    """Convenience: just the renderable target card_ids from a pool (metric-affinity-ranked when metric is given)."""
-    return [c["card_id"] for c in swappable_pool(pool, page_key, metric=metric)]
 
 
 # ── settle collisions [META-04] ─────────────────────────────────────────────────────────────────

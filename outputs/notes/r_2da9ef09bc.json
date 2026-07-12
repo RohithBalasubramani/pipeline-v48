@@ -1,0 +1,30 @@
+{
+ "run_id": "r_2da9ef09bc",
+ "loop1": [
+  {
+   "card_id": 14,
+   "title": "Cumulative Energy",
+   "answerability": "partial",
+   "note": "Showing cumulative active/reactive energy (kWh/kVArh) for this month \u2014 panel nameplate capacity is unknown, so target/capacity/marker are blank."
+  },
+  {
+   "card_id": 16,
+   "title": "Energy Consumption Trend",
+   "answerability": "partial",
+   "note": "Showing per-feeder energy trends (UPS, BPDB, HHF) \u2014 panel-level aggregate energy is not directly measured; values are derived from member meters."
+  },
+  {
+   "card_id": 15,
+   "title": "Today live power analysis",
+   "answerability": "partial",
+   "note": "Showing live apparent power and active/reactive power from panel members; rated capacity and peak markers are omitted because the asset's nameplate rating is unknown and no windowed-peak reducer exists."
+  },
+  {
+   "card_id": 17,
+   "title": "Daily Power Demand by Feeder",
+   "answerability": "partial",
+   "note": "Showing worst peak power and load factor from member feeders; HHF series is honest-blanked as no HHF feeders exist on this panel."
+  }
+ ],
+ "loop2": null
+}

@@ -5,10 +5,10 @@
 //   64 RunsList          ← payload {stats}              (All Runs / Fuel Log — runs honest-empty)
 //   65 FuelCompositeCard ← payload {chart}              (Fuel & Tank timeline — needs a full vm)
 //
-// FRAMES=PAYLOADS [architecture]: ems_backend is RETIRED — the host emits `frames={}` EMPTY. The ONLY data source is
+// FRAMES=PAYLOADS [architecture]: host-served is RETIRED — the host emits `frames={}` EMPTY. The ONLY data source is
 // the Layer-2 `payload` (ems_exec-completed: real neuract values + honest-blank '—', already shaped as the CMD V2
 // component's props, harvested from Storybook). So every helper here reads the PAYLOAD; there is NO live-frame /
-// mapper / assetPageSocket path (that dead ems_backend branch has been DELETED).
+// mapper / assetPageSocket path (that dead host-served branch has been DELETED).
 //
 // DOMAIN-DATA REALITY [honest-degrade]: fuel level / rate / temp, the fuel-history series, and the run log are DG
 // domain telemetry the neuract logging DB does NOT carry. So Layer-2 elides those leaves (null → '—'); we render the

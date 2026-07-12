@@ -1,0 +1,30 @@
+{
+ "run_id": "r_d5659b305b",
+ "loop1": [
+  {
+   "card_id": 39,
+   "title": "Today's Energy",
+   "answerability": "partial",
+   "note": "Showing aggregate energy volume (Active/Reactive/Total) for the last 7 days; target-based metrics (Target, Progress, SEC) are omitted as the asset's nameplate rating is unknown."
+  },
+  {
+   "card_id": 40,
+   "title": "Power Energy Analysis",
+   "answerability": "partial",
+   "note": "Showing active and reactive power trends over the last 7 days. Rated and Contracted power lines are omitted because the asset's nameplate ratings are unknown."
+  },
+  {
+   "card_id": 41,
+   "title": "Input vs Output Energy",
+   "answerability": "partial",
+   "note": "Showing total active power and derived efficiency/losses \u2014 per-phase power isn't measured for this asset."
+  },
+  {
+   "card_id": 42,
+   "title": "Load Anomalies",
+   "answerability": "partial",
+   "note": "Showing actual load trend and load factor \u2014 expected load, anomaly events, and threshold bands are not measured by this DG meter."
+  }
+ ],
+ "loop2": null
+}

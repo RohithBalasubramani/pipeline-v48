@@ -3,8 +3,7 @@
 // (fills + focuses, does not auto-run) — the operator reviews then presses ↵.
 // Tags are mono micro-codes (RT/ENR/V·I/PQ/ALM); text is the readable command.
 import { useEffect, useState } from "react";
-
-type Chip = { tag: string; text: string };
+import { copilotStarters, type StarterChip as Chip } from "../api";
 
 // shown only until the copilot's grounded roster arrives (or if it's unreachable)
 const FALLBACK: Chip[] = [
@@ -20,11 +19,8 @@ export function SuggestedCommands({ onPick }: { onPick: (query: string) => void 
 
   useEffect(() => {
     let alive = true;
-    fetch("/copilot/starters")
-      .then((r) => r.json())
-      .then((d) => {
-        if (alive && Array.isArray(d.starters) && d.starters.length) setChips(d.starters);
-      })
+    copilotStarters()
+      .then((starters) => { if (alive && starters.length) setChips(starters); })
       .catch(() => { /* keep fallback */ });
     return () => { alive = false; };
   }, []);

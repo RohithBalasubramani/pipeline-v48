@@ -4,21 +4,21 @@
   {
    "card_id": 54,
    "title": "Transfer readiness",
-   "answerability": "none",
-   "note": "Showing Transfer Readiness card structure \u2014 no transfer readiness, input, bypass, or sync permissive scores are measured by this asset's electrical meter."
+   "answerability": "partial",
+   "note": "Showing load factor as a proxy for transfer readiness \u2014 headroom is omitted because the asset's rated_kva nameplate is empty."
   },
   {
    "card_id": 55,
    "title": "Activity",
    "answerability": "partial",
-   "note": "Showing active power load factor as a proxy for transfer activity counts and days-since, as this UPS meter does not log transfer events or duration."
+   "note": "Showing total active power \u2014 transfer counts and days-since are not measured by this UPS meter."
   },
   {
    "card_id": 56,
    "title": "Source Transfer \u2014 Composite",
    "answerability": "partial",
-   "note": "Showing active power, voltage, and current \u2014 readiness and bypass metrics are not measured for this asset."
+   "note": "Showing input power metrics (voltage, current) and transfer activity \u2014 bypass voltage, bypass frequency, and readiness scores are not measured by this UPS asset."
   }
  ],
- "loop2": "'ups-asset-dashboard/source-transfer' answers the prompt as routed; these cards cover quantities not recorded for this asset and render honest-blank per-leaf with the reason: Transfer readiness (Showing Transfer Readiness card structure \u2014 no transfer readiness, input, bypass, or sync permissive scores are measured by this asset's electrical meter.)."
+ "loop2": null
 }

@@ -1,0 +1,30 @@
+{
+ "run_id": "r_bedccbdd15",
+ "loop1": [
+  {
+   "card_id": 39,
+   "title": "Today's Energy",
+   "answerability": "partial",
+   "note": "Showing total active energy consumption for the selected period \u2014 reactive energy, targets, and subsidy metrics are not measured for this asset."
+  },
+  {
+   "card_id": 40,
+   "title": "Power Energy Analysis",
+   "answerability": "partial",
+   "note": "Showing active and reactive power trends over the last 7 days; rated and contracted power reference lines are omitted because the asset's nameplate ratings are unknown."
+  },
+  {
+   "card_id": 41,
+   "title": "Input vs Output Energy",
+   "answerability": "partial",
+   "note": "Showing input power and derived efficiency/losses \u2014 LV output energy is not measured for this asset."
+  },
+  {
+   "card_id": 42,
+   "title": "Load Anomalies",
+   "answerability": "partial",
+   "note": "Showing active power load factor and present load \u2014 expected load, expected range, and anomaly events are not measured by this meter."
+  }
+ ],
+ "loop2": null
+}

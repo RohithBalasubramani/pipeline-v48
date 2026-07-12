@@ -1,6 +1,6 @@
 """partition/group_detect.py — transitive-closure grouping -> interdependency groups + standalone. [spec section 6]"""
-from partition.coupling_lookup import gather_edges
-from partition.fallback_edges import attach_orphans
+from layer1a.partition.coupling_lookup import gather_edges
+from layer1a.partition.fallback_edges import attach_orphans
 
 
 def _union_find(card_ids, edges):

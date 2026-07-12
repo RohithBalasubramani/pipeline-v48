@@ -15,14 +15,4 @@ def required_classes(page_key):
     return [r[0] for r in rows]
 
 
-def all_page_classes():
-    """{page_key: [required_class,...]} for every configured page."""
-    rows = q("cmd_catalog", "SELECT page_key, required_class FROM metric_class ORDER BY page_key, required_class")
-    out = {}
-    for pk, cls in rows:
-        out.setdefault(pk, []).append(cls)
-    return out
-
-
-def _esc(s):
-    return str(s).replace("'", "''")
+from config.policy_read import esc as _esc  # the ONE shared SQL-quote escape  # noqa: E402

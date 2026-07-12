@@ -1,0 +1,24 @@
+{
+ "run_id": "r_4f9a20c97a",
+ "loop1": [
+  {
+   "card_id": 57,
+   "title": "UPS Capacity",
+   "answerability": "partial",
+   "note": "Showing capacity scores derived from active power, apparent power, and current against the 600kVA nameplate rating; headroom is a composite of these reserves."
+  },
+  {
+   "card_id": 58,
+   "title": "UPS Load",
+   "answerability": "partial",
+   "note": "Showing load factor and active power \u2014 headroom is omitted because the asset's rated capacity is unknown."
+  },
+  {
+   "card_id": 59,
+   "title": "Output Load & Capacity \u2014 Composite",
+   "answerability": "partial",
+   "note": "Showing output load (via load factor) and system frequency \u2014 direct bypass/output metrics are not measured by this UPS meter; using closest available proxies."
+  }
+ ],
+ "loop2": null
+}

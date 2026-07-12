@@ -12,8 +12,8 @@ import html
 import json
 import os
 
-from validation import config
-from validation.response import ascii_safe
+from sweep import config
+from sweep.response import ascii_safe
 
 _MISSING = "(none)"
 
@@ -34,7 +34,7 @@ def _load_report(sdir: str, session_id: str) -> dict:
     if rep is not None:
         return rep
     try:                                   # build it if the machine report was never generated
-        from validation import report_json
+        from sweep import report_json
         report_json.build(session_id)
     except Exception:
         pass
@@ -46,7 +46,7 @@ def _load_report(sdir: str, session_id: str) -> dict:
     m = _read_json(os.path.join(sdir, "metrics.json"))
     if m is None:
         try:
-            from validation import metrics
+            from sweep import metrics
             m = metrics.compute(session_id)
         except Exception:
             m = None
@@ -63,7 +63,7 @@ def _load_failures(sdir: str, session_id: str) -> dict:
     if f is not None:
         return f
     try:
-        from validation import failures
+        from sweep import failures
         return failures.collect(session_id) or {}
     except Exception:
         return {}
@@ -74,7 +74,7 @@ def _load_coverage(sdir: str, session_id: str) -> dict:
     if c is not None:
         return c
     try:                                   # coverage module may compute+mirror on demand
-        from validation import coverage
+        from sweep import coverage
         for fn_name in ("compute", "build", "report"):
             fn = getattr(coverage, fn_name, None)
             if callable(fn):

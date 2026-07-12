@@ -2,7 +2,7 @@ import React from "react";
 // Card 76 — Thermal Timeline (page transformer-asset-dashboard/thermal-life). ThermalTimelineCard fed its OWN Layer-2
 // payload's `timeline` slice → today's hotspot/oil/load/efficiency series.
 //
-// ems_backend is RETIRED → the payload IS the render source. ALWAYS-DRAWS [GOAL]: the load% + efficiency series are
+// host-served is RETIRED → the payload IS the render source. ALWAYS-DRAWS [GOAL]: the load% + efficiency series are
 // electrical-derivable and plot REAL from the payload; the hotspot/oil temperature lines are domain readings that read
 // flat/empty when neuract has no column. A payload with no usable timeline series renders the tab's OWN typed-empty
 // view-model (single '—' bucket → flat blank line, valid axes/legend) — the chart STILL DRAWS, never a blank/null card

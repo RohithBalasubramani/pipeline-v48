@@ -1,4 +1,6 @@
 """config/available_pages.py — the add/remove provision."""
+import pytest
+
 from config.available_pages import AVAILABLE_PAGES, available_page_keys, filter_to_available
 from layer1a.route import route
 
@@ -20,6 +22,7 @@ def test_env_override(monkeypatch):
     assert available_page_keys() == ["x/one", "y/two"]
 
 
+@pytest.mark.live
 def test_route_stays_in_available():
     allow = set(available_page_keys())
     for p in ["UPS battery health", "transformer thermal life", "voltage current health"]:

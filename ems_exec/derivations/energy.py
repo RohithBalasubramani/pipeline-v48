@@ -8,11 +8,7 @@ from __future__ import annotations
 import math
 
 
-def _f(x):
-    try:
-        return float(x)
-    except (TypeError, ValueError):
-        return None
+from ._coerce import f as _f
 
 
 def _expected_loss_band_pct():
@@ -315,29 +311,3 @@ def reactive_energy_from_power_kvarh(ctx):
     return None
 
 
-def specific_energy_consumption_ratio(ctx):
-    """SEC ratio (B→A) = this meter's period energy ÷ Σ of the meters it feeds (downstream). Ported from CMD_V2 backend2
-    feeder_energypower.py _sec_fields :289-304 — a board-incomer's own energy vs the sum of its distributed feeders. None
-    on a leaf feeder (no modelled downstream meter) so the slot renders '—', never a fabricated denominator.
-
-    ctx: {this_period_kwh, downstream_kwh:[deltas]}  (each already a windowed delta; the consumer computes them the same
-    reversed-CT-aware way as active_energy_*). Falls back to the production-base specific_energy_consumption above when
-    NO downstream set is wired — KEEPS V48's existing reversed-CT SEC/production-base path (per rule #4, additive only).
-    """
-    ds = ctx.get("downstream_kwh")
-    if ds is None:
-        # No downstream feeder set wired → keep V48's production-base SEC path (reversed-CT-aware) as the fallback.
-        return specific_energy_consumption(ctx)
-    tot = 0.0
-    seen = False
-    for x in ds:
-        v = _f(x)
-        if v is not None:
-            tot += v
-            seen = True
-    if not seen or tot <= 0:
-        return None  # leaf feeder / no downstream energy → honest '—'
-    this_kwh = _f(ctx.get("this_period_kwh"))
-    if this_kwh is None:
-        this_kwh = active_energy_today_kwh(ctx)
-    return round(this_kwh / tot, 3) if this_kwh is not None else None

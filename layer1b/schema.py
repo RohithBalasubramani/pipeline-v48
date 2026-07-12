@@ -1,8 +1,10 @@
 """layer1b/schema.py — assemble + validate Layer1bOutput. [contract 3]"""
+from layer1b.types import Layer1bOutput   # annotation-only typed core [typing F2]
+from layer1b.how import ALL as _HOW_ALL, RESOLVED_WITH_DATA as _HOW_RESOLVED_WITH_DATA
 from layer1b.resolve.candidate_list import for_picker
 
 
-def build_layer1b_output(resolved, basket):
+def build_layer1b_output(resolved, basket) -> "Layer1bOutput":
     return {
         "asset": resolved.get("asset"),
         "how": resolved.get("how"),
@@ -21,13 +23,13 @@ def validate_layer1b_output(out):
     how = out.get("how")
     # collision_gate_fullname = the deterministic full-name pin (attributable to the collision gate, not the model) — a
     # legitimate RESOLVED-WITH-DATA state; treated as a confident pin below (basket + no-picker safety checks apply).
-    if how not in {"AI", "user-choice", "ambiguous", "empty", "no_data", "collision_gate_fullname"}:
+    if how not in _HOW_ALL:
         p.append(f"bad how: {how!r}")
     if how == "ambiguous" and not out.get("candidate_list"):
         p.append("ambiguous but no candidate_list")
     if how == "no_data" and not out.get("asset"):
         p.append("no_data but no asset (must name which asset is dark)")
-    if how in {"AI", "user-choice", "collision_gate_fullname"}:       # the RESOLVED-WITH-DATA states (no_data is excluded)
+    if how in _HOW_RESOLVED_WITH_DATA:                                # the RESOLVED-WITH-DATA states (no_data is excluded)
         if not out.get("asset"):
             p.append(f"how={how} but no asset")
         elif not out.get("column_basket", {}).get("columns"):

@@ -15,12 +15,13 @@ ems_exec.serve.run.run_card(exact_metadata, data_instructions, asset_table, db_l
 skeleton from NEURACT directly (real where the AI named a column/fn, honest None/'—' else; every seed number stripped) —
 NO ws/mfm frame-fetch, NO Layer 2 frontend-fill, NO Layer 3. Feeder + asset + panel cards ALL go through run_card
 per-card (panel-aggregate leaves simply honest-blank; aggregation deferred). `frames` is emitted EMPTY for back-compat.
-Layer 3 is RETIRED (archive/layer3_archive_20260702.tar.gz) and the old ems_backend is archived too — neither is imported.
+Layer 3 is RETIRED (archive/layer3_archive_20260702.tar.gz) and the legacy EMS backend is retired too — neither is imported.
 
 THIS FILE = the HTTP surface (Handler + build_response + the response dump). The serve-boundary seams are atomic host
 siblings, re-exported byte-compatibly: host/enrich.py (the FE card build + blank-reason wording + emit-gap merge),
 host/exec_cards.py (the parallel per-card executor fan-out), host/payload_store.py (the skeleton/raw-default caches).
 """
+from obs.errfmt import fmt_exc as _fmt_exc   # the ONE exception string [EH F4]
 import json
 import os
 import sys
@@ -35,66 +36,23 @@ if _ROOT not in sys.path:
 
 from run.harness import run_pipeline                       # noqa: E402
 from config.app_config import cfg                          # noqa: E402  DB-tunable operational knobs
-from ems_exec.serve import run as ems_exec_run             # noqa: E402  per-card NEURACT executor (run_card)
 from config import neuract_dsn as _neuract_dsn             # noqa: E402  DB-driven neuract DSN (code-default fallback)
 from host.enrich import (                                  # noqa: E402,F401  the FE card build (re-exported for tests)
     _enrich_card, _merge_emit_gaps, _gap_note, _no_data_reason, _asset_has_logged_data, _per_metric_blank_reason)
 from host.exec_cards import (                              # noqa: E402  the parallel executor fan-out + shared seam
-    _run_cards, _date_window_for, fill_one_card, _special_handling_map, _registry_mfm_id)
+    _date_window_for, fill_one_card, _special_handling_map, _registry_mfm_id)
 from host.payload_store import _skeleton_payload, _raw_default_payload, _as_json  # noqa: E402,F401
 
-SB_BASE = os.environ.get("STORYBOOK_URL", "http://100.90.185.31:6008").rstrip("/")
-PORT = int(os.environ.get("V48_HOST_PORT", "8770"))
+# SB_BASE + _attach_l2_notes HOME moved to host/notes.py — multi_asset shares them and the only way in was a lazy
+# back-import of this module (server↔multi_asset cycle). Re-exported so tests/callers keep working. [cycle-kill 2026-07-12]
+from host.notes import SB_BASE, _attach_l2_notes           # noqa: E402,F401  (shared serve-boundary home)
+
+from config.endpoints import HOST_PORT as PORT         # noqa: E402  the ONE :8770 home (config F7)
 
 
-def _attach_l2_notes(cards, l2):
-    """B1 [residual 'fe' — invisible proxy notes]: attach Layer 2's card-level honesty disclosures to each served card
-    as ADDITIVE fields. _enrich_card's whitelist dropped them — e.g. r_44796d791a card 70's 'kWh shown as a proxy for
-    run-hours' data_note reached only the page-level notes.loop1, never the card the FE renders — so every emitted
-    proxy/substitution note was invisible on the card itself.
-      data_note        — the emit's plain-words proxy/substitution/blank explanation. Canonical home = the Layer 2
-                         output's TOP level (layer2/build.py `out['data_note']`); falls back to the emit-variance
-                         location inside data_instructions (the model sometimes nests it there — see r_44796d791a
-                         card 71). Whitespace-only / non-string → None (honest, never fabricated).
-      l2_answerability — Layer 2's OWN full/partial/none claim. Telemetry beside the verdict: render.answerability
-                         (derived from the completed payload by validate/render_verdict) stays the single source of
-                         truth; this is the AI's claim, served so a disagreement is visible.
-    Generic (no card ids), additive (no existing field moves). Mutates + returns `cards`."""
-    for c in cards or []:
-        l2o = (l2 or {}).get(c.get("card_id")) or {}
-        note = l2o.get("data_note") or (l2o.get("data_instructions") or {}).get("data_note")
-        c["data_note"] = note.strip() if isinstance(note, str) and note.strip() else None
-        c["l2_answerability"] = l2o.get("answerability")
-    return cards
-
-
-def _window_from_preset(preset):
-    """route-1a-timewindow: a prompt-derived TIME_WINDOWS preset ('last-7-days') → a concrete FE-vocabulary date_window
-    {range,start,end,sampling}, or None. Mirrors the FE date-wiring (host/web/.../date-wiring.ts): the `range` TOKEN is
-    the preset itself; start/end are the resolved span in the SITE timezone; sampling maps the preset's bucket to the FE
-    sampling vocab. Start is computed by REUSING the executor's own ems_exec.window_policy._range_start (the SAME
-    calendar-anchor / TIME_WINDOWS-lookback / last-N logic exec uses to honor a declared range) so the host default and
-    the exec reads can never disagree. None in / unknown preset / any failure → None (the page keeps today/latest,
-    unchanged). Never raises."""
-    if not preset:
-        return None
-    try:
-        from config.windows import TIME_WINDOWS, site_tz
-        spec = (TIME_WINDOWS or {}).get(str(preset))
-        if not spec:
-            return None
-        from datetime import datetime
-        from ems_exec.executor.window_policy import _range_start   # reuse the canonical range→start resolver (no dup math)
-        now = datetime.now(site_tz())
-        start = _range_start(str(preset), now)
-        if start is None:
-            return None
-        bucket = str(spec.get("bucket", "hour")).strip().lower()
-        sampling = {"minute": "minute", "15 min": "minute", "hour": "hourly",   # [RC5] minute/15-min → sub-hour sampling
-                    "day": "day", "week": "week"}.get(bucket, "hourly")
-        return {"range": str(preset), "start": start.isoformat(), "end": now.isoformat(), "sampling": sampling}
-    except Exception:
-        return None
+# _window_from_preset HOME moved to host/notes.py (window_from_preset) so the MULTI-asset path applies the same
+# prompt-derived default (api-design H4). Re-exported under the old name for tests/callers. [2026-07-12]
+from host.notes import window_from_preset as _window_from_preset   # noqa: E402,F401
 
 
 def build_response(prompt, asset_id=None, date_window=None):
@@ -121,9 +79,10 @@ def build_response(prompt, asset_id=None, date_window=None):
     # PER-CARD NEURACT EXECUTOR (host/assemble.assemble_cards) — the ONE data path (ems_exec): every Layer-2 card (feeder
     # / asset / panel alike) has its payload COMPLETED from neuract for the RESOLVED asset — real where the AI named a
     # column/fn, honest None/'—' else, every seed number stripped. No ws/mfm frame-fetch, no Layer 3. The SAME per-asset
-    # assembly each multi-asset compare lane reuses (host/multi_asset). `frames` stays EMPTY for FE back-compat.
+    # assembly each multi-asset compare lane reuses (host/multi_asset). The page-level `frames`/`frame_status`/
+    # `live_frame` wire fields are RETIRED (frontend F14, 2026-07-12 — they were always {}/{}/None; the honest
+    # fetch-reason is per-card: card.frame_status / card.render.reason).
     from host.assemble import assemble_cards
-    frames, frame_status = {}, {}                             # data no longer flows through endpoint frames
     cards = assemble_cards(out, l1b.get("asset"), date_window)
     _attach_l2_notes(cards, l2)   # B1: serve data_note + l2_answerability per card (additive; see the helper)
     from obs.stage import stage
@@ -136,6 +95,8 @@ def build_response(prompt, asset_id=None, date_window=None):
 
     return {
         "ok": l1a.get("cards") is not None,
+        "kind": "dashboard",                                    # discriminant for the FE PipelineResult union (the
+        # knowledge response carries kind:"knowledge"); makes host/web/src/types.ts DashboardResult non-optional. [R10]
         "prompt": prompt,
         "run_id": out.get("run_id"),
         "elapsed_ms": int((time.time() - t0) * 1000),
@@ -169,9 +130,6 @@ def build_response(prompt, asset_id=None, date_window=None):
             "payload_summary": (val.get("payload") or {}).get("summary"),
         },
         "cards": cards,
-        "frames": frames,                                        # EMPTY now — DATA rides on each card's `payload` (ems_exec-completed); kept for FE back-compat
-        "frame_status": frame_status,                            # EMPTY now — the honest fetch-reason is per-card (card.frame_status / card.render.reason)
-        "live_frame": None,                                      # back-compat FE field; always None under the ems_exec path (DATA rides on each card's `payload`)
         "date_window": date_window,
         "notes": out.get("notes") or {"loop1": [], "loop2": None},  # reflect-loop: best-effort substitutions + persistent-gap explain
         "errors": out.get("errors") or {},
@@ -190,6 +148,27 @@ def _dump_response(resp):
             json.dump(resp, f)
     except Exception:
         pass
+
+
+def _traced_captured(kind, path, req, fn):
+    """Wrap one request body in the obs trace (obs/middleware) + the replay capture session (replay/capture) —
+    fn() -> (code, resp dict); the wrappers see the RESP dict (trace summary / bundle artifact) while the HTTP code
+    rides beside. Fail-open: if either layer can't import, the request runs bare, byte-identical."""
+    try:
+        from obs.middleware import run_traced
+        from replay.capture import captured
+    except Exception:
+        return fn()
+    box = {}
+
+    def _inner():
+        code, resp = fn()
+        box["code"] = code
+        return resp
+
+    fields = {"prompt": (req or {}).get("prompt"), "asset_id": (req or {}).get("asset_id")}
+    resp = run_traced(kind, fields, lambda: captured(kind, req, _inner, path=path))
+    return box.get("code", 200), resp
 
 
 class Handler(BaseHTTPRequestHandler):
@@ -225,7 +204,7 @@ class Handler(BaseHTTPRequestHandler):
                 return self._send(200, {"ok": True, "assets": registry_for_picker(term)})
             except Exception as e:
                 traceback.print_exc()
-                return self._send(500, {"ok": False, "error": f"{type(e).__name__}: {e}"})
+                return self._send(500, {"ok": False, "error": _fmt_exc(e)})
         # HEADER STATUS — site identity + LIVE dot. `site.name` is a DB-tunable app_config row; the LIVE flag is a REAL
         # probe of the live-data DB connection (DATA_DB = target_version1/neuract) — green iff that DB answers.
         if self.path.startswith("/api/site"):
@@ -236,6 +215,29 @@ class Handler(BaseHTTPRequestHandler):
             except Exception:
                 live = False
             return self._send(200, {"ok": True, "site": cfg("site.name", "PEGEPL · SEETARAMPUR"), "live": live})
+        # AI DECISION INSPECTOR — read-only views over the obs_* trace store (pg-first, per-trace jsonl fallback):
+        #   /api/inspector/traces?n=50   newest-first execution list
+        #   /api/inspector/trace?id=t_…  one execution: trace summary + stage tree + every AI decision
+        #                                (prompt/model/params/candidates/selected/rejected/reasoning/confidence/
+        #                                 latency/tokens/output — shaped by obs/decision_view via host/inspector_api)
+        if self.path.startswith("/api/inspector"):
+            try:
+                from urllib.parse import urlparse, parse_qs
+                from host import inspector_api
+                u = urlparse(self.path)
+                qs = parse_qs(u.query)
+                if u.path.rstrip("/") == "/api/inspector/traces":
+                    n = max(1, min(200, int((qs.get("n") or ["50"])[0])))
+                    return self._send(200, {"ok": True, "traces": inspector_api.traces(n)})
+                if u.path.rstrip("/") == "/api/inspector/trace":
+                    tid = (qs.get("id") or [""])[0].strip()
+                    if not tid:
+                        return self._send(400, {"ok": False, "error": "id required (?id=t_…)"})
+                    return self._send(200, {"ok": True, **inspector_api.trace_detail(tid)})
+                return self._send(404, {"ok": False, "error": "unknown inspector endpoint"})
+            except Exception as e:
+                traceback.print_exc()
+                return self._send(500, {"ok": False, "error": _fmt_exc(e)})
         return self._send(404, {"ok": False, "error": "not found"})
 
     def do_POST(self):
@@ -250,97 +252,123 @@ class Handler(BaseHTTPRequestHandler):
         # {exact_metadata, data_instructions, asset_table, date_window}; the response `payload` is the re-filled CMD_V2
         # payload it swaps in. Honest-degrade: any error still returns a stripped+shape-complete payload (no seed leak).
         if self.path.startswith("/api/frame"):
-            try:
-                exact_metadata = req.get("exact_metadata") or (req.get("payload") if isinstance(req.get("payload"), dict) else None)
-                data_instructions = req.get("data_instructions") or {}
-                date_window = req.get("date_window")
-                # REFETCH bundle (enrich.py) — the per-card facts the consumer/payload do NOT carry. Back-compat: fall
-                # back to the legacy top-level / consumer fields so an older FE build still works.
-                refetch = req.get("refetch") or {}
-                consumer = (data_instructions.get("consumer") or {}) or (req.get("consumer") or {})
-                asset_table = refetch.get("asset_table") or req.get("asset_table") or consumer.get("asset_table")
-                asset_name = refetch.get("asset_name")
-                member_scope = refetch.get("member_scope") or "outgoing"
-                default_payload = refetch.get("_default_payload") if "_default_payload" in refetch else req.get("_default_payload")
-                render_card_id = refetch.get("render_card_id") or req.get("render_card_id") or req.get("card_id")
-                if exact_metadata is None or not asset_table:
-                    return self._send(400, {"ok": False, "error": "exact_metadata + asset_table required"})
-                # RC2b NARROW-FIX — make the FE pick AUTHORITATIVE over the L2-baked consumer.range so _honor_range (which
-                # is widen-only, keyed on consumer.range) anchors to the pick instead of re-widening a narrower window.
-                # Request-object only (the response is just the payload) → no served-card side effect.
-                if isinstance(date_window, dict) and date_window.get("range") and isinstance(consumer, dict):
-                    consumer = dict(consumer); consumer["range"] = date_window.get("range")
-                    data_instructions = {**data_instructions, "consumer": consumer}
-                window = _date_window_for(consumer, date_window)
-                # SPECIAL DISPATCH [RC1] — a panel_aggregate/topology/narrative/3d card must NOT be re-filled by a plain
-                # run_card (a panel trend card is is_history=true today → its date control is enabled). Route through the
-                # SAME fill_one_card the page fan-out uses; derive the lt_mfm member id from the table/name (NOT
-                # consumer.mfm_id — a different id-space).
-                handling_class = _special_handling_map([render_card_id]).get(int(render_card_id)) if render_card_id else None
-                mfm_id = _registry_mfm_id({"table": asset_table, "name": asset_name})
-                payload = fill_one_card(cid=render_card_id, render_card_id=render_card_id, handling_class=handling_class,
-                                        exact_metadata=exact_metadata, data_instructions=data_instructions,
-                                        asset_table=asset_table, db_link=_neuract_dsn.dsn(), window=window,
-                                        requested_window=date_window, default_payload=default_payload,
-                                        mfm_id=mfm_id, asset_name=asset_name, member_scope=member_scope)
-                from host.display_dash import apply as _dash    # same serve-boundary display policy as /api/run
-                from ems_exec.executor import roster_stats as _rstats
-                _rstats.pop(payload)                             # telemetry key never rides to the FE
-                payload = _dash(payload, default_payload)
-                return self._send(200, {"ok": True, "why": "ok", "endpoint": consumer.get("endpoint"),
-                                        "payload": payload})
-            except Exception as e:
-                traceback.print_exc()
-                return self._send(500, {"ok": False, "error": f"{type(e).__name__}: {e}"})
+            code, resp = _traced_captured("frame", "/api/frame", req, lambda: handle_frame(req))
+            return self._send(code, resp)
 
         if not self.path.startswith("/api/run"):
             return self._send(404, {"ok": False, "error": "not found"})
-        try:
-            prompt = (req.get("prompt") or "").strip()
-            if not prompt:
-                return self._send(400, {"ok": False, "error": "prompt required"})
-            asset_id = req.get("asset_id")
-            # MULTI-ASSET compare [author-once-per-class]: the picker returned 2+ ids → resolve them ALL in ONE run
-            # (host/multi_asset.build_response_multi). Gated by the DB knob multi_asset.enabled (code default on); a
-            # single-id (or absent) request stays on the untouched single-asset build_response path.
-            _raw_ids = req.get("asset_ids")
-            asset_ids = [a for a in _raw_ids if a is not None] if isinstance(_raw_ids, list) else []
-            multi = len(asset_ids) >= 2 and bool(cfg("multi_asset.enabled", True))
-            date_window = req.get("date_window")              # {range,start,end,sampling} from the FE date control (or None)
-            history = req.get("history") or None              # prior knowledge turns (oldest-first) for follow-up context
-            # KNOWLEDGE LAYER [separate pipeline, 2026-07-06]: ONE AI call routes + answers + rejects. A conceptual
-            # electrical/mechanical question ("what is voltage") comes back answered; an off-scope prompt ("who is
-            # George Bush") comes back refused; an asset/data prompt returns kind='dashboard' and falls through
-            # UNCHANGED to the card pipeline. Skipped when the FE re-POSTs a pinned asset_id. Fail-open to dashboard.
-            # `history` carries the earlier conceptual turns so a follow-up ("how is it measured") keeps context.
-            if asset_id is None and not asset_ids:
-                from knowledge.ems import ask as _ems_ask
-                _k = _ems_ask(prompt, history)
-                if _k["kind"] in ("knowledge", "off_scope"):
-                    resp = {"ok": True, "prompt": prompt, "kind": "knowledge",
-                            "answer": _k["answer"], "refused": _k["refused"]}
-                    _dump_response(resp)
-                    return self._send(200, resp)
-                # NATURAL COMPARE [multi-asset gap fix]: a fresh 'compare A and B' prompt naming 2+ SPECIFIC full asset
-                # names carries no picker ids, so the single-asset resolver would dead-end in the single picker. Split +
-                # resolve EACH name through the SAME 1b resolver; if 2+ pin confidently, promote to the picker's compare
-                # path (build_response_multi) with those ids. Only reached for a FRESH prompt (no asset_id/asset_ids from
-                # the FE picker) — a homonym or single name returns [] and the single-asset path stays byte-identical.
-                from host.multi_asset import natural_compare_ids
-                _nat_ids = natural_compare_ids(prompt)
-                if _nat_ids:
-                    asset_ids = _nat_ids
-                    multi = True
-            if multi:
-                from host.multi_asset import build_response_multi
-                resp = build_response_multi(prompt, asset_ids, date_window=date_window)
-            else:
-                resp = build_response(prompt, asset_id=asset_id, date_window=date_window)
-            _dump_response(resp)                              # persist server-side FIRST (robust to a client-side curl timeout)
-            return self._send(200, resp)
-        except Exception as e:
-            traceback.print_exc()
-            return self._send(500, {"ok": False, "error": f"{type(e).__name__}: {e}"})
+        code, resp = _traced_captured("run", "/api/run", req, lambda: handle_run(req))
+        return self._send(code, resp)
+
+
+def handle_frame(req):
+    """The /api/frame body → (code, resp). Module-level so the replay engine re-runs the EXACT same entry."""
+    try:
+        exact_metadata = req.get("exact_metadata") or (req.get("payload") if isinstance(req.get("payload"), dict) else None)
+        data_instructions = req.get("data_instructions") or {}
+        date_window = req.get("date_window")
+        # REFETCH bundle (enrich.py) — the per-card facts the consumer/payload do NOT carry. Back-compat: fall
+        # back to the legacy top-level / consumer fields so an older FE build still works.
+        refetch = req.get("refetch") or {}
+        consumer = (data_instructions.get("consumer") or {}) or (req.get("consumer") or {})
+        asset_table = refetch.get("asset_table") or req.get("asset_table") or consumer.get("asset_table")
+        asset_name = refetch.get("asset_name")
+        member_scope = refetch.get("member_scope") or "outgoing"
+        default_payload = refetch.get("_default_payload") if "_default_payload" in refetch else req.get("_default_payload")
+        render_card_id = refetch.get("render_card_id") or req.get("render_card_id") or req.get("card_id")
+        if exact_metadata is None or not asset_table:
+            return 400, {"ok": False, "error": "exact_metadata + asset_table required"}
+        # RC2b NARROW-FIX — make the FE pick AUTHORITATIVE over the L2-baked consumer.range so _honor_range (which
+        # is widen-only, keyed on consumer.range) anchors to the pick instead of re-widening a narrower window.
+        # Request-object only (the response is just the payload) → no served-card side effect.
+        if isinstance(date_window, dict) and date_window.get("range") and isinstance(consumer, dict):
+            consumer = dict(consumer); consumer["range"] = date_window.get("range")
+            data_instructions = {**data_instructions, "consumer": consumer}
+        window = _date_window_for(consumer, date_window)
+        # SPECIAL DISPATCH [RC1] — a panel_aggregate/topology/narrative/3d card must NOT be re-filled by a plain
+        # run_card (a panel trend card is is_history=true today → its date control is enabled). Route through the
+        # SAME fill_one_card the page fan-out uses; derive the lt_mfm member id from the table/name (NOT
+        # consumer.mfm_id — a different id-space).
+        handling_class = _special_handling_map([render_card_id]).get(int(render_card_id)) if render_card_id else None
+        mfm_id = _registry_mfm_id({"table": asset_table, "name": asset_name})
+        payload = fill_one_card(cid=render_card_id, render_card_id=render_card_id, handling_class=handling_class,
+                                exact_metadata=exact_metadata, data_instructions=data_instructions,
+                                asset_table=asset_table, db_link=_neuract_dsn.dsn(), window=window,
+                                requested_window=date_window, default_payload=default_payload,
+                                mfm_id=mfm_id, asset_name=asset_name, member_scope=member_scope)
+        from host.display_dash import apply as _dash    # same serve-boundary display policy as /api/run
+        from ems_exec.executor import roster_stats as _rstats
+        _rstats.pop(payload)                             # telemetry key never rides to the FE
+        payload = _dash(payload, default_payload)
+        return 200, {"ok": True, "why": "ok", "endpoint": consumer.get("endpoint"), "payload": payload}
+    except Exception as e:
+        traceback.print_exc()
+        return 500, {"ok": False, "error": _fmt_exc(e)}
+
+
+def handle_run(req):
+    """The /api/run body → (code, resp). Module-level so the replay engine re-runs the EXACT same entry
+    (knowledge gate → natural-compare pre-flight → multi/single response build → response dump)."""
+    try:
+        prompt = (req.get("prompt") or "").strip()
+        if not prompt:
+            return 400, {"ok": False, "error": "prompt required"}
+        asset_id = req.get("asset_id")
+        # MULTI-ASSET compare [author-once-per-class]: the picker returned 2+ ids → resolve them ALL in ONE run
+        # (host/multi_asset.build_response_multi). Gated by the DB knob multi_asset.enabled (code default on); a
+        # single-id (or absent) request stays on the untouched single-asset build_response path.
+        _raw_ids = req.get("asset_ids")
+        asset_ids = [a for a in _raw_ids if a is not None] if isinstance(_raw_ids, list) else []
+        multi = len(asset_ids) >= 2 and bool(cfg("multi_asset.enabled", True))
+        date_window = req.get("date_window")              # {range,start,end,sampling} from the FE date control (or None)
+        history = req.get("history") or None              # prior knowledge turns (oldest-first) for follow-up context
+        # KNOWLEDGE LAYER [separate pipeline, 2026-07-06]: ONE AI call routes + answers + rejects. A conceptual
+        # electrical/mechanical question ("what is voltage") comes back answered; an off-scope prompt ("who is
+        # George Bush") comes back refused; an asset/data prompt returns kind='dashboard' and falls through
+        # UNCHANGED to the card pipeline. Skipped when the FE re-POSTs a pinned asset_id. Fail-open to dashboard.
+        # `history` carries the earlier conceptual turns so a follow-up ("how is it measured") keeps context.
+        if asset_id is None and not asset_ids:
+            # KNOWLEDGE-GATE TRACE [admin dashboard]: bind the run id BEFORE the gate's LLM call so it lands in
+            # ai_<rid>.jsonl (it used to inherit the PREVIOUS run's id — the ai-attribution leak the log audit
+            # flagged). run_id is the same deterministic make_run_id(prompt) run_pipeline will derive, so the
+            # gate call and the pipeline share one trace family. A terminal (knowledge/off_scope) prompt gets a
+            # `knowledge` stage record + a run_id'd response dump — it becomes a viewable run in the admin
+            # console instead of vanishing (dashboard prompts skip the spine record: their file must still
+            # START at PROMPT for the executions splitter).
+            from run.run_id import make_run_id
+            from obs import ai_log
+            _rid = make_run_id(prompt)
+            ai_log.set_run_id(_rid)
+            from knowledge.ems import ask as _ems_ask
+            _k = _ems_ask(prompt, history)
+            if _k["kind"] in ("knowledge", "off_scope"):
+                from obs.stage import stage as _stage
+                _stage(_rid, "knowledge", kind=_k["kind"], refused=_k["refused"],
+                       answer_chars=len(_k.get("answer") or ""))
+                resp = {"ok": True, "prompt": prompt, "run_id": _rid, "kind": "knowledge",
+                        "answer": _k["answer"], "refused": _k["refused"]}
+                _dump_response(resp)
+                return 200, resp
+            # NATURAL COMPARE [multi-asset gap fix]: a fresh 'compare A and B' prompt naming 2+ SPECIFIC full asset
+            # names carries no picker ids, so the single-asset resolver would dead-end in the single picker. Split +
+            # resolve EACH name through the SAME 1b resolver; if 2+ pin confidently, promote to the picker's compare
+            # path (build_response_multi) with those ids. Only reached for a FRESH prompt (no asset_id/asset_ids from
+            # the FE picker) — a homonym or single name returns [] and the single-asset path stays byte-identical.
+            from host.multi_asset import natural_compare_ids
+            _nat_ids = natural_compare_ids(prompt)
+            if _nat_ids:
+                asset_ids = _nat_ids
+                multi = True
+        if multi:
+            from host.multi_asset import build_response_multi
+            resp = build_response_multi(prompt, asset_ids, date_window=date_window)
+        else:
+            resp = build_response(prompt, asset_id=asset_id, date_window=date_window)
+        _dump_response(resp)                              # persist server-side FIRST (robust to a client-side curl timeout)
+        return 200, resp
+    except Exception as e:
+        traceback.print_exc()
+        return 500, {"ok": False, "error": _fmt_exc(e)}
 
 
 class _Server(ThreadingHTTPServer):

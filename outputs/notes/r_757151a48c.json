@@ -4,21 +4,15 @@
   {
    "card_id": 47,
    "title": "Power Quality",
-   "answerability": "none",
-   "note": "This meter (AUX-HSD-PLC) does not measure voltage, current, harmonics, flicker, or crest factor; it logs temperature, flow, and status flags. All harmonic and power quality slots are honest-blanked."
+   "answerability": "partial",
+   "note": "Showing THD and harmonic values \u2014 crest factor, flicker, and trend data are not measured by this meter."
   },
   {
    "card_id": 48,
    "title": "Distortion & Harmonic Profile",
    "answerability": "partial",
-   "note": "Showing per-phase THD trends (V-THD and I-THD) \u2014 per-order harmonic magnitudes (H5/H7) and scalar stats are not measured by this asset."
-  },
-  {
-   "card_id": 49,
-   "title": "Load Impact & Transformer Stress",
-   "answerability": "partial",
-   "note": "one or more leaves could not be bound for this card on this asset \u2014 those leaves render an honest blank (per-leaf reasons attached), every other leaf fills"
+   "note": "Showing per-phase voltage and current THD trends \u2014 harmonic order (5th/7th) and scalar stats (max/min/avg) are not measured by this asset."
   }
  ],
- "loop2": "'individual-feeder-meter-shell/power-quality' answers the prompt as routed; these cards cover quantities not recorded for this asset and render honest-blank per-leaf with the reason: Power Quality (This meter (AUX-HSD-PLC) does not measure voltage, current, harmonics, flicker, or crest factor; it logs temperature, flow, and status flags. All harmonic and power quality slots are honest-blanked.)."
+ "loop2": null
 }

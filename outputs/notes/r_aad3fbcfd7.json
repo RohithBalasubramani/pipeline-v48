@@ -1,0 +1,12 @@
+{
+ "run_id": "r_aad3fbcfd7",
+ "loop1": [
+  {
+   "card_id": 36,
+   "title": "Power & Energy (Real-Time)",
+   "answerability": "partial",
+   "note": "Showing active/reactive power and energy from live telemetry; 'Projected Demand' is a load-factor proxy (kpiKwLoadPctOfRated) as no direct demand meter is present."
+  }
+ ],
+ "loop2": null
+}

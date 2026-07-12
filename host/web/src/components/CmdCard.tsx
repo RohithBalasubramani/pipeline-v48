@@ -1,30 +1,17 @@
 import React from "react";
-import type { Card, DateWindow } from "../types";
+import type { Card, DateWindow, RenderVerdict, FrameStatus } from "../types";
 import { renderCmd } from "../cmd/registry";
 import { fetchCardFrame } from "../api";
 import { useDateSync } from "./DateSync";
+import { ErrorBoundary } from "./ErrorBoundary";
+import { HonestBlankTile } from "./HonestBlankTile";
 
 // HONEST-BLANK on a deep component throw [FR-1 / frontend-contract crash family]: a CMD_V2 component can throw DURING
 // React's render of the already-built node — e.g. an unguarded `data.activePowerAvgKw.toFixed()` when an honest-blank
 // leaf arrived as '—'/null (card 40), or an object-array prop consumed as raw numbers (card 42). That throw is caught
-// here. Rather than a generic "render error" box (which reads as a bug), we degrade to the card's OWN honest-blank tile
-// (its title + the machine reason) so a single unrenderable leaf never masks the card as broken — the same per-leaf
-// degradation contract the payload path already honors. GENERIC: no card id, driven by the passed title/reason.
-class Boundary extends React.Component<{ children: React.ReactNode; title?: string; reason?: string | null },
-                                       { err: string | null }> {
-  state = { err: null as string | null };
-  static getDerivedStateFromError(e: any) { return { err: String(e?.message ?? e) }; }
-  render() {
-    if (this.state.err) return (
-      <div className="placeholder" style={{ height: "100%", minHeight: 0 }}>
-        <div className="big">—</div>
-        <div>{this.props.title || "no live data"}</div>
-        <div className="k">{this.props.reason || this.state.err}</div>
-      </div>
-    );
-    return this.props.children;
-  }
-}
+// by the shared ErrorBoundary. Rather than a generic "render error" box (which reads as a bug), we degrade to the
+// card's OWN honest-blank tile (its title + the machine reason) so a single unrenderable leaf never masks the card as
+// broken — the same per-leaf degradation contract the payload path already honors. GENERIC: no card id.
 
 // Per-card VALIDATION indicator — surfaces the validate layer's per-card verdict (validate_payloads) in the live view.
 // Subtle by design: pass shows nothing (clean), warn=amber, fail=red, with the reasons on hover. [validation in FE]
@@ -41,17 +28,13 @@ function ValidationDot({ card }: { card: Card }) {
   );
 }
 
-// Render the card with its REAL CMD_V2 component (keyed by card_id). Each card owns a LOCAL frame: it starts from the
-// page frame (frames[endpoint]) and is REPLACED when THIS card's own date control changes (PER-CARD date navigation —
-// the card re-fetches only its own ems_backend frame for the new window, via /api/frame). onDateChange is handed to the
-// card's fill renderer so the card's OWN CMD V2 date control (today/last-week/…) drives the re-fetch.
-export function CmdCard({ card, h, liveFrame, pageFrame }: { card: Card; h?: number; liveFrame?: any; pageFrame?: any }) {
-  const [frame, setFrame] = React.useState<any>(liveFrame);
-  React.useEffect(() => { setFrame(liveFrame); }, [liveFrame]);   // new page run/date → reseed from the page frame
-
-  // PER-CARD DATE NAVIGATION: the renderer fills from `card.payload` (the `frame` arg is inert now that frames are
-  // retired), so an interactive date pick must SWAP the payload, not the frame. onDateChange re-fetches this card's
-  // completed payload for the new window (/api/frame) and stores it as an override; a new page run/card drops it.
+// Render the card with its REAL CMD_V2 component (keyed by card_id). The card renders from its OWN completed payload
+// (payload = props); the retired page-frame plumbing is gone (F14, 2026-07-12). onDateChange is handed to the card's
+// fill renderer so the card's OWN CMD V2 date control (today/last-week/…) drives the re-fetch.
+export function CmdCard({ card, h }: { card: Card; h?: number }) {
+  // PER-CARD DATE NAVIGATION: the renderer fills from `card.payload`, so an interactive date pick must SWAP the
+  // payload. onDateChange re-fetches this card's completed payload for the new window (/api/frame) and stores it as
+  // an override; a new page run/card drops it.
   // PAGE-LEVEL SYNC [DateSync]: a date pick PUBLISHES to the shared page window, and EVERY date-navigable card
   // re-fetches when that shared window changes — one control moves the whole page, like the CMD_V2 app's page filter.
   const { window: sharedWindow, setWindow: setSharedWindow } = useDateSync();
@@ -61,7 +44,7 @@ export function CmdCard({ card, h, liveFrame, pageFrame }: { card: Card; h?: num
     setSharedWindow(dw);                                          // propagate to every card on the page
   }, [setSharedWindow]);
   React.useEffect(() => {                                         // any card's pick (incl. this one) → re-fetch mine
-    if (!sharedWindow || !(card as any).is_history) return;
+    if (!sharedWindow || !card.is_history) return;
     let live = true;
     fetchCardFrame(card, sharedWindow).then((p) => { if (live && p) setPayloadOverride(p); }).catch(() => {});
     return () => { live = false; };
@@ -74,31 +57,29 @@ export function CmdCard({ card, h, liveFrame, pageFrame }: { card: Card; h?: num
   let renderErr: string | null = null;
   try {
     const rc = payloadOverride ? { ...card, payload: payloadOverride } : card;
-    node = renderCmd(rc, frame, onDateChange, pageFrame ?? liveFrame);
+    node = renderCmd(rc, onDateChange);
   } catch (e: any) {
     renderErr = String(e?.message ?? e);
   }
 
   // The render-guarantee reason channel: an honest blank/partial verdict, an empty/mismatched frame `why`, or a caught
   // render error — shown to the user instead of a bare box. [ER-6 / FR-1]
-  const rv = (card as any).render || {};
-  const fs = (card as any).frame_status || {};
+  const rv: RenderVerdict = card.render ?? {};
+  const fs: FrameStatus = card.frame_status ?? {};
   const reason = renderErr || rv.reason || rv.coverage_note || (fs.ok === false ? fs.why : null);
 
   if (!node) return (
-    <div className="placeholder" style={{ position: "relative", height: h ?? "100%", minHeight: 0 }}>
+    <HonestBlankTile
+      glyph={renderErr ? "⚠" : rv.verdict === "honest_blank" ? "—" : "▦"}
+      title={card.title}
+      reason={renderErr ? `render error: ${renderErr}` : reason || `card #${card.card_id} — not wired yet`}
+      /* B1: a card with NO renderable component never mounts the GapInfo marker — surface Layer 2's proxy/
+         substitution data_note here so the disclosure is never lost on the placeholder path. */
+      note={card.data_note}
+      style={{ position: "relative", height: h ?? "100%" }}
+    >
       <ValidationDot card={card} />
-      <div className="big">{renderErr ? "⚠" : rv.verdict === "honest_blank" ? "—" : "▦"}</div>
-      <div>{card.title}</div>
-      <div className="k">
-        {renderErr ? `render error: ${renderErr}`
-          : reason ? reason
-          : `card #${card.card_id} — not wired yet`}
-      </div>
-      {/* B1: a card with NO renderable component never mounts the GapInfo marker — surface Layer 2's proxy/
-          substitution data_note here so the disclosure is never lost on the placeholder path. */}
-      {card.data_note ? <div className="k">{card.data_note}</div> : null}
-    </div>
+    </HonestBlankTile>
   );
   return (
     <div style={{ position: "relative", height: h ?? "100%", minHeight: 0, overflow: "auto" }}>
@@ -107,7 +88,9 @@ export function CmdCard({ card, h, liveFrame, pageFrame }: { card: Card; h?: num
         <span title={reason}
           style={{ position: "absolute", top: 6, left: 6, zIndex: 5, fontSize: 10, opacity: 0.55, cursor: "help" }}>ⓘ</span>
       ) : null}
-      <Boundary title={card.title} reason={rv.reason || rv.coverage_note}>{node}</Boundary>
+      <ErrorBoundary fallback={(err) => (
+        <HonestBlankTile title={card.title} reason={rv.reason || rv.coverage_note || err} />
+      )}>{node}</ErrorBoundary>
     </div>
   );
 }

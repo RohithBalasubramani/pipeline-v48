@@ -586,6 +586,10 @@ $j$::jsonb,
 FROM (VALUES (8),(19),(25),(28)) AS v(card_id)
 ON CONFLICT (card_id) DO UPDATE SET roster_spec=EXCLUDED.roster_spec, notes=EXCLUDED.notes, updated_at=now();
 
+-- ── FE card_rendering section RETIRED 2026-07-12 (unused-code audit): card_rendering had NO runtime reader
+--    and was DROPPED (db/retire_unused_tables_20260712.sql; snapshot archive/db_snapshots_20260712/).
+--    The rows are preserved (block-commented) as the Inventory-B authoring record.
+/*
 -- ── FE card_rendering seeds (Inventory B facts) ─────────────────────────────────────────────
 INSERT INTO card_rendering (card_id, page_key, render_kind, envelope_kind, component_alias, payload_shape_category, payload_single_key, mapper_key, state_schema, state_defaults, date_control, honest_blank_reason) VALUES
  (2,  'panel-overview-shell/overview-sld-3d',        'special','topology',    'EnergySingleLineDiagram','envelope_only','widgets',NULL,NULL,NULL,'{"kind":"none"}',NULL),
@@ -621,3 +625,4 @@ FROM card_handling ch
 ON CONFLICT (card_id) DO NOTHING;
 
 COMMIT;
+*/

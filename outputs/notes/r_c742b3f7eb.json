@@ -5,31 +5,31 @@
    "card_id": 18,
    "title": "Events KPI Strip",
    "answerability": "partial",
-   "note": "Showing total event counts and worst deviations per panel member; aggregate current (amps) and voltage stats (vAvg/vMax/vMin) are not measured by this panel's aggregate table."
+   "note": "Showing event counts and worst deviations for the 6 active feeders; 2 feeders (UPS-05, UPS-06) are dark and honest-blanked."
   },
   {
    "card_id": 19,
    "title": "AI Summary",
    "answerability": "partial",
-   "note": "Showing panel aggregate narrative; per-member roster data is populated for live feeders (UPS-01 to UPS-04, BPDB-01/02). Supply feeders (Solar/Transformer) are dark and omitted from the roster."
+   "note": "nothing could be bound for this card on this asset \u2014 every data leaf renders an honest blank (per-leaf reasons attached), not a zero"
   },
   {
    "card_id": 20,
    "title": "Event Timeline at {period}",
    "answerability": "partial",
-   "note": "Showing event counts and worst deviations for 6 active feeders; 2 feeders (UPS-05, UPS-06) are dark (no data) and honest-blank."
+   "note": "Showing event timeline for 8 active feeders; 2 feeders (GIC-02-N6-UPS-05, GIC-02-N7-UPS-06) are dark (no data) and render as blanks."
   },
   {
    "card_id": 21,
    "title": "Current Distribution at {period}",
    "answerability": "partial",
-   "note": "Showing current draw per outgoing feeder (current_avg). Per-phase voltage, unbalance, and neutral metrics are not measured for this panel aggregate and are omitted."
+   "note": "Showing current_avg per outgoing feeder; sag/swell/voltage metrics are not measured by these UPS/BPDB member meters."
   },
   {
    "card_id": 22,
    "title": "Other Panels Event at {period}",
    "answerability": "partial",
-   "note": "Showing per-panel event counts and aggregates for 6 active feeders; 2 feeders (UPS-05, UPS-06) are dark and honest-blank."
+   "note": "Showing per-panel event counts and electrical metrics for the 8 PRIMARY outgoing feeders. The 2 Solar Incomer members (GIC-01-N9, GIC-02-N1) are listed in the roster but have no live data (has_data=N), so their metric cells will render as honest blanks."
   }
  ],
  "loop2": null

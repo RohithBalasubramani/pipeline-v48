@@ -10,12 +10,7 @@ from ems_exec.executor import members as _members
 from ems_exec.executor.window_policy import _honor_range
 
 
-def _cfg(key, default):
-    try:
-        from config.app_config import cfg
-        return cfg(key, default)
-    except Exception:
-        return default
+from config.failopen import cfg_safe as _cfg   # THE guarded cfg reader (D3)
 
 
 def _select(spec, state, role_filter=None, reporting_only=None):

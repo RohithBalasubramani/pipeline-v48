@@ -10,8 +10,7 @@ import difflib
 import re
 
 
-def _norm(s):
-    return re.sub(r"[^a-z0-9]+", "", str(s).lower())
+from layer1b.normalize import norm as _norm  # the ONE asset-name match key (D9)
 
 
 def fuzzy_rows(names, cands, cutoff=0.75, per_name=3):

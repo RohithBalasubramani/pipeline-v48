@@ -1,0 +1,18 @@
+{
+ "run_id": "r_c5d52731d4",
+ "loop1": [
+  {
+   "card_id": 72,
+   "title": "Energy & Reliability",
+   "answerability": "partial",
+   "note": "Showing active/apparent energy and power factor \u2014 reactive energy and MTBF/MTTR are not measured by this asset's meter."
+  },
+  {
+   "card_id": 73,
+   "title": "Power Energy Analysis",
+   "answerability": "partial",
+   "note": "Showing energy consumption breakdown (Active, Reactive, Demand, Apparent) \u2014 readiness scores and thresholds are not measured by this meter."
+  }
+ ],
+ "loop2": "1 of 4 cards hard-failed their emit (frac 0.25 < reflect.min_gap_frac 0.34); left honest-blank per-leaf, page NOT re-routed."
+}

@@ -115,16 +115,16 @@ def test_regimeB_expressed_intent_ships_under_morphmap():
 
 def test_flag_default_off_seam_wired(monkeypatch):
     """The morph-map seam is WIRED (post-cert adoption) but the flag is DEFAULT-OFF: with the flag off, emit._system()
-    composes the standard 3-file prompt (metadata.md's full-author PART 2), and only when the flag is flipped on does
-    it swap in morphmap/prompt.md's morphs-only VARIANT. Behavioral invariant, not a source fence."""
+    composes the standard prompt (data_instructions_v2.md's full-author contract), and only when the flag is flipped on
+    does it swap in morphmap/prompt.md's morphs-only VARIANT. Behavioral invariant, not a source fence."""
     import config.app_config as ac
     import layer2.emit.morphmap.mode as mode
     import layer2.emit.emit as emit_mod
     monkeypatch.setattr(ac, "_load", lambda: {})                       # no DB row → code default 'off'
     assert mode.mode() == "off" and mode.enabled() is False
     sys_off = emit_mod._system(None)
-    assert "MORPH-EMIT" in sys_off and "MORPH-MAP EMIT" not in sys_off, "flag OFF must use metadata.md full-author"
-    # flip the morph-map flag on (prompt_v2 stays absent → 'false')
+    assert "MORPH-EMIT" in sys_off and "MORPH-MAP EMIT" not in sys_off, "flag OFF must use the v2 full-author prompt"
+    # flip the morph-map flag on
     monkeypatch.setattr(ac, "_load", lambda: {"emit.morphmap_mode": ("on", "text")})
     assert mode.enabled() is True
     sys_on = emit_mod._system(None)

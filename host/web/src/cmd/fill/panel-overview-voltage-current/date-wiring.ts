@@ -1,4 +1,4 @@
-// Card 18 date control → ems_backend window. The strip's filter row emits a
+// Card 18 date control → host-served window. The strip's filter row emits a
 // CMD V2 {preset, resample, customDate, rangeStart, rangeEnd} selection. We
 // run the page's OWN resolveEventFilter (which already resolves every preset
 // — incl. last-month / custom-date — to concrete start/end + an allowed
@@ -15,7 +15,8 @@ import type {
 } from "@cmd-v2/components/charts/primitives";
 
 /** Host date_window — the shape onDateChange feeds back to the host re-fetch. */
-export type DateWindow = { range?: string; sampling?: string; start?: string; end?: string };
+export type { DateWindow } from "../../../types";   // ONE declaration (host/web/src/types.ts)
+import type { DateWindow } from "../../../types";
 
 /** CMD V2 EventPreset → host range. Presets the host doesn't model become a
  *  custom-range over the resolver's already-computed start/end span. */
@@ -39,7 +40,7 @@ const RESAMPLE_TO_SAMPLING: Record<ResampleMode, string> = {
   "monthly": "week",
 };
 
-/** Resolve a CMD V2 strip selection into the host's ems_backend date_window.
+/** Resolve a CMD V2 strip selection into the host's host-served date_window.
  *  Always carries start/end (the resolver fills them for every preset), and
  *  sets range:'custom-range' whenever the preset has no host enum. */
 export function selectionToWindow(selection: EventFilterSelection): DateWindow {

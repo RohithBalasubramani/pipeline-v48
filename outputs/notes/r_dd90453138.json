@@ -5,14 +5,14 @@
    "card_id": 61,
    "title": "Thermal Timeline",
    "answerability": "none",
-   "note": "This electrical meter does not measure engine thermal metrics (coolant, oil, intake, or exhaust temperature); all temperature slots are honestly blanked."
+   "note": "This asset's meter (dg_1_mfm) does not log any temperature columns (coolant, oil, intake, exhaust); the card's temperature story cannot be answered with the available data."
   },
   {
    "card_id": 62,
    "title": "Pressure \u00b7 Speed \u00b7 Load",
    "answerability": "partial",
-   "note": "Showing load and speed time-series to correlate with thermal stressors; oil pressure and speed are not directly measured by this electrical meter, so their values are omitted or derived from available power/frequency data."
+   "note": "Showing load percentage derived from active power \u2014 oil pressure and engine speed are not measured by this electrical meter."
   }
  ],
- "loop2": "'diesel-generator-asset-dashboard/engine-cooling' answers the prompt as routed; these cards cover quantities not recorded for this asset and render honest-blank per-leaf with the reason: Thermal Timeline (This electrical meter does not measure engine thermal metrics (coolant, oil, intake, or exhaust temperature); all temperature slots are honestly blanked.)."
+ "loop2": "'diesel-generator-asset-dashboard/engine-cooling' answers the prompt as routed; these cards cover quantities not recorded for this asset and render honest-blank per-leaf with the reason: Thermal Timeline (This asset's meter (dg_1_mfm) does not log any temperature columns (coolant, oil, intake, exhaust); the card's temperature story cannot be answered with the available data.)."
 }

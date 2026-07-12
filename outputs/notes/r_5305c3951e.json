@@ -2,16 +2,16 @@
  "run_id": "r_5305c3951e",
  "loop1": [
   {
-   "card_id": 57,
-   "title": "UPS Capacity",
+   "card_id": 36,
+   "title": "Power & Energy (Real-Time)",
    "answerability": "partial",
-   "note": "Showing total active power and current headroom \u2014 per-phase power isn't measured for this asset; bypass readiness score is not available."
+   "note": "Showing input active power and energy \u2014 per-phase input power and reactive energy are not directly measured for this asset; reactive power is derived from total active power and power factor."
   },
   {
-   "card_id": 58,
-   "title": "UPS Load",
+   "card_id": 37,
+   "title": "Voltage Monitor (Real-Time)",
    "answerability": "partial",
-   "note": "Showing load percentage (loadPct) \u2014 headroom is shown as a percentage of rated capacity rather than absolute kW, as the exact headroom column is not measured."
+   "note": "Showing live three-phase output voltage trends (R, Y, B) and summary statistics (Average, Max, Min) from the UPS-01 output meter. Threshold lines are omitted as no dedicated threshold columns are measured."
   }
  ],
  "loop2": null

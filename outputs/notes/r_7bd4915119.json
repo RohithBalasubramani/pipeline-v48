@@ -1,0 +1,30 @@
+{
+ "run_id": "r_7bd4915119",
+ "loop1": [
+  {
+   "card_id": 14,
+   "title": "Cumulative Energy",
+   "answerability": "partial",
+   "note": "Showing month-to-date cumulative energy for outgoing feeders; nameplate capacity and subsidy limits are not measured for this panel."
+  },
+  {
+   "card_id": 16,
+   "title": "Energy Consumption Trend",
+   "answerability": "partial",
+   "note": "Showing energy trends for UPS, BPDP, and HHF feeders; Rated and Contracted lines are blank as nameplate ratings are unknown for this asset."
+  },
+  {
+   "card_id": 15,
+   "title": "Today live power analysis",
+   "answerability": "partial",
+   "note": "Showing total apparent power (kVA) and active/reactive power (kW/kVAr) for the panel's outgoing feeders; rated capacity, load factor, and worst peak markers are omitted because the member meters lack the required nameplate ratings or load factor columns."
+  },
+  {
+   "card_id": 17,
+   "title": "Daily Power Demand by Feeder",
+   "answerability": "partial",
+   "note": "Showing daily power demand by feeder (UPS, BPDB, HHF) \u2014 per-feeder breakdown is aggregated from the panel's member meters (GIC-01-N3-UPS-01, GIC-01-N8-BPDB-01, etc.) via the roster fan-out, not from this panel's own stub table."
+  }
+ ],
+ "loop2": null
+}

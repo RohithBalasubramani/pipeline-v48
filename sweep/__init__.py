@@ -7,9 +7,12 @@ Modules (atomic — one concern each):
   config.py               knobs (API base, concurrency, timeouts, output dirs) — env + cmd_catalog-overridable
   response.py             the ONE /api/run response parser (every field gotcha lives here, nowhere else)
   corpus/universe.py      the cmd_catalog ground-truth universe (assets, classes, aliases, pages, cards)
-  corpus/templates.py     per-category prompt templates (the workflow taxonomy)
-  corpus/generate.py      template x universe permutation generator -> corpus JSONL
-  corpus/mutate.py        spelling/case/spacing/punctuation mutators for alias-robustness coverage
+  corpus/store.py         DB-driven template/vocab loader (prompt_category/prompt_template/prompt_vocab rows)
+  corpus/templates.py     code-default mirror of the seeded rows (the workflow taxonomy; DB-down fallback)
+  corpus/fill.py          slot engine: ground one template row over universe x vocab (explosion-safe)
+  corpus/mutators/        mutation families (casing/spelling/abbrev/partial/plural/aliasing/conversational)
+  corpus/mutate.py        mutation composer: per-case deterministic expansion + the classic mangle probe set
+  corpus/generate.py      templates x universe x mutators -> corpus JSONL (category budgets = the size dial)
   runner.py               parallel prompt executor (configurable concurrency, auto-throttle, artifact capture)
   checks/expectations.py  per-category outcome judge (cards / picker / knowledge / refused / empty / compare-groups)
   checks/datesync.py      interactive date-sync checks (/api/frame reslice; history reload, snapshot unchanged)
@@ -22,8 +25,8 @@ Modules (atomic — one concern each):
   replay.py               re-run any saved case with identical inputs (debugging)
   cli.py                  entrypoint: generate | run | report | replay | coverage
 
-Run:  python -m validation.cli generate            # build the corpus from the live universe
-      python -m validation.cli run --limit 200 --concurrency 3
-      python -m validation.cli report
-      python -m validation.cli replay <case_id>
+Run:  python -m sweep.cli generate            # build the corpus from the live universe
+      python -m sweep.cli run --limit 200 --concurrency 3
+      python -m sweep.cli report
+      python -m sweep.cli replay <case_id>
 """

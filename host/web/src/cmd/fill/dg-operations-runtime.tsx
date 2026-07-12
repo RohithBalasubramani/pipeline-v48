@@ -9,7 +9,7 @@ import React from "react";
 // loaded through here) and re-exports the CARDS registry. Filename matches the row's cmd_catalog.card_render_map
 // .fill_module (`host/web/src/cmd/fill/dg-operations-runtime.tsx`).
 //
-// FRAMES=PAYLOADS [architecture]: ems_backend is RETIRED — the host emits `frames={}` EMPTY. So the ONLY data source is
+// FRAMES=PAYLOADS [architecture]: host-served is RETIRED — the host emits `frames={}` EMPTY. So the ONLY data source is
 // the Layer-2 `payload`; the old live-frame / energy-power column-row reducer / OpsFrame-from-frame machinery is
 // DELETED. Card 71 renders whatever `duty` slice Layer-2 emitted (real or honest-blank '—') over CMD V2's OWN empty
 // view-model; its run-log rows have NO neuract source so are always the empty RunsView ("No runs in this period").
@@ -22,7 +22,7 @@ import { card73 } from "./dg-operations-runtime/card-73";
 import type { OnDateChange } from "./dg-operations-runtime/types";
 
 // Cards 71 (Runtime & Duty) & 73 (Power Energy Analysis) each own a SamplingPicker that drives onDateChange (a no-op
-// re-fetch now that ems_backend is retired, but the control is real CMD V2 chrome).
+// re-fetch now that host-served is retired, but the control is real CMD V2 chrome).
 export const CARDS: Record<
   number,
   (payload: any, frame?: any, onDateChange?: OnDateChange) => React.ReactNode

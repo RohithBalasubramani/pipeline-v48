@@ -58,6 +58,3 @@ def has_quantity(table, quantity):
     return sm.has_quantity(fp, quantity)
 
 
-def table_fingerprint(table):
-    """The fingerprint key for `table` (re-exported so callers route + reason from one import)."""
-    return fingerprint(table)

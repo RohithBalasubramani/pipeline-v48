@@ -8,6 +8,7 @@ metric=power). The raised message carries the 'llm transport/parse failure' fing
 so the pipeline surfaces the honest data_unavailable terminal instead of a confident misroute.
 """
 import os
+from llm.prompt_load import load as _prompt_load
 
 from llm.client import call_qwen
 from config.app_config import cfg
@@ -27,8 +28,7 @@ _HERE = os.path.dirname(os.path.abspath(__file__))
 
 
 def _load_prompt(name):
-    with open(os.path.join(_HERE, "prompts", name)) as f:
-        return f.read()
+    return _prompt_load(_HERE, name)   # the ONE loader (llm/prompt_load, D8); errors="replace" house default
 
 
 def _candidate_block(specs, titles):
@@ -93,6 +93,13 @@ def route(prompt, db="cmd_catalog", feedback=None, exclude_page_key=None):
     # json_schema kwarg is inert → the request is BYTE-IDENTICAL to today (json_object). stage='route' also applies the
     # per-stage timeout so a slow batch can't flip to the fail-closed path.
     _intent_vocab = list(cfg("intents.vocab", ["trend", "distribution", "snapshot", "table", "events"]))
+    # DECISION INSPECTOR: declare the materialized option set for THIS call (obs/llm_tap contextvar → the llm event's
+    # `decision`). The page candidates are the real selection; metric/intent vocabs ride as secondary enums.
+    from obs import llm_tap
+    llm_tap.set_decision(kind="selection", candidate_kind="page_key",
+                         candidates=[{"page_key": s["page_key"], "title": s["title"]} for s in specs],
+                         vocab={"metric": list(METRIC_VOCAB), "intent": _intent_vocab},
+                         excluded_page_key=excluded, reroute=bool(feedback))
     r = call_qwen(system, user, stage="route",
                   json_schema=route_answer_schema(keys, METRIC_VOCAB, _intent_vocab))
     if not r:

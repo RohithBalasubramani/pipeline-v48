@@ -15,6 +15,9 @@ INSERT INTO viewer_policy (page_key, page_type, txt_value, note) VALUES
   'honest fallback 3D-asset key when a page/panel has no configured GLB (backend2 views.py:430) [#1 asset_3d]')
 ON CONFLICT (page_key) DO UPDATE SET page_type = EXCLUDED.page_type, txt_value = EXCLUDED.txt_value, note = EXCLUDED.note;
 
+-- ── #7/#18 RETIRED 2026-07-12 (unused-code audit): live_window_policy + limit_override never got readers
+--    and were DROPPED (db/retire_unused_tables_20260712.sql; snapshots archive/db_snapshots_20260712/).
+/*
 -- ── #7 live_window_policy ── snapshot window + poll/advertised cadence per (page, category) ────────────────────────
 -- Fixes the ~60s frozen-looking default: column-row live = 7200s (feeder_base.py:85), RTM heatmap = 900s (realtime.py:22-23).
 -- Read by config/live_window_policy.window_seconds()/poll_seconds()/advertised_cadence_seconds().
@@ -34,7 +37,7 @@ INSERT INTO limit_override (scope, key, band_key, warn, trip, note) VALUES
  ('class', '__default__', 'thd_i_pct',        8,  12, 'current THD % [#18 limit-override]'),
  ('class', '__default__', 'voltage_dev_pct',  5,  10, '|voltage deviation| % vs nominal [#18 limit-override]')
 ON CONFLICT (scope, key, band_key) DO UPDATE SET warn = EXCLUDED.warn, trip = EXCLUDED.trip, note = EXCLUDED.note;
-
+*/
 -- ── #10 asset_class_default ── ADD the per-class feeder-PQ IEEE-519 limits (merged onto the existing default_json) ──
 -- So config/nameplates.pq_limits() + services/mfm_config.py hand the PQ mapper a REAL per-asset limit instead of forcing
 -- the IEEE-519 code default (powerQualityMapper.ts:169-175 / IEEE_519_LV_LIMITS). Values match CMD_V2 (all 8%, flicker 1.0,

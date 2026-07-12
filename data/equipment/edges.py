@@ -22,6 +22,7 @@ enabled()/the allowlist are LATCHED at first call so lt_mfm._CACHE / panel_membe
 panel_members_block lru_cache never see a mid-run source switch (restart or clear_cache() to re-read). Deterministic
 outcomes are cached per (panel_table, direction); DB-error outcomes are NEVER cached (retry next call).  [stream A]
 """
+from obs.errfmt import record_exc as _record_exc   # failures-channel telemetry [EH F4]
 import sys
 
 from config.databases import CMD_CATALOG
@@ -38,8 +39,8 @@ def enabled():
     """cfg('equipment.topology.enabled','off') LATCHED at first call (kill-switch; default off => feature inert)."""
     if "enabled" not in _STATE:
         try:
-            from config.app_config import cfg
-            _STATE["enabled"] = str(cfg("equipment.topology.enabled", "off")).strip().lower() in ("1", "true", "yes", "on")
+            from config.app_config import flag_on
+            _STATE["enabled"] = flag_on("equipment.topology.enabled")   # D6: unified vocabulary — 't' now counts (drift repair)
         except Exception:
             _STATE["enabled"] = False
     return _STATE["enabled"]
@@ -68,6 +69,7 @@ def _registry_by_table():
         rows = _q(CMD_CATALOG, "SELECT id, table_name FROM registry_lt_mfm WHERE table_name IS NOT NULL")
     except Exception as e:  # noqa: BLE001 — fail-open by contract
         sys.stderr.write("[equipment.edges] registry read failed (%s); returning {} (not cached)\n" % type(e).__name__)
+        _record_exc("equipment.edges.registry", e)   # + the failures channel (stderr never reached the runbooks) [EH F4]
         return {}
     seen, dups = {}, set()
     for r in rows:
@@ -92,6 +94,7 @@ def _mirror_edges():
         rows = _q(CMD_CATALOG, "SELECT id, from_mfm_id, to_mfm_id FROM registry_lt_mfm_outgoing ORDER BY id")
     except Exception as e:  # noqa: BLE001 — fail-open by contract
         sys.stderr.write("[equipment.edges] mirror read failed (%s); returning None (not cached)\n" % type(e).__name__)
+        _record_exc("equipment.edges.mirror", e)
         return None
     edges = [(_int(r[0]), _int(r[1]), _int(r[2])) for r in rows]
     edges = [(e, f, t) for e, f, t in edges if f is not None and t is not None]
@@ -122,6 +125,7 @@ def _nodes_by_key():
         rows = _db.eq_q("SELECT key, id FROM equipment.equipment WHERE key IS NOT NULL")
     except Exception as e:  # noqa: BLE001 — fail-open by contract
         sys.stderr.write("[equipment.edges] node-key read failed (%s); returning {} (not cached)\n" % type(e).__name__)
+        _record_exc("equipment.edges.node_key", e)
         return {}
     got = {}
     for r in rows:

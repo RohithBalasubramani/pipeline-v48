@@ -2,7 +2,7 @@ import React from "react";
 // Card 75 — Life & Capacity (page transformer-asset-dashboard/thermal-life). LifeCapacityCard fed its OWN Layer-2
 // payload's `lifeCapacity` slice → the life-remaining + derating FillBar groups.
 //
-// ems_backend is RETIRED → the payload IS the render source. ALWAYS-DRAWS [GOAL]: the derating bar (load kVA / derated
+// host-served is RETIRED → the payload IS the render source. ALWAYS-DRAWS [GOAL]: the derating bar (load kVA / derated
 // kVA / headroom) is electrical-derivable and fills REAL from the payload; the life-remaining bar (years / aging) is an
 // insulation-life domain reading that reads 0/empty when neuract has no column. A payload with no usable lifeCapacity
 // slice renders the tab's OWN typed-empty view-model — the card STILL DRAWS both bar groups, never a blank/null card and

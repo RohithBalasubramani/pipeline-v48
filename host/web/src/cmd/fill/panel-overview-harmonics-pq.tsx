@@ -6,7 +6,7 @@
  * render fn + the shared helpers (date-window / derive / noop) live atomised,
  * one concern per file, in the same-named folder next to this file.
  *
- * PAYLOAD-DIRECT (ems_backend RETIRED — the host emits frames={} EMPTY): the ONLY data
+ * PAYLOAD-DIRECT (host-served RETIRED — the host emits frames={} EMPTY): the ONLY data
  * source is each card's Layer-2 completed `payload` (real neuract periods/stats + honest-blank).
  * The old LIVE aggregate-frame path (snapshot.ts's mapPanelHarmonicsPqAggregateToSnapshot +
  * the per-card snapshotFromFrame branch) AND the buildPQPeriods() fabrication fallback (which

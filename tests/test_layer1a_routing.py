@@ -1,4 +1,6 @@
 """Layer 1a — unit + live integration + contract-2 conformance + asset-agnostic + available-pages scope."""
+import pytest
+
 from config.available_pages import available_page_keys
 from layer1a.db_reads.page_specs import read_page_specs
 from layer1a.db_reads.card_titles import read_card_titles
@@ -49,17 +51,20 @@ def test_norm_id():
     assert _norm_id("card 44") == "44" and _norm_id("44") == "44" and _norm_id(44) == "44"
 
 
+@pytest.mark.live
 def test_route_live_in_available():
     r = route("real-time monitoring of PCC-1A panel")
     assert r["page_key"] in AVAIL and "real-time-monitoring" in r["page_key"]
     assert r["metric"] and r["intent"] in {"trend", "distribution", "snapshot", "table", "events"}
 
 
+@pytest.mark.live
 def test_stories_every_card_covered():
     cards = build_stories("real-time monitoring of PCC-1A", RTM, "power", "snapshot")
     assert cards and all(c["analytical_story"].strip() for c in cards)
 
 
+@pytest.mark.live
 def test_e2e_contract2_conformance():
     out = run_1a("real-time monitoring of PCC-1A panel")
     assert validate_layer1a_output(out, AVAIL) == []     # full contract-2 PASS, page is available
@@ -69,6 +74,7 @@ def test_e2e_contract2_conformance():
     assert c0["profile"]["card_purpose"] and "fields" in c0["recipe"] and "handling_class" in c0["handling"]
 
 
+@pytest.mark.live
 def test_asset_agnostic_routing():
     a = route("real-time monitoring of PCC-1A panel")["page_key"]
     b = route("real-time monitoring of PCC-2B panel")["page_key"]

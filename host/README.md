@@ -1,12 +1,9 @@
 # host — V48 prompt → cards preview
 
-A thin UI over the V48 pipeline: type a prompt, run **1a (route) ∥ 1b (asset)** → **validate**, and
-render the chosen cards. Each card mounts its **real CMD_V2 Storybook story** (no bespoke charts) fed
-the ground-truth payload from `cmd_catalog.card_payloads`.
-
-> Layer 2 (the payload-morph layer) is not built yet, so the payload shown per card is the **default**
-> story payload (the byte-match ground truth). When Layer 2 lands, the same response shape carries the
-> morphed payload and the UI is unchanged.
+A thin UI over the V48 pipeline: type a prompt, run **1a (route) ∥ 1b (asset)** → **validate** →
+**Layer 2 (morph-emit)** → **ems_exec (deterministic data fill)**, and render the chosen cards. Each
+card mounts its **real CMD_V2 component** (no bespoke charts) fed the morphed + data-filled payload
+(defaults come from `cmd_catalog.card_payloads`; live numbers from neuract via the executor).
 
 ## Run
 

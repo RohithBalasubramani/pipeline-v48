@@ -90,15 +90,15 @@ def _card_key(data_instructions, card_id):
     FAMILY (endpoint_recipe_map — the emission's own declared endpoint names the shared data contract). An explicit
     id with NO row FALLS THROUGH to the family (a caller now passes card_id on every run_card; without the
     fallthrough it would mask the family recipe — card 69's current-history windowed-stats contract lives on family
-    card 46). The consumer's endpoint wins; the AI's ems_backend spec endpoint is the compat fallback."""
+    card 46). The consumer's endpoint wins; the AI's fetch-spec endpoint is the compat fallback."""
     if card_id is not None and read(card_id):
         return card_id
     di = data_instructions or {}
     consumer = di.get("consumer")
     endpoint = consumer.get("endpoint") if isinstance(consumer, dict) else None
     if not endpoint:
-        eb = di.get("ems_backend")
-        endpoint = eb.get("endpoint") if isinstance(eb, dict) else None
+        from domain.fetch_spec import fetch_spec
+        endpoint = fetch_spec(di).get("endpoint")
     return _endpoint_card(endpoint) or card_id
 
 
@@ -152,7 +152,3 @@ def _fold(ai, spec):
     return out
 
 
-def reset_cache():
-    """Drop the per-process recipe cache (after editing card_fill_recipe rows in the same process)."""
-    read.cache_clear()
-    _endpoint_card.cache_clear()

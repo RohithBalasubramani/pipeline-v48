@@ -5,25 +5,19 @@
    "card_id": 14,
    "title": "Cumulative Energy",
    "answerability": "partial",
-   "note": "Showing cumulative energy (kWh/kVArh) for this month \u2014 per-member data is aggregated from live feeders; capacity/target/marker are not measured for this panel."
-  },
-  {
-   "card_id": 16,
-   "title": "Energy Consumption Trend",
-   "answerability": "partial",
-   "note": "Showing total active and reactive energy trend by feeder (UPS, BPDB, HHF); rated and contracted reference lines are omitted because the asset's nameplate ratings are unknown."
+   "note": "Showing month-to-date cumulative active and reactive energy from primary outgoing feeders; capacity/subsidy target is not measured for this panel."
   },
   {
    "card_id": 15,
    "title": "Today live power analysis",
    "answerability": "partial",
-   "note": "Showing live apparent power (kVA) and reactive power (kVAr); rated capacity and peak markers are omitted because the asset's nameplate rating is unknown."
+   "note": "Showing total apparent power and active/reactive breakdown from outgoing feeders; rated capacity and worst-peak markers are honest-blank because this panel asset has no nameplate rating (rated_kva) and no dedicated peak column."
   },
   {
    "card_id": 17,
    "title": "Daily Power Demand by Feeder",
    "answerability": "partial",
-   "note": "Showing peak demand and load factor (derived from active power); HHF feeder data is not available for this panel."
+   "note": "Showing UPS and BPDB feeder demand \u2014 HHF feeder is not present in this panel's roster, so its series is blank."
   }
  ],
  "loop2": null

@@ -27,12 +27,7 @@ import re
 from ems_exec.data import neuract as _nx
 
 
-def _cfg(key, default):
-    try:
-        from config.app_config import cfg
-        return cfg(key, default)
-    except Exception:
-        return default
+from config.failopen import cfg_safe as _cfg   # THE guarded cfg reader (D3)
 
 
 # ── the dataset semantic tables (DB-driven, code-default) ─────────────────────────────────────────────────────────────
@@ -121,127 +116,13 @@ def scalar_quantity_words():
     return _tokset("measurable.scalar_quantity_words", _SCALAR_QUANTITY_WORDS_DEFAULT)
 
 
-# ── SOURCE-ROLE WALL [DEFECT 56(b)] ───────────────────────────────────────────────────────────────────────────────────
-# A voltage/current LABEL qualified by a NON-MEASURED SOURCE ROLE names a physically distinct sensing point this meter
-# does NOT have. The meter measures its OWN OUTPUT — voltage_avg / current_avg ARE that measured (output) point, NOT a
-# separate bypass / input / mains / utility / grid / source / incoming / line-side rail. So:
-#     'Output Voltage'  → voltage_avg  (KEEP — the meter's own measured point)
-#     'Bypass Voltage'  → []           (honest blank — this meter has no bypass sensor)
-#     'Input/Mains/Utility/Grid/Source/Incoming/Line-side Voltage' → []  (a separate un-metered rail)
-# Generic — a SOURCE-ROLE QUALIFIER SET, never a card-specific rule. Token-EXACT (word boundaries), so it never fires on
-# an unrelated substring ('sourced', 'grinder', 'inputted' … don't tokenize to the role token). DB row (code-default
-# mirror) measurable.nonmeasured_source_roles. Multi-word markers ('line side' / 'line-side') match an adjacent run.
-#
-# DEDICATED-SENSING rails ONLY [DEFECT c59 inputVoltageV]: this default set carries ONLY roles that name a physically
-# distinct, DEDICATED-sensing rail this OUTPUT-metering MFM has NO column for (bypass / utility / grid / incoming /
-# line-side / source). A NON-DEDICATED role — 'input' / 'line' / 'mains' — is the meter's OWN plain reading (voltage_avg
-# / current_avg ARE the input/line reading), so an input* slot LEGITIMATELY fills from the bare column and must NOT be
-# walled. The default therefore EXCLUDES 'input'/'mains' (they were mis-listed, silently false-blanking every input*
-# leaf — the c59 inputVoltageV defect). 'source' stays (a distinct 'source-select' rail, never the plain input reading).
-_NONMEASURED_SOURCE_ROLES_DEFAULT = [
-    "bypass", "utility", "grid", "source", "incoming", "line side", "line-side", "lineside",
-]
-# NON-DEDICATED roles [DEFECT c59]: the meter's OWN plain reading. A label carrying ONLY one of these (and no dedicated
-# rail role) fills from the bare voltage_avg / current_avg — the SAME `dedicated`:false roles the honest-blank gate's
-# source_role_mismatch clears. Code-default carve-out; the authoritative verdict is the `dedicated`-aware authority
-# below (source_role_mismatch), this list only guarantees the offline path also clears input/line/mains.
-_NONDEDICATED_ROLE_MARKERS_DEFAULT = ["input", "line", "mains"]
-# roles the meter DOES measure at its OWN terminals — never blocked even if a label pairs them with a rail word.
-# DB-driven (measurable.measured_source_roles) with this code-default mirror: 'output' is the ONE self/measured role
-# (mirrors layer2.quantity_class where is_non_output_source('output') is False). Onboard a new measured-role NAME by
-# editing the row — no card-specific rule, no code change. NOT a hardcoded label set: the DB vocab is authoritative.
-_MEASURED_ROLES_DEFAULT = ["output"]
+# SOURCE-ROLE WALL home = executor/source_role_wall.py (monoliths F10, 2026-07-12); re-exported byte-compatibly.
+from ems_exec.executor.source_role_wall import (                                          # noqa: E402,F401
+    _NONMEASURED_SOURCE_ROLES_DEFAULT, _NONDEDICATED_ROLE_MARKERS_DEFAULT, _MEASURED_ROLES_DEFAULT,
+    _measured_roles, _nonmeasured_source_role_markers, _nondedicated_role_markers,
+    _marker_hit, _is_nonmeasured_source_role)
 
 
-def _measured_roles():
-    raw = _cfg("measurable.measured_source_roles", _MEASURED_ROLES_DEFAULT)
-    if not isinstance(raw, (list, tuple)) or not raw:
-        raw = _MEASURED_ROLES_DEFAULT
-    return {t for m in raw for t in _tokens(m)}
-
-
-def _nonmeasured_source_role_markers():
-    raw = _cfg("measurable.nonmeasured_source_roles", _NONMEASURED_SOURCE_ROLES_DEFAULT)
-    if not isinstance(raw, (list, tuple)) or not raw:
-        raw = _NONMEASURED_SOURCE_ROLES_DEFAULT
-    return [tuple(_tokens(m)) for m in raw if _tokens(m)]
-
-
-def _nondedicated_role_markers():
-    raw = _cfg("measurable.nondedicated_source_roles", _NONDEDICATED_ROLE_MARKERS_DEFAULT)
-    if not isinstance(raw, (list, tuple)) or not raw:
-        raw = _NONDEDICATED_ROLE_MARKERS_DEFAULT
-    return [tuple(_tokens(m)) for m in raw if _tokens(m)]
-
-
-def _marker_hit(toks, seq):
-    """True when the token sequence `seq` appears as an adjacent run in `toks` (token-exact, multi-word aware)."""
-    if not seq:
-        return False
-    n = len(seq)
-    for i in range(len(toks) - n + 1):
-        if tuple(toks[i:i + n]) == seq:
-            return True
-    return False
-
-
-def _is_nonmeasured_source_role(key):
-    """True when the leaf/label `key` is qualified by a DEDICATED-SENSING SOURCE ROLE (bypass / utility / grid / incoming
-    / line-side / source) that this OUTPUT-metering MFM has NO dedicated column for — so a voltage/current label there
-    must honest-blank rather than bind the meter's OWN reading (DEFECT 56 'Average Bypass Voltage' ← voltage_avg). A
-    label naming the MEASURED role ('output') is never blocked. Token-exact; never raises.
-
-    DEDICATED-vs-NON-DEDICATED [DEFECT c59 inputVoltageV]: 'input' / 'line' / 'mains' are NON-DEDICATED roles — the
-    meter's OWN plain reading (voltage_avg / current_avg ARE the input/line reading), so an input* slot LEGITIMATELY
-    fills from the bare column and must NOT be walled. Only a role with its OWN distinct sensor blocks. This mirrors the
-    exact `dedicated`-aware policy the honest-blank gate already uses (layer2.gates role_smear /
-    quantity_class.source_role_mismatch), so the resolver and the gate agree: bypassVoltageV blanks, inputVoltageV keeps.
-
-    AUTHORITY ORDER (DB-vocab first, then a getattr-guarded legacy backstop — this file NEVER hard-depends on a symbol
-    the vocab agent may not have landed, and NEVER bakes a role label set in code):
-      1. measured-role carve-out (measurable.measured_source_roles) — 'output' names the meter's own terminal → CLEAR.
-      2. DEDICATED rail markers (measurable.nonmeasured_source_roles) present → BLOCK unconditionally, EVEN IF a
-         non-dedicated token co-occurs (the dedicated rail wins) — the honest-blank.
-      3. NON-DEDICATED markers (measurable.nondedicated_source_roles) present, no dedicated rail → CLEAR (the meter's own
-         input/line/mains reading legitimately fills). Mirrors the `dedicated`:false roles the honest-blank gate's
-         quantity_class.source_role_mismatch clears, so resolver and gate agree: bypassVoltageV blanks, inputVoltageV keeps.
-      4. layer2.quantity_class.is_non_output_source(key) (getattr-guarded) — legacy non-dedicated-BLIND last resort,
-         consulted ONLY to BLOCK a rail the DB markers missed (True → blocked). A False from it is NOT trusted to clear
-         (it wrongly reports 'input' as non-output), so it can never over-blank the meter's own input/line/mains reading."""
-    toks = _tokens(key)
-    if not toks:
-        return False
-    if _measured_roles() & set(toks):
-        return False                                           # 'output' is the meter's own measured terminal
-    # NON-DEDICATED carve-out [DEFECT c59 inputVoltageV]: a label naming ONLY the meter's OWN plain reading (input /
-    # line / mains) and NO dedicated rail role fills from the bare column — cleared FIRST so a mixed 'bypass input'
-    # style label still blocks on its dedicated role below. Two agreeing authorities, either alone clears the leaf:
-    #   (a) the `dedicated`-aware source_role_mismatch (getattr): a NON-dedicated 'input'/'line'/'mains' slot vs a
-    #       source claiming no role returns (False, None); a DEDICATED role (bypass) returns (True, [...]).
-    #   (b) the code-default non-dedicated marker set (measurable.nondedicated_source_roles) for the offline path.
-    # A DEDICATED rail marker present → BLOCK unconditionally, EVEN IF a non-dedicated token co-occurs (a multi-word
-    # 'line side' contains a bare 'line', 'bypass input' pairs bypass with input): the dedicated rail wins. Checked
-    # FIRST so the non-dedicated carve-out below can never smuggle a dedicated-rail label past the wall.
-    dedicated_hit = any(_marker_hit(toks, seq) for seq in _nonmeasured_source_role_markers())
-    if dedicated_hit:
-        return True
-    # NON-DEDICATED carve-out [DEFECT c59 inputVoltageV]: no dedicated rail role is present, so a label naming ONLY the
-    # meter's OWN plain reading (input / line / mains) fills from the bare column. Two agreeing authorities, either
-    # alone clears the leaf: (a) the `dedicated`-aware source_role_mismatch (getattr) returns (False, None) for a
-    # non-dedicated role; (b) the code-default non-dedicated marker set (measurable.nondedicated_source_roles) offline.
-    if any(_marker_hit(toks, seq) for seq in _nondedicated_role_markers()):
-        return False                                           # the meter's own input/line/mains reading legitimately fills
-    # LAST RESORT (getattr-guarded): the legacy non-dedicated-BLIND is_non_output_source — trusted ONLY to BLOCK a rail
-    # the marker set above missed (e.g. a future DB source_role_markers row). Reached only when NO non-dedicated marker
-    # cleared the leaf, so it can never wrongly block the meter's own 'input' reading.
-    try:
-        from layer2 import quantity_class as _qc
-        _nonout = getattr(_qc, "is_non_output_source", None)
-        if callable(_nonout) and _nonout(key) is True:
-            return True
-    except Exception:
-        pass
-    return False
 
 
 def _is_derived_quantity_key(key):
@@ -255,7 +136,7 @@ def _is_derived_quantity_key(key):
     (vAvg/amps → None, the legit card-18 rescue) still resolves normally. Never raises (a class lookup failure = not
     derived, so a genuine raw magnitude is never accidentally blocked)."""
     try:
-        from layer2.quantity_class import name_class
+        from domain.quantity_class import name_class   # vocabulary home (layer2.quantity_class is its facade)
         cls = name_class(key)
     except Exception:
         return False
@@ -344,67 +225,6 @@ def resolve_column(key, tables, unit=None):
     return None
 
 
-# ── sibling-field resolution (the fields[] scalar-mean leaf, card 40) ─────────────────────────────────────────────────
-# The non-content STOPWORD tokens (articles / stat words / display units) stripped before comparing a leaf's QUANTITY
-# identity to a sibling field's. DB-driven (measurable.sibling_stopwords) with this code-default mirror.
-_STOPWORDS_DEFAULT = ["the", "of", "and", "per", "avg", "average", "mean", "max", "min", "peak",
-                      "total", "kw", "kwh", "kva", "kvar", "kvarh", "kvah", "hz", "pct", "percent"]
-
-
-def _stopwords():
-    return _tokset("measurable.sibling_stopwords", _STOPWORDS_DEFAULT)
-
-
-def _content_tokens(*texts):
-    """The content (non-stopword, non-unit, non-stat) tokens of a set of texts — the QUANTITY identity of a leaf/field
-    ('activePowerAvgKw'→{active,power}; label 'Active Power' + metric 'active_power_total_kw'→{active,power})."""
-    stop = _stopwords()
-    out = set()
-    for t in texts:
-        for tok in _tokens(t):
-            if tok and tok not in stop and not tok.isdigit():
-                out.add(tok)
-    return out
-
-
-def sibling_column_for_scalar(key, fields, unit=None):
-    """The (column, quantity) an UNBOUND MEASURABLE scalar leaf should reduce, taken from a SIBLING data field that
-    already binds a real column of the SAME quantity (card 40: data.activePowerAvgKw is unbound, but data.bars[*].active
-    already binds active_power_total_kw, unit kW). Match = the leaf key's content tokens ⊆ a series/scalar field's content
-    tokens (its metric/column/label), AND the field carries a real column, AND (when both declare a unit) the units agree.
-    `quantity` = the sibling field's unit-derived dimensional quantity (config.vocab unit_quantities; kW→power) so the
-    caller's _verify applies the SAME negative-power abs convention the sibling series used (else the scalar mean of a
-    reversed-CT feeder's negative active power would read −188 while the bars read +190). (None, None) when no matching
-    sibling exists. Purely over the emitted fields (no DB) — the caller still verifies the column is present+logged before
-    filling, so an over-reach is impossible. Never raises."""
-    want = _content_tokens(key)
-    if not want:
-        return None, None
-    ku = (unit or "").strip().lower()
-    best = None
-    for f in (fields or []):
-        if not isinstance(f, dict):
-            continue
-        col = f.get("column")
-        if not col or (f.get("kind") or "").lower() in ("const", "text"):
-            continue
-        have = _content_tokens(f.get("metric"), f.get("column"), f.get("label"))
-        if not want.issubset(have):
-            continue
-        fu = str(f.get("unit") or "").strip().lower()
-        if ku and fu and ku != fu:
-            continue                                           # a declared unit mismatch → not the same quantity
-        # prefer the tightest match (fewest extra tokens) so 'active power' does not bind a broader 'power' field
-        extra = len(have - want)
-        if best is None or extra < best[3]:
-            best = (col, f.get("quantity"), f, extra)
-    if best is None:
-        return None, None
-    col, q, f, _extra = best
-    if q is None:
-        try:
-            from ems_exec.executor.verify import _quantity_of
-            q = _quantity_of(f)                                # kW→power (the SAME dimensional lookup the bars used)
-        except Exception:
-            q = None
-    return col, q
+# SIBLING-FIELD resolution home = executor/sibling_resolve.py (monoliths F10, 2026-07-12); re-exported byte-compatibly.
+from ems_exec.executor.sibling_resolve import (                                            # noqa: E402,F401
+    _STOPWORDS_DEFAULT, _stopwords, _content_tokens, sibling_column_for_scalar)

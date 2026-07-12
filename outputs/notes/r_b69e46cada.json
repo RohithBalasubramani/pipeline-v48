@@ -1,0 +1,18 @@
+{
+ "run_id": "r_b69e46cada",
+ "loop1": [
+  {
+   "card_id": 12,
+   "title": "Energy Input & Distribution",
+   "answerability": "partial",
+   "note": "Showing total energy (kWh) and power (kW) for all outgoing feeders; utilization % is not available as no per-feeder rated capacity is defined for this panel."
+  },
+  {
+   "card_id": 13,
+   "title": "Energy Flow Diagram",
+   "answerability": "partial",
+   "note": "Showing energy flow for members with live data (has_data=Y); dark members (Axial Fan Panel-1, Frisking+Security, Axial Fan Panel-2) are omitted from the roster."
+  }
+ ],
+ "loop2": null
+}

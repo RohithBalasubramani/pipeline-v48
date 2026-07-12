@@ -1,0 +1,36 @@
+{
+ "run_id": "r_543160ab9b",
+ "loop1": [
+  {
+   "card_id": 18,
+   "title": "Events KPI Strip",
+   "answerability": "partial",
+   "note": "Showing event counts for members with live data; Axial Fan Panel-1, Axial Fan Panel-2, and Frisking+Security are dark (no data) and honest-blanked."
+  },
+  {
+   "card_id": 19,
+   "title": "AI Summary",
+   "answerability": "partial",
+   "note": "AI narrative is generated from panel-aggregate data; per-member breakdowns are rendered by the roster fan-out."
+  },
+  {
+   "card_id": 20,
+   "title": "Event Timeline at {period}",
+   "answerability": "partial",
+   "note": "Showing event trends for PCC-2A feeders; some members (Axial Fan Panel-1, Axial Fan Panel-2, Frisking+Security) are dark and honest-blanked."
+  },
+  {
+   "card_id": 21,
+   "title": "Current Distribution at {period}",
+   "answerability": "partial",
+   "note": "Showing current draw for 22 outgoing feeders; 3 feeders (Axial Fan Panel-1, Frisking+Security, Axial Fan Panel-2) are dark and will render as blank spokes."
+  },
+  {
+   "card_id": 22,
+   "title": "Other Panels Event at {period}",
+   "answerability": "partial",
+   "note": "Showing per-panel event counts and metrics for 22 outgoing feeders; 3 members (Axial Fan Panel-1, Axial Fan Panel-2, Frisking+Security) are dark (no data) and render as blanks."
+  }
+ ],
+ "loop2": null
+}

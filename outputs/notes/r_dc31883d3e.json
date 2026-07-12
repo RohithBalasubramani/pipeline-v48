@@ -1,0 +1,36 @@
+{
+ "run_id": "r_dc31883d3e",
+ "loop1": [
+  {
+   "card_id": 18,
+   "title": "Events KPI Strip",
+   "answerability": "partial",
+   "note": "Showing event counts and worst deviations for members with live data (GIC-01-N3-UPS-01, GIC-01-N4-UPS-02, GIC-01-N5-UPS-03, GIC-01-N8-BPDB-01, GIC-02-N2-BPDB-02, GIC-02-N5-UPS-04); GIC-02-N6-UPS-05 and GIC-02-N7-UPS-06 are dark and honest-blanked."
+  },
+  {
+   "card_id": 19,
+   "title": "AI Summary",
+   "answerability": "partial",
+   "note": "nothing could be bound for this card on this asset \u2014 every data leaf renders an honest blank (per-leaf reasons attached), not a zero"
+  },
+  {
+   "card_id": 20,
+   "title": "Event Timeline at {period}",
+   "answerability": "partial",
+   "note": "Showing per-member event counts and worst deviations; some members (UPS-05, UPS-06, Solar Incomers) have no live data and will render as blank/dark."
+  },
+  {
+   "card_id": 21,
+   "title": "Current Distribution at {period}",
+   "answerability": "partial",
+   "note": "Showing current distribution for 6 active feeders; 2 feeders (UPS-05, UPS-06) are dark (no live data) and honest-blanked."
+  },
+  {
+   "card_id": 22,
+   "title": "Other Panels Event at {period}",
+   "answerability": "partial",
+   "note": "Showing per-panel event counts and voltage/current metrics for the 12 primary and context feeders; UPS-05, UPS-06, and Solar Incomers have no live data and will render as blanks."
+  }
+ ],
+ "loop2": null
+}

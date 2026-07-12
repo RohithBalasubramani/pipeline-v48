@@ -19,10 +19,13 @@ A card is `render`/full ONLY when it has ≥1 real leaf AND every data leaf is r
 `partial`; zero real over ≥1 data leaf → `honest_blank`. verdicts are TELEMETRY, never a render gate (per-leaf
 degradation stands). [atomic; pure scan; never raises]
 """
+from validate.types import RenderVerdictResult   # annotation-only typed core [typing F2]
 import re
 
-# dotted-path addressing: the ONE shared home (ems_exec/executor/paths.py); _at_path ≡ paths._leaf_at byte-for-byte.
-from ems_exec.executor.paths import _toks, _leaf_at as _at_path
+# dotted-path addressing + blank predicate: the ONE shared homes (lib/leaf_paths.py, lib/blank.py — moved out of
+# ems_exec so validate never imports the executor package; cycle-kill 2026-07-12). _at_path ≡ leaf_paths._leaf_at.
+from lib.leaf_paths import _toks, _leaf_at as _at_path
+from lib import blank as _blank
 
 
 def _scaffold_keys():
@@ -46,7 +49,7 @@ def _is_scaffold(path, scaffold):
 
 
 def _blank_scalar(v):
-    return v is None or v == "—" or v == ""
+    return _blank.is_blank_scalar(v)   # [shared predicate: ems_exec.executor.blank — the wire contract's ONE home]
 
 
 def _value_keys():
@@ -157,7 +160,8 @@ def undeclared_blank_count(payload, resolved_paths, roster_bases):
         return 0
 
 
-_ANSWER = {"render": "full", "partial": "partial", "honest_blank": "none"}
+from validate.verdicts import RENDER, PARTIAL, HONEST_BLANK, FULL, PARTIAL_ANSWER, NONE_ANSWER  # [typing F5]
+_ANSWER = {RENDER: FULL, PARTIAL: PARTIAL_ANSWER, HONEST_BLANK: NONE_ANSWER}
 
 
 def _narrative_real(payload):
@@ -216,28 +220,29 @@ def _asset3d_envelope(payload):
     shape detect the FE registry routes on. Its ONE datum is the MODEL BINDING itself: a bound object.url IS the
     card's real content (the 3D viewer renders it), NOT a set of measured column leaves — the generic leaf scan
     mis-read the envelope as one blank undeclared leaf and verdicted a BOUND model honest_blank with a metric-card
-    reason sentence (c60). Returns the url string when bound, '' when the envelope is present but unbound, None when
-    the payload is not this envelope."""
+    reason sentence (c60). Returns (is_asset3d, url): (False, None) when the payload is not this envelope;
+    (True, None) when the envelope is present but unbound; (True, '<url>') when a model is bound. [typing F8: the
+    old url-str | '' | None tri-state sentinel is deleted — a pair carries the two independent facts explicitly]"""
     if not (isinstance(payload, dict) and "object" in payload and "viewer" in payload):
-        return None
+        return False, None
     obj = payload.get("object")
     if obj is None:
-        return ""
+        return True, None
     if isinstance(obj, dict):
         url = obj.get("url")
-        return url if isinstance(url, str) and url.strip() else ""
-    return None
+        return True, (url if isinstance(url, str) and url.strip() else None)
+    return False, None
 
 
-def compute(payload, data_instructions, roster_stats, *, has_payload, skeleton_blank=False, payload_error=None):
+def compute(payload, data_instructions, roster_stats, *, has_payload, skeleton_blank=False, payload_error=None) -> "RenderVerdictResult":
     """THE render verdict. Combines the three honest leaf sources into one (n_real, n_data) and decides the verdict.
     Returns {n_real, n_data, n_undeclared, verdict, answerability}. Never raises — a bad input degrades to honest_blank."""
-    env = _asset3d_envelope(payload)
-    if env is not None and not skeleton_blank:
+    is_asset3d, glb_url = _asset3d_envelope(payload)
+    if is_asset3d and not skeleton_blank:
         # asset_3d envelope: the model binding is the datum. Bound url → render (the viewer draws the real GLB);
         # unbound → honest_blank (the per-leaf 'no_3d_model' reason rides render.gaps from the renderer).
-        verdict = "render" if env else "honest_blank"
-        return {"n_real": 1 if env else 0, "n_data": 1, "n_undeclared": 0,
+        verdict = "render" if glb_url else "honest_blank"
+        return {"n_real": 1 if glb_url else 0, "n_data": 1, "n_undeclared": 0,
                 "verdict": verdict, "answerability": _ANSWER[verdict]}
     try:
         d_real, d_blank, dpaths = declared_stats(payload or {}, data_instructions)

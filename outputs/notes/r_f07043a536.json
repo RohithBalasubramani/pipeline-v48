@@ -1,0 +1,18 @@
+{
+ "run_id": "r_f07043a536",
+ "loop1": [
+  {
+   "card_id": 61,
+   "title": "Thermal Timeline",
+   "answerability": "partial",
+   "note": "Showing temperature trends and event counts \u2014 band bounds are not measured for this asset."
+  },
+  {
+   "card_id": 62,
+   "title": "Pressure \u00b7 Speed \u00b7 Load",
+   "answerability": "partial",
+   "note": "Showing load percentage and min oil pressure via derived recovery functions (loadFactorPct, minOilPressure) as exact columns are not in the basket; oil pressure and speed are raw."
+  }
+ ],
+ "loop2": null
+}

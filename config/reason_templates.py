@@ -50,5 +50,4 @@ def all_templates():
     return {r[0]: r[1] for r in rows}
 
 
-def _esc(s):
-    return str(s).replace("'", "''")
+from config.policy_read import esc as _esc  # the ONE shared SQL-quote escape  # noqa: E402

@@ -1,0 +1,30 @@
+{
+ "run_id": "r_64a37b8cc3",
+ "loop1": [
+  {
+   "card_id": 19,
+   "title": "AI Summary",
+   "answerability": "partial",
+   "note": "Roster identifiers morphed to real panel members; narrative text is AI-generated from panel-aggregate data. Some members (UPS-05, UPS-06) have no live data and will render as blanks in the roster."
+  },
+  {
+   "card_id": 20,
+   "title": "Event Timeline at {period}",
+   "answerability": "partial",
+   "note": "Showing per-panel event counts and worst deviations from member meters; some members (GIC-02-N6-UPS-05, GIC-02-N7-UPS-06) are dark and will render as blanks."
+  },
+  {
+   "card_id": 21,
+   "title": "Current Distribution at {period}",
+   "answerability": "partial",
+   "note": "Showing current distribution for 6 active feeders; 2 feeders (UPS-05, UPS-06) are dark (no live data) and render as blanks."
+  },
+  {
+   "card_id": 22,
+   "title": "Other Panels Event at {period}",
+   "answerability": "partial",
+   "note": "Showing per-panel current and voltage metrics from 6 active feeders; 2 feeders (UPS-05, UPS-06) are dark and honest-blanked."
+  }
+ ],
+ "loop2": null
+}

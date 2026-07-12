@@ -4,6 +4,8 @@ import { COMPOSE } from "./compose";
 import { guardPayload, aiHeadlineOf } from "./guards";
 import { SPECIAL, ENVELOPE_RENDERERS, isNarrativeEnvelope, isTopologyEnvelope, isAsset3dEnvelope } from "./special";
 import { dateControlProps } from "./date-adapter";
+import { HonestBlankTile as HonestBlank } from "../components/HonestBlankTile";
+import type { Card, RenderVerdict, GapRecord } from "../types";
 
 // CARD_ID-KEYED REGISTRY — DIRECT COMPLETED-PAYLOAD RENDER (2026-07-02).
 // The host now returns each card's COMPLETED payload (card.payload = the ems_exec-filled CMD V2 props for data cards, OR
@@ -12,13 +14,13 @@ import { dateControlProps } from "./date-adapter";
 // else the card itself), so a swapped-in card from another page renders by its OWN identity:
 //   1. SPECIAL[id] / envelope-detect — cards whose completed payload is a {widgets:{ai_summary|sld}} / {object,viewer}
 //                    ENVELOPE, not props (narrative_ai 8/28, asset_3d 60, topology_sld) → the CMD V2 primitive for it.
-//   2. COMPONENTS[id] — the card's REAL CMD V2 component, rendered <Component {...unwrap(payload)}> straight from the
-//                    completed payload. THE PRIMARY PATH (payload = props; frames are empty).
-//   3. COMPOSE[id]  — bespoke glue for the few stacked cards (card 5 RTM heatmap).
-//   4. FILL[id]     — LAST RESORT ONLY. The old per-page mapper-fill read the (now-EMPTY) live frame; a handful of cards
-//                    whose payload can't populate their component alone (they need a module-default view-model, or carry
-//                    NO Storybook payload: 61/62/63/64/65/71/73) fall here and honest-degrade to CMD V2's OWN typed-empty
-//                    view-model (the fill view-models return the empty baseline for an absent frame) — never a crash.
+//   2. FILL[id]     — the card's OWN per-card fill module WINS over the generic spread (2026-07-06): it exists precisely
+//                    because its component needs a guarded/finitized view-model and/or per-card date-control wiring;
+//                    letting COMPONENTS shadow FILL bypassed every guard the fill was built to apply.
+//   3. COMPONENTS[id] — DIRECT render of the card's REAL CMD V2 component, <Component {...unwrap(payload)}> straight
+//                    from the completed payload (payload = props; frames are empty).
+//   4. COMPOSE[id]  — bespoke glue for the few stacked cards (card 5 RTM heatmap) + RTM chrome atoms.
+//   5. HonestBlank  — no renderable component → the honest machine-reason blank, never a crash.
 type RenderFn = (payload: any, frame?: any, onDateChange?: (dw: any) => void, pageFrame?: any) => React.ReactNode;
 
 // each fill module exports `CARDS: Record<card_id, (payload, frame) => ReactNode>`
@@ -132,16 +134,9 @@ export function forceBlank(payload: any, paths?: string[]): any {
 // scalar from a legitimately-null OBJECT (e.g. supply.consumedHint), so no FE-side transform exists by design.
 
 // The honest-blank placeholder a card renders when the render-guarantee verdict is honest_blank (real data gap): the
-// card's own frame with the machine reason — NOT a fabricated value, NOT a white screen. [contract: honest blank+reason]
-function HonestBlank({ title, reason }: { title?: string; reason?: string | null }): React.ReactNode {
-  return (
-    <div className="placeholder" style={{ height: "100%", minHeight: 0 }}>
-      <div className="big">—</div>
-      <div>{title || "no live data"}</div>
-      {reason ? <div className="k">{reason}</div> : null}
-    </div>
-  );
-}
+// card's own frame with the machine reason — NOT a fabricated value, NOT a white screen. ONE shared tile
+// (components/HonestBlankTile, imported above as HonestBlank) — CmdCard's boundary fallback + no-node branch render
+// the same markup. [contract: honest blank+reason]
 
 // ── EXPLAINED BLANKS [Issue C / Family-2] + DATA NOTE [B1 residual 'fe'] ─────────────────────────────────────────
 // The executor classifies WHY each blank leaf is blank and the host rides the structured records on
@@ -154,7 +149,7 @@ function HonestBlank({ title, reason }: { title?: string; reason?: string | null
 // ("kWh shown as a proxy for run-hours…") the host now serves per card — plus `l2_answerability`, L2's own claim
 // (muted telemetry; render.answerability stays the derived truth). A card with a note but NO gap records (a fully-
 // rendered proxy bind) still shows the marker: the disclosure matters MOST when every tile shows a number.
-export type GapRecord = { slot?: string | null; cause?: string | null; metric?: string | null; fn?: string | null; reason?: string | null };
+export type { GapRecord } from "../types";   // declared beside the response mirror; re-exported for existing importers
 
 // Deduped WHOLE reason sentences carried by the gap records (order-preserving, blanks dropped).
 export function gapSentences(gaps?: GapRecord[] | null): string[] {
@@ -219,19 +214,16 @@ function withGaps(node: React.ReactNode, gaps?: GapRecord[] | null, note?: strin
   return (<>{node}<GapInfo gaps={gaps} note={note} answerability={answerability} corner /></>);
 }
 
-/** Render a pipeline card with its REAL CMD V2 component. `frame` = the live ems_backend frame for this card's endpoint
- *  (frames[card.endpoint]); a fill module maps it via the card's own CMD V2 mapper. null → caller shows the placeholder.
+/** Render a pipeline card with its REAL CMD V2 component from the card's OWN completed payload (payload = props;
+ *  the page-frame plumbing is retired — F14, 2026-07-12). null → caller shows the placeholder.
  *  The render-guarantee verdict (card.render) is OBEYED: a honest_blank verdict short-circuits to an honest reason card
  *  (never a seed), and suppress_default_leaves are force-blanked in the payload before it reaches the component. */
 export function renderCmd(
-  card: { card_id: number; render_card_id?: number; payload: any; title?: string; render?: any;
-          data_note?: string | null; l2_answerability?: string | null; is_history?: boolean | null } | null | undefined,
-  frame?: any,
+  card: Card | null | undefined,
   onDateChange?: (dw: any) => void,
-  pageFrame?: any,
 ): React.ReactNode {
   if (!card) return null;
-  const rv = card.render || {};
+  const rv: RenderVerdict = card.render ?? {};
   // B1 [residual 'fe']: Layer 2's card-level proxy/substitution disclosure + its own answerability claim — served
   // additively by the host and shown beside the gap sentences in the SAME (i) marker (withGaps on every tier below).
   const dnote = card.data_note ?? null;
@@ -270,7 +262,9 @@ export function renderCmd(
   //    component needs a guarded/finitized view-model (unguarded fmt(null) crash class — card 41 fmtInt(efficiencyPct),
   //    2026-07-06) and/or the date-control wiring only the fill provides. 36 card_ids are registered in BOTH tiers;
   //    letting COMPONENTS shadow FILL bypassed every guard the fill was built to apply.
-  if (FILL[id]) return withGaps(FILL[id](pg, frame, onDateChange, pageFrame), rv.gaps, dnote, l2ans);
+  // The fill fns keep their historical (payload, frame?, onDateChange?, pageFrame?) arity — the frame slots are
+  // permanently undefined now (retired wire fields); fills fill from the payload alone.
+  if (FILL[id]) return withGaps(FILL[id](pg, undefined, onDateChange, undefined), rv.gaps, dnote, l2ans);
 
   // 3. COMPONENTS — DIRECT render of the card's REAL CMD V2 component from the completed payload (cards whose props are
   //    spread-safe without a per-card view-model). PER-CARD DATE NAVIGATION [time-series]: a date-navigable (is_history)
@@ -286,7 +280,7 @@ export function renderCmd(
   // 4. COMPOSE — bespoke glue for stacked cards (card 5) + the RTM chrome atoms (6/160, which carry no card_payloads
   //    skeleton) — the empty-object payload draws their own default chrome / empty state on no_data.
   const glue = COMPOSE[id];
-  if (glue) return withGaps(glue(pg, frame), rv.gaps, dnote, l2ans);
+  if (glue) return withGaps(glue(pg), rv.gaps, dnote, l2ans);
 
   // 5. NO renderable component (e.g. an overview-shell tile with no card_payloads) → the honest machine-reason blank,
   //    never a crash. This is the ONLY place the generic placeholder shows now.

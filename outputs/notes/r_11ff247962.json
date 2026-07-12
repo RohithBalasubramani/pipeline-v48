@@ -1,0 +1,12 @@
+{
+ "run_id": "r_11ff247962",
+ "loop1": [
+  {
+   "card_id": 43,
+   "title": "Voltage Live Health",
+   "answerability": "partial",
+   "note": "Showing live phase voltages and deviation \u2014 Rate Change is omitted as this is a live snapshot card with no time-axis to compute a rate."
+  }
+ ],
+ "loop2": null
+}

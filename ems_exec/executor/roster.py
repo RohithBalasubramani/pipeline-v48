@@ -62,6 +62,7 @@ from __future__ import annotations
 import copy
 
 from ems_exec.executor import bindings as _bindings
+from ems_exec.executor import blank as _blank
 from ems_exec.executor import members as _members
 from ems_exec.executor import recipe as _recipe
 from ems_exec.executor.window_policy import _window_of
@@ -242,9 +243,7 @@ def run_roster(payload, roster, ctx, default_payload=None):
 def _const_is_blank(v):
     """A const roster VALUE that carries no real data: None / '—' / '' scalars, and an empty or ALL-None list (the
     'honest-empty' []). A non-blank const (a real literal, a populated list) still overwrites unconditionally."""
-    if isinstance(v, list):
-        return not v or all(x is None for x in v)
-    return v is None or v == "—" or v == ""
+    return _blank.is_blank(v, all_none_list=True)   # [shared predicate: executor.blank]
 
 
 def _leaf_is_real(container, key):
@@ -259,27 +258,37 @@ def _leaf_is_real(container, key):
     return v is not None and v != "—" and v != ""
 
 
+# ── the slot-mode dispatch table: DISCOVERED from the roster_modes_* siblings (self-registration) ───────────────────
+def _discover_modes():
+    """{mode: handler} merged from every ems_exec.executor.roster_modes_* module's MODES declaration. A NEW mode = a
+    new roster_modes_<x>.py declaring MODES = {"<mode>": handler} — no dispatch edit here. Deterministic (sorted module
+    order, first claim of a mode wins); a module that fails to import is skipped (one broken mode must never take down
+    the interpreter — the shipped modules are still hard-imported above, so a defect in THOSE fails loudly as before)."""
+    import importlib
+    import pkgutil
+    import ems_exec.executor as _pkg
+    modes = {}
+    for name in sorted(m.name for m in pkgutil.iter_modules(_pkg.__path__) if m.name.startswith("roster_modes_")):
+        try:
+            mod = importlib.import_module(f"ems_exec.executor.{name}")
+        except Exception:
+            continue
+        for k, fn in (getattr(mod, "MODES", None) or {}).items():
+            if callable(fn):
+                modes.setdefault(str(k).strip().lower(), fn)
+    return modes
+
+
+_MODES = _discover_modes()
+
+
 def _run_slot(payload, spec, state, default_payload):
-    """Dispatch ONE slot instruction on the closed MODE vocabulary — the only branch in this file."""
+    """Dispatch ONE slot instruction on the MODE vocabulary — the discovered _MODES table above; `const` stays inline
+    (its measurable-leaf protect reads this module's own helpers). Unknown mode → honest no-op."""
     mode = (spec.get("mode") or "").strip().lower()
-    if mode == "elements":
-        _elements_slot(payload, spec, state, default_payload)
-    elif mode == "groups":
-        _groups_slot(payload, spec, state, default_payload)
-    elif mode == "aggregates":
-        _aggregates_slot(payload, spec, state, default_payload)
-    elif mode == "sections":
-        _sections_slot(payload, spec, state, default_payload)
-    elif mode == "sankey_match":
-        _sankey_slot(payload, spec, state, default_payload)
-    elif mode == "series":
-        _series_slot(payload, spec, state, default_payload)
-    elif mode == "series_split":
-        _series_split_slot(payload, spec, state, default_payload)
-    elif mode == "scalar":
-        _scalar_slot(payload, spec, state, default_payload)
-    elif mode == "entries":
-        _entries_slot(payload, spec, state, default_payload)
+    handler = _MODES.get(mode)
+    if handler is not None:
+        handler(payload, spec, state, default_payload)
     elif mode == "const":
         # MEASURABLE-LEAF PROTECT [card 73 false-blank, Family C]: a BLANK const ('honest-empty' [] / null) must not
         # clobber a leaf a real neuract DATA field already FILLED — the AI relabeled the 4 real power/frequency trend
@@ -298,122 +307,11 @@ def _run_slot(payload, spec, state, default_payload):
 
 # ═══════════════════════════════════════════════════════════════════════════════════════════════════════════════════
 #  series-LABEL alignment — a per-series LABEL must name the METRIC its OWN values leaf was actually bound to
-# ═══════════════════════════════════════════════════════════════════════════════════════════════════════════════════
-# SWAP LABEL-MORPH GAP [DEFECT c73/c53]: a swapped-in card renders its swap-TARGET's payload shape (card 53
-# backupHistory.series[i]) but the slot's story bound a DIFFERENT metric family (a DG power/frequency trend). Layer 2's
-# DATA fields correctly bind each `series[i].values` to a real column WITH a declared label ('Active Power (kW)', …),
-# and the real (all-zero-but-honest) power series fills — yet the sibling `series[i].label` kept the swap-target SEED
-# ('Autonomy index' / 'Backup time score' / 'Load Pressure score') the recipe never morphed. Real data plotted under a
-# label that names a quantity this meter does not even measure = a misleading leaf (the card's own data_note declares
-# those score series omitted). The FIX: after the roster fills, align each per-series LABEL to the metric its OWN values
-# leaf was bound to (the emitted field's declared label / humanized metric) — ONLY when the seed label does NOT already
-# name that metric (over-reach-safe: a label that already matches, or a series with no real fill and no bound field, is
-# untouched). Generic — no card ids, no key literals; driven off the emitted fields + the payload's own shape.
-
-# the leaf token a per-series VALUE array carries, and the sibling LABEL leaf token — DB-driven, code-default. A field
-# whose slot ends in a value token has a sibling label at the same series element under the label token.
-_SERIES_VALUE_LEAF_DEFAULT = ["values", "value", "data", "points", "series_data"]
-_SERIES_LABEL_LEAF_DEFAULT = ["label", "name", "legendLabel", "seriesLabel", "title"]
-# tokens dropped when comparing a label to a metric quantity (units / stats / filler) — a label that already NAMES the
-# bound metric's quantity is left alone; only a STALE label naming a different quantity is renamed.
-_LABEL_MATCH_STOP = {"the", "of", "and", "per", "avg", "average", "mean", "max", "min", "peak", "total", "kw", "kwh",
-                     "kva", "kvar", "kvarh", "kvah", "hz", "pct", "percent", "score", "index", "a", "v"}
-
-
-def _series_value_leaves():
-    v = _cfg("roster.series_value_leaf_tokens", _SERIES_VALUE_LEAF_DEFAULT)
-    return [str(t).lower() for t in v] if isinstance(v, (list, tuple)) and v else _SERIES_VALUE_LEAF_DEFAULT
-
-
-def _series_label_leaves():
-    v = _cfg("roster.series_label_leaf_tokens", _SERIES_LABEL_LEAF_DEFAULT)
-    return [str(t).lower() for t in v] if isinstance(v, (list, tuple)) and v else _SERIES_LABEL_LEAF_DEFAULT
-
-
-def _label_tokens(text):
-    """Lowercase content tokens of a label / metric (camelCase + snake_case split, units/stats/filler dropped)."""
-    if not text:
-        return set()
-    import re
-    s = re.sub(r"([a-z0-9])([A-Z])", r"\1 \2", str(text)).replace("_", " ").replace("-", " ")
-    return {t for t in re.split(r"[^a-z0-9]+", s.lower()) if t and t not in _LABEL_MATCH_STOP and not t.isdigit()}
-
-
-def _leaf_slot_swap(slot, want_value_leaves, new_leaf):
-    """Given a field slot whose LAST path segment is one of `want_value_leaves` AND whose value leaf is the child of an
-    ARRAY ELEMENT (a per-series element: '…series[0].values' / '…points[*].values' — an indexed or [*] segment
-    immediately precedes the leaf), return the sibling slot with that last segment replaced by `new_leaf`
-    ('…series[0].label'), else None. The array-element requirement is the OVER-REACH GUARD: a bare scalar
-    '<tile>.value' (no array index parent) is NOT a per-series value and is never touched — only a genuine SERIES
-    element's label is aligned. Preserves every earlier segment/index verbatim (surgery on the final '.<leaf>' only)."""
-    import re
-    s = str(slot or "")
-    m = re.search(r"\.([A-Za-z_][A-Za-z0-9_]*)$", s)
-    if not m or m.group(1).lower() not in want_value_leaves:
-        return None
-    parent = s[:m.start()]                                       # the value leaf's parent path
-    # parent must END in a SPECIFIC INDEXED array element ('…[<int>]') — a per-series element addressed 1:1 by the
-    # field. A bare scalar ('<tile>.value', no array parent) is skipped, AND a wildcard '…[*].values' is skipped too:
-    # a [*] field would smear ONE label onto EVERY series element (the c53 fix binds each series by its own INDEX, so
-    # the per-index path is the only one that carries a distinct metric identity). Over-reach guard.
-    if not re.search(r"\[-?\d+\]$", parent):
-        return None
-    return parent + "." + new_leaf
-
-
-def _humanize_metric(metric):
-    """A readable label for a raw metric/column name when the field declared no label ('active_power_total_kw' →
-    'Active Power Total Kw'). Title-cased content of the split tokens; empty → None."""
-    import re
-    if not metric:
-        return None
-    s = re.sub(r"([a-z0-9])([A-Z])", r"\1 \2", str(metric)).replace("_", " ").replace("-", " ")
-    words = [w for w in re.split(r"\s+", s.strip()) if w]
-    return " ".join(w.capitalize() for w in words) or None
-
-
-def _align_series_labels(payload, state, default_payload):
-    """For each emitted DATA field that binds a per-SERIES value leaf ('…series[i].values') which actually FILLED with
-    real data, rename the sibling '…series[i].label' to the field's declared label (or humanized metric) — but ONLY
-    when the current label is a STALE seed that does NOT already name the bound metric's quantity. Fixes the c73/c53
-    swap label-morph gap (real power/frequency series plotted under stale 'Autonomy index' seeds). Over-reach-safe: a
-    series with no real fill, or a label already naming the bound quantity, or a field with no usable label, is left
-    untouched; never fabricates a label for a genuinely-blank series. Never raises (each field independent)."""
-    if not isinstance(payload, dict):
-        return
-    fields = state.get("emitted_fields") or []
-    if not fields:
-        return
-    value_leaves = _series_value_leaves()
-    label_leaf = (_series_label_leaves() or ["label"])[0]
-    for f in fields:
-        if not isinstance(f, dict):
-            continue
-        slot = f.get("slot")
-        # the metric identity this field bound — its declared label wins, else a humanized metric/column.
-        want_label = (f.get("label") or "").strip() or _humanize_metric(f.get("metric") or f.get("column"))
-        if not want_label:
-            continue
-        label_slot = _leaf_slot_swap(slot, value_leaves, label_leaf)
-        if not label_slot:
-            continue
-        # only rename when the field's OWN value leaf actually holds real data (an honest-blank series is not relabeled)
-        vals = values_at(payload, slot)
-        real = any((isinstance(v, list) and any(x is not None for x in v)) or
-                   (not isinstance(v, list) and v not in (None, "", "—")) for v in vals)
-        if not real:
-            continue
-        want_toks = _label_tokens(want_label)
-        for container, key, _marker in _targets(payload, default_payload, label_slot):
-            cur = container.get(key)
-            # untouched when: no current label (nothing to correct) OR it already names the bound metric's quantity.
-            if not isinstance(cur, str) or not cur.strip():
-                continue
-            cur_toks = _label_tokens(cur)
-            if want_toks and cur_toks and want_toks.issubset(cur_toks):
-                continue                                        # the label already names this quantity — leave it
-            container[key] = want_label                          # align the label to the metric its values bound
-
+# SERIES-LABEL ALIGNMENT home = executor/roster_labels.py (monoliths F8, 2026-07-12); re-exported byte-compatibly.
+from ems_exec.executor.roster_labels import (                                              # noqa: F401
+    _SERIES_VALUE_LEAF_DEFAULT, _SERIES_LABEL_LEAF_DEFAULT, _LABEL_MATCH_STOP,
+    _series_value_leaves, _series_label_leaves, _label_tokens, _leaf_slot_swap,
+    _humanize_metric, _align_series_labels)
 
 # ═══════════════════════════════════════════════════════════════════════════════════════════════════════════════════
 #  coverage — the honest partial-fleet badge, attached where the recipe says

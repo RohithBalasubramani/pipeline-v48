@@ -118,22 +118,4 @@ def class_field(asset_category, field, default=None):
     return v if v is not None else default
 
 
-def all_class_defaults():
-    """{asset_category: default_json} for every configured class (DB rows preferred, else the built-in defaults)."""
-    try:
-        rows = q("cmd_catalog", "SELECT asset_category, default_json FROM asset_class_default ORDER BY asset_category")
-        if rows:
-            out = {}
-            for cat, dj in rows:
-                try:
-                    out[cat] = json.loads(dj) if dj not in (None, "", "NULL") else {}
-                except Exception:
-                    out[cat] = {}
-            return out
-    except Exception:
-        pass
-    return {k: dict(v) for k, v in _CLASS_DEFAULTS.items()}
-
-
-def _esc(s):
-    return str(s).replace("'", "''")
+from config.policy_read import esc as _esc  # the ONE shared SQL-quote escape  # noqa: E402

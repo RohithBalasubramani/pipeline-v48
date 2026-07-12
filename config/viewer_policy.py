@@ -4,7 +4,7 @@ asset_3d resolver reads).
 Answers, for a page_key: is this an INDIVIDUAL (single-feeder detail) page, an OVERVIEW (panel bootstrap + 3D/SLD) page,
 or a VARIANT (a same-page tab flavour)? Plus the rating vocab the resolver ranks candidates by, and the default
 asset_3d key when a page/panel has no configured GLB yet. NO hardcoded page-family map or asset-key literal in the
-resolver — every mapping is an EDITABLE ROW here (mirrors config.endpoint_policy's dedicated-table style).
+resolver — every mapping is an EDITABLE ROW here (the dedicated-table config style).
 
 Ports the intent behind CMD/backend2 lt_panels/views.py:429 _OVERVIEW_PAGES (slug → 3D-asset-key). V48 keeps the
 resolver PURE-config: it reads page_type_for() to decide the render path, rating_vocab() to rank/label the candidate,
@@ -67,7 +67,9 @@ def page_type_for(page_key):
 
 def rating_vocab():
     """The ordered rating tokens the asset_3d resolver ranks/labels a candidate by (best→worst). Editable CSV row
-    viewer.rating_vocab. A malformed / absent row falls back to the code default so the resolver never breaks."""
+    viewer.rating_vocab. A malformed / absent row falls back to the code default so the resolver never breaks.
+    STAGED: no consumer yet — kept for the kitpreview resolver (equipment.kitpreview.enabled is staged off);
+    if kitpreview is retired instead, delete this accessor together with its viewer.rating_vocab row."""
     raw = _txt("viewer.rating_vocab", _RATING_VOCAB_DEFAULT)
     toks = tuple(s.strip().lower() for s in (raw or "").split(",") if s.strip())
     return toks or tuple(s.strip() for s in _RATING_VOCAB_DEFAULT.split(","))
@@ -79,23 +81,17 @@ def default_asset_3d_key():
     return _txt("viewer.default_asset_3d_key", _DEFAULT_ASSET_3D_KEY)
 
 
-def all_page_types():
-    """{page_key: page_type} for every configured row (DB rows preferred, else the built-in shell/override map) — for a
-    build-time audit / bulk resolve."""
+def _txt(key, default=None):
+    """A single text knob: app_config first (the canonical scalar-knob home — the '__knob__:' sentinel rows were
+    migrated there, config F6 2026-07-12), else the legacy viewer_policy sentinel row (transition fallback). Never
+    raises; returns `default` with the DB down or the row absent (fail-open, mirrors quality_policy.txt)."""
     try:
-        rows = q("cmd_catalog", "SELECT page_key, page_type FROM viewer_policy ORDER BY page_key")
-        if rows:
-            return {r[0]: (str(r[1]).strip().lower() if r[1] not in (None, "", "NULL") else None) for r in rows}
+        from config.policy_read import _appcfg
+        v = _appcfg(key)
+        if isinstance(v, str) and v.strip() not in ("", "NULL"):
+            return v
     except Exception:
         pass
-    out = dict(_SHELL_PAGE_TYPE)
-    out.update(_PAGE_TYPE_OVERRIDE)
-    return out
-
-
-def _txt(key, default=None):
-    """A single text knob from cmd_catalog.viewer_policy.txt_value (key/value rows, key='__knob__:<key>'). Never raises;
-    returns `default` with the DB down or the row absent (fail-open, mirrors quality_policy.txt)."""
     try:
         rows = q("cmd_catalog",
                  f"SELECT txt_value FROM viewer_policy WHERE page_key='__knob__:{_esc(key)}'")
@@ -107,4 +103,5 @@ def _txt(key, default=None):
 
 
 def _esc(s):
-    return "" if s is None else str(s).replace("'", "''")
+    from config.policy_read import esc
+    return "" if s is None else esc(s)   # None-guard is this module's own contract; the escape is shared

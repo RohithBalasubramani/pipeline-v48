@@ -2,7 +2,7 @@ import React from "react";
 // Card 36 — Power & Energy Panel (page individual-feeder-meter-shell/real-time-monitoring,
 // CMD V2 RealTimeMonitoringTab).
 //
-// PAYLOAD-DIRECT (ems_backend RETIRED — `frame` is always empty now). The Layer-2
+// PAYLOAD-DIRECT (host-served RETIRED — `frame` is always empty now). The Layer-2
 // completed payload IS the render source: { data: PowerEnergyViewModel, freshness }
 // carrying REAL neuract values or honest-blank '—' per leaf. We render the CMD V2
 // PowerEnergyPanel straight from it. The old liveRailVM(frame) reduce→map→viewModel

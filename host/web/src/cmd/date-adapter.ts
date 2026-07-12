@@ -1,5 +1,5 @@
 // host/web/src/cmd/date-adapter.ts — ATOMIC: translate a CMD_V2 card's date-control emission into the host's
-// ems_backend date_window vocabulary, and expose the callback props to wire onto a date-navigable component.
+// host date_window vocabulary, and expose the callback props to wire onto a date-navigable component.
 //
 // ONE concern: the FE→host date_window contract for the per-card interactive re-fetch (CmdCard.onDateChange →
 // /api/frame). The panel-overview CMD_V2 cards (EnergyTrendCard, DemandProfileCard, …) expose `onRangeChange(value,

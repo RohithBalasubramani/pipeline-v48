@@ -1,0 +1,18 @@
+{
+ "run_id": "r_cb88b9e80b",
+ "loop1": [
+  {
+   "card_id": 47,
+   "title": "Power Quality",
+   "answerability": "partial",
+   "note": "Showing current THD (I-THD) \u2014 voltage THD, per-order harmonics (H5/H7), and waveform quality (crest/flicker) are not measured or have no data on this asset."
+  },
+  {
+   "card_id": 48,
+   "title": "Distortion & Harmonic Profile",
+   "answerability": "partial",
+   "note": "Showing current THD trends \u2014 voltage THD and specific harmonic orders (5th/7th) are not measured by this asset."
+  }
+ ],
+ "loop2": null
+}

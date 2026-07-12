@@ -1,0 +1,18 @@
+{
+ "run_id": "r_4904ce3c1c",
+ "loop1": [
+  {
+   "card_id": 47,
+   "title": "Power Quality",
+   "answerability": "partial",
+   "note": "Showing I-THD and derived H5/H7 values \u2014 per-phase current THD is measured, but voltage THD, flicker, and crest factor are not logged by this APFCR meter."
+  },
+  {
+   "card_id": 48,
+   "title": "Distortion & Harmonic Profile",
+   "answerability": "partial",
+   "note": "Showing current THD (I-THD) evolution \u2014 voltage THD and harmonic order (H5/H7) data are not measured by this asset."
+  }
+ ],
+ "loop2": null
+}

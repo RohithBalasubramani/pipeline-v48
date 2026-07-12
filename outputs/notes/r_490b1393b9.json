@@ -1,0 +1,30 @@
+{
+ "run_id": "r_490b1393b9",
+ "loop1": [
+  {
+   "card_id": 70,
+   "title": "Live Operations & Runtime",
+   "answerability": "partial",
+   "note": "Showing total active energy delivered (import register) \u2014 per-phase energy, run-hours, starts, and availability are not measured by this electrical meter."
+  },
+  {
+   "card_id": 71,
+   "title": "Runtime & Duty",
+   "answerability": "partial",
+   "note": "Showing load factor and total energy \u2014 run-hours, starts, and demand limits are not measured by this asset's meter."
+  },
+  {
+   "card_id": 72,
+   "title": "Energy & Reliability",
+   "answerability": "partial",
+   "note": "Showing total active and apparent energy for last week \u2014 reactive energy and reliability metrics (MTBF/MTTR) are not measured for this asset."
+  },
+  {
+   "card_id": 73,
+   "title": "Power Energy Analysis",
+   "answerability": "partial",
+   "note": "Showing Active and Reactive Energy history \u2014 the card's original 'Backup Readiness' series (Autonomy, Backup Time, Load Pressure, Headroom) are battery-domain metrics not measured by this DG meter and are therefore blanked."
+  }
+ ],
+ "loop2": null
+}

@@ -13,7 +13,7 @@ Ports backend2 core/resolver.py:58-144 resolve_viewer onto V48's NEURACT-only st
                 ABSOLUTE GLB url via config.asset3d_media.glb_url. REALITY today: the neuract asset_3d tables are EMPTY
                 and every *_asset_3d_id FK is NULL (registries.neuract.assets3d.model_for → None), so the resolver binds
                 NOTHING → object=null → the FE shows its own ComingSoon3D / placeholder. NEVER a fabricated model.
-  · viewer    — deep_merge (services.dict_merge.deep_merge) of the global viewer_defaults baseline (a DB-driven
+  · viewer    — deep_merge (lib.dict_merge.deep_merge) of the global viewer_defaults baseline (a DB-driven
                 config/viewer_policy knob) with the asset's own preset. backend2 _merge, per-leaf override.
 
 DATA = NEURACT ONLY. HONEST-DEGRADE: a missing model / DB outage → object=null (never a guessed GLB), viewer={} baseline.
@@ -24,8 +24,11 @@ from __future__ import annotations
 
 import json
 
-from layer2.emit.metadata.asset_3d import emit_asset_3d as _emit_asset_3d
-from services.dict_merge import deep_merge as _deep_merge
+from domain.asset_3d import emit_asset_3d as _emit_asset_3d   # resolver home (layer2.emit.metadata.asset_3d is its facade)
+from lib.dict_merge import deep_merge as _deep_merge
+
+# the card_handling classes this renderer serves — the package __init__ discovers this declaration (self-registration)
+HANDLING_CLASSES = ("asset_3d",)
 
 # viewer_defaults is an OPTIONAL JSON baseline stored as the editable viewer_policy __knob__ row
 # 'viewer.viewer_defaults' (backend2 AppKV[viewer_defaults]). Read fail-open; absent → {} (empty baseline, honest).

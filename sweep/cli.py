@@ -1,4 +1,4 @@
-"""validation/cli.py — the ONE entrypoint (python -m validation.cli ...). WHY: every workflow of the framework
+"""validation/cli.py — the ONE entrypoint (python -m sweep.cli ...). WHY: every workflow of the framework
 (generate corpus, run sweep, rebuild reports, replay a case, coverage, determinism) must be reachable from a single
 stdlib-argparse command so operators and cron jobs never import framework internals directly. main() is DISPATCH ONLY:
 each subcommand is its own small function; sibling analyzers (metrics/coverage/failures/reports/replay/determinism)
@@ -13,8 +13,8 @@ import json
 import os
 import time
 
-from validation import config
-from validation.response import ascii_safe
+from sweep import config
+from sweep.response import ascii_safe
 
 
 # ---------------------------------------------------------------- helpers
@@ -185,7 +185,7 @@ def cmd_run(args) -> int:
             status = "PASS(degraded)"
         _say(f"{done}/{total} {status} {case.get('category', '?')} :: {ascii_safe(case.get('prompt'))[:70]}")
 
-    from validation.runner import run_cases
+    from sweep.runner import run_cases
     manifest = run_cases(cases, session_id, concurrency=args.concurrency, progress=progress)
     _say(f"run done: {manifest.get('passed')}/{manifest.get('total')} pass, {manifest.get('failed')} fail")
     _analyze_and_report(session_id)
@@ -215,6 +215,44 @@ def cmd_replay(args) -> int:
     except (TypeError, ValueError):
         _say("replay result:", val)
     return 0
+
+
+def cmd_replay_failed(args) -> int:
+    """Sequentially re-run every failed case of a session (replay.replay_failed) — separates real defects
+    ('still failing') from environmental flakes ('recovered'). Exit 1 while anything still fails."""
+    sid = _resolve_session(args)
+    if not sid:
+        return 1
+    ok, val = _call_flex("validation.replay", "replay_failed", [(sid,)])
+    if not ok:
+        _say("replay-failed failed:", val)
+        return 1
+    still = sum(1 for r in (val or []) if r.get("still_failing"))
+    return 0 if still == 0 else 1
+
+
+def cmd_regress(args) -> int:
+    """Diff a session against a baseline session case-by-case (regression.compare). Exit 1 on any new_fail."""
+    sid = args.session or _latest_session()
+    if not sid:
+        _say("no session found - run `run` first")
+        return 1
+    if sid == args.baseline:
+        _say("regress: session equals baseline (", sid, ") - pass --session or run a new sweep first")
+        return 1
+    ok, rep = _call_flex("validation.regression", "compare", [(args.baseline, sid)])
+    if not ok or not isinstance(rep, dict):
+        _say("regress failed:", rep if not ok else "comparator returned non-dict")
+        return 1
+    counts = rep.get("counts") or {}
+    _say(f"regress {args.baseline} -> {sid}: {rep.get('verdict')} "
+         f"(new_fail={counts.get('new_fail')} fixed={counts.get('fixed')} still_fail={counts.get('still_fail')} "
+         f"compared={counts.get('compared')} corpus_drift={counts.get('only_in_baseline')}+{counts.get('only_in_session')})")
+    for row in (rep.get("new_fail") or [])[:10]:
+        s = row.get("session") or {}
+        _say(f"  NEW_FAIL {row.get('case_id')} [{row.get('category')}] {ascii_safe(row.get('prompt'))[:70]} "
+             f":: stage={s.get('stage')} {ascii_safe(s.get('why'))[:90]}")
+    return 0 if rep.get("verdict") == "ok" else 1
 
 
 def cmd_coverage(args) -> int:
@@ -280,7 +318,7 @@ def cmd_datesync(args) -> int:
         return 1
     ok, _mod = _call_flex("validation.checks.datesync", "check_response", [({},)])  # probe availability only
     totals = {"responses": 0, "n_history": 0, "reslices": 0, "as_of_latest": 0, "failures": [], "snapshot_violations": []}
-    from validation.checks.datesync import check_response
+    from sweep.checks.datesync import check_response
     for p in raws:
         try:
             with open(p) as f:
@@ -333,6 +371,15 @@ def main(argv: list[str] | None = None) -> int:
     rp.add_argument("case_id")
     rp.add_argument("--session", default=None)
     rp.set_defaults(func=cmd_replay)
+
+    rf = sub.add_parser("replay-failed", help="sequentially re-run every failed case of a session")
+    rf.add_argument("--session", default=None)
+    rf.set_defaults(func=cmd_replay_failed)
+
+    rg = sub.add_parser("regress", help="diff a session against a baseline session (exit 1 on new failures)")
+    rg.add_argument("--baseline", required=True)
+    rg.add_argument("--session", default=None)
+    rg.set_defaults(func=cmd_regress)
 
     d = sub.add_parser("determinism", help="repeat-run a category-spread sample")
     d.add_argument("--session", default=None)

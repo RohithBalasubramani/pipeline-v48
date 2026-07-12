@@ -5,31 +5,31 @@
    "card_id": 18,
    "title": "Events KPI Strip",
    "answerability": "partial",
-   "note": "Showing sag/swell/current/neutral event counts and worst deviation/imbalance from member meters; aggregate current (amps) and per-window voltage averages/max/min are not measured by this panel's schema."
+   "note": "Showing sag/swell/current/neutral event counts and worst deviation/imbalance from member meters; some members (UPS-05, UPS-06) are dark and will render blank."
   },
   {
    "card_id": 19,
    "title": "AI Summary",
    "answerability": "partial",
-   "note": "nothing could be bound for this card on this asset \u2014 every data leaf renders an honest blank (per-leaf reasons attached), not a zero"
+   "note": "Showing AI narrative summaries for 8 primary feeders; 2 feeders (UPS-05, UPS-06) are dark (no data) and will render as honest blanks."
   },
   {
    "card_id": 20,
    "title": "Event Timeline at {period}",
    "answerability": "partial",
-   "note": "Showing per-member event counts and worst deviations; some members (GIC-02-N6-UPS-05, GIC-02-N7-UPS-06) are dark (no data)."
+   "note": "Showing event trends for 7 active feeders; 2 feeders (GIC-02-N6-UPS-05, GIC-02-N7-UPS-06) are dark (no data) and render as honest blanks."
   },
   {
    "card_id": 21,
    "title": "Current Distribution at {period}",
    "answerability": "partial",
-   "note": "Showing current distribution across outgoing feeders; voltage, sag, swell, neutral, unbalance, and deviation metrics are not measured by the panel aggregate stub and are omitted."
+   "note": "Showing current_avg per outgoing feeder; sag/swell/voltage metrics are not measured by this panel's aggregate table and are honest-blanked."
   },
   {
    "card_id": 22,
    "title": "Other Panels Event at {period}",
    "answerability": "partial",
-   "note": "Showing OUTGOING member panels (UPS-01 to UPS-06, BPDB-01, BPDB-02); INCOMER members (Solar Incomer-1, Solar Incomer-2, Transformer-01, Transformer-02) are dark and omitted from the roster."
+   "note": "Showing per-panel event profile and voltage/current metrics for the selected period; some members (Solar Incomers, UPS-05/06) are dark (no data) and will render as blanks."
   }
  ],
  "loop2": null

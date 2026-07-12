@@ -1,0 +1,30 @@
+{
+ "run_id": "r_19b8565609",
+ "loop1": [
+  {
+   "card_id": 39,
+   "title": "Today's Energy",
+   "answerability": "partial",
+   "note": "Showing monthly active and reactive energy totals \u2014 per-phase energy and subsidy targets are not measured for this asset."
+  },
+  {
+   "card_id": 40,
+   "title": "Power Energy Analysis",
+   "answerability": "partial",
+   "note": "Showing active and reactive power demand profiles; rated and contracted power lines are omitted because the asset's nameplate ratings are unknown."
+  },
+  {
+   "card_id": 41,
+   "title": "Input vs Output Energy",
+   "answerability": "partial",
+   "note": "Showing total active power as the input proxy and derived energy loss for the loss metric; no dedicated separate input/output sensing rails exist for this single-terminal meter."
+  },
+  {
+   "card_id": 42,
+   "title": "Load Anomalies",
+   "answerability": "partial",
+   "note": "Showing actual load and load factor \u2014 expected load, anomaly events, and threshold data are not measured by this asset."
+  }
+ ],
+ "loop2": null
+}

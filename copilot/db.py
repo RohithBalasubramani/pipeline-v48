@@ -24,7 +24,9 @@ def rows(db: str, sql: str, timeout: float = 60.0):
     if db == DATA_DB:
         cmd += ["-h", DATA_HOST, "-p", str(DATA_PORT)]
     cmd += ["--csv", "-t", "-c", sql]
-    env = dict(os.environ, PGCLIENTENCODING="UTF8")
+    # PGCONNECT_TIMEOUT: the live DB (DATA_DB) rides the flaky :5433 tunnel; without this a half-dead tunnel hangs the
+    # connect for the OS TCP timeout (~2 min) — the same guard the main pipeline uses (config/databases.py). [2026-07-12]
+    env = dict(os.environ, PGCLIENTENCODING="UTF8", PGCONNECT_TIMEOUT="5")
     proc = subprocess.run(cmd, capture_output=True, text=True, env=env, timeout=timeout)
     if proc.returncode != 0:
         raise RuntimeError(f"psql {db} failed: {proc.stderr.strip()[:400]}")

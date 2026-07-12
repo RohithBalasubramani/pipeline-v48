@@ -146,11 +146,16 @@ def test_natural_compare_ids_fail_open_on_outage(monkeypatch):
     # the natural-compare detector is an OPTIONAL pre-flight enhancer running BEFORE the protected pipeline layers —
     # a registry/DB outage inside it must fail-open to [] (single path → honest data_unavailable terminal), never
     # escape as a raw 500 (the exact 'Pipeline request failed: RuntimeError: DB error... Connection refused' defect).
+    # natural_compare_ids lazily imports asset_candidates from its SOURCE module at call time (the telemetry rewrite
+    # hoisted the one shared probe), so the outage stub must live on layer1b.resolve.asset_candidates — patching only
+    # the detect module's re-imported name no longer intercepts the read. Both are patched (belt-and-braces).
     import layer1b.compare.detect as D
+    import layer1b.resolve.asset_candidates as AC
     def dead(*a, **k):
         raise RuntimeError('DB error (target_version1): psql: error: connection to server at "127.0.0.1", '
                            'port 5433 failed: Connection refused')
-    monkeypatch.setattr(D, "asset_candidates", dead)
+    monkeypatch.setattr(AC, "asset_candidates", dead)
+    monkeypatch.setattr(D, "asset_candidates", dead, raising=False)
     assert M.natural_compare_ids("compare GIC-01-N3-UPS-01 and GIC-01-N4-UPS-02") == []
 
 

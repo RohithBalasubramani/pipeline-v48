@@ -4,7 +4,7 @@
 // with shared honest-empty view-model helpers (view-model.ts) and card-18 date-wiring (date-wiring.ts)
 // split by concern. This barrel re-exports the card_id-keyed CARDS registry the loader reads.
 //
-// PAYLOAD-DIRECT (ems_backend RETIRED — the host emits frames={} EMPTY): the ONLY data source is each
+// PAYLOAD-DIRECT (host-served RETIRED — the host emits frames={} EMPTY): the ONLY data source is each
 // card's Layer-2 completed `payload` (real neuract values + honest-blank '—', shaped as the CMD V2 card
 // props). The old LIVE aggregate/column-row frame path (view-model.ts's panelVcViewModel + card-43's
 // column-row reducer) is dead code now and was DELETED. Card 18's date/range/sampling control stays live

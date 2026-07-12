@@ -14,8 +14,8 @@ import json
 import os
 import urllib.request
 
-from validation import config
-from validation.response import parse, ascii_safe
+from sweep import config
+from sweep.response import parse, ascii_safe
 
 
 def _post_run(prompt: str) -> dict:

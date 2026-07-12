@@ -1,7 +1,7 @@
 """Residual-fix group 'layer2' [A2/A5/C1/C3/C4] — the emit user-message/prompt seams, pinned.
 
   A5  fields-optional THREE-branch matrix: a member-scope card WITH roster_spec gets the ROSTER CARD guidance
-      (roster + fields:[] + KEEP ems_backend + answerability=member coverage), never the NO-FIELDS/OMIT chrome text.
+      (roster + fields:[] + KEEP fetch + answerability=member coverage), never the NO-FIELDS/OMIT chrome text.
   C1  token bundle: ✗/★ basket markers are per-line TOKENS defined once in the header; empty metric/rank dropped;
       relevant-cols why-prose only on conf<1.0; endpoint closed-set/retired/choose-by live ONLY in the system prompt;
       slot expected_qty is the bare `| expected_qty=X` (+ `(weak)`) token.
@@ -56,7 +56,7 @@ def test_roster_card_gets_roster_branch_not_chrome_text():
     msg = build_user(_ci())
     assert "★ ROSTER CARD" in msg
     assert "NO-FIELDS CARD" not in msg                          # the old mis-branch (card 18 dropped its roster)
-    assert "KEEP the ems_backend block" in msg                  # the OMIT-ems_backend contradiction is gone
+    assert "KEEP the fetch block" in msg                        # the OMIT-fetch contradiction is gone
     assert "MEMBER COVERAGE" in msg                             # answerability = member coverage
     assert "roster_spec (VERBATIM card recipe" in msg           # the recipe row still shows verbatim
 

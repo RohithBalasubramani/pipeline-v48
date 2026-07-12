@@ -25,6 +25,7 @@ def test_db_client_live_counts_match_canon():
     assert cards == 136 and pages == 68  # canon: rebuilt DB (+card 12 promoted scratch→live in the energy-distribution fix)
 
 
+@pytest.mark.live
 def test_llm_client_live_returns_dict():
     r = client.call_qwen("You reply ONLY with JSON.", 'Return exactly {"ok": true}. JSON:')
     assert isinstance(r, dict) and r.get("ok") is True
@@ -35,6 +36,7 @@ def test_llm_client_fail_open(monkeypatch):
     assert client.call_qwen("x", "y", timeout=2) == {}
 
 
+@pytest.mark.live
 def test_ai_log_installed_and_logs():
     import urllib.request
     assert urllib.request.urlopen.__name__ == "_logged"  # monkeypatch active

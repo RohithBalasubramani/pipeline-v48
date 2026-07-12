@@ -2,16 +2,16 @@
  "run_id": "r_e7fef38fb2",
  "loop1": [
   {
-   "card_id": 37,
-   "title": "Voltage Monitor (Real-Time)",
+   "card_id": 36,
+   "title": "Power & Energy (Real-Time)",
    "answerability": "partial",
-   "note": "Showing live three-phase voltage trends (R-N, Y-N, B-N) and KPIs (Avg, Max, Min); y-axis ticks and threshold values are auto-scaled/static and not bound to specific logged columns."
+   "note": "Showing total active power and energy \u2014 per-phase power isn't measured for this asset."
   },
   {
    "card_id": 38,
    "title": "Current Monitor (Real-Time)",
    "answerability": "partial",
-   "note": "Showing real-time current draw for R, Y, B phases and neutral; rated and contracted current thresholds are omitted because the asset's nameplate data is empty."
+   "note": "Showing real-time current draw for R, Y, B phases and Neutral; threshold lines omitted because the asset's rated current is unknown."
   }
  ],
  "loop2": null

@@ -22,7 +22,7 @@ from __future__ import annotations
 from data.db_client import q
 from config.databases import DATA_DB, DATA_SCHEMA
 
-# the fingerprint keys, in the order schema_slot_map was seeded (see config.schema_map.fingerprints()).
+# the fingerprint keys, in the order schema_slot_map was seeded (db/seed_schema_and_endpoints.py FINGERPRINT_REPS).
 P1_72 = "p1_72"
 NG_SE_JK_70 = "ng_se_jk_70"
 TM_UPS_56 = "tm_ups_56"
@@ -87,11 +87,6 @@ def _classify(cols):
     if _MARK_STD_POWER in cols:
         return P1_72 if _MARK_HARMONIC5 in cols else NG_SE_JK_70
     return SCH_STUB
-
-
-def classify_columns(cols):
-    """Public form of the pure classifier — for a caller that already has a table's column SET (avoids a re-query)."""
-    return _classify(set(cols or ()))
 
 
 def is_known(fp):

@@ -7,11 +7,7 @@ from __future__ import annotations
 import math
 
 
-def _f(x):
-    try:
-        return float(x)
-    except (TypeError, ValueError):
-        return None
+from ._coerce import f as _f
 
 
 def pf_angle_deg(ctx):
@@ -44,33 +40,24 @@ def _maxp_ithd(row):
     return max(vals) if vals else None
 
 
-def i_thd_pct(ctx):
-    """I-THD% for the PQ fleet/feeder view: prefer the aggregate `thd_compliance_i_avg` compliance column; when it is
-    absent fall back to the MAX of the per-phase thd_current_r/y/b columns (backend2 `_maxp` fallback). None when neither
-    is available (honest-degrade — renders "—", never a fabricated 0). real_approx. ctx: {row} (latest)."""
-    row = ctx.get("row") or {}
-    agg = _f(row.get("thd_compliance_i_avg"))
-    if agg is not None:
-        return round(agg, 1)
-    mx = _maxp_ithd(row)
-    return round(mx, 1) if mx is not None else None
-
-
-def i_thd_peak_pct(ctx):
-    """Worst per-phase current THD% (MAX over thd_current_r/y/b) — the peak the fleet `pq_priority` row surfaces as
-    `i_thd_pk_pct`, independent of whether the aggregate column exists. None when no phase column present. real_approx.
-    ctx: {row} (latest)."""
-    mx = _maxp_ithd(ctx.get("row") or {})
-    return round(mx, 1) if mx is not None else None
+def _ithd_limit_pct():
+    """The IEEE-519 I-THD limit — the SAME DB-editable row the event engine reads (event_threshold alias I_THD,
+    code default 8.0), so retuning the row moves this compliance flag too. Never raises."""
+    try:
+        from config import event_thresholds as _et
+        v = _f(_et.num("I_THD", 8.0))
+        return v if v is not None else 8.0
+    except Exception:
+        return 8.0
 
 
 def thd_compliance_ieee519(ctx):
-    """IEEE-519 compliance flag: avg I-THD% across phases ≤ 8 → 1.0 else 0.0 (None if no thd cols). real_approx.
-    ctx: {row} (latest)."""
+    """IEEE-519 compliance flag: avg I-THD% across phases ≤ the DB-editable I_THD limit (default 8) → 1.0 else 0.0
+    (None if no thd cols). real_approx. ctx: {row} (latest)."""
     ithd = _ithd(ctx.get("row") or {})
     if ithd is None:
         return None
-    return 1.0 if ithd <= 8 else 0.0
+    return 1.0 if ithd <= _ithd_limit_pct() else 0.0
 
 
 def _split_windows(series):

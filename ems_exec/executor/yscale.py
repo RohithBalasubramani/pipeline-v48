@@ -37,17 +37,7 @@ _DEFAULT_TICK_COUNT = 5
 _ELEMENT_SKIP_KEYS = ("time", "t", "ts", "timestamp", "label", "id", "key", "band", "color")
 
 
-def _cfg_num(key, default, positive=False):
-    """A DB-backed numeric knob (cmd_catalog.app_config), else `default` — the code-default mirror. `positive` rejects a
-    non-positive DB value (a mis-typed 0/negative band would collapse the axis) and falls back. Never raises."""
-    try:
-        from config.app_config import cfg
-        v = float(cfg(key, default))
-        if positive:
-            return v if v > 0 else default
-        return v if v >= 0 else default
-    except Exception:
-        return default
+from config.failopen import cfg_num as _cfg_num   # THE guarded numeric knob reader (D3)
 
 
 def _vocab_list(name, default):
@@ -122,8 +112,8 @@ def _numbers(seq):
 
 
 def _is_epoch_list(v):
-    return (isinstance(v, list) and len(v) >= 2 and
-            all(isinstance(x, (int, float)) and not isinstance(x, bool) and x > 1e10 for x in v))
+    from ems_exec.executor.epoch import is_epoch_number_list
+    return is_epoch_number_list(v)
 
 
 _ELEMENT_TIME_KEYS = ("time", "t", "ts", "timestamp")

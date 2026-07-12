@@ -57,7 +57,7 @@ def _sev(mag, limit):
         return None
     if mag >= limit:
         return "critical"
-    if mag >= limit * 0.7:
+    if mag >= limit * _facts.sev_warn_fraction():
         return "warning"
     return "normal"
 

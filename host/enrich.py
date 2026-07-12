@@ -7,6 +7,7 @@ from __future__ import annotations
 
 from validate import render_verdict as _rverdict   # the ONE post-fill verdict (see the retirement note in git history)
 from host.payload_store import _skeleton_payload, _raw_default_payload
+from layer1b.resolve.member_scope import OUTGOING
 
 
 def _gap_note(gaps, budget=300):
@@ -155,12 +156,14 @@ def _enrich_card(card, page_key, val_by_id, l2_out, completed=None, run_ok=True,
 
     # POST-FILL RENDER VERDICT [validate/render_verdict]: ONE provenance-grounded pass — declared-field real/blank +
     # the roster interpreter's own recipe-driven telemetry (roster_stats) + a leaf_classify net that counts UNDECLARED
-    # numeric leaves (panel fields=[] 0.0 leftovers / surviving Storybook seeds) as blank. Pop the reserved telemetry
-    # keys FIRST so neither the roster stats dict nor the gap records are seen by the verdict's own leaf scan.
-    from ems_exec.executor import roster_stats as _rstats
-    from ems_exec.executor import fill as _fillmod
-    roster_stats = _rstats.pop(payload)
-    gaps = _fillmod.pop_gaps(payload)                        # per-leaf honest-gap reason records (telemetry, never a FE prop)
+    # numeric leaves (panel fields=[] 0.0 leftovers / surviving Storybook seeds) as blank. ONE pop_all strips EVERY
+    # reserved telemetry key before the verdict's leaf scan (telemetry_keys.py owns the enumeration — the old
+    # two-pops-in-the-right-order sequence was the drift trap: a new reserved key one consumer forgot to pop was
+    # silently counted as a blank data leaf). [typing F9]
+    from ems_exec.executor import telemetry_keys as _tkeys
+    _reserved = _tkeys.pop_all(payload)
+    roster_stats = _reserved["roster_stats"]
+    gaps = _reserved["gaps"]                                 # per-leaf honest-gap reason records (telemetry, never a FE prop)
     # EMIT-GAP MERGE [cards 19/25/63 render.gaps=null family]: Layer 2's completeness reconcile writes per-leaf
     # 'unbound_by_emit' records to di._emit_gaps, but a special-renderer card (narrative_ai / fuel telemetry) never
     # passes through fill(), so those reasons never reached render.gaps — the payload shipped blank leaves REASONLESS.
@@ -216,7 +219,7 @@ def _enrich_card(card, page_key, val_by_id, l2_out, completed=None, run_ok=True,
         # snapshot card (date control disabled) never bloats the response. The FE posts card.payload as exact_metadata.
         "refetch": ({"render_card_id": render_card_id, "asset_table": asset_table,
                      "asset_name": (asset or {}).get("name"),
-                     "member_scope": (asset or {}).get("member_scope") or "outgoing",
+                     "member_scope": (asset or {}).get("member_scope") or OUTGOING,
                      "_default_payload": l2.get("_default_payload")}
                     if consumer.get("is_history") else None),
         "swap": swap,

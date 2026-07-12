@@ -78,8 +78,9 @@ def build(asset, card, ctx, members):
     if v_seen == 0 and i_seen == 0:
         return _no_data(panel_name, coverage)
 
-    v_sev = _sev(v_worst["mag"], min(sag_pct, swell_pct) * 0.7, min(sag_pct, swell_pct)) if v_worst else None
-    i_sev = _sev(i_worst["mag"], i_unbal_limit * 0.7, i_unbal_limit) if i_worst else None
+    warn_frac = _facts.sev_warn_fraction()
+    v_sev = _sev(v_worst["mag"], min(sag_pct, swell_pct) * warn_frac, min(sag_pct, swell_pct)) if v_worst else None
+    i_sev = _sev(i_worst["mag"], i_unbal_limit * warn_frac, i_unbal_limit) if i_worst else None
     driver = _likely_driver(v_worst, v_sev, i_worst, i_sev, sag_pct, swell_pct, i_unbal_limit)
 
     badge = "review" if (v_sev in ("warning", "critical") or i_sev in ("warning", "critical")

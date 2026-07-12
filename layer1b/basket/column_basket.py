@@ -1,12 +1,13 @@
 """layer1b/basket/column_basket.py — CARD-AGNOSTIC generous column basket (resolve_columns, recipe_fields=None). [spec section 2 L1b, #20]"""
 import os
+from llm.prompt_load import load as _prompt_load
 
 from llm.client import call_qwen
 from config.app_config import cfg
 from config.metrics import normalize_metric
-from layer1b.basket.col_dict import col_dict, real_table_cols, window_nonnull
+from layer1b.basket.col_dict import col_dict, window_nonnull
 from layer1b.basket.avg_phase import phase_sources
-from layer1b.guardrail.retry_one import retry_once
+from llm.transient_retry import retry_transient_result
 from layer1b.resolve.asset_candidates import feeder_table
 
 _HERE = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -28,8 +29,7 @@ _QUALITY_GUIDANCE = (
 
 
 def _load_prompt(name):
-    with open(os.path.join(_HERE, "prompts", name)) as f:
-        return f.read()
+    return _prompt_load(_HERE, name)   # the ONE loader (llm/prompt_load, D8); errors="replace" house default
 
 
 def build_basket(prompt, asset, intent="snapshot"):
@@ -62,10 +62,22 @@ def build_basket(prompt, asset, intent="snapshot"):
             + f"\nCOLUMNS (column_name | label | kind | unit | has_data):\n{lines}\n\nJSON:")
     # stage='basket' names this call site in llm/obs failure telemetry (before: 84 outage entries bucketed stage='-')
     # and keys the per-stage timeout row (app_config llm.timeout.basket; base llm.timeout fallback — the same 120s the
-    # old literal hardcoded, now a DB row). retry_once mirrors asset_resolve: one bounded retry on a fail-open {} so a
+    # old literal hardcoded, now a DB row). retry_transient mirrors asset_resolve: transient-only bounded retry (no-retry rule: a deterministic
+    # timeout/truncation fails fast) so a
     # transient outage doesn't silently shrink the basket to the logged floor; llm_failed rides in the basket and is
     # surfaced via layer1b contract_problems (schema.validate_layer1b_output). [AI_QUALITY_BACKLOG item 15]
-    res, llm_failed = retry_once(lambda: call_qwen(system, user, stage="basket"))
+    # DECISION INSPECTOR: the meter's real column dictionary IS the option set — declared per attempt (call_qwen
+    # clears the context on return) so the llm event's `decision` carries what the model chose FROM.
+    from obs import llm_tap
+
+    def _call():
+        llm_tap.set_decision(kind="selection", candidate_kind="column",
+                             candidates=[{"column": c[0], "label": c[1], "kind": c[2], "unit": c[3],
+                                          "has_data": c[0] in hasdata} for c in cols],
+                             table=table, metric_hint=metric)
+        return call_qwen(system, user, stage="basket", on_error="marker")
+
+    res, llm_failed = retry_transient_result(_call)
 
     realset = {c[0] for c in cols}
     by = {c[0]: c for c in cols}

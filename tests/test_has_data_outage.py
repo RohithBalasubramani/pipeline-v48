@@ -1,15 +1,15 @@
-"""tests/test_has_data_outage.py — the outage-vs-bad-chunk split in layer1b's has_data probes. [render-guarantee I2]
+"""tests/test_has_data_outage.py — the outage-vs-bad-chunk split in the data-layer value probes (home: data/value_probe.py; layer1b re-exports). [render-guarantee I2]
 
 A CONNECTION/transport failure (tunnel :5433 down) must RAISE out of value_counts/tables_with_data — fail-opening every
 chunk would fabricate has_data=True for the whole registry and send the run to the ambiguous picker instead of the
 honest data_unavailable terminal (the exact test_render_guarantee_under_outage failure). A NON-outage error (ghost
 table, SQL logic) keeps the historical fail-open: one bad chunk must not drop real assets. Fingerprints live in the ONE
-home (run/degrade_gate); this file pins the split without needing the live DB in any particular state. Non-live."""
+home (data/outage.py; run/degrade_gate re-exports); this file pins the split without needing the live DB in any particular state. Non-live."""
 from __future__ import annotations
 
 import pytest
 
-import layer1b.resolve.has_data as H
+import data.value_probe as H
 
 
 def _fresh(tables):

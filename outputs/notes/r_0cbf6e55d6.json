@@ -1,0 +1,25 @@
+{
+ "run_id": "r_0cbf6e55d6",
+ "loop1": [
+  {
+   "card_id": 40,
+   "title": "Power Energy Analysis",
+   "answerability": "partial",
+   "note": "one or more leaves could not be bound for this card on this asset \u2014 those leaves render an honest blank (per-leaf reasons attached), every other leaf fills"
+  },
+  {
+   "card_id": 41,
+   "title": "Input vs Output Energy",
+   "answerability": "partial",
+   "note": "Showing total active power and derived energy losses \u2014 per-phase power isn't measured for this asset."
+  },
+  {
+   "card_id": 42,
+   "title": "Load Anomalies",
+   "answerability": "partial",
+   "note": "Showing load factor trend and expected range \u2014 anomaly/dip/surge event counts are not measured by this meter class."
+  }
+ ],
+ "loop2": null,
+ "reconcile": "asset 'GIC-04-N5-HHF-01 (TYPE-02) 300A + 750KVAR (APFCR-01)' has_feeders=False but the routed page 'panel-overview-shell/energy-power' is the panel-aggregate granularity \u2014 reconciled to 'individual-feeder-meter-shell/energy-power'"
+}

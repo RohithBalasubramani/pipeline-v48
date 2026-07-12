@@ -1,0 +1,18 @@
+{
+ "run_id": "r_401923f9b0",
+ "loop1": [
+  {
+   "card_id": 61,
+   "title": "Thermal Timeline",
+   "answerability": "partial",
+   "note": "Showing total active power history \u2014 autonomy index, backup time, and load pressure scores are not measured by this electrical meter."
+  },
+  {
+   "card_id": 62,
+   "title": "Pressure \u00b7 Speed \u00b7 Load",
+   "answerability": "partial",
+   "note": "Showing load percentage (derived from active power) \u2014 oil pressure, engine speed, and event counts are not measured by this electrical meter."
+  }
+ ],
+ "loop2": null
+}

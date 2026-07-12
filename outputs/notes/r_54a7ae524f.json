@@ -1,0 +1,24 @@
+{
+ "run_id": "r_54a7ae524f",
+ "loop1": [
+  {
+   "card_id": 57,
+   "title": "UPS Capacity",
+   "answerability": "partial",
+   "note": "Showing capacity scores derived from active power and nameplate ratings; current-based score uses active power as a proxy for current load factor as direct current-to-rated-current ratio is not a standard library fn for this specific 'Current(I) Score' slot, though current_max is available. Delta label is omitted as no time-series comparison is requested."
+  },
+  {
+   "card_id": 58,
+   "title": "UPS Load",
+   "answerability": "partial",
+   "note": "Showing current load % and 30-day load % trend; sparkline labels are preserved from fixture defaults as the flat kW array is reset to const to maintain sparkline chrome."
+  },
+  {
+   "card_id": 59,
+   "title": "Output Load & Capacity \u2014 Composite",
+   "answerability": "partial",
+   "note": "Showing output load (kW) and bypass frequency (Hz) \u2014 bypass voltage and readiness floor are not directly measured/static values for this asset."
+  }
+ ],
+ "loop2": null
+}

@@ -53,7 +53,12 @@ def build_ctx(asset_table, *, db_link=None, window=None, mfm_id=None, asset_name
     if db_link is not None:
         ctx["db_link"] = db_link
     if window is not None:
-        ctx["window"] = window
+        # CANONICAL tuple [typing F7]: build_ctx is the ONE seam every executor read passes through, so downstream
+        # (_window_of, series_router, renderers) sees exactly (start,end)|absent — never the raw FE dict form.
+        from ems_exec.executor.window_policy import normalize_window
+        w = normalize_window(window)
+        if w is not None:
+            ctx["window"] = w
     if mfm_id is not None:
         ctx["mfm_id"] = mfm_id
     if asset_name is not None:
@@ -97,15 +102,20 @@ def run_card(exact_metadata, data_instructions, asset_table, *, db_link=None, wi
     try:
         out = _fill.fill(exact_metadata, data_instructions, ctx, default_payload=default_payload,
                          shape_ref=shape_ref)
-    except Exception:
-        # honest-degrade: still strip the seed + complete the shape so a fetch failure never leaks demo numbers
+    except Exception as e:
+        # honest-degrade: still strip the seed + complete the shape so a fetch failure never leaks demo numbers.
+        # TELEMETRY [EH F3]: the silent re-fill made a systemically broken fill invisible — record before degrading.
+        from ems_exec.executor import degrade as _degrade
+        _degrade.note("serve.run_card.fill", e, card_id=card_id)
         try:
             out = _fill.fill(exact_metadata, {"fields": []}, ctx, default_payload=default_payload,
                              shape_ref=shape_ref)
-        except Exception:
+        except Exception as e2:
+            _degrade.note("serve.run_card.refill", e2, card_id=card_id)
             out = exact_metadata or {}
     try:
         _sweep_sankeys(out)                                   # LAST word: never ship a null-endpoint sankey link
-    except Exception:
-        pass
+    except Exception as e:
+        from ems_exec.executor import degrade as _degrade
+        _degrade.note("serve.sweep_sankeys", e, card_id=card_id)
     return out

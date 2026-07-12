@@ -1,0 +1,24 @@
+{
+ "run_id": "r_e48274797f",
+ "loop1": [
+  {
+   "card_id": 70,
+   "title": "Live Operations & Runtime",
+   "answerability": "partial",
+   "note": "Showing load factor as a proxy for runtime/availability metrics \u2014 no dedicated run-hours, starts, or service-interval columns are measured by this electrical meter."
+  },
+  {
+   "card_id": 72,
+   "title": "Energy & Reliability",
+   "answerability": "partial",
+   "note": "Showing total active energy and power factor \u2014 MTBF/MTTR are not measured for this asset; Apparent Energy and Power Factor are used to fill the reliability slots."
+  },
+  {
+   "card_id": 73,
+   "title": "Power Energy Analysis",
+   "answerability": "partial",
+   "note": "Showing current, voltage, and unbalance metrics for DG-1; sag/swell/neutral events and max/min voltages are not measured by this meter."
+  }
+ ],
+ "loop2": null
+}

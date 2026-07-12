@@ -1,0 +1,18 @@
+{
+ "run_id": "r_ac53795ea3",
+ "loop1": [
+  {
+   "card_id": 44,
+   "title": "Voltage History",
+   "answerability": "partial",
+   "note": "Showing per-phase voltage history and max/min deviations; statutory band limits are not measured, so expectedMax/expectedMin are omitted."
+  },
+  {
+   "card_id": 46,
+   "title": "Current History",
+   "answerability": "partial",
+   "note": "Showing per-phase current history and peak/average stats; expected range lines omitted because the asset's rated current nameplate is unknown."
+  }
+ ],
+ "loop2": null
+}

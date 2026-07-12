@@ -1,0 +1,30 @@
+{
+ "run_id": "r_0d71654691",
+ "loop1": [
+  {
+   "card_id": 39,
+   "title": "Today's Energy",
+   "answerability": "partial",
+   "note": "Showing total active energy and reactive energy for the last hour; SEC, subsidy limits, and progress percentages are omitted as they require commercial/production data not measured by this transformer meter."
+  },
+  {
+   "card_id": 40,
+   "title": "Power Energy Analysis",
+   "answerability": "partial",
+   "note": "Showing active and reactive power trends over the last hour; rated and contracted power constants are omitted as the asset's nameplate ratings are unknown."
+  },
+  {
+   "card_id": 41,
+   "title": "Input vs Output Energy",
+   "answerability": "partial",
+   "note": "Showing total active power as HV Input and total apparent power as LV Output; loss and efficiency are derived from active power. 'Loss Pct of Input' is omitted as no dedicated loss-ratio column exists for this asset."
+  },
+  {
+   "card_id": 42,
+   "title": "Load Anomalies",
+   "answerability": "partial",
+   "note": "Showing actual load and load factor \u2014 expected load, range, and anomaly events are not measured by this meter."
+  }
+ ],
+ "loop2": null
+}

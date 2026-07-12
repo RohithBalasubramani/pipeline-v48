@@ -1,0 +1,18 @@
+{
+ "run_id": "r_a81e405b66",
+ "loop1": [
+  {
+   "card_id": 12,
+   "title": "Energy Input & Distribution",
+   "answerability": "partial",
+   "note": "Showing total supplied kW and per-feeder energy/power \u2014 per-feeder rated capacity is unknown, so utilization % is not measured."
+  },
+  {
+   "card_id": 13,
+   "title": "Energy Flow Diagram",
+   "answerability": "partial",
+   "note": "Showing total active power and energy for all PRIMARY members (UPS, BPDB feeders). Incomers (Solar) and Transformer sources are not reporting live data (has_data=N), so their energy flow values are omitted. Efficiency and Loss KPIs are derived from the available supplied vs. consumed totals."
+  }
+ ],
+ "loop2": null
+}

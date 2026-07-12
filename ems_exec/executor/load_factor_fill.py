@@ -36,12 +36,7 @@ from ems_exec.executor.paths import _leaf_at, _set_path, _has_path
 _LOAD_FACTOR_QUANTITY_DEFAULT = "load-factor-percent"
 
 
-def _cfg(key, default):
-    try:
-        from config.app_config import cfg
-        return cfg(key, default)
-    except Exception:
-        return default
+from config.failopen import cfg_safe as _cfg   # THE guarded cfg reader (D3)
 
 
 def _load_factor_quantity():
@@ -68,8 +63,7 @@ def _min_energized():
         return 3
 
 
-def _blank(v):
-    return v is None or v == "—" or v == ""
+from lib.blank import is_blank_scalar as _blank   # the shared blank predicate (D5)
 
 
 def _load_factor_field(field):
@@ -215,7 +209,7 @@ def _unit_is_percent_like(unit):
 def _target_unit(out, cand, slot):
     """The load-factor target leaf's own UNIT — from a sibling `unit`/`units`/`suffix` key on the leaf's PARENT object
     (the {id, unit, label, value} tile the value leaf lives in). None when the parent carries no unit sibling."""
-    from ems_exec.executor.paths import _parent_of, _toks as _tk
+    from ems_exec.executor.paths import _parent_of
     # a scalar KPI value leaf: its parent object may carry the unit + id/label chrome
     parent = _parent_of(out, cand)
     if isinstance(parent, dict):
@@ -319,18 +313,7 @@ def apply(out, fields, asset_table, window, honest_blank_paths=None):
 
 
 def _honest_blanked_lf(slot, hb):
-    """True when `slot` matches a path the AI EXPLICITLY honest-blanked (`hb` = tokens-tuples normalized both
-    address-ways by fill._honest_blank_paths; a '[*]' segment matches any index)."""
-    if not hb:
-        return False
-    from ems_exec.executor.paths import _toks as _tk
-    for form in (slot, f"data.{slot}"):
-        toks = tuple(_tk(form))
-        if not toks:
-            continue
-        if toks in hb:
-            return True
-        for entry in hb:
-            if len(entry) == len(toks) and all(e == t or e == "*" for e, t in zip(entry, toks)):
-                return True
-    return False
+    """The shared matcher (rescue_common.honest_blanked, D5), probing BOTH address forms — this rescue's slot paths
+    aren't pre-normalized by the caller."""
+    from ems_exec.executor.rescue_common import honest_blanked
+    return honest_blanked(slot, hb, both_addresses=True)

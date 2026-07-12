@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""seed_schema_and_endpoints — DATA-DRIVEN seed for cmd_catalog.schema_slot_map + endpoint_policy.
+"""seed_schema_and_endpoints — DATA-DRIVEN seed for cmd_catalog.schema_slot_map.
 
 Both are derived from live truth, not hand-typed:
   · schema_slot_map — for each schema FINGERPRINT (p1_72 / tm_ups_56 / feedbacks_35 / ng_se_jk_70 / sch_stub_3) we take a
@@ -7,11 +7,11 @@ Both are derived from live truth, not hand-typed:
     column that is PRESENT (missing → column_name='' so the routed mapper honest-degrades, DS-03/07). The slot→column
     intent + unit + quantity is the editable policy; presence is verified against the live schema.
   · endpoint_policy — for each of the 9 EMS pages × resolver_scope (single_asset / panel_aggregate) we record the
-    ems_backend endpoint (from endpoint_registry, the single source of truth) + the frame shape the card's fill mapper
+    fetch endpoint (from endpoint_registry, the single source of truth) + the frame shape the card's fill mapper
     reads (queue for single-asset live, widgets for panel-aggregate, buckets for history) + is_history (ER-1/2/4/7).
 
 Run (pyenv 3.11 or any python with the pipeline on sys.path):
-    python3 db/seed_schema_and_endpoints.py
+    python3 scripts/seed_schema_and_endpoints.py
 Idempotent: TRUNCATE + re-insert each table.
 """
 import os
@@ -22,7 +22,7 @@ if _ROOT not in sys.path:
     sys.path.insert(0, _ROOT)
 
 from data.db_client import q                                          # noqa: E402
-from layer2.emit.data import endpoint_registry as EP                  # noqa: E402
+from layer2.emit.instructions import endpoint_registry as EP                  # noqa: E402
 
 
 # ── the logical SLOT → (unit, quantity, per-fingerprint candidate columns) intent ────────────────────────────────
@@ -94,36 +94,13 @@ def seed_schema_slot_map():
     return len(vals)
 
 
-# resolver_scope → the frame shape its fill mapper reads (ER-1: feeder=queue, panel-aggregate=widgets).
-_SCOPE_SHAPE = {"single_asset": "queue", "panel_aggregate": "widgets"}
-# the ems page code → the two shells' page_keys that use it (metric_class/endpoint keys use the page code).
-_PAGE_CODES = list(EP.PAGE_PRIMARY.keys())
 
 
-def seed_endpoint_policy():
-    q("cmd_catalog", "TRUNCATE endpoint_policy")
-    vals = []
-    for code in _PAGE_CODES:
-        live_ep = EP.PAGE_PRIMARY[code]
-        hist = EP.HISTORY_BY_DOMAIN.get(live_ep, [])
-        first_hist = hist[0] if hist else None
-        for scope, shape in _SCOPE_SHAPE.items():
-            # panel-aggregate history should prefer a history endpoint (buckets); single-asset uses the live endpoint.
-            if scope == "single_asset":
-                ep, exp_shape, is_hist = live_ep, shape, False
-            else:
-                ep = first_hist or live_ep
-                exp_shape = "buckets" if first_hist else "widgets"
-                is_hist = bool(first_hist)
-            vals.append(f"('{code}','{scope}','{ep}','{exp_shape}',{ 'true' if is_hist else 'false' })")
-    q("cmd_catalog",
-      "INSERT INTO endpoint_policy (page_key, resolver_scope, endpoint, expected_shape, is_history) VALUES "
-      + ",".join(vals))
-    return len(vals)
+# seed_endpoint_policy RETIRED 2026-07-12 (unused-code audit): cmd_catalog.endpoint_policy never had a live
+# reader (layer2/emit/instructions/endpoint_registry.PAGES is the deliberate anti-drift source) and the table
+# was DROPPED (db/retire_unused_tables_20260712.sql; snapshot archive/db_snapshots_20260712/endpoint_policy.sql).
 
 
 if __name__ == "__main__":
     n1 = seed_schema_slot_map()
-    n2 = seed_endpoint_policy()
     print(f"schema_slot_map: {n1} rows ({len(FINGERPRINT_REPS)} fingerprints x {len(SLOTS)} slots)")
-    print(f"endpoint_policy: {n2} rows ({len(_PAGE_CODES)} pages x {len(_SCOPE_SHAPE)} scopes)")

@@ -1,0 +1,18 @@
+{
+ "run_id": "r_59679e8b51",
+ "loop1": [
+  {
+   "card_id": 12,
+   "title": "Energy Input & Distribution",
+   "answerability": "partial",
+   "note": "Showing total active power and energy for each outgoing feeder; per-feeder utilization is not measured because no rated capacity is available for the GIC-* member meters."
+  },
+  {
+   "card_id": 13,
+   "title": "Energy Flow Diagram",
+   "answerability": "partial",
+   "note": "Showing energy distribution via roster of PRIMARY members (UPS/BPDB feeders); Solar Incomers and Transformers are dark (no live data) and render as zero/empty nodes in the Sankey flow."
+  }
+ ],
+ "loop2": null
+}

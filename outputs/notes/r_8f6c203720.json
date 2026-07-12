@@ -1,0 +1,12 @@
+{
+ "run_id": "r_8f6c203720",
+ "loop1": [
+  {
+   "card_id": 36,
+   "title": "Power & Energy (Real-Time)",
+   "answerability": "partial",
+   "note": "Showing latest active/apparent power and energy totals; trend and rate-of-change metrics are not measured by this asset."
+  }
+ ],
+ "loop2": null
+}

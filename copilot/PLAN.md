@@ -69,8 +69,8 @@ It is **NOT** a chatbot, **NOT** dashboard generation, **NOT** post-submit inten
 
 ### 1.4 API-server boundary
 
-- No FastAPI/Flask anywhere. Real servers: `reslice_server.py` (stdlib `:8771`), Django `command_center :8000` / `ems_backend :8899` / `backend2 :8889`, Vite host `:3147`.
-- `command_center`, `ems_backend`, `backend2` are all pipeline/EMS-coupled → **disqualified** by the no-coupling rule.
+- No FastAPI/Flask anywhere. Real servers: `reslice_server.py` (stdlib `:8771`), Django `command_center :8000` / legacy EMS `:8899` / `backend2 :8889`, Vite host `:3147`.
+- `command_center`, the legacy EMS backend, `backend2` are all pipeline/EMS-coupled → **disqualified** by the no-coupling rule.
 - **Decision (given "separate layer"):** stand up a **dedicated standalone stdlib server** `ems_copilot/server.py` on **`:8772`** (modeled on `reslice_server.py`'s `ThreadingHTTPServer` + CORS pattern), with its own `ems-copilot.service` unit. This is cleaner than folding into `:8771` and fully decouples copilot uptime from the pipeline.
 
 ### 1.5 Frontend prompt surfaces

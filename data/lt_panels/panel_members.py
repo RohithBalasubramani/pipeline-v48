@@ -27,7 +27,7 @@ NO hardcoded table names (data/registry mirror routing) and NO hardcoded thresho
 Pure deterministic PRE — no AI. [worker member resolution]
 """
 from data.registry.lt_mfm import outgoing_edges as _outgoing, parent_ids as _registry_parents
-from layer1b.resolve.has_data import tables_with_data, tables_with_values
+from data.value_probe import tables_with_data, tables_with_values   # probes' home (was layer1b.resolve.has_data)
 from data.ttl_cache import TTLCache
 
 _MAX_DEPTH = 6                                  # topology is <= 5 deep; depth guard against a cycle in the seeded edges

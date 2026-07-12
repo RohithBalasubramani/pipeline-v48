@@ -5,13 +5,13 @@
    "card_id": 12,
    "title": "Energy Input & Distribution",
    "answerability": "partial",
-   "note": "Showing total active power and energy for all panel members; per-member breakdown is populated from member meters (UPS-01/02/03, BPDB-01, BPDB-02, UPS-04), while Solar Incomers and Transformers are dark (no data)."
+   "note": "Showing total active power and energy for each outgoing feeder; per-feeder utilization is not available as no rated capacity is defined for these gic_* meters."
   },
   {
    "card_id": 13,
    "title": "Energy Flow Diagram",
    "answerability": "partial",
-   "note": "Showing energy flow for active feeders (UPS-01/02/03, BPDB-01/02, UPS-04/05/06); supply incomers (Solar-1/2, Transformer-01/02) are dark (no data) and render as zero-value nodes."
+   "note": "Showing energy flow for 6 active feeders (GIC-02-N6-UPS-05, GIC-02-N7-UPS-06 are dark); incomers have no live data to populate the supply side of the Sankey."
   }
  ],
  "loop2": null

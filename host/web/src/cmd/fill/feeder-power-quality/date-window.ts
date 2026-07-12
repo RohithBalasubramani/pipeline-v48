@@ -1,8 +1,8 @@
-/* ── Per-card date control → ems_backend window ───────────────────────────
+/* ── Per-card date control → host-served window ───────────────────────────
  * The two rail charts (48/49) carry a real CMD V2 <SamplingPicker> via their
  * `onSamplingChange?: (next: SamplingSelection) => void` prop. SamplingSelection
  * = { preset: PresetId, range: DateRange | null, resolution?, shift? } (Apply-only).
- * We translate that committed selection into the host's ems_backend date_window
+ * We translate that committed selection into the host's host-served date_window
  * vocabulary — range ∈ today|yesterday|last-7-days|this-month|custom-range,
  * sampling ∈ hourly|2hour|shift|day|week — and hand it to onDateChange so the host
  * re-fetches JUST this card's frame for the new window. This mirrors the real tab's
@@ -11,9 +11,10 @@
  * range keys. */
 import type { SamplingSelection } from "@cmd-v2/components/charts/primitives";
 
-export type DateWindow = { range?: string; start?: string; end?: string; sampling?: string };
+export type { DateWindow } from "../../../types";   // ONE declaration (host/web/src/types.ts)
+import type { DateWindow } from "../../../types";
 
-// SamplingSelection.preset → ems_backend range. PresetId 'last-month' has no host
+// SamplingSelection.preset → host-served range. PresetId 'last-month' has no host
 // equivalent; fold it onto 'this-month' to stay in-vocabulary. 'custom' is handled
 // separately (→ 'custom-range' + start/end from the resolved DateRange).
 const PRESET_TO_RANGE: Record<string, string> = {
@@ -24,7 +25,7 @@ const PRESET_TO_RANGE: Record<string, string> = {
   "last-month": "this-month",
 };
 
-/** Map a committed CMD V2 SamplingSelection → the host's ems_backend date_window. */
+/** Map a committed CMD V2 SamplingSelection → the host's host-served date_window. */
 export function samplingToDateWindow(sel: SamplingSelection): DateWindow {
   // resolution ∈ 2hour|shift|day|week|hourly — already in the sampling vocabulary.
   const sampling = (sel.resolution as string | undefined) ?? "2hour";

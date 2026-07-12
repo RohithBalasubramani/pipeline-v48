@@ -12,7 +12,8 @@ from config import neuract_dsn as _dsn
 
 
 # The reversed-CT power columns the energy-from-power ∫ fallback integrates when the cumulative kWh counters are dead.
-# Kept HERE (not in the DB base_columns) so the counter leaf still GATES only on its real counter column via bindable();
+# Kept HERE (not in the DB base_columns) so the counter leaf still GATES only on its real counter column (the caller's
+# base_columns ⊆ present-columns check);
 # the series read below merely ENRICHES ctx with power so the fn's own dead-counter fallback can fire. Generic — any
 # window/series-scoped fn gets the power series for free; a fn that doesn't read them ignores the extra keys.
 _INTEGRATION_POWER_COLS = ("active_power_total_kw", "reactive_power_total_kvar")

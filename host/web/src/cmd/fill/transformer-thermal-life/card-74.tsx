@@ -2,7 +2,7 @@ import React from "react";
 // Card 74 — Thermal Life (page transformer-asset-dashboard/thermal-life). ThermalLifeCard fed its OWN Layer-2 payload's
 // `thermalLife` slice → the stress bar + winding/oil/loss metric strip.
 //
-// ems_backend is RETIRED → the payload IS the render source. ALWAYS-DRAWS [GOAL]: thermal stress / loss / load /
+// host-served is RETIRED → the payload IS the render source. ALWAYS-DRAWS [GOAL]: thermal stress / loss / load /
 // efficiency fill REAL from the payload when present; the winding/oil temperature metric rows are domain readings that
 // honest-blank ('—') when neuract has no column. A payload with no usable thermalLife slice renders the tab's OWN
 // typed-empty view-model — the card STILL DRAWS its stress bar + metric strip structure, never a blank/null card and

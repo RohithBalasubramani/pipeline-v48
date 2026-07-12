@@ -5,19 +5,19 @@
    "card_id": 47,
    "title": "Power Quality",
    "answerability": "partial",
-   "note": "Showing current THD compliance and voltage quality metrics; voltage harmonics (H5, H7) are not measured by this asset."
+   "note": "Showing total current THD as proxy for harmonic distortion; flicker, crest factor, and trend data are not measured by this asset."
   },
   {
    "card_id": 48,
    "title": "Distortion & Harmonic Profile",
    "answerability": "partial",
-   "note": "Showing current and voltage THD trends \u2014 per-phase harmonic order data (5th/7th) is not measured for this asset."
+   "note": "Showing current THD trend (R/Y/B) \u2014 voltage THD and 5th/7th harmonic data are not measured for this UPS asset."
   },
   {
    "card_id": 49,
    "title": "Load Impact & Transformer Stress",
    "answerability": "partial",
-   "note": "Showing Displacement PF, True PF, and PF Gap \u2014 K-factor and Phase Angle are not measured for this asset."
+   "note": "Showing Power Factor, True PF, and PF Gap from live data; K-Factor derived from current THD compliance; watch lines and axis scales are config defaults."
   }
  ],
  "loop2": null

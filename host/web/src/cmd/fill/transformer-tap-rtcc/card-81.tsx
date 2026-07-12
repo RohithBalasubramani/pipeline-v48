@@ -3,7 +3,7 @@ import React from "react";
 // OWN Layer-2 payload's `activity` slice: hourly tap-operation bars + the lifetime cumulative counter line.
 // (The catalog's stale title for this slot is "Loss Analysis"; the tap-rtcc tab's fourth card is Tap Activity & Wear.)
 //
-// ems_backend is RETIRED → the payload IS the render source. DOMAIN slot (hourly tap ops + lifetime wear counter have no
+// host-served is RETIRED → the payload IS the render source. DOMAIN slot (hourly tap ops + lifetime wear counter have no
 // neuract column today) → HONEST-BLANK: when the payload carries no usable activity slice, `activityVM` yields the tab's
 // OWN empty chrome (points [], KPI/legend '—', valid axes/labels/colours) — the chart frame STILL DRAWS, never a
 // blank/null card, never a fabricated seed (chart-math scalars finitized). The header SamplingPicker drives a per-chart

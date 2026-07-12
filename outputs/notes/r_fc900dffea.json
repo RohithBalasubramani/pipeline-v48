@@ -1,0 +1,18 @@
+{
+ "run_id": "r_fc900dffea",
+ "loop1": [
+  {
+   "card_id": 57,
+   "title": "UPS Capacity",
+   "answerability": "partial",
+   "note": "Showing KVA, KW, and Current load scores against nameplate ratings; readiness marker and delta omitted as this UPS meter does not measure bypass/mains transfer states."
+  },
+  {
+   "card_id": 59,
+   "title": "Output Load & Capacity \u2014 Composite",
+   "answerability": "partial",
+   "note": "Showing output load (active_power_total_kw) and bypass frequency (frequency_hz) trends. Readiness score, bypass voltage, and transfer counts are not measured by this asset's meter and are omitted."
+  }
+ ],
+ "loop2": null
+}

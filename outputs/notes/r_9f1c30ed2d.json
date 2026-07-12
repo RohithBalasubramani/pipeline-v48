@@ -1,0 +1,25 @@
+{
+ "run_id": "r_9f1c30ed2d",
+ "loop1": [
+  {
+   "card_id": 47,
+   "title": "Power Quality",
+   "answerability": "partial",
+   "note": "Showing THD compliance averages \u2014 per-order harmonics (H5, H7), flicker, and crest factor are not measured for this asset."
+  },
+  {
+   "card_id": 48,
+   "title": "Distortion & Harmonic Profile",
+   "answerability": "partial",
+   "note": "Showing V-THD and I-THD trends \u2014 harmonic order (5th/7th) and scalar stats are not measured by this asset."
+  },
+  {
+   "card_id": 49,
+   "title": "Load Impact & Transformer Stress",
+   "answerability": "partial",
+   "note": "Showing Displacement PF and Phase Angle \u2014 K-factor is not measured for this asset; K-Stress tab uses Displacement PF as a proxy for transformer stress."
+  }
+ ],
+ "loop2": null,
+ "reconcile": "asset 'GIC-26-N1-Chiller Panel-1 Main INC' has_feeders=False but the routed page 'panel-overview-shell/harmonics-pq' is the panel-aggregate granularity \u2014 reconciled to 'individual-feeder-meter-shell/power-quality'"
+}

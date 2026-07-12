@@ -38,14 +38,17 @@ except Exception:  # pragma: no cover — keep the port import-safe outside the 
 
 
 def _env(key, default, cast=str):
-    """A knob: cmd_catalog.app_config first (DB-driven), else the process env, else the hardcoded default."""
+    """A knob: cmd_catalog.app_config first (DB-driven), else the NAMESPACED env (EMS_INSIGHT_*), else the default.
+    The old generic last-segment env read (LLM_URL/TIMEOUT/TEMPERATURE/…) is gone — it hijacked llm/config.py's
+    LLM_URL contract (a FULL chat/completions URL) as this module's BASE url, 404-ing the narrator whenever an
+    operator relocated vLLM the documented way."""
     dbv = _cfg(key, None)
     if dbv is not None:
         try:
             return cast(dbv)
         except Exception:
             pass
-    raw = os.getenv(key.split(".")[-1].upper()) or os.getenv(_LEGACY_ENV.get(key, ""))
+    raw = os.getenv(_LEGACY_ENV.get(key, ""))
     if raw is not None:
         try:
             return cast(raw)
@@ -103,7 +106,25 @@ def _strip_think(s):
     return s.strip()
 
 
+def _tap(messages, content, usage, latency_s, finish_reason=None, error_kind=None):
+    """DECISION INSPECTOR: this module POSTs to :8200 DIRECTLY (bypassing llm/client.call_qwen), so it reports its
+    own llm_tap record — stage='insight_narrator', generative (no option set: every number was pre-judged in Python).
+    Fail-open, no-op outside a trace (the ai_log monkeypatch above still tees the raw wire call either way)."""
+    try:
+        from obs import llm_tap
+        llm_tap.record(stage="insight_narrator",
+                       system=(messages[0] or {}).get("content"), user=(messages[1] or {}).get("content"),
+                       response_text=content, usage=usage, latency_s=latency_s, finish_reason=finish_reason,
+                       error_kind=error_kind, model=LLM_MODEL,
+                       params={"temperature": LLM_TEMPERATURE, "url": LLM_URL.rstrip("/") + "/chat/completions",
+                               "response_format": "json_object"},
+                       decision={"kind": "generative", "subject": "AI-summary narration of a pre-judged story"})
+    except Exception:
+        pass
+
+
 def _post(messages, timeout):
+    import time as _time
     payload = {
         "model": LLM_MODEL,
         "messages": messages,
@@ -119,11 +140,35 @@ def _post(messages, timeout):
         headers={"Content-Type": "application/json"},
         method="POST",
     )
-    with urllib.request.urlopen(req, timeout=timeout) as r:
-        return json.loads(r.read().decode())["choices"][0]["message"]["content"]
+    t0 = _time.time()
+    try:
+        with urllib.request.urlopen(req, timeout=timeout) as r:
+            d = json.loads(r.read().decode())
+    except Exception as e:  # the caller's honest-degrade contract is unchanged — record, then re-raise
+        _tap(messages, None, None, _time.time() - t0, error_kind=f"{type(e).__name__}")
+        raise
+    choice = (d.get("choices") or [{}])[0]
+    content = (choice.get("message") or {}).get("content", "")
+    _tap(messages, content, d.get("usage"), _time.time() - t0, finish_reason=choice.get("finish_reason"))
+    return content
+
+
+try:
+    from replay import hooks as _replay_hooks                  # record/replay seam (fail-open; None → bare calls)
+except Exception:
+    _replay_hooks = None
 
 
 def _narrate_sync(story, fields, timeout):
+    """Blocking narrate — semantics in _narrate_sync_raw. REPLAY SEAM [replay/hooks.py]: this call is UNSEEDED
+    (temp 0.2) — the one genuinely non-deterministic LLM in the pipeline — so a pinned replay MUST serve the
+    recorded sentences; a live re-call would always diff."""
+    if _replay_hooks is None:
+        return _narrate_sync_raw(story, fields, timeout)
+    return _replay_hooks.insight(_narrate_sync_raw, story, fields, timeout)
+
+
+def _narrate_sync_raw(story, fields, timeout):
     """Blocking. Returns {f: sentence} for every f in `fields`, or None on ANY
     failure (so the caller falls back wholesale rather than showing half a result)."""
     try:

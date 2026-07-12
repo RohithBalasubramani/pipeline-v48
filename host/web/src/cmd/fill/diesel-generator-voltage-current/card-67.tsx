@@ -2,7 +2,7 @@ import React from "react";
 // Card 67 — Voltage History (page diesel-generator-asset-dashboard/voltage-current, CMD V2 DG "Voltage & Current" tab).
 // HistoryPanel fed its OWN Layer-2 payload's voltage `data` (HistoryPanelData).
 //
-// ems_backend is RETIRED → the payload IS the render source. The harvested story args are `{ variant, data:
+// host-served is RETIRED → the payload IS the render source. The harvested story args are `{ variant, data:
 // HistoryPanelData }` (real neuract series + honest-blank '—'), so we read `payload.data` straight. Honest-degrade: a
 // payload with no usable HistoryPanelData (Layer 2 elided the series leaf) falls back to CMD V2's OWN structured-empty
 // slice — NEVER a blank/null card, NEVER a mock/seed number. Its header SamplingPicker drives a per-card re-fetch via

@@ -57,7 +57,8 @@ def data_window_line(asset, basket=None):
         age = ""
         try:
             last_dt = datetime.fromisoformat(str(last))
-            now = datetime.now(last_dt.tzinfo or timezone.utc)
+            from replay.clock import now as _replay_now         # frozen during replay: this age lands in PROMPT bytes
+            now = _replay_now(last_dt.tzinfo or timezone.utc)
             age = f" (last sample is {max(0, (now - last_dt).days)}d old)"
         except Exception:
             pass

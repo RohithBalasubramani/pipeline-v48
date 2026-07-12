@@ -1,0 +1,5 @@
+{
+ "run_id": "r_880ac7a381",
+ "loop1": [],
+ "loop2": "1 of 3 cards hard-failed their emit (frac 0.33 < reflect.min_gap_frac 0.34); left honest-blank per-leaf, page NOT re-routed."
+}

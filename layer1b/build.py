@@ -1,13 +1,33 @@
-"""layer1b/build.py — compose Layer 1b: asset resolve (+ picker round-trip) -> card-agnostic column basket. [spec section 2 L1b, contract 3]"""
+"""layer1b/build.py — compose Layer 1b: asset resolve (+ picker round-trip) -> card-agnostic column basket. [spec section 2 L1b, contract 3]
+
+OBS: the whole composition is ONE `asset_resolution` stage span (the AI resolve + basket build + sibling expansion).
+Confidence = `how` (AI/user-choice/no_data/collision_gate_fullname/ambiguous/empty) + class_prior/class_mismatch;
+degradation = no_data / ambiguous / contract problems."""
 import os
 
 from layer1b.resolve.asset_resolve import resolve_asset
 from layer1b.basket.column_basket import build_basket
 from layer1b.basket.topology_siblings import expand_basket_with_siblings
 from layer1b.schema import build_layer1b_output, validate_layer1b_output
+from obs.span import stage_span
 
 
 def run_1b(prompt, asset_id=None):
+    with stage_span("asset_resolution", inputs={"prompt": prompt, "asset_id": asset_id}) as sp:
+        out = _run_1b(prompt, asset_id)
+        a = out.get("asset") or {}
+        sp.set_outputs(asset=a.get("name"), mfm_id=a.get("mfm_id"), asset_class=a.get("class"),
+                       how=out.get("how"), candidates=len(out.get("candidate_list") or []),
+                       basket_cols=(out.get("column_basket") or {}).get("n_columns"))
+        sp.set_confidence(how=out.get("how"), class_prior=out.get("class_prior"),
+                          class_mismatch=out.get("class_mismatch"))
+        if out.get("how") in ("ambiguous", "empty", "no_data") or out.get("contract_problems"):
+            sp.set_degradation(how=out.get("how") if out.get("how") in ("ambiguous", "empty", "no_data") else None,
+                               contract_problems=out.get("contract_problems"))
+        return out
+
+
+def _run_1b(prompt, asset_id=None):
     # ENV-PIN GUARD [hardening]: the PIPELINE_ASSET_ID env fallback is honored ONLY when explicitly opted in
     # (V48_ALLOW_ENV_PIN=1 — CLI/trace runs). In the long-running host a launch-time env value would otherwise
     # silently pin EVERY request to one asset. The API asset_id param is unaffected.

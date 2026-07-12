@@ -1,0 +1,12 @@
+{
+ "run_id": "r_f90a577a7a",
+ "loop1": [
+  {
+   "card_id": 36,
+   "title": "Power & Energy (Real-Time)",
+   "answerability": "partial",
+   "note": "Showing total active/reactive power and energy \u2014 projected demand and trend metrics are omitted due to missing nameplate ratings and lack of direct trend columns."
+  }
+ ],
+ "loop2": null
+}

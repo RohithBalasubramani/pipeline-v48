@@ -38,39 +38,15 @@ _TXT_DEFAULTS = {
 
 def num(key, default=None):
     """The scalar `energy_balance.<...>` knob (over-metering fraction / unmetered-surface fraction / expected-loss band
-    / assumed PF), or its code default. Reads cmd_catalog.data_quality_policy; falls back to _SCALAR_DEFAULTS[key]
-    (else `default`) with the DB DOWN."""
-    fb = _SCALAR_DEFAULTS.get(key, default)
-    rows = _q(f"SELECT num_value FROM data_quality_policy WHERE key='{_esc(key)}'")
-    if not rows or rows[0][0] in (None, "", "NULL"):
-        return fb
-    try:
-        return float(rows[0][0])
-    except (TypeError, ValueError):
-        return fb
+    / assumed PF), or its code default. Reads cmd_catalog.data_quality_policy (via config.policy_read — the one shared
+    reader); falls back to _SCALAR_DEFAULTS[key] (else `default`) with the DB DOWN."""
+    from config import policy_read as _pr
+    return _pr.num(key, _SCALAR_DEFAULTS.get(key, default))
 
 
 def txt(key, default=None):
     """The text `energy_balance.<...>` knob (e.g. the reactive-energy counter column), or its code default. Reads
-    cmd_catalog.data_quality_policy; falls back to _TXT_DEFAULTS[key] (else `default`) with the DB DOWN."""
-    fb = _TXT_DEFAULTS.get(key, default)
-    rows = _q(f"SELECT txt_value FROM data_quality_policy WHERE key='{_esc(key)}'")
-    if not rows or rows[0][0] in (None, "", "NULL"):
-        return fb
-    return rows[0][0]
-
-
-# ── internals ────────────────────────────────────────────────────────────────────────────────────────────────────
-
-def _q(sql):
-    """cmd_catalog read that NEVER raises: returns [] on any failure (DB down / table absent) so accessors fall back.
-    db_client.q is imported lazily to keep this module import-safe and framework-free."""
-    try:
-        from data.db_client import q
-        return q("cmd_catalog", sql)
-    except Exception:
-        return []
-
-
-def _esc(s):
-    return str(s).replace("'", "''")
+    cmd_catalog.data_quality_policy (via config.policy_read); falls back to _TXT_DEFAULTS[key] (else `default`) with
+    the DB DOWN."""
+    from config import policy_read as _pr
+    return _pr.txt(key, _TXT_DEFAULTS.get(key, default))

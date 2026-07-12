@@ -1,0 +1,30 @@
+{
+ "run_id": "r_3d256e1f95",
+ "loop1": [
+  {
+   "card_id": 14,
+   "title": "Cumulative Energy",
+   "answerability": "partial",
+   "note": "Showing cumulative active and reactive energy (kWh/kVArh) for this month across panel members; per-phase breakdown is not measured for this aggregate view."
+  },
+  {
+   "card_id": 16,
+   "title": "Energy Consumption Trend",
+   "answerability": "partial",
+   "note": "Showing total active and reactive energy \u2014 per-feeder breakdown is rendered via roster; some members (Axial Fan Panel-1, Axial Fan Panel-2, Frisking+Security) are dark and will render as blanks."
+  },
+  {
+   "card_id": 15,
+   "title": "Today live power analysis",
+   "answerability": "partial",
+   "note": "Showing live active and reactive power from primary feeders; capacity marker and load factor are omitted because the asset's rated kVA is unknown and load factor data is unavailable on member meters."
+  },
+  {
+   "card_id": 17,
+   "title": "Daily Power Demand by Feeder",
+   "answerability": "partial",
+   "note": "Showing Worst Peak kW and UPS/BPDP demand series; Load Factor is not computed (no library fn), and HHF series is blank (no matching feeders in roster)."
+  }
+ ],
+ "loop2": null
+}

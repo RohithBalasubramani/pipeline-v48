@@ -16,29 +16,17 @@ Generic — no card ids, no key literals; the column comes from the sibling emis
 from __future__ import annotations
 
 from ems_exec.data import neuract as _nx
+from ems_exec.executor import blank as _blank_mod
 from ems_exec.executor import measurable_resolve as _mr
 from ems_exec.executor.verify import _verify
 from ems_exec.renderers import _agg
 
 
 def _blank(v):
-    return v is None or v == "—" or v == ""
+    return _blank_mod.is_blank_scalar(v)   # [shared predicate: executor.blank]
 
 
-def _honest_blanked(path, hb):
-    """True when `path` (a dotted walk path) matches a slot the AI EXPLICITLY honest-blanked. `hb` holds tokens-tuples
-    already normalized both address-ways (bare + data.<slot>) by fill._honest_blank_paths, so the bare-path tokens are
-    matched directly. A wildcard '[*]' segment in the honest-blank set matches any index at that position."""
-    if not hb:
-        return False
-    from ems_exec.executor.paths import _toks
-    toks = tuple(_toks(path))
-    if toks in hb:
-        return True
-    for entry in hb:
-        if len(entry) == len(toks) and all(e == t or e == "*" for e, t in zip(entry, toks)):
-            return True
-    return False
+from ems_exec.executor.rescue_common import honest_blanked as _honest_blanked   # THE shared matcher (D5)
 
 
 def _has_stat_and_quantity(key):

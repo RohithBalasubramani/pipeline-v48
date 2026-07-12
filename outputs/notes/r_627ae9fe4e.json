@@ -2,10 +2,28 @@
  "run_id": "r_627ae9fe4e",
  "loop1": [
   {
-   "card_id": 36,
-   "title": "Power & Energy (Real-Time)",
+   "card_id": 70,
+   "title": "Live Operations & Runtime",
    "answerability": "partial",
-   "note": "Showing active power, apparent power, and active energy trends; reactive energy and projected demand are not measured by this asset."
+   "note": "Showing Load Headroom (derived from active power); Time to Service and Readiness Score are omitted as they require fuel/battery data not measured by this electrical meter."
+  },
+  {
+   "card_id": 71,
+   "title": "Runtime & Duty",
+   "answerability": "partial",
+   "note": "Showing load factor as a proxy for run-hours and operational intensity \u2014 the meter does not log engine start counts or direct run-hours."
+  },
+  {
+   "card_id": 72,
+   "title": "Energy & Reliability",
+   "answerability": "partial",
+   "note": "Showing total active energy, apparent energy, and power factor \u2014 per-phase energy and MTBF/MTTR are not measured for this asset."
+  },
+  {
+   "card_id": 73,
+   "title": "Power Energy Analysis",
+   "answerability": "partial",
+   "note": "Showing power energy metrics (active/apparent/reactive power, voltage deviation, current unbalance) \u2014 sag, swell, and neutral stress events are not measured by this meter."
   }
  ],
  "loop2": null

@@ -8,7 +8,7 @@ import pytest
 from layer2.emit.metadata.producer import produce, _metadata_default
 from layer2.gates import gate_exact_metadata, gate_data_instructions
 from layer2.swap.decide import gate as swap_gate
-from layer2.emit.data.consumer_binding import build as consumer_build, page_endpoint
+from layer2.emit.instructions.consumer_binding import build as consumer_build, page_endpoint
 from grounding.default_assemble import strip_to_placeholders
 
 _HEATMAP = {"heatmap": {"title": "Real Time Monitoring", "metric": "all", "history": [{"x": 1}],
@@ -84,7 +84,7 @@ def test_swap_gate_rejects_vague_and_offpool():
     assert swap_gate({"action": "swap", "confidence": 0.95, "criterion": "sankey flow", "swap_to_id": 99}, **base)["origin"] == "swapped"
 
 
-def test_consumer_binding_drives_ems_backend():
+def test_consumer_binding_drives_fetch():
     cr = {"backend_strategy": "consumers/real_time_monitoring/pcc_panel.py", "resolver_scope": "panel"}
     # The AI (Layer 2) authors the endpoint + window — consumer_binding only ASSEMBLES the AI spec with 1b's mfm_id.
     c = consumer_build(cr, {"mfm_id": 174}, "panel-overview-shell/real-time-monitoring",

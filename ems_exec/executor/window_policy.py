@@ -103,3 +103,17 @@ def _window_of(ctx, data_instructions):
         except Exception:
             pass
     return start, end
+
+
+def normalize_window(window):
+    """The CANONICAL executor window: (start, end) tuple, or None. Accepts the union of every boundary form the
+    executor documented ((start,end) tuple/list, {start,end[,range,sampling]} dict, None) so no consumer needs its
+    own isinstance ladder [typing F7 — rtm/harmonics/energy_distribution's tuple-only ladders silently treated a
+    dict window as no-window]. A dict's extra keys (range/sampling) are NOT carried — callers that need them (the
+    voltage_current story label) keep reading the raw form; this is the executor READ-WINDOW contract only.
+    Both-endpoints-empty → None (an empty window means the full logged range)."""
+    if isinstance(window, (list, tuple)) and len(window) == 2 and (window[0] or window[1]):
+        return (window[0], window[1])
+    if isinstance(window, dict) and (window.get("start") or window.get("end")):
+        return (window.get("start"), window.get("end"))
+    return None

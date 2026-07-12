@@ -5,25 +5,25 @@
    "card_id": 39,
    "title": "Today's Energy",
    "answerability": "partial",
-   "note": "Showing total active and reactive energy consumption for the month \u2014 commercial targets, subsidy limits, and efficiency metrics are not measured by this UPS asset."
+   "note": "Showing total active and reactive energy for the last 7 days \u2014 per-phase energy and subsidy metrics are not measured for this UPS asset."
   },
   {
    "card_id": 40,
    "title": "Power Energy Analysis",
    "answerability": "partial",
-   "note": "Showing active power demand profile \u2014 reactive power (kVAr) is not measured by this UPS meter."
+   "note": "Showing total active power and apparent power (proxy for reactive) \u2014 per-phase reactive power isn't measured for this asset."
   },
   {
    "card_id": 41,
    "title": "Input vs Output Energy",
    "answerability": "partial",
-   "note": "Showing input/output power and derived efficiency/loss metrics \u2014 expected loss is omitted as no rating/const is available for this asset."
+   "note": "Showing total active power and derived energy loss/efficiency \u2014 per-phase power isn't measured for this asset."
   },
   {
    "card_id": 42,
    "title": "Load Anomalies",
    "answerability": "partial",
-   "note": "Showing actual load trend and load factor \u2014 expected load baselines and anomaly events are not measured for this asset."
+   "note": "Showing total active power load anomalies \u2014 per-phase power isn't measured for this asset."
   }
  ],
  "loop2": null

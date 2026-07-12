@@ -1,15 +1,15 @@
-"""layer2/emit/data/consumer_binding/builder.py — assemble the consumer-driving params the DATA-fill helper passes to
-V48's `ems_backend/` WS dispatcher (`ws/mfm/<mfm_id>/<endpoint>/`). The AI (Layer 2) AUTHORS the fetch spec — endpoint
+"""layer2/emit/instructions/consumer_binding/builder.py — assemble the consumer-driving params the DATA-fill helper passes to
+the legacy EMS WS dispatcher (`ws/mfm/<mfm_id>/<endpoint>/`). The AI (Layer 2) AUTHORS the fetch spec — endpoint
 (live vs date-capable history), window/range/sampling, metrics, selection. `build()` only ASSEMBLES the AI's spec with
 the one non-AI key, `mfm_id` (1b's resolved asset = the WS path key). NO deterministic fallbacks/guesses.
-[design-notes 'Layer 2 DATA source — reuse ems_backend', docs/findings/ems_backend_hardcoding.md]"""
-from layer2.emit.data.endpoint_registry import HISTORY_ENDPOINTS
+[design-notes 'Layer 2 DATA source'; docs/findings history]"""
+from layer2.emit.instructions.endpoint_registry import HISTORY_ENDPOINTS
 
 
 def build(catalog_row, asset, page_key, window=None, ai_spec=None):
-    """The params the ems_backend dispatcher needs to render this card's DATA. The AI (Layer 2) authors the WHOLE fetch
+    """The params the legacy EMS dispatcher needed to render this card's DATA. The AI (Layer 2) authors the WHOLE fetch
     spec — endpoint (live vs date-capable history), window/range/sampling, metrics, selection — that is Layer 2's job.
-    `mfm_id` is NOT the AI's call: it is 1b's resolved asset (the WS path key). A non-data card simply has no ems_backend
+    `mfm_id` is NOT the AI's call: it is 1b's resolved asset (the WS path key). A non-data card simply has no legacy-EMS
     block (endpoint None). The helper drives `ws/mfm/<mfm_id>/<endpoint>/` with these. NO deterministic endpoint/window
     fallbacks — if the AI didn't spec a data card, that is an honest logged gap, never a guessed default."""
     asset = asset or {}

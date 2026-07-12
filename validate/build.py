@@ -12,7 +12,6 @@ TWO-PASS CONTRACT [validation-streamline]:
 
 Pure pandas/deterministic. On-failure POLICY deferred (annotate-only); per-LEAF degradation everywhere.
 """
-from config.app_config import cfg
 from config.databases import CMD_CATALOG
 from config.validation import FAILURE_POLICY
 from validate.data_load import load_asset_frame
@@ -73,6 +72,28 @@ def _expected_gaps(selected, asset, how):
 
 
 def run_validate(layer1a, layer1b, db=CMD_CATALOG):
+    """OBS wrapper — the pre-L2 validation pass is ONE `validation` stage span (verdict + gap roll-up as the span's
+    validation payload; the pandas probe's DB reads attribute to it)."""
+    from obs.span import stage_span
+    with stage_span("validation", inputs={"page_key": (layer1a or {}).get("page_key"),
+                                          "asset": ((layer1b or {}).get("asset") or {}).get("name"),
+                                          "n_basket_cols": len(((layer1b or {}).get("column_basket") or {})
+                                                               .get("columns") or [])}) as sp:
+        report = _run_validate_inner(layer1a, layer1b, db)
+        _ds = (report.get("data") or {}).get("summary") or {}
+        sp.set_outputs(verdict=report.get("verdict"), how=report.get("how"),
+                       expected_gap_frac=report.get("expected_gap_frac"),
+                       expected_gaps=len(report.get("expected_gaps") or []))
+        sp.set_validation(verdict=report.get("verdict"), policy=report.get("policy"),
+                          data_summary=_ds, payload_summary=(report.get("payload") or {}).get("summary"),
+                          schema_issues=report.get("_schema_issues") or [])
+        if report.get("verdict") == "fail" or (report.get("expected_gaps") or []):
+            sp.set_degradation(verdict=report.get("verdict") if report.get("verdict") == "fail" else None,
+                               expected_gaps=len(report.get("expected_gaps") or []) or None)
+        return report
+
+
+def _run_validate_inner(layer1a, layer1b, db=CMD_CATALOG):
     a, b = layer1a or {}, layer1b or {}
     asset = b.get("asset")
     how = b.get("how")

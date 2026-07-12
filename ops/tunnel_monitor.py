@@ -1,4 +1,4 @@
-"""tools/tunnel_monitor.py — watch the :5433 neuract tunnel and auto-re-run the asset sweep on recovery.
+"""ops/tunnel_monitor.py — watch the :5433 neuract tunnel and auto-re-run the asset sweep on recovery.
 
 The tunnel is an SSH port-forward (127.0.0.1:5433 -> 10.90.200.91:5432) that flaps on link loss. This monitor polls
 it with a REAL query (SELECT 1 through psql, not just a TCP accept — ssh accepts the socket even when the remote is
@@ -6,7 +6,7 @@ dead), logs every up/down transition, and on a DOWN->UP RECOVERY runs tools/asse
 cert is re-validated automatically the moment data is reachable again.
 
 Bounded + interruptible: stops after MAX_HOURS or when outputs/.stop_tunnel_monitor exists. Logs to
-outputs/tunnel_monitor.log. Run in background:  nohup python3 tools/tunnel_monitor.py &  (or the harness bg runner).
+outputs/tunnel_monitor.log. Run in background:  nohup python3 ops/tunnel_monitor.py &  (or the harness bg runner).
 
 Env knobs: TUNNEL_MONITOR_INTERVAL (secs, default 90), TUNNEL_MONITOR_HOURS (default 6),
 TUNNEL_MONITOR_SWEEP_ON_START (1 = also sweep on the first healthy poll, default 0).
@@ -29,13 +29,17 @@ def log(msg):
 
 
 def tunnel_healthy():
-    """True only if a REAL query returns through the tunnel (ssh accepts the socket even when the remote DB is dead)."""
+    """True only if a REAL query returns through the tunnel (ssh accepts the socket even when the remote DB is dead).
+    Target comes from config.databases.conn_env(DATA_DB) — the ONE DB-wiring home (config F7): relocate the data DB
+    via PG_HOST/PG_PORT/PG_DB and the monitor follows instead of probing a :5433 socket nobody uses."""
     try:
-        r = subprocess.run(
-            ["psql", "-U", "postgres", "-h", "127.0.0.1", "-p", "5433", "-d", "target_version1",
-             "-tAc", "select 1"],
-            capture_output=True, text=True, timeout=15,
-            env={**os.environ, "PGCONNECT_TIMEOUT": "8", "PGCLIENTENCODING": "UTF8"})
+        if ROOT not in sys.path:
+            sys.path.insert(0, ROOT)
+        from config.databases import conn_env, DATA_DB
+        env = {**os.environ, **conn_env(DATA_DB), "PGCLIENTENCODING": "UTF8"}
+        env["PGCONNECT_TIMEOUT"] = os.environ.get("PG_CONNECT_TIMEOUT", "8")   # keep this monitor's 8s connect leash
+        r = subprocess.run(["psql", "-d", DATA_DB, "-tAc", "select 1"],
+                           capture_output=True, text=True, timeout=15, env=env)
         return r.returncode == 0 and r.stdout.strip() == "1"
     except Exception:
         return False

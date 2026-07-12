@@ -3,7 +3,7 @@
 --  Every threshold/limit/mapping here is an EDITABLE ROW; each backing accessor also carries the SAME value as a code
 --  default, so seeding is optional-but-recommended (the pipeline runs identically with the DB down).
 --  Run:  psql -h localhost -p 5432 -d cmd_catalog -f db/round2_config_schema.sql   (idempotent — safe to re-run)
---  Read by config/viewer_policy.py, config/live_window_policy.py, config/limit_overrides.py.
+--  Read by config/viewer_policy.py. (live_window_policy/limit_override never got readers — RETIRED 2026-07-12.)
 -- ═══════════════════════════════════════════════════════════════════════════════════════════════════════════════════
 
 -- ── viewer_policy ── page-family → viewer knobs the phase-2 asset_3d resolver reads [#1 asset_3d resolver] ───────────
@@ -16,6 +16,9 @@ CREATE TABLE IF NOT EXISTS viewer_policy (
     note      text
 );
 
+-- ── live_window_policy + limit_override RETIRED 2026-07-12 (unused-code audit): readers never landed;
+--    tables DROPPED (db/retire_unused_tables_20260712.sql; snapshots archive/db_snapshots_20260712/).
+/*
 -- ── live_window_policy ── how much history a LIVE card's snapshot carries + poll/advertised cadence [#7 live-window] ─
 --    Resolved by (page, category); '' page/category = the catch-all. Fixes the ~60s frozen-looking default:
 --    column-row live = 7200 (feeder_base.py:85), RTM 12-cell heatmap = 900 (realtime.py:22-23).
@@ -40,3 +43,4 @@ CREATE TABLE IF NOT EXISTS limit_override (
     note     text,
     PRIMARY KEY (scope, key, band_key)
 );
+*/

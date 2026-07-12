@@ -19,10 +19,10 @@ import time
 import urllib.request
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
-from validation import config
-from validation.response import parse, ascii_safe
-from validation.checks.expectations import judge
-from validation.stagelogs import capture as stage_capture
+from sweep import config
+from sweep.response import parse, ascii_safe
+from sweep.checks.expectations import judge
+from sweep.stagelogs import capture as stage_capture
 
 
 def _post(path: str, body: dict, timeout: float) -> dict:

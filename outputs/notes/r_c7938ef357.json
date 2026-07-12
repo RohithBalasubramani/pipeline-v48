@@ -5,13 +5,7 @@
    "card_id": 67,
    "title": "Voltage History",
    "answerability": "partial",
-   "note": "Showing per-phase voltage history and max deviation \u2014 event counts (sag/swell) and narrative text are not measured by this asset."
-  },
-  {
-   "card_id": 68,
-   "title": "Current Live Health",
-   "answerability": "partial",
-   "note": "Showing live per-phase currents, average current, and neutral current; current unbalance percentage is not logged for this asset (data=N), so it is omitted."
+   "note": "Showing per-phase voltage history and deviation \u2014 sag/swell event counts are not measured for this asset."
   }
  ],
  "loop2": null

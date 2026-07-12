@@ -1,0 +1,36 @@
+{
+ "run_id": "r_b0ad8a01d7",
+ "loop1": [
+  {
+   "card_id": 7,
+   "title": "Context Rail Header (Overview / Section / Feeder)",
+   "answerability": "partial",
+   "note": "Showing total active power and key stats for the Ove section; some panel members (Axial Fan Panel-2, Curing Line CSU-01, Fire Fighting System, Domestic Water Pump) are dark and do not report live data."
+  },
+  {
+   "card_id": 5,
+   "title": "Real Time Monitoring (Feeder Heatmap)",
+   "answerability": "partial",
+   "note": "Showing live power states across all LT-PCC feeders; 4 members (Axial Fan Panel-2, Curing Line CSU-01, Fire Fighting System, Domestic Water Pump) are dark (no data) and render as blank rows."
+  },
+  {
+   "card_id": 9,
+   "title": "Total Feeder Consumption / Supply",
+   "answerability": "partial",
+   "note": "Showing total active power (active_power_total_kw) for the panel's outgoing feeders; per-member breakdowns and consumption percentage are omitted due to missing dedicated feeder columns and unknown nameplate capacity."
+  },
+  {
+   "card_id": 10,
+   "title": "Consumption Trend / Supply Trend",
+   "answerability": "partial",
+   "note": "Showing panel aggregate consumption trend and peak; some outgoing feeders (Axial Fan Panel-2, Curing Line CSU-01, Fire Fighting System, Domestic Water Pump) are dark and omitted from the roster."
+  },
+  {
+   "card_id": 11,
+   "title": "Quick Stats",
+   "answerability": "partial",
+   "note": "Showing per-phase voltage, current unbalance, and total current for the 21 outgoing feeders; 3 feeders (Axial Fan Panel-2, Curing Line CSU-01, Fire Fighting System) are dark and will render as blanks."
+  }
+ ],
+ "loop2": null
+}

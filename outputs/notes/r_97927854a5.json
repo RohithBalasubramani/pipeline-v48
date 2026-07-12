@@ -5,7 +5,7 @@
    "card_id": 39,
    "title": "Today's Energy",
    "answerability": "partial",
-   "note": "Showing today's active and reactive energy import; per-phase breakdown and progress metrics are omitted as they are not measured or configured for this asset."
+   "note": "Showing active and reactive energy import \u2014 subsidy limits, targets, and SEC are not measured for this asset."
   },
   {
    "card_id": 40,
@@ -17,13 +17,13 @@
    "card_id": 41,
    "title": "Input vs Output Energy",
    "answerability": "partial",
-   "note": "Showing total active power as both HV Input and LV Output (single-point meter); loss and efficiency are derived from total active power."
+   "note": "Showing total active power and derived energy loss/efficiency \u2014 per-phase energy isn't measured for this asset; expected loss is a placeholder."
   },
   {
    "card_id": 42,
    "title": "Load Anomalies",
    "answerability": "partial",
-   "note": "Showing actual load and load factor \u2014 expected load profiles, anomaly counts, and event details are not measured by this asset."
+   "note": "Showing load deviations as a percentage of rated capacity \u2014 anomaly event counts (dips/surges) are not measured for this asset."
   }
  ],
  "loop2": null

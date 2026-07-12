@@ -9,6 +9,7 @@ their tables are dark). FACTS ONLY — no suggestions, no vocabulary, no ranking
 latest row carries at least one real value). Non-panel asset / registry outage → "" (block omitted, honest-degrade).
 """
 from functools import lru_cache
+from layer1b.resolve.member_scope import OUTGOING, INCOMER
 
 
 def _member_has_data(table):
@@ -75,7 +76,7 @@ def _block_for(mfm_id, scope):
     # PANEL READING DIRECTION [panel_overview]: the resolved asset's member_scope picks WHICH side is THIS page's
     # readings — 'outgoing' (fed feeders/bays, the default) or 'incomer' (supply/source). The chosen side is the PRIMARY
     # set the page's cards fill from; the other side stays as grounding context (a member may report on either side).
-    incomer_primary = (scope == "incomer")
+    incomer_primary = (scope == INCOMER)
     primary_label = ("supply side / INCOMERS (feed the panel)" if incomer_primary
                      else "fed feeders / OUTGOING bays (the panel supplies)")
     context_label = ("fed feeders / OUTGOING bays (the panel supplies)" if incomer_primary
@@ -106,6 +107,6 @@ def panel_members_block(asset):
     if not (isinstance(asset, dict) and asset.get("has_feeders") and asset.get("mfm_id")):
         return ""
     try:
-        return _block_for(int(asset["mfm_id"]), asset.get("member_scope") or "outgoing")
+        return _block_for(int(asset["mfm_id"]), asset.get("member_scope") or OUTGOING)
     except (TypeError, ValueError):
         return ""

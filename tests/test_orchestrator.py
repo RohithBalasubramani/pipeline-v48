@@ -1,6 +1,8 @@
 """Orchestrator — 1a ∥ 1b fire in parallel, join with error isolation. [run/harness]"""
 import time
 
+import pytest
+
 from run.parallel import run_parallel
 from run.run_id import make_run_id
 from run.harness import run_pipeline
@@ -25,6 +27,7 @@ def test_run_id_stable():
     assert make_run_id("p") == make_run_id("p") and make_run_id("p").startswith("r_")
 
 
+@pytest.mark.live
 def test_pipeline_live_join():
     out = run_pipeline("voltage and current health for AHU-5")
     assert out["errors"] == {}

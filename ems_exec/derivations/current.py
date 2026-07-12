@@ -6,11 +6,7 @@ from __future__ import annotations
 import math
 
 
-def _f(x):
-    try:
-        return float(x)
-    except (TypeError, ValueError):
-        return None
+from ._coerce import f as _f
 
 
 def neutral_current(ctx):

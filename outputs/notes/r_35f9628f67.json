@@ -1,0 +1,24 @@
+{
+ "run_id": "r_35f9628f67",
+ "loop1": [
+  {
+   "card_id": 39,
+   "title": "Today's Energy",
+   "answerability": "partial",
+   "note": "Showing monthly active and reactive energy totals \u2014 per-phase energy breakdowns and subsidy/targets are not measured for this asset."
+  },
+  {
+   "card_id": 41,
+   "title": "Input vs Output Energy",
+   "answerability": "partial",
+   "note": "Showing total active power and energy loss \u2014 per-phase energy isn't measured for this asset; expected loss is omitted due to missing nameplate rating."
+  },
+  {
+   "card_id": 42,
+   "title": "Load Anomalies",
+   "answerability": "partial",
+   "note": "Showing actual load and load factor \u2014 expected load, max threshold, and anomaly event counts are not measured by this UPS meter."
+  }
+ ],
+ "loop2": null
+}

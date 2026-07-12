@@ -1,7 +1,7 @@
 import React from "react";
 // Card 18 · Events strip — lt-pcc panel-overview Voltage&Current tab.
 //
-// PAYLOAD-DIRECT (ems_backend RETIRED — `frame` is always empty now). Priority:
+// PAYLOAD-DIRECT (host-served RETIRED — `frame` is always empty now). Priority:
 // payload → CMD V2 HONEST-EMPTY view-model. The strip reads stats.worst*/counts + a filter
 // selection; if the payload elided its leaves, fall back to the page's OWN honest-empty
 // model / presentation (chrome only, NO fabrication) — never null. The old live-aggregate-

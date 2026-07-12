@@ -11,8 +11,8 @@ from __future__ import annotations
 import json
 import os
 
-from validation import config
-from validation.response import ascii_safe
+from sweep import config
+from sweep.response import ascii_safe
 
 
 # ---------------------------------------------------------------- artifact loading (read file, else build, else {})

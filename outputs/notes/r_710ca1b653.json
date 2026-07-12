@@ -1,0 +1,18 @@
+{
+ "run_id": "r_710ca1b653",
+ "loop1": [
+  {
+   "card_id": 43,
+   "title": "Voltage Live Health",
+   "answerability": "partial",
+   "note": "Showing live phase voltages (R/Y/B) and total deviation. Rate Change (V/min) is not directly computable from a single basket column and is omitted from numeric fields; deviation is derived from the logged deviation percentage."
+  },
+  {
+   "card_id": 44,
+   "title": "Voltage History",
+   "answerability": "partial",
+   "note": "Showing per-phase voltage history and deviation \u2014 sag/swell event counts are not measured for this asset."
+  }
+ ],
+ "loop2": null
+}

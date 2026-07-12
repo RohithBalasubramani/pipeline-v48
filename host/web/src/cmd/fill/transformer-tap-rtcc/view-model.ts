@@ -1,7 +1,7 @@
 // payload → ALWAYS-DRAWABLE view-model slices for the transformer tap-rtcc fill cards.
 //
 // Page: transformer-asset-dashboard/tap-rtcc. Four cards, each rendered from its OWN Layer-2 payload (the harvested
-// Storybook story args → real neuract values + honest-blank '—'; ems_backend is RETIRED so `frame` is always empty and
+// Storybook story args → real neuract values + honest-blank '—'; host-served is RETIRED so `frame` is always empty and
 // the payload is the ONLY data source):
 //   78 TapPositionCard        ← payload.tapPosition   (OLTC current/optimal + RTCC mode — DOMAIN, honest-blank)
 //   79 VoltageRegulationCard  ← payload.regulation    (regulated bus voltage timeline — ELECTRICAL, real when present)

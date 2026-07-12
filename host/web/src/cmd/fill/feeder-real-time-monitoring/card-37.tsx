@@ -2,7 +2,7 @@ import React from "react";
 // Card 37 — Voltage Monitor Panel (page individual-feeder-meter-shell/real-time-monitoring,
 // CMD V2 RealTimeMonitoringTab). VoltageMonitorPanel is a PhaseMonitorPanel.
 //
-// PAYLOAD-DIRECT (ems_backend RETIRED — `frame` is always empty now). The Layer-2
+// PAYLOAD-DIRECT (host-served RETIRED — `frame` is always empty now). The Layer-2
 // completed payload IS the render source: { data: PhaseMonitorViewModel, freshness }
 // carrying REAL per-phase R-N/Y-N/B-N series or honest-blank '—' per leaf. The old
 // liveRailVM(frame) reduce→map→viewModel path is dead and has been DELETED.

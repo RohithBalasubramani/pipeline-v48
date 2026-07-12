@@ -5,13 +5,7 @@
    "card_id": 36,
    "title": "Power & Energy (Real-Time)",
    "answerability": "partial",
-   "note": "Showing active and reactive power/energy snapshots and trends; projected demand is a load-factor derivation, not a direct meter reading."
-  },
-  {
-   "card_id": 37,
-   "title": "Voltage Monitor (Real-Time)",
-   "answerability": "partial",
-   "note": "Showing live three-phase voltage trends (R-N, Y-N, B-N) and KPIs; statutory voltage thresholds are omitted as the asset's nameplate rating is unknown."
+   "note": "Showing active/reactive power and energy \u2014 trend and rate-of-change metrics are not measured by this asset."
   }
  ],
  "loop2": null

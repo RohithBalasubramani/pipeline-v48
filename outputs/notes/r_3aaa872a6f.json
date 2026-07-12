@@ -1,0 +1,18 @@
+{
+ "run_id": "r_3aaa872a6f",
+ "loop1": [
+  {
+   "card_id": 12,
+   "title": "Energy Input & Distribution",
+   "answerability": "partial",
+   "note": "Showing total active power and energy for OUTGOING feeders; per-feeder rated capacity is not available on gic_* meters, so utilization is null."
+  },
+  {
+   "card_id": 13,
+   "title": "Energy Flow Diagram",
+   "answerability": "partial",
+   "note": "Showing total active power and energy flow \u2014 per-feeder rated capacity is not measured for this asset, so utilization percentages are null. Incomer data is unavailable (has_data=N)."
+  }
+ ],
+ "loop2": null
+}

@@ -1,4 +1,4 @@
-"""partition/coupling_lookup.py — gather all coupling edges for a page (card_link/combo/page_control/prose). [spec section 6, contract 6]"""
+"""layer1a/partition/coupling_lookup.py — gather all coupling edges for a page (card_link/combo/page_control/prose). [spec section 6, contract 6]"""
 from layer1a.partition_inputs.card_link import read_card_link_edges
 from layer1a.partition_inputs.card_combo import read_combo_member_groups
 from layer1a.partition_inputs.page_control import read_page_control_groups

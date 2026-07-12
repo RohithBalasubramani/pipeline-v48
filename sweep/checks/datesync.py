@@ -13,7 +13,7 @@ import json
 import urllib.request
 from concurrent.futures import ThreadPoolExecutor
 
-from validation import config
+from sweep import config
 
 W_NARROW = {"range": "last-24-hours", "sampling": "hourly"}
 W_WIDE = {"range": "last-30-days", "sampling": "day"}

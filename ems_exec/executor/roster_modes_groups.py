@@ -186,3 +186,8 @@ def _match_def(member, defs):
         if name and any(name.startswith(str(p).lower()) for p in (d.get("name_prefixes") or [])):
             return d
     return None
+
+
+# the slot MODES this module serves — roster.py's dispatch DISCOVERS this declaration from every roster_modes_* sibling
+# (self-registration): a NEW mode = a new roster_modes_<x>.py declaring MODES, no dispatch edit.
+MODES = {"elements": _elements_slot, "groups": _groups_slot, "sections": _sections_slot}

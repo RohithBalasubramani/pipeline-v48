@@ -1,0 +1,31 @@
+{
+ "run_id": "r_c2d6ec3cbd",
+ "loop1": [
+  {
+   "card_id": 39,
+   "title": "Today's Energy",
+   "answerability": "partial",
+   "note": "Showing weekly active energy consumption (kWh) \u2014 reactive energy, subsidy limits, and SEC are not measured for this asset."
+  },
+  {
+   "card_id": 40,
+   "title": "Power Energy Analysis",
+   "answerability": "partial",
+   "note": "Showing total active and apparent power \u2014 per-phase power and nameplate ratings are not measured for this asset."
+  },
+  {
+   "card_id": 41,
+   "title": "Input vs Output Energy",
+   "answerability": "partial",
+   "note": "Showing system-wide efficiency and loss estimates derived from total active power and energy \u2014 per-phase or dedicated loss-energy measurements are not available for this asset."
+  },
+  {
+   "card_id": 42,
+   "title": "Load Anomalies",
+   "answerability": "partial",
+   "note": "Showing actual load trend and load factor \u2014 dip/surge events, expected load/range, and present value are not measured for this asset."
+  }
+ ],
+ "loop2": null,
+ "reconcile": "asset 'GIC-23-N10-AW-EX-Panel-03' has_feeders=False but the routed page 'panel-overview-shell/energy-power' is the panel-aggregate granularity \u2014 reconciled to 'individual-feeder-meter-shell/energy-power'"
+}

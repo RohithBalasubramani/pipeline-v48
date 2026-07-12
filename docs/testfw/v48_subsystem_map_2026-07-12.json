@@ -1,0 +1,1475 @@
+{
+  "summary": "Map V48 pipeline subsystems needed to build the prompt testing framework",
+  "agentCount": 7,
+  "logs": [
+    "[map:workflows-features] failed: You've hit your session limit · resets 7am (Asia/Kolkata)",
+    "readers failed: workflows-features"
+  ],
+  "result": {
+    "map": {
+      "entrypoint": {
+        "summary": "HTTP path: the V48 host API is a stdlib ThreadingHTTPServer in host/server.py bound to 0.0.0.0:8770 (env V48_HOST_PORT, server.py:47,358). No auth of any kind; CORS is wide open (Access-Control-Allow-Origin: *, server.py:203). POST /api/run with {\"prompt\": str, \"asset_id\": int|null, \"asset_ids\": [int]|null, \"date_window\": {range,start,end,sampling}|null, \"history\": [{prompt,answer}]|null} is the one submit endpoint (server.py:241-343). Flow inside do_POST: (1) if no asset_id/asset_ids, the knowledge layer runs first — a conceptual/off-scope prompt short-circuits to {ok,prompt,kind:\"knowledge\",answer,refused} (server.py:316-323); (2) natural_compare_ids(prompt) may auto-promote a fresh \"compare A and B\" prompt with 2+ confidently-pinned full names to the multi path (server.py:324-333, host/multi_asset.py:17-51); (3) asset_ids with 2+ entries (and DB knob multi_asset.enabled, default true) → build_response_multi (server.py:306-308,334-336), else build_response(prompt, asset_id, date_window) (server.py:338). Every /api/run response is dumped to outputs/logs/response_<run_id>.json BEFORE being sent (server.py:181-192,339) so a client timeout never loses the payload. Asset pinning: request field \"asset_id\" (a single mfm_id from lt_mfm) flows run_pipeline→run_1b(prompt, asset_id) and is pinned deterministically as how='user-choice' via layer1b/resolve/pinned_skip.py (skips AI resolution entirely, but still runs the no_data gate). The PIPELINE_ASSET_ID env var is only honored when V48_ALLOW_ENV_PIN=1 (CLI/trace runs; layer1b/build.py:14-15) — a harness calling HTTP must use the asset_id JSON field. Homonym round-trip: when 1b is ambiguous the response comes back 200 with ok:true, asset_pending:true, cards:[] (assemble_cards returns [] when no resolved asset table — host/assemble.py:27-30), and asset.candidates = [{mfm_id,name,class,load_group,has_data}] (layer1b/resolve/candidate_list.py:8-10); the client re-POSTs the SAME prompt with asset_id=<chosen mfm_id> (1 pick) or asset_ids=[id1,id2,...] (2+ picks → multi-asset compare, capped by DB knob multi_asset.max_assets default 6). asset_no_data:true means the asset resolved but its table is empty (Layer 2 still emits the per-leaf-null skeleton); validation_blocked:true means the page can't render for that asset; data_unavailable:true + degrade{kind,layer,detail,reason} is the infra-outage (:5433 tunnel down) honest terminal. GET /api/health → {ok,sb_base}; GET /api/assets?q=<substr> → {ok,assets:[picker-shape rows]} (full registry for the picker's browse state); GET /api/site → {ok,site,live} (live = real SELECT 1 probe of the neuract DATA_DB). POST /api/frame re-fills ONE card for a new date window: request {exact_metadata (or payload), data_instructions, date_window, refetch:{render_card_id,asset_table,asset_name,member_scope,_default_payload}} (the card's own `refetch` bundle served on is_history cards), response {ok,why:\"ok\",endpoint,payload} (server.py:252-294).\n\nProgrammatic path: run.harness.run_pipeline(prompt, *, asset_id=None, db=None, run_id=None, layer1a=None) -> dict is the full pipeline pass (run/harness.py:184-326). It fires run_1a ∥ run_1b via run_parallel, applies the degrade gate, granularity reconcile, run_validate, preflight reroute, the asset gate, then the Layer-2 reflect loop (_reflect_loop → run.layer2_all.run_2_all(run_id, l1a, l1b) -> {card_id: Layer2CardOutput}, run/layer2_all.py:34-74; ONE re-route max, _MAX_ATTEMPTS=2). Its return dict keys: {prompt, run_id, asset_id, layer1a, layer1b, validation, layer2, window, notes:{loop1,loop2}, errors, asset_pending, asset_no_data, validation_blocked, data_unavailable, degrade}. Note run_pipeline stops at Layer 2 — the per-card DATA fill happens at the host: host.assemble.assemble_cards(out, asset, date_window) -> [FE card dict] runs the parallel ems_exec.run_card executor fan-out (host/exec_cards._run_cards, wall-clock budget cfg ems_exec.card_budget_s / env V48_EXEC_BUDGET_S default 45s) and enriches via host.enrich._enrich_card. host.server.build_response(prompt, asset_id=None, date_window=None) -> dict (server.py:100-178) is the complete programmatic equivalent of POST /api/run for one asset; host.multi_asset.build_response_multi(prompt, asset_ids, date_window=None) for compare (which calls run.harness.run_pipeline_multi(prompt, assets, *, db=None) -> {layer1a, run_id, groups:[{class,lane,assets}]}, harness.py:329-352 — 1a routed once, Layer 2 authored once per class, recipe rebound per asset via host/rebind_consumer). Env toggles: V48_SKIP_LAYER2=1 (harness.py:303), V48_ALLOW_ENV_PIN=1 + PIPELINE_ASSET_ID. Existing programmatic example: tools/asset_sweep.py:49 calls run_pipeline(prompt, asset_id=<mfm_id>) directly.\n\nRun artifacts: run_id = \"r_\" + sha1(salt+\"|\"+prompt).hexdigest()[:10] (run/run_id.py:5-7) — DETERMINISTIC per prompt (same prompt ⇒ same run_id; reflect loop 2 uses salt=\"loop2\", multi-asset lanes salt=\"class:<class>\", multi run_id is the unsalted prompt hash). Per run, on disk under pipeline_v48/outputs/: logs/response_<run_id>.json (the full HTTP response), logs/pipeline_<run_id>.jsonl (stage-by-stage replayable log, obs/stage.py:11-20), logs/ai_<run_id>.jsonl (every vLLM :8200 call, obs/ai_log.py), logs/failures_<run_id>.jsonl (obs/failures.py:15), notes/<run_id>.json (reflect loop1/loop2 notes, obs/notes.py). Per-card response shape (host/enrich.py:201-246 + _attach_l2_notes server.py:50-68): {card_id, render_card_id, title, story, role, slot, size, payload (the COMPLETED CMD_V2 payload — the FE renders it as direct props; null only if no skeleton exists), endpoint, is_history, refetch (only on is_history cards), swap, conforms, fill_source:\"ems_exec\", fill_ok, fill_why, data_instructions, validation, has_payload, payload_error, data_note, l2_answerability, render:{verdict:\"render\"|\"partial\"|\"honest_blank\", answerability:\"full\"|\"partial\"|\"none\", reason, coverage_note, date_control:\"enabled\"|\"disabled\", slots:null, gaps:[{slot,cause,metric,reason}]|null, leaf_stats:{real,data,undeclared}, watermark:\"live\"}, frame_status:{endpoint,ok,why}}; multi-asset cards additionally carry asset:{id,name,class} and the top-level response has multi_asset:true + assets:[{mfm_id,name,class,table}]. Top-level single response keys (verified against a real dump): ok, prompt, run_id, elapsed_ms, sb_base, page{page_key,page_title,shell,metric,intent,story,layout,groups}, asset_pending, asset_no_data, validation_blocked, data_unavailable, degrade, asset{asset,how,candidates,n_columns}, validation{verdict,how,policy,data_summary,payload_summary}, cards[], frames{} (always empty, back-compat), frame_status{} (empty), live_frame:null, date_window, notes{loop1,loop2}, errors{}.\n\nServer lifecycle: NO systemd unit for the host — it is a plain foreground python process launched as `cd pipeline_v48 && python3 host/server.py` (it fixes sys.path itself, server.py:32-34; binds 0.0.0.0:8770, request_queue_size=128, daemon threads, allow_reuse_address). Currently running (pid on :8770 confirmed via ss). The canonical restart recipe used by the repo's own workflow scripts: kill every host/server.py pid, then `cd pipeline_v48 && PYTHONPATH=. PYTHONUNBUFFERED=1 nohup python3 host/server.py > outputs/replay_host.log 2>&1 &` and poll /api/health (scripts/wf_fast_loop_round.js:50). tools/stack_monitor.sh is a detached keep-alive that restarts host :8770 / frontend :5188 / ems_backend :8890 if their port goes dark (logs to outputs/logs/host_stdout.log etc.; stop with `touch /tmp/stack_monitor.stop`). The only systemd units involved are dependencies: db-tunnel.service (ops/db-tunnel.service — ssh -L 127.0.0.1:5433:127.0.0.1:5432 to 10.90.200.91, Restart=always; the live neuract DB the executor reads) and vllm.service (:8200, the pipeline LLM). The Vite frontend (host/web, port 5188) proxies /api → http://localhost:8770 (host/web/vite.config.ts:6; override with V48_HOST_API). Other env: STORYBOOK_URL (default http://100.90.185.31:6008, echoed as sb_base).",
+        "key_files": [
+          {
+            "path": "/home/rohith/desktop/BFI/backend/layer2/pipeline_v48/host/server.py",
+            "purpose": "THE HTTP surface. PORT=8770 env V48_HOST_PORT (:47), main/_Server (:346-364). GET /api/health (:216-217), GET /api/assets?q= (:221-228), GET /api/site (:231-238). POST /api/frame per-card date re-fetch (:252-294, response {ok,why,endpoint,payload}). POST /api/run (:296-343): prompt required (:299-301), asset_id (:302), asset_ids→multi gate (:306-308), date_window (:309), history (:310), knowledge short-circuit (:316-323), natural-compare promotion (:324-333), build_response single path (:100-178 — the full response dict), _dump_response→outputs/logs/response_<run_id>.json (:181-192), _attach_l2_notes adds data_note+l2_answerability per card (:50-68)."
+          },
+          {
+            "path": "/home/rohith/desktop/BFI/backend/layer2/pipeline_v48/run/harness.py",
+            "purpose": "Programmatic orchestrator. run_pipeline(prompt, *, asset_id=None, db=None, run_id=None, layer1a=None)->dict (:184-326); reflect loop _MAX_ATTEMPTS=2 (:27, :88-181); asset gate — asset_resolved iff how in {AI,user-choice,no_data,collision_gate_fullname} (:288-291); V48_SKIP_LAYER2 (:303); run_pipeline_multi(prompt, assets, *, db=None)->{layer1a,run_id,groups:[{class,lane,assets}]} (:329-352)."
+          },
+          {
+            "path": "/home/rohith/desktop/BFI/backend/layer2/pipeline_v48/run/layer2_all.py",
+            "purpose": "run_2_all(run_id, l1a, l1b)->{card_id: Layer2CardOutput} — the per-card L2 emit fan-out, concurrency capped by DB knob layer2.emit_concurrency default 4 (:34-74); per-card exception envelope _err (:17-19)."
+          },
+          {
+            "path": "/home/rohith/desktop/BFI/backend/layer2/pipeline_v48/run/run_id.py",
+            "purpose": "make_run_id(prompt, salt='') = 'r_' + sha1(salt+'|'+prompt)[:10] — deterministic per prompt (:5-7)."
+          },
+          {
+            "path": "/home/rohith/desktop/BFI/backend/layer2/pipeline_v48/host/multi_asset.py",
+            "purpose": "Multi-asset compare: natural_compare_ids(prompt)->[mfm_id] fail-open (:17-51); build_response_multi(prompt, asset_ids, date_window=None) — resolve ids, run_pipeline_multi, rebind recipe per asset, tag cards with asset:{id,name,class}, response adds multi_asset:true + assets[] (:54-130); cap = DB knob multi_asset.max_assets default 6 (:60)."
+          },
+          {
+            "path": "/home/rohith/desktop/BFI/backend/layer2/pipeline_v48/host/assemble.py",
+            "purpose": "assemble_cards(out, asset, date_window=None)->[FE card] — the ONE data-fill+enrich seam shared by single and multi paths; returns [] when data_unavailable or no asset table (:12-40)."
+          },
+          {
+            "path": "/home/rohith/desktop/BFI/backend/layer2/pipeline_v48/host/enrich.py",
+            "purpose": "_enrich_card builds the served card dict — full field list at :201-246 (card_id, render_card_id, payload, refetch, render:{verdict,answerability,reason,gaps,leaf_stats,watermark,date_control}, frame_status, payload_error, has_payload, ...)."
+          },
+          {
+            "path": "/home/rohith/desktop/BFI/backend/layer2/pipeline_v48/host/exec_cards.py",
+            "purpose": "Parallel per-card ems_exec.run_card fan-out; wall-clock budget cfg('ems_exec.card_budget_s', env V48_EXEC_BUDGET_S default 45) (:19); _date_window_for resolves range-only presets (:22-38); special handling classes asset_3d/topology_sld/narrative_ai/panel_aggregate via run_special (:71-...)."
+          },
+          {
+            "path": "/home/rohith/desktop/BFI/backend/layer2/pipeline_v48/layer1b/build.py",
+            "purpose": "run_1b(prompt, asset_id=None); PIPELINE_ASSET_ID env fallback ONLY when V48_ALLOW_ENV_PIN=1 (:14-15) — HTTP callers must use the asset_id field."
+          },
+          {
+            "path": "/home/rohith/desktop/BFI/backend/layer2/pipeline_v48/layer1b/resolve/pinned_skip.py",
+            "purpose": "pinned_skip(asset_id_override, by_id) — deterministic user-choice pin for a picker re-POST; unknown id → falls through to AI resolve; empty asset → no_data outcome (:12-22)."
+          },
+          {
+            "path": "/home/rohith/desktop/BFI/backend/layer2/pipeline_v48/layer1b/resolve/candidate_list.py",
+            "purpose": "Picker shape {mfm_id,name,class,load_group,has_data}: for_picker (ambiguous candidates in response.asset.candidates) + registry_for_picker (GET /api/assets) (:8-22)."
+          },
+          {
+            "path": "/home/rohith/desktop/BFI/backend/layer2/pipeline_v48/host/web/src/api.ts",
+            "purpose": "Reference client: POST /api/run body {prompt, asset_id, asset_ids, date_window, history} — array→asset_ids, single→asset_id (:3-10); /api/frame body includes date_window (:29)."
+          },
+          {
+            "path": "/home/rohith/desktop/BFI/backend/layer2/pipeline_v48/obs/stage.py",
+            "purpose": "Per-run stage log → stderr + outputs/logs/pipeline_<run_id>.jsonl (:11-20)."
+          },
+          {
+            "path": "/home/rohith/desktop/BFI/backend/layer2/pipeline_v48/obs/ai_log.py",
+            "purpose": "Every vLLM :8200 call logged to outputs/logs/ai_<run_id>.jsonl (urlopen monkeypatch)."
+          },
+          {
+            "path": "/home/rohith/desktop/BFI/backend/layer2/pipeline_v48/obs/notes.py",
+            "purpose": "Reflect notes persisted to outputs/notes/<run_id>.json ({loop1:[{card_id,title,answerability,note}], loop2:str|null})."
+          },
+          {
+            "path": "/home/rohith/desktop/BFI/backend/layer2/pipeline_v48/tools/stack_monitor.sh",
+            "purpose": "Keep-alive: restarts host :8770 (`setsid python3 host/server.py > outputs/logs/host_stdout.log`), FE :5188, ems :8890; stop via /tmp/stack_monitor.stop (:15-17,:22-26)."
+          },
+          {
+            "path": "/home/rohith/desktop/BFI/backend/layer2/pipeline_v48/scripts/wf_fast_loop_round.js",
+            "purpose": "Canonical restart recipe (line 50): kill host/server.py pids, then `cd pipeline_v48 && PYTHONPATH=. PYTHONUNBUFFERED=1 nohup python3 host/server.py > outputs/replay_host.log 2>&1 &`, poll /api/health."
+          },
+          {
+            "path": "/home/rohith/desktop/BFI/backend/layer2/pipeline_v48/ops/db-tunnel.service",
+            "purpose": "systemd unit (installed + active) for the :5433→10.90.200.91:5432 neuract DB tunnel the executor depends on; install = cp to /etc/systemd/system + daemon-reload + restart."
+          },
+          {
+            "path": "/home/rohith/desktop/BFI/backend/layer2/pipeline_v48/tools/asset_sweep.py",
+            "purpose": "Working programmatic example: run_pipeline(prompt, asset_id=<mfm_id>) per prompt (:13,:49); needs :5433 + :8200 up."
+          }
+        ],
+        "details": {
+          "http_endpoints": {
+            "GET /api/health": {
+              "response": "{ok: true, sb_base: str}"
+            },
+            "GET /api/assets?q=<substr>": {
+              "response": "{ok: true, assets: [{mfm_id, name, class, load_group, has_data}]}"
+            },
+            "GET /api/site": {
+              "response": "{ok: true, site: str, live: bool}  # live = SELECT 1 probe of neuract DATA_DB"
+            },
+            "POST /api/run": {
+              "request": "{prompt: str (required), asset_id: int|str|null, asset_ids: [int]|null, date_window: {range: str, start: iso, end: iso, sampling: str}|null, history: [{prompt, answer}]|null}",
+              "response_single": "{ok, prompt, run_id, elapsed_ms, sb_base, page:{page_key,page_title,shell,metric,intent,story,layout,groups}, asset_pending, asset_no_data, validation_blocked, data_unavailable, degrade:{kind,layer,detail,reason}|null, asset:{asset:{mfm_id,name,class,table,...}|null, how, candidates:[picker rows], n_columns}, validation:{verdict,how,policy,data_summary,payload_summary}, cards:[card], frames:{} (always empty), frame_status:{} (empty), live_frame:null, date_window, notes:{loop1:[...],loop2:str|null}, errors:{}}",
+              "response_multi_extra": "multi_asset: true, assets: [{mfm_id,name,class,table}], asset_pending/asset_no_data/validation_blocked always false, each card carries asset:{id,name,class}",
+              "response_knowledge": "{ok: true, prompt, kind: 'knowledge', answer: str, refused: bool}  # no run_id, no cards; only reachable when asset_id AND asset_ids absent",
+              "errors": "400 {ok:false,error:'prompt required'|'bad body: ...'} | 404 | 500 {ok:false,error:'<Type>: <msg>'}"
+            },
+            "POST /api/frame": {
+              "request": "{exact_metadata: card.payload (or 'payload'), data_instructions: card.data_instructions, date_window: {range,start,end,sampling}, refetch: {render_card_id, asset_table, asset_name, member_scope, _default_payload}}  # take refetch verbatim from the served card (only present on is_history cards); legacy top-level asset_table/card_id also accepted",
+              "response": "{ok: true, why: 'ok', endpoint: str, payload: <re-filled CMD_V2 payload>}",
+              "errors": "400 {ok:false,error:'exact_metadata + asset_table required'}"
+            }
+          },
+          "picker_roundtrip": "POST /api/run {prompt} -> if 1b ambiguous: 200 {ok:true, asset_pending:true, cards:[], asset:{candidates:[{mfm_id,name,class,load_group,has_data}]}} (Layer 2 NOT run). Re-POST the SAME prompt with asset_id=<mfm_id> to pin (how='user-choice'; knowledge layer skipped), or asset_ids=[id,...] (>=2) for compare. asset_no_data:true = resolved but table empty (cards ARE served as per-leaf-null skeletons; FE opens picker greyed). validation_blocked:true = picker with 'cannot render this page'.",
+          "asset_pinning": {
+            "http": "asset_id request field only (single) / asset_ids [] (multi)",
+            "env": "PIPELINE_ASSET_ID honored ONLY when V48_ALLOW_ENV_PIN=1 (layer1b/build.py:14-15) — for CLI/programmatic runs, never the long-running host"
+          },
+          "multi_asset": {
+            "submit": "asset_ids: [mfm_id, mfm_id, ...] (>=2) in POST /api/run; OR a natural 'compare <full-name-A> and <full-name-B>' prompt (auto-detected, all names must pin confidently)",
+            "knobs": "multi_asset.enabled (default true), multi_asset.max_assets (default 6) — cmd_catalog.app_config rows",
+            "semantics": "1a routes ONCE, L2 authors once per asset class, executor fills per asset; cards concatenated, grouped by card.asset"
+          },
+          "programmatic": {
+            "full_pass_no_data_fill": "run.harness.run_pipeline(prompt, *, asset_id=None, db=None, run_id=None, layer1a=None) -> dict{prompt,run_id,asset_id,layer1a,layer1b,validation,layer2,window,notes,errors,asset_pending,asset_no_data,validation_blocked,data_unavailable,degrade}",
+            "full_pass_with_cards": "host.server.build_response(prompt, asset_id=None, date_window=None) -> the exact /api/run response dict (single asset)",
+            "multi": "host.multi_asset.build_response_multi(prompt, asset_ids, date_window=None) -> the multi response dict; run.harness.run_pipeline_multi(prompt, assets, *, db=None) -> {layer1a, run_id, groups:[{class, lane, assets}]}",
+            "data_fill_only": "host.assemble.assemble_cards(run_pipeline_result, asset_dict, date_window) -> [FE card]",
+            "layer2_only": "run.layer2_all.run_2_all(run_id, l1a, l1b) -> {card_id: Layer2CardOutput}",
+            "invoke_from": "cd pipeline_v48; python3 -c 'from run.harness import run_pipeline; ...' (host/server.py inserts repo root into sys.path itself; scripts use PYTHONPATH=.)"
+          },
+          "run_id": "r_<sha1(salt+'|'+prompt)[:10]> — DETERMINISTIC: same prompt = same run_id (a repeated test prompt overwrites the same response_/pipeline_/ai_ files); salts: 'loop2' (reflect re-route), 'class:<class>' (multi lanes)",
+          "run_artifacts_dir": "/home/rohith/desktop/BFI/backend/layer2/pipeline_v48/outputs/",
+          "run_artifacts": [
+            "outputs/logs/response_<run_id>.json (full /api/run response, written before wire send; 'response_default.json' for knowledge/no-run_id)",
+            "outputs/logs/pipeline_<run_id>.jsonl (stage log: PROMPT,1a,1b,validate,asset_gate,L2.card,exec,RESPONSE...)",
+            "outputs/logs/ai_<run_id>.jsonl (every vLLM :8200 request/response)",
+            "outputs/logs/failures_<run_id>.jsonl",
+            "outputs/notes/<run_id>.json (reflect loop1/loop2)"
+          ],
+          "card_fields": [
+            "card_id",
+            "render_card_id (swap target if swapped)",
+            "title",
+            "story",
+            "role",
+            "slot",
+            "size",
+            "payload (completed CMD_V2 payload = FE props; skeleton when L2 skipped; null only if no skeleton)",
+            "endpoint",
+            "is_history",
+            "refetch (is_history cards only: {render_card_id, asset_table, asset_name, member_scope, _default_payload})",
+            "swap {action, swap_to_id?, origin?}",
+            "conforms",
+            "fill_source='ems_exec'",
+            "fill_ok",
+            "fill_why",
+            "data_instructions",
+            "validation",
+            "has_payload",
+            "payload_error (L2 exception/failure detail or null)",
+            "data_note (L2 proxy/substitution disclosure)",
+            "l2_answerability",
+            "render {verdict: render|partial|honest_blank, answerability: full|partial|none, reason, coverage_note:null, date_control: enabled|disabled, slots:null, gaps:[{slot,cause,metric,reason}]|null, leaf_stats:{real,data,undeclared}, watermark:'live'}",
+            "frame_status {endpoint, ok, why}",
+            "asset {id,name,class} (multi-asset responses only)"
+          ],
+          "server_lifecycle": {
+            "start": "cd /home/rohith/desktop/BFI/backend/layer2/pipeline_v48 && python3 host/server.py  (or: PYTHONPATH=. PYTHONUNBUFFERED=1 nohup python3 host/server.py > outputs/replay_host.log 2>&1 &)",
+            "restart": "kill existing host/server.py pid(s) then relaunch; allow_reuse_address avoids TIME_WAIT bind failure; poll GET /api/health",
+            "systemd": "NONE for the host itself; dependencies: db-tunnel.service (:5433 neuract, active) and vllm.service (:8200 Qwen)",
+            "keepalive": "tools/stack_monitor.sh (detached loop, restarts host/fe/ems if port dark; stop: touch /tmp/stack_monitor.stop)",
+            "currently_running": "yes — python3 pid on 0.0.0.0:8770 and vite on 0.0.0.0:5188 (verified via ss)",
+            "auth": "NONE — no tokens/keys; CORS *"
+          },
+          "env_vars": {
+            "V48_HOST_PORT": "8770 default",
+            "STORYBOOK_URL": "http://100.90.185.31:6008 default (sb_base)",
+            "V48_HOST_API": "vite proxy target override (FE)",
+            "V48_ALLOW_ENV_PIN": "1 enables PIPELINE_ASSET_ID env pin",
+            "PIPELINE_ASSET_ID": "mfm_id env pin (CLI only, needs V48_ALLOW_ENV_PIN=1)",
+            "V48_SKIP_LAYER2": "1 skips L2 emit",
+            "V48_EXEC_BUDGET_S": "executor fan-out wall-clock budget, default 45"
+          },
+          "external_deps": {
+            "vllm": ":8200 (L1a/L2/knowledge emits)",
+            "neuract_db": ":5433 via db-tunnel.service (executor reads; down => data_unavailable:true terminal)",
+            "cmd_catalog_db": "Postgres (routing/config/app_config knobs)",
+            "frontend": "vite :5188 proxying /api -> :8770"
+          },
+          "date_window_shape": "{range: 'today'|'yesterday'|'last-7-days'|... , start: ISO8601|null, end: ISO8601|null, sampling: 'minute'|'hourly'|'day'|'week'} — range-only presets are resolved server-side; omit/null => prompt-derived preset (1a time phrase) or today/latest"
+        },
+        "gotchas": [
+          "run_id is DETERMINISTIC from the prompt (sha1 prefix) — re-firing the same prompt overwrites outputs/logs/{response_,pipeline_,ai_}r_XXXX files and returns the same run_id; salt only changes for reflect loop2 and multi-asset class lanes. A test harness must vary the prompt text (or read files immediately) to keep runs distinct.",
+          "PIPELINE_ASSET_ID env is IGNORED by the HTTP host unless V48_ALLOW_ENV_PIN=1 (layer1b/build.py:14) — over HTTP, pinning is ONLY the asset_id / asset_ids JSON fields.",
+          "An ambiguous-asset response is HTTP 200 with ok:true, asset_pending:true and cards:[] — do not treat empty cards as failure; re-submit with asset_id from asset.candidates[].mfm_id. Similarly data_unavailable:true is a 200 'honest terminal' with cards:[].",
+          "The knowledge layer runs ONLY when both asset_id and asset_ids are absent — a knowledge/off-scope prompt returns {kind:'knowledge'} with NO cards and NO run_id (its dump lands in response_default.json); a pinned re-POST always goes to the card pipeline.",
+          "response.frames, frame_status, live_frame are permanently EMPTY back-compat fields — all data rides on each card's `payload`.",
+          "Server persists the response to disk BEFORE sending (server.py:339) — on client timeout read outputs/logs/response_<run_id>.json instead of retrying (a retry re-runs the LLM pipeline).",
+          "/api/run can take minutes (N parallel ~22K-token L2 emits + executor fill); L2 concurrency is capped at 4 (layer2.emit_concurrency) and the emit timeout is 150s with NO retry; keep harness page-level concurrency <=2-3 or emits false-timeout under vLLM contention (memory: v48-l2-fanout-concurrency-cap).",
+          "No auth anywhere on :8770 and CORS is *; the server is plain HTTP/1.1 stdlib (Content-Length required on POST bodies; keep-alive supported).",
+          "render.verdict (render/partial/honest_blank) is NOT a has-data signal per prior validation work — to assert real data, diff card.payload leaves against the card_payloads seed / check render.leaf_stats.real > 0.",
+          "asset_no_data:true still serves cards (per-leaf-null skeletons with has_payload:true) — distinguish it from asset_pending (cards:[]).",
+          "For /api/frame, send the served card's `refetch` bundle verbatim; it exists only on is_history cards (date_control:'enabled'). consumer.mfm_id inside data_instructions is a DIFFERENT id-space from lt_mfm — never use it as an asset id.",
+          "GET /health, /docs, / return 404 — only /api/* paths exist.",
+          "multi_asset path requires 2+ non-null asset_ids AND the DB knob multi_asset.enabled (default true); a 1-element asset_ids array falls through to the single-asset path with asset_id null (ids filtered, multi=false) — pass a single pin as asset_id, not asset_ids:[id]."
+        ]
+      },
+      "stages-logging": {
+        "summary": "V48 pipeline stages (single-asset /api/run path, in execution order): (0) HTTP entry host/server.py do_POST /api/run (:241) -> build_response (:100), with an optional knowledge-layer detour (:316-323) and multi-asset lane host/multi_asset.build_response_multi (:334-338). (1) run/harness.py run_pipeline (:184) logs stage PROMPT (:188) then fires Layer 1a (layer1a/build.run_1a - page routing; LLM stages 'route' layer1a/route.py:96 and 'stories' layer1a/story_builder.py:37) IN PARALLEL with Layer 1b (layer1b/build.run_1b - asset resolve + column basket; LLM stages 'asset_resolve' layer1b/resolve/asset_resolve.py:157, 'basket' layer1b/basket/column_basket.py:68). (2) degrade gate run/degrade_gate.apply (harness:220-223,256-258) -> stage 'degrade' kind=data_unavailable on infra outage. (3) granularity reconcile run/reconcile_granularity.apply (harness:247-249). (4) pre-L2 validate validate/build.run_validate via harness._validate (:37-47) -> stage 'validate' with verdict (pass|warn|pass_with_gaps|fail|asset_pending, validate/report.py:12-31) + expected_gap_frac. (5) preflight reroute harness._preflight_reroute (:50-85). (6) asset gate (harness:288-297) -> stage 'asset_gate' decides '-> Layer 2' vs 'PENDING -> asset popup (Layer 2 NOT run)' vs 'VALIDATION-FAIL -> picker'. (7) Layer 2 per-card emit + reflect loop: harness._reflect_loop (:88-181) -> run/layer2_all.run_2_all (:34) -> layer2/build.run_card (emit LLM stage 'l2_emit' layer2/emit/emit.py:209). Grounding is NOT a separate runtime stage: grounding/default_assemble strip/skeleton is used inside the L2 byte-identity gates (layer2/gates.py:110, layer2/build.py:85) and grounding/swap_settle.settle runs as the deterministic swap-collision post-pass (run/layer2_all.py:59 -> stage 'L2.swap_revert'). (8) Executor data fill at the HOST: host/assemble.assemble_cards (server.py:127) -> host/exec_cards._run_cards (:138) / fill_one_card (:105) -> ems_exec/serve/run.run_card or ems_exec/renderers.run_special; fabrication guards = ems_exec/executor/fab_guards.py (last post-fill pass inside fill(); 4 classes: epoch-ms time-leak, null-column-as-reading, no-source value, unstripped seed-leak) -> per-card stage 'exec' ok=True/False (exec_cards.py:183-189). (9) Verdict + serve: host/enrich._enrich_card (:125) computes render|partial|honest_blank via validate/render_verdict.compute (:232), then stage 'RESPONSE' (server.py:130-135) / 'RESPONSE_MULTI' (multi_asset.py:84) and the full response is dumped to outputs/logs/response_<rid>.json (server.py:181-192). Layer 3 is RETIRED (harness.py:6-10).\n\nRun log: obs/stage.py stage(run_id, name, **fields) (:12-20) is THE writer - it prints '[<rid>] <stage>: k=v...' to stderr AND appends outputs/logs/pipeline_<run_id>.jsonl. JSON schema per line is flat: {\"ts\": <epoch float>, \"stage\": \"<name>\", **stage-specific fields} - there is NO 'event', NO 'level', NO uniform 'card_id' field (card id rides as \"id\" on L2.card and \"card\" on exec). Stage vocabulary observed across 253 real logs (with their fields): PROMPT{text,asset_id}; 1a{page,primitive,cards,metric,intent,page_key_how,dropped_templates,reroute}; 1b{asset,mfm_id,candidates,basket_cols,how,class_prior,class_mismatch,contract_problems}; layer1a/layer1b{ERROR} (parallel-thunk exceptions, harness:213); degrade{kind,layer}; granularity_reconcile{was,now,cards,has_feeders|ERROR}; validate{verdict,expected_gap_frac|ERROR}; preflight_reroute{gaps,gap_frac,skipped,honest_terminal,reroute_from}; asset_gate{pinned,how,no_data,validation_blocked,verdict,decision}; layer2{cards,conform,partial,gaps,hard_fails,swaps|ERROR}; L2.card{id,swap,to,conforms,fill,answerability,gap,note,keys,endpoint,fail}; L2.swap_revert{id,target,reason|ERROR}; reflect{loop,gaps,hard_fails,gap_frac,honest_terminal,reroute_on,reroute_from,skipped,unresolved}; notes{loop1,loop2,partial,gap}; exec{card,ok,why}; RESPONSE{page,cards,with_payload,frames,rendered,partial,blank,asset_pending,elapsed_ms}; RESPONSE_MULTI{assets,groups,cards,data_unavailable,elapsed_ms}. stage() also fans defect-shaped fields (ERROR=, fail=, ok=False, gap=, gaps>0) out to obs/failures.record (obs/stage.py:25-56, obs/failures.py:9-17) -> outputs/logs/failures_<rid>.jsonl with schema {ts ISO, run_id, stage, card_id, group_id, reason, detail<=300}; reasons include stage_error/card_fail/exec_fail/fill_gap plus llm kinds and per-leaf reason causes. Separately obs/ai_log.py monkeypatches urllib.urlopen to tee every vLLM :8200 request/response into ai_<run_id>.jsonl ({ts,run_id,url,request,response}), and obs/notes.py persists reflect notes to outputs/notes/<rid>.json + a 'notes' stage line. Representative real lines (pipeline_r_1dee11245e / r_66c37cc5bb): {\"ts\":1783542302.62,\"stage\":\"PROMPT\",\"text\":\"'fuel efficiency of DG-1'\",\"asset_id\":null} / {\"stage\":\"1a\",\"page\":\"diesel-generator-asset-dashboard/fuel-efficiency\",\"primitive\":\"grid\",\"cards\":3,\"metric\":\"fuel\",\"intent\":\"snapshot\",\"page_key_how\":\"verbatim\",\"dropped_templates\":[]} / {\"stage\":\"1b\",\"asset\":\"DG-1 MFM\",\"mfm_id\":2,\"candidates\":0,\"basket_cols\":29,\"how\":\"AI\",\"class_prior\":\"DG\",\"class_mismatch\":false,\"contract_problems\":[]} / {\"stage\":\"validate\",\"verdict\":\"asset_pending\",\"expected_gap_frac\":0.0} / {\"stage\":\"asset_gate\",\"pinned\":false,\"how\":\"ambiguous\",\"no_data\":false,\"validation_blocked\":false,\"verdict\":\"asset_pending\",\"decision\":\"PENDING → asset popup (Layer 2 NOT run)\"} / {\"stage\":\"layer2\",\"cards\":3,\"conform\":3,\"partial\":3,\"gaps\":0,\"hard_fails\":0,\"swaps\":0} / {\"stage\":\"L2.card\",\"id\":63,\"swap\":\"keep\",\"to\":63,\"conforms\":true,\"fill\":\"live-frontend\",\"answerability\":\"partial\",\"gap\":false,\"note\":\"Showing electrical power state...\",\"keys\":[\"display\",\"snapshot\"],\"endpoint\":\"real-time-monitoring\",\"fail\":null} / {\"stage\":\"exec\",\"card\":63,\"ok\":true} / {\"stage\":\"notes\",\"loop1\":3,\"loop2\":false,\"partial\":3,\"gap\":0} / {\"stage\":\"RESPONSE\",\"page\":\"diesel-generator-asset-dashboard/fuel-efficiency\",\"cards\":3,\"with_payload\":3,\"frames\":[],\"rendered\":3,\"partial\":1,\"blank\":0,\"asset_pending\":false,\"elapsed_ms\":18568}.\n\nError signals a harness should grep/classify - IN THE LOG: (a) any line with an \"ERROR\" field (stage_error; e.g. {\"stage\":\"layer1b\",\"ERROR\":\"RuntimeError: DB error (target_version1): psql: ... port 5433 failed: Connection refused\"}); (b) L2.card \"fail\" non-null (card_fail) - observed values: \"llm_timeout\" (and any \"llm_<kind>\"), \"morph rejected: <path>: DATA leaf - morphs are metadata-only...\", \"reverted to default: <path>\", \"fields[0] kind=derived without fn\", \"fields[0] column '<col>' failed pre-L2 data validation (null_rate ...) - leaf honest-blanks\", \"no default payload + empty exact_metadata\"; (c) exec \"ok\":false with \"why\":\"executor budget exceeded\" or \"<ExcType>: <msg>\" (exec_fail); (d) degrade kind=\"data_unavailable\"; (e) reflect/preflight_reroute gaps>0, hard_fails>0, honest_terminal, skipped=below_min_gap_frac|no_data_asset, unresolved (fill_gap). LLM failures are classified in llm/client.py as timeout|http_<code>|transport|no_json|parse|truncated|over_budget and recorded to failures_<rid>.jsonl with stage=\"llm\" (:68-72); per-stage timeouts are DB knobs llm.timeout.<stage> for stages route/stories/asset_resolve/basket/l2_emit, and llm.no_retry_kinds default 'timeout,truncated' means a timeout NEVER retries. IN THE RESPONSE: card.payload_error = l2.exception OR failure.detail (host/enrich.py:170, served :230) - the fabrication-risk signal; card.render.{verdict,answerability,reason,gaps,leaf_stats{real,data,undeclared}}; card.conforms; card.fill_ok/fill_why + card.frame_status.why; card.data_note + card.l2_answerability (server.py:50-68); top-level ok, errors{layer1a,layer1b,validation,layer2,reroute,preflight_reroute,payload_final}, notes{loop1,loop2}, asset_pending, asset_no_data, validation_blocked, data_unavailable, degrade{kind,layer,detail,reason}. Gate-blank telemetry lives in data_instructions: _honest_blanked (layer2/gates.py:697-698 - proxy/const kills, explicitly telemetry never a card gate), _emit_gaps (cause 'unbound_by_emit', layer2/build.py:286-288), _per_leaf_gaps, _zero_skeleton, _cross_domain/_cross_domain_blanked, _normalized, _noop_morphs. fab_guards + fill blanks ride the payload's GAPS_KEY=\"_blank_gaps\" channel (ems_exec/executor/gaps.py:19) which the host pops into render.gaps as [{slot,cause,metric,column,fn,reason}]; cause vocab observed in failures logs: unbound_by_emit, no_reading, unstripped_seed, column_absent, structurally_null, epoch_ms_leak, derivation_unbound, no_data, no_asset_3d, null_column_reading, no_source_value, quantity_mismatch, swap_dup, data_unavailable. Python tracebacks appear ONLY on host stderr via traceback.print_exc() for /api/run//api/frame//api/assets 500s (server.py:227,293,342) - the wire response is {\"ok\":false,\"error\":\"<Type>: <msg>\"}; layer exceptions are stringified into errors{} + ERROR= stage fields, never tracebacks in the jsonl.\n\nVerdict semantics: computed post-fill at the serve boundary - host/enrich.py:171 calls validate/render_verdict.compute (render_verdict.py:232-272). Universe = declared field leaves + roster_stats + undeclared numeric leaves (scaffold/time-axis keys excluded). Rules: skeleton_blank OR (payload_error AND n_real==0) -> honest_blank (:261-262); n_data==0 -> 'render' if has_payload else honest_blank (:263-264); n_real==0 -> honest_blank; n_real==n_data -> render; else partial. answerability maps render->full, partial->partial, honest_blank->none (:160). GOTCHA CONFIRMED in code and docs: verdict='render' does NOT mean has-data - render_verdict.py:264 verdicts a card with ZERO data leaves (chrome-only, or every leaf scaffold-excluded) as 'render' with n_real=0, and validation/response.py:5 states verbatim '`render.verdict` (render|partial|honest_blank) is OPTIMISTIC - per-leaf truth is `render.leaf_stats` {real,data}'. Also render_verdict.py:19-20 + enrich comments: verdicts are TELEMETRY, never a render gate (per-leaf degradation - the card always mounts its real component). RESPONSE's rendered count = verdict in (render,partial) (server.py:132), so 'rendered' is likewise not a has-data count; the honest has-data signal is leaf_stats.real>0 (or diffing the payload against the card_payloads seed, per the v48 deep-validation harness).",
+        "key_files": [
+          {
+            "path": "/home/rohith/desktop/BFI/backend/layer2/pipeline_v48/obs/stage.py",
+            "purpose": "THE run-log writer: stage() -> stderr + outputs/logs/pipeline_<rid>.jsonl ({ts,stage,**fields}); failure fan-out _failure_signal (ERROR/fail/ok=False/gap/gaps) -> obs.failures"
+          },
+          {
+            "path": "/home/rohith/desktop/BFI/backend/layer2/pipeline_v48/obs/failures.py",
+            "purpose": "append-only failure recorder -> outputs/logs/failures_<rid>.jsonl {ts,run_id,stage,card_id,group_id,reason,detail}"
+          },
+          {
+            "path": "/home/rohith/desktop/BFI/backend/layer2/pipeline_v48/obs/ai_log.py",
+            "purpose": "urllib monkeypatch teeing every vLLM :8200 request/response -> outputs/logs/ai_<rid>.jsonl"
+          },
+          {
+            "path": "/home/rohith/desktop/BFI/backend/layer2/pipeline_v48/obs/notes.py",
+            "purpose": "persists reflect-loop notes {loop1,loop2} -> outputs/notes/<rid>.json + 'notes' stage line"
+          },
+          {
+            "path": "/home/rohith/desktop/BFI/backend/layer2/pipeline_v48/run/harness.py",
+            "purpose": "run_pipeline orchestrator: PROMPT, 1a||1b, degrade gate, reconcile, validate, preflight_reroute, asset_gate, reflect loop; most stage() call sites (:42,:69,:126,:142-181,:188,:213,:223,:233,:238,:258,:292)"
+          },
+          {
+            "path": "/home/rohith/desktop/BFI/backend/layer2/pipeline_v48/run/layer2_all.py",
+            "purpose": "L2 per-card fan-out (concurrency cap layer2.emit_concurrency=4); logs L2.card (:68-73) + L2.swap_revert (:61); grounding/swap_settle post-pass (:59)"
+          },
+          {
+            "path": "/home/rohith/desktop/BFI/backend/layer2/pipeline_v48/layer2/build.py",
+            "purpose": "run_card emit->produce->gate->enforce; failure envelope {stage:'llm'|'emit', reason, detail} (~:672), llm_<kind> fail strings (:392), _emit_gaps unbound_by_emit (:286)"
+          },
+          {
+            "path": "/home/rohith/desktop/BFI/backend/layer2/pipeline_v48/layer2/gates.py",
+            "purpose": "L2 byte-identity/quantity gates; di._honest_blanked telemetry (:697-698, never a card gate); uses grounding/default_assemble strip (:110)"
+          },
+          {
+            "path": "/home/rohith/desktop/BFI/backend/layer2/pipeline_v48/llm/client.py",
+            "purpose": "call_qwen: classifies failures timeout|http_<code>|transport|no_json|parse|truncated|over_budget, records stage='llm' to failures (:68-72); DB knobs llm.timeout.<stage>, llm.no_retry_kinds"
+          },
+          {
+            "path": "/home/rohith/desktop/BFI/backend/layer2/pipeline_v48/host/exec_cards.py",
+            "purpose": "parallel executor fan-out (budget ems_exec.card_budget_s=45s); logs exec card=<id> ok=True|False why=... (:183-189); dispatches run_special vs run_card (fill_one_card :105)"
+          },
+          {
+            "path": "/home/rohith/desktop/BFI/backend/layer2/pipeline_v48/host/enrich.py",
+            "purpose": "builds FE card: payload_error (:170,:230), calls render_verdict.compute (:171), render channel {verdict,answerability,reason,gaps,leaf_stats,watermark} (:232-244)"
+          },
+          {
+            "path": "/home/rohith/desktop/BFI/backend/layer2/pipeline_v48/host/server.py",
+            "purpose": "HTTP surface; RESPONSE stage (:130-135); response schema (:137-178); _dump_response -> outputs/logs/response_<rid>.json (:181-192); tracebacks on 500 (:293,:342)"
+          },
+          {
+            "path": "/home/rohith/desktop/BFI/backend/layer2/pipeline_v48/validate/render_verdict.py",
+            "purpose": "THE post-fill verdict render|partial|honest_blank; GOTCHA at :263-264 (n_data==0 -> 'render' if has_payload); answerability map :160"
+          },
+          {
+            "path": "/home/rohith/desktop/BFI/backend/layer2/pipeline_v48/validate/build.py",
+            "purpose": "pre-L2 validate pass (per-column probe + expected_gaps topology infeasibility); verdict rollup in validate/report.py (pass|warn|pass_with_gaps|fail|asset_pending)"
+          },
+          {
+            "path": "/home/rohith/desktop/BFI/backend/layer2/pipeline_v48/ems_exec/executor/fab_guards.py",
+            "purpose": "deterministic post-fill fabrication guards (epoch_ms_leak / null_column_reading / no_source_value / unstripped_seed) blanking via the gaps channel"
+          },
+          {
+            "path": "/home/rohith/desktop/BFI/backend/layer2/pipeline_v48/ems_exec/executor/gaps.py",
+            "purpose": "GAPS_KEY='_blank_gaps' (:19) per-leaf reason channel [{slot,cause,metric,column,fn,reason}]; pop_gaps at serve -> render.gaps; causes from cmd_catalog.reason_template"
+          },
+          {
+            "path": "/home/rohith/desktop/BFI/backend/layer2/pipeline_v48/validation/response.py",
+            "purpose": "the ONE /api/run response parser for harnesses; documents the verdict-is-optimistic gotcha (:5) and payload_error as the fabrication-risk signal (:6)"
+          },
+          {
+            "path": "/home/rohith/desktop/BFI/backend/layer2/pipeline_v48/config/reason_templates.py",
+            "purpose": "reason-sentence generator; _tell_failures mirrors every generated blank-reason to failures_<rid>.jsonl with stage='reason' (:32-40)"
+          }
+        ],
+        "details": {
+          "ordered_stages": [
+            {
+              "n": 1,
+              "stage": "PROMPT (entry)",
+              "module": "run/harness.py:184-188 (HTTP: host/server.py:241 /api/run -> build_response :100)",
+              "log": "PROMPT{text,asset_id}"
+            },
+            {
+              "n": 2,
+              "stage": "Layer 1a route (parallel)",
+              "module": "layer1a/build.py run_1a (route.py LLM stage 'route', story_builder.py 'stories')",
+              "log": "1a{page,primitive,cards,metric,intent,page_key_how,dropped_templates[,reroute]} logged by harness:233; exceptions -> stage layer1a{ERROR}"
+            },
+            {
+              "n": 3,
+              "stage": "Layer 1b asset/basket (parallel)",
+              "module": "layer1b/build.py run_1b (resolve/asset_resolve.py 'asset_resolve', basket/column_basket.py 'basket')",
+              "log": "1b{asset,mfm_id,candidates,basket_cols,how,class_prior,class_mismatch,contract_problems}; exceptions -> layer1b{ERROR}"
+            },
+            {
+              "n": 4,
+              "stage": "degrade gate (infra outage)",
+              "module": "run/degrade_gate.py apply (harness:220,256)",
+              "log": "degrade{kind:'data_unavailable',layer}"
+            },
+            {
+              "n": 5,
+              "stage": "granularity reconcile",
+              "module": "run/reconcile_granularity.py apply",
+              "log": "granularity_reconcile{was,now,cards,has_feeders|ERROR}"
+            },
+            {
+              "n": 6,
+              "stage": "pre-L2 validate",
+              "module": "validate/build.py run_validate (rollup validate/report.py)",
+              "log": "validate{verdict: pass|warn|pass_with_gaps|fail|asset_pending, expected_gap_frac|ERROR}"
+            },
+            {
+              "n": 7,
+              "stage": "preflight reroute (expected gaps)",
+              "module": "run/harness.py _preflight_reroute:50-85",
+              "log": "preflight_reroute{gaps,gap_frac,skipped,honest_terminal,reroute_from}"
+            },
+            {
+              "n": 8,
+              "stage": "asset gate",
+              "module": "run/harness.py:288-297",
+              "log": "asset_gate{pinned,how,no_data,validation_blocked,verdict,decision}"
+            },
+            {
+              "n": 9,
+              "stage": "Layer 2 per-card emit + reflect",
+              "module": "run/harness.py _reflect_loop:88 -> run/layer2_all.py run_2_all:34 -> layer2/build.py run_card (grounding/default_assemble + grounding/swap_settle run inside)",
+              "log": "layer2{cards,conform,partial,gaps,hard_fails,swaps}; L2.card{id,swap,to,conforms,fill,answerability,gap,note,keys,endpoint,fail}; L2.swap_revert{id,target,reason}; reflect{loop,gaps,hard_fails,gap_frac,honest_terminal,skipped,unresolved,reroute_from,reroute_on}; notes{loop1,loop2,partial,gap}"
+            },
+            {
+              "n": 10,
+              "stage": "executor data fill + fab_guards",
+              "module": "host/assemble.py assemble_cards -> host/exec_cards.py _run_cards:138 / fill_one_card:105 -> ems_exec/serve/run.py run_card:66 | ems_exec/renderers.run_special; fab_guards last pass in ems_exec/executor/fill.py",
+              "log": "exec{card,ok[,why]} per card (exec_cards.py:183-189); blanks ride payload GAPS_KEY '_blank_gaps'"
+            },
+            {
+              "n": 11,
+              "stage": "verdict + serve",
+              "module": "host/enrich.py _enrich_card:125 -> validate/render_verdict.py compute:232; host/server.py:130 RESPONSE, host/multi_asset.py:84 RESPONSE_MULTI, _dump_response:181",
+              "log": "RESPONSE{page,cards,with_payload,frames,rendered,partial,blank,asset_pending,elapsed_ms}; RESPONSE_MULTI{assets,groups,cards,data_unavailable,elapsed_ms}; full response -> outputs/logs/response_<rid>.json"
+            }
+          ],
+          "log_files_per_run": {
+            "pipeline_<rid>.jsonl": "obs/stage.py:17 - one flat JSON object per line {ts: epoch float, stage: str, **fields}; no level/event keys",
+            "ai_<rid>.jsonl": "obs/ai_log.py:49 - every :8200 LLM call {ts ISO, run_id, url, request, response}",
+            "failures_<rid>.jsonl": "obs/failures.py:15 - {ts ISO, run_id, stage, card_id, group_id, reason, detail<=300}",
+            "response_<rid>.json": "host/server.py:189 - the full /api/run response persisted server-side",
+            "outputs/notes/<rid>.json": "obs/notes.py:21 - reflect notes {run_id, loop1:[{card_id,title,answerability,note}], loop2}"
+          },
+          "error_grep_vocabulary": {
+            "pipeline_jsonl": [
+              "\"ERROR\":",
+              "\"fail\": \"llm_timeout\"",
+              "\"fail\": \"llm_",
+              "\"fail\": \"morph rejected",
+              "\"fail\": \"reverted to default",
+              "failed pre-L2 data validation",
+              "kind=derived without fn",
+              "no default payload + empty exact_metadata",
+              "\"ok\": false",
+              "executor budget exceeded",
+              "\"kind\": \"data_unavailable\"",
+              "\"hard_fails\": [1-9]",
+              "\"honest_terminal\": true",
+              "\"skipped\": \"below_min_gap_frac\"",
+              "\"skipped\": \"no_data_asset\"",
+              "\"unresolved\": true"
+            ],
+            "failures_jsonl_reasons": [
+              "stage_error",
+              "card_fail",
+              "exec_fail",
+              "fill_gap",
+              "layer-exception",
+              "timeout",
+              "truncated",
+              "transport",
+              "no_json",
+              "parse",
+              "over_budget",
+              "http_<code>",
+              "unbound_by_emit",
+              "no_reading",
+              "unstripped_seed",
+              "column_absent",
+              "structurally_null",
+              "epoch_ms_leak",
+              "derivation_unbound",
+              "no_data",
+              "no_asset_3d",
+              "null_column_reading",
+              "no_source_value",
+              "quantity_mismatch",
+              "swap_dup",
+              "data_unavailable"
+            ],
+            "response_fields": [
+              "cards[].payload_error (l2.exception|failure.detail; enrich.py:170)",
+              "cards[].render.verdict|reason|gaps[{slot,cause,metric,column,fn,reason}]|leaf_stats{real,data,undeclared}",
+              "cards[].conforms",
+              "cards[].fill_ok/fill_why",
+              "cards[].frame_status.why",
+              "cards[].data_note + l2_answerability",
+              "errors{layer1a,layer1b,validation,layer2,reroute,preflight_reroute,payload_final}",
+              "notes.loop1/loop2",
+              "asset_pending",
+              "asset_no_data",
+              "validation_blocked",
+              "data_unavailable + degrade{kind,layer,detail,reason}",
+              "top-level ok/error on 500"
+            ]
+          },
+          "l2_failure_envelope": "layer2/build.py ~:672 failure = {stage: 'llm'|'emit', reason: 'llm_<kind>'|first failure string, detail: '; '.join(failures[:6])}; conforms=False marks a HARD fail (reflect trigger under default reflect.reroute_on='hard_failure')",
+          "verdict_rules": "validate/render_verdict.py:261-271: skeleton_blank or (payload_error and n_real==0) -> honest_blank; n_data==0 -> render if has_payload else honest_blank; n_real==0 -> honest_blank; n_real==n_data -> render; else partial. answerability: render->full, partial->partial, honest_blank->none",
+          "llm_stage_names_for_timeout_knobs": [
+            "route",
+            "stories",
+            "asset_resolve",
+            "basket",
+            "l2_emit"
+          ],
+          "knobs": {
+            "layer2.emit_concurrency": 4,
+            "llm.timeout": 120,
+            "llm.timeout.l2_emit": 150,
+            "llm.no_retry_kinds": "timeout,truncated",
+            "reflect.reroute_on": "hard_failure",
+            "reflect.min_gap_frac": 0.34,
+            "ems_exec.card_budget_s": 45
+          }
+        },
+        "gotchas": [
+          "verdict='render' does NOT mean has-data: render_verdict.py:263-264 verdicts a zero-data-leaf (chrome-only / all-scaffold) card 'render' with n_real=0; validation/response.py:5 says verbatim 'render.verdict ... is OPTIMISTIC - per-leaf truth is render.leaf_stats {real,data}'. The RESPONSE stage 'rendered' count (server.py:132) inherits this.",
+          "The jsonl schema is NOT uniform: no 'event'/'level' keys; card id is 'id' on L2.card lines but 'card' on exec lines; ts is epoch-float in pipeline_*.jsonl but ISO string in failures_*/ai_*.jsonl.",
+          "Verdicts are telemetry, never render gates (per-leaf degradation mandate) - a card with verdict=honest_blank still mounts its real CMD_V2 component with nulled leaves.",
+          "L2.card 'fail' non-null does NOT always mean conforms=False in older logs; the authoritative HARD-fail signal is conforms=false (reflect triggers only on that under the default policy).",
+          "An honest answerability='none' gap (conforms=true, per-leaf reasons) is a VALID TERMINAL - reflect logs honest_terminal=true and keeps the page; do not classify it as a defect.",
+          "payload_error can be a stale telemetry mislabel family that was partitioned out (layer2/build.py comments around :503-538): per-leaf field self-heals are di._per_leaf_gaps + data_note, NOT payload_error; only card-structural issues set it now.",
+          "failures_<rid>.jsonl is dominated by stage='reason' per-leaf blank-reason records (108k+) mirrored from config/reason_templates.py - filter by stage in ('llm','layer2','layer1b','reflect','L2.card','validate','validation') for real defects.",
+          "llm timeouts NEVER retry (llm.no_retry_kinds default 'timeout,truncated') - a retried deterministic failure just doubles the hang; the card degrades to fail='llm_timeout', conforms=false, metadata-frame render.",
+          "Python tracebacks only reach host stderr (traceback.print_exc on 500s); the jsonl and response carry stringified '<Type>: <msg>' only.",
+          "Multi-asset runs mint per-class run_ids via make_run_id(prompt, salt='class:<cls>') plus a parent rid for RESPONSE_MULTI - one user prompt can produce several pipeline_<rid>.jsonl files.",
+          "A single pipeline_<rid>.jsonl can contain MULTIPLE runs of the same prompt (run_id is prompt-derived, files are opened append) - e.g. pipeline_r_1dee11245e.jsonl holds 3 separate PROMPT->RESPONSE sequences; split on PROMPT lines when replaying.",
+          "obs/stage.py and obs/failures.py never raise (all writes wrapped in try/except pass) - a full disk or bad field silently drops telemetry, so absence of a line is not proof a stage did not run."
+        ]
+      },
+      "db-config": {
+        "summary": "V48 connects to TWO Postgres endpoints through ONE wiring module, config/databases.py (\"THE SINGLE PLACE for DB wiring — nothing else hard-codes a host/port/db/schema\"). The live logging DB is target_version1, schema neuract, reached over the archbox SSH tunnel at 127.0.0.1:5433 (PG_HOST/PG_PORT/PG_DB/PG_SCHEMA/PG_USER/PG_PASSWORD env vars, defaults 127.0.0.1/5433/target_version1/neuract/postgres/empty-password, databases.py:10-15). The catalog DB cmd_catalog is LOCAL Postgres 127.0.0.1:5432 (CATALOG_HOST/CATALOG_PORT env, databases.py:68-69; CMD_CATALOG_DB env -> \"cmd_catalog\", line 46). Routing is per-database: conn_env(db) (databases.py:73) returns PGHOST/PGPORT/PGUSER/PGPASSWORD + PGCONNECT_TIMEOUT=5 (env PG_CONNECT_TIMEOUT), picking the tunnel for _TUNNEL_DBS = {target_version1, meta_data_version1, target_version1_meta} (line 70) and the local endpoint for everything else. A new module should reuse: data/db_client.py q(db, sql) (line 11 — subprocess `psql --csv`, raises RuntimeError on non-zero, never silently empty) or pg_connect(db) (line 24 — routed psycopg2 connection for cursor/pandas use). For neuract METADATA reads use registries/neuract/_db.py rows(sql, params=None)/dicts(...)/one(...) (lines 50/68/87 — pooled, read-only, returns [] on any failure); for gic_* TIME-SERIES use ems_exec/data/neuract.py (latest/window/series/bucketed..., lines 145+). Both neuract doors take their DSN from config/neuract_dsn.py, itself cfg()-knob-driven (neuract.host/port/db/schema/user/password app_config keys, code-default = databases.py constants); dsn() (line 52) yields the user-locked target postgresql://postgres@127.0.0.1:5433/target_version1?options=-csearch_path%3Dneuract.\n\nThe knob system is config/app_config.py cfg(key, default) (line 42): _load() (line 18, @lru_cache(maxsize=1)) reads `SELECT key, value, data_type FROM app_config` on cmd_catalog once per process; _cast() converts by declared data_type (number/int/bool/json, else text); a missing key or ANY DB error falls back to the caller's default (fail-open, never raises, never blocks import). reload() (line 51) clears the process cache after seeding. New knobs are seeded via db/seed_<topic>.sql files: idempotent `INSERT INTO app_config (key, value, data_type, section[, note]) VALUES (...) ON CONFLICT (key) DO UPDATE SET value=EXCLUDED.value...`, each with a header comment stating WHY + \"Idempotent. Run: psql -h localhost -p 5432 -d cmd_catalog -f db/seed_*.sql\" (see db/seed_cache_ttl.sql, db/seed_llm_emit_timeout.sql). The db/ dir (84 files) also holds fix_*.sql (data repairs), *_schema.sql (DDL), and Python appliers exist in tools/ (tools/seed_quantity_vocab.py regenerates quantity.* app_config rows from code defaults via pg_connect — because cfg() REPLACES, it does not merge). app_config columns: key, value, data_type, section, note, updated_at.\n\ndata/ttl_cache.py defines TTLCache(dict) (line 31): a byte-for-byte drop-in for a plain {} whose `k in cache` turns False once an entry is older than the TTL; __setitem__ restamps; no deletion on expiry (avoids check-then-get KeyError under the threading server); TTL = cfg('cache.resolution_ttl_s', 120) read lazily + fail-open (lines 19-28). It bounds the lifetime of every per-process resolution cache riding the flaky :5433 tunnel so a flap self-heals within the TTL. The complementary never-cache-empty pattern: data/lt_panels/panel_members.py returns an orphan result WITHOUT caching when the first edge read is empty (lines 61-67) and caches ONLY a non-empty members resolution (lines 117-122); data/equipment/db.py never caches a failed read (returns {} for THIS call, retries next call, lines 32-51). TTLCache sites: data/registry/lt_mfm.py:33 (_CACHE for _home decision + rows/edges), data/lt_panels/panel_members.py:34 (_MEMBERS_CACHE), layer1b/resolve/has_data.py:16-17 (_CACHE/_VAL_CACHE).\n\nCONNECTIVITY NOW (verified 2026-07-12 from this machine): pg_isready reports BOTH endpoints accepting connections — 127.0.0.1:5432 (local) and 127.0.0.1:5433 (tunnel). Working DSNs verified by live read-only queries: `postgresql://postgres@127.0.0.1:5432/cmd_catalog` -> card_handling=145 rows, app_config=309 rows, card_payloads=155 rows, registry_lt_mfm=320 rows, 53 public tables + 22 equipment-schema tables, zero views (page_catalog_cards is a v47-only view; v48 Python never references it — v48 uses the page_layout_cards TABLE). `postgresql://postgres@127.0.0.1:5433/target_version1?options=-csearch_path%3Dneuract` -> 373 tables in schema neuract, 302 gic_* time-series tables, lt_mfm=320, lt_mfm_outgoing=93 edges, device_mappings=22306.",
+        "key_files": [
+          {
+            "path": "/home/rohith/desktop/BFI/backend/layer2/pipeline_v48/config/databases.py",
+            "purpose": "THE single DB-wiring module: PG_* env/defaults (tunnel 127.0.0.1:5433 target_version1/neuract), CATALOG_HOST/PORT (local :5432 cmd_catalog), conn_env(db) per-db routing via _TUNNEL_DBS, db_link()/django_db() for ems_backend"
+          },
+          {
+            "path": "/home/rohith/desktop/BFI/backend/layer2/pipeline_v48/data/db_client.py",
+            "purpose": "The two reusable connection helpers: q(db, sql) at line 11 (subprocess psql --csv, raises on error) and pg_connect(db) at line 24 (routed psycopg2 connection, connect_timeout fail-fast)"
+          },
+          {
+            "path": "/home/rohith/desktop/BFI/backend/layer2/pipeline_v48/config/app_config.py",
+            "purpose": "cfg(key, default) knob system (line 42): lru_cache'd read of cmd_catalog.app_config, cast by data_type, fail-open to code default; reload() at line 51"
+          },
+          {
+            "path": "/home/rohith/desktop/BFI/backend/layer2/pipeline_v48/config/neuract_dsn.py",
+            "purpose": "DB-driven neuract DSN accessor: host()/port()/dbname()/schema()/user()/password()/ts_col()/ts_cast() each a cfg('neuract.*') knob with databases.py code default; dsn() line 52, conn_kwargs() line 60"
+          },
+          {
+            "path": "/home/rohith/desktop/BFI/backend/layer2/pipeline_v48/data/ttl_cache.py",
+            "purpose": "TTLCache(dict) drop-in with per-entry expiry; TTL from cfg('cache.resolution_ttl_s', 120), lazy + fail-open; the poison-permanent-fix for tunnel-flap cache poisoning"
+          },
+          {
+            "path": "/home/rohith/desktop/BFI/backend/layer2/pipeline_v48/data/lt_panels/panel_members.py",
+            "purpose": "panel_members(mfm_id, meaningful=False) — the single panel fan-out resolver; never-cache-empty guards at lines 61-67 and 117-122; _MEMBERS_CACHE TTLCache at line 34"
+          },
+          {
+            "path": "/home/rohith/desktop/BFI/backend/layer2/pipeline_v48/data/registry/lt_mfm.py",
+            "purpose": "Canonical asset-registry reader, MIRROR-FIRST: cmd_catalog registry_* tables, live-neuract fallback via _home() (line 36); registry_rows()/parent_ids()/outgoing_edges(); TTLCache _CACHE line 33"
+          },
+          {
+            "path": "/home/rohith/desktop/BFI/backend/layer2/pipeline_v48/data/equipment/db.py",
+            "purpose": "The ONE door to the local cmd_catalog `equipment` schema: eq_q(sql) line 27, mfm_by_table() line 32; failures never cached"
+          },
+          {
+            "path": "/home/rohith/desktop/BFI/backend/layer2/pipeline_v48/registries/neuract/_db.py",
+            "purpose": "Pooled READ-ONLY psycopg2 door for neuract METADATA tables: rows(sql, params=None) line 50, dicts() line 68, one() line 87, present_columns()/table_exists(); returns [] on any failure"
+          },
+          {
+            "path": "/home/rohith/desktop/BFI/backend/layer2/pipeline_v48/ems_exec/data/neuract.py",
+            "purpose": "The ONLY door to live gic_* time-series: latest(table, columns) line 145, window() 183, series() 221, bucketed() 290, bucketed_edges() 387, bucketed_delta() 416; pooled, honest-degrade, column-introspecting"
+          },
+          {
+            "path": "/home/rohith/desktop/BFI/backend/layer2/pipeline_v48/layer1b/resolve/has_data.py",
+            "purpose": "tables_with_data / tables_with_values / value_counts — batched has-data gates over neuract gic_* tables via q(); TTLCache'd"
+          },
+          {
+            "path": "/home/rohith/desktop/BFI/backend/layer2/pipeline_v48/db/seed_cache_ttl.sql",
+            "purpose": "Canonical example of the seed SQL convention: header WHY + 'Idempotent. Run: psql -h localhost -p 5432 -d cmd_catalog -f db/seed_*.sql' + INSERT INTO app_config ... ON CONFLICT (key) DO UPDATE"
+          },
+          {
+            "path": "/home/rohith/desktop/BFI/backend/layer2/pipeline_v48/tools/seed_quantity_vocab.py",
+            "purpose": "Python seed applier pattern (code-default -> app_config UPSERT via pg_connect, --dry supported); needed because cfg() replaces rather than merges"
+          },
+          {
+            "path": "/home/rohith/desktop/BFI/backend/layer2/pipeline_v48/scripts/sync_neuract_registry.py",
+            "purpose": "Builds the cmd_catalog registry_* mirror tables from live neuract (lt_mfm, edges, asset, device_mappings) so request-time registry reads never ride the :5433 tunnel"
+          }
+        ],
+        "details": {
+          "connection_endpoints": {
+            "neuract_live_data": {
+              "env_vars": "PG_HOST/PG_PORT/PG_DB/PG_SCHEMA/PG_USER/PG_PASSWORD",
+              "defaults": "127.0.0.1:5433 / target_version1 / schema neuract / postgres / empty password (localhost trust)",
+              "nature": "archbox SSH tunnel on localhost:5433 — YES it is the :5433 tunnel",
+              "working_dsn_verified": "postgresql://postgres@127.0.0.1:5433/target_version1?options=-csearch_path%3Dneuract"
+            },
+            "cmd_catalog": {
+              "env_vars": "CATALOG_HOST/CATALOG_PORT/CMD_CATALOG_DB",
+              "defaults": "127.0.0.1:5432 / cmd_catalog / user postgres (PSQL_USER=PG_USER)",
+              "nature": "LOCAL Postgres, not tunneled",
+              "working_dsn_verified": "postgresql://postgres@127.0.0.1:5432/cmd_catalog"
+            },
+            "routing": "conn_env(db) at config/databases.py:73 — db in _TUNNEL_DBS {target_version1, meta_data_version1, target_version1_meta} -> PG_HOST:PG_PORT, else CATALOG_HOST:CATALOG_PORT; always adds PGCONNECT_TIMEOUT (default 5s, env PG_CONNECT_TIMEOUT) so a half-dead tunnel fails fast instead of ~2min TCP hang"
+          },
+          "helper_signatures": {
+            "q": "data/db_client.py:11 — q(db, sql) -> list[list[str]] (csv rows); subprocess ['psql','-U',PSQL_USER,'-d',db,'--csv','-t','-c',sql] with env {**os.environ, PGCLIENTENCODING:'UTF8', **conn_env(db)}; raises RuntimeError on non-zero",
+            "pg_connect": "data/db_client.py:24 — pg_connect(db) -> psycopg2 connection; psycopg2.connect(dbname=db, user=ce['PGUSER'], host=ce['PGHOST'], port=ce['PGPORT'], password=ce['PGPASSWORD'] or None, connect_timeout=int(ce['PGCONNECT_TIMEOUT']))",
+            "neuract_metadata": "registries/neuract/_db.py — rows(sql, params=None) :50 / dicts(sql, params=None) :68 / one(sql, params=None) :87; pooled per frozen conn_kwargs, set_session(readonly=True), [] on any failure",
+            "neuract_timeseries": "ems_exec/data/neuract.py — latest(table, columns) :145, latest_ts(table) :165, window(table, columns, start, end) :183, series(table, columns, start, end, sampling='hourly') :221, bucketed(table, col, start, end, sampling) :290, edge_count :355, bucketed_edges :387, bucketed_delta :416",
+            "equipment_schema": "data/equipment/db.py — eq_q(sql) :27 (= q(CMD_CATALOG, sql)); SINGLE-DOOR RULE: no 'FROM equipment.' SQL outside data/equipment/*.py + db/seed_equipment_*.sql, enforced by tests/test_equipment_disposition.py"
+          },
+          "cfg_system": {
+            "module": "config/app_config.py",
+            "function": "cfg(key, default) at line 42",
+            "resolution": "cmd_catalog.app_config row (cast by its data_type: number->float, int, bool, json, else text) -> else the passed code default; _load() lru_cache(1) per process; ANY DB error -> {} -> default (fail-open); reload() clears cache",
+            "app_config_columns": "key text PK, value text, data_type text, section text, note text, updated_at timestamptz",
+            "row_count_now": 309,
+            "seed_convention": "db/seed_<topic>.sql: comment header (why + mirror-of note + 'Idempotent. Run: psql -h localhost -p 5432 -d cmd_catalog -f db/seed_*.sql'), then INSERT INTO app_config (key, value, data_type, section[, note]) VALUES ... ON CONFLICT (key) DO UPDATE SET value=EXCLUDED.value[, ...]; siblings: fix_*.sql (data repairs), *_schema.sql (DDL), tools/*.py appliers for code-default-sourced vocab"
+          },
+          "ttl_cache": {
+            "file": "data/ttl_cache.py",
+            "class": "TTLCache(dict), __init__(self, ttl=None) — ttl None -> DB knob cache.resolution_ttl_s (default 120s), int pins it",
+            "semantics": "'k in cache' False once entry age >= TTL; __setitem__ restamps; entries never deleted on expiry (overwritten in place); cache path never raises",
+            "never_cache_empty_sites": "panel_members.py:61-67 (orphan/flap result returned uncached) and :117-122 (cache only non-empty members); equipment/db.py failed reads return {} uncached; belt-and-suspenders with the TTL"
+          },
+          "cmd_catalog_tables_referenced": {
+            "app_config": "cfg() knob store (key/value/data_type)",
+            "card_payloads": "CMD_V2 Storybook default payloads L2 morphs + byte-matches (155 rows)",
+            "card_handling": "116+ cards x pages handling class: single_asset/panel_aggregate/topology_sld/asset_3d/narrative/nav (145 rows)",
+            "cards / pages / page_specs / page_control / routable_pages": "card + page catalog and routing structure",
+            "page_layout_cards": "page->card grid layout (the v48 replacement for v47's page_catalog_cards VIEW — that view does NOT exist in v48; zero Python refs, zero views in the DB)",
+            "card_grid_size / card_render_map / card_rendering / components / payload_shapes / card_component_usage": "render/layout metadata",
+            "card_data_recipe / card_fill_recipe / endpoint_recipe_map / endpoint_policy / derivation_binding / derived_metrics": "data-fill recipes + derivation expressions",
+            "card_feasibility / data_quality_policy / band_policy / event_threshold / limit_override / live_window_policy / metric_class / schema_slot_map / reason_template": "feasibility gates, quality/band/event policy, slot mapping, degrade reasons",
+            "card_link / card_combo / card_combo_member / card_contract_binding / contract_capabilities / contract_components / card_controls": "cross-card sync + contracts",
+            "asset_nameplate / asset_class_default / nameplate_config / asset_3d_registry / viewer_policy / pcc_panel_alias": "asset nameplates, 3D viewer policy, panel aliases",
+            "render_guarantee_matrix / render_guarantee_page_phrase": "render-guarantee layer config",
+            "registry_lt_mfm / registry_lt_mfm_incoming / registry_lt_mfm_outgoing / registry_lt_mfm_type / registry_asset / registry_asset_type / registry_device_mappings / registry_sync_meta": "LOCAL mirror of the canonical neuract registry (sync_neuract_registry.py) so request-time reads skip the tunnel; registry_lt_mfm=320 rows",
+            "equipment_schema_22_tables": "equipment.mfm/equipment/feeder/breaker/nameplate/rtm_threshold/equipment_config/asset_meter/asset_threshold/bms_meter/bms_meter_limit/core_assettype/core_paneltype/data_source + kitpreview_{app_kv,asset_rules,cat_asset,cat_group,combo,preset,version,viewer_rule} — the CMD_V2 equipment import, read only through data/equipment/db.py"
+          },
+          "neuract_tables_referenced": {
+            "gic_*": "302 per-meter time-series tables (~70 electrical cols, timestamp_utc stored as TEXT -> ::timestamptz cast, NO panel_id); read by ems_exec/data/neuract.py + has_data.py",
+            "lt_mfm": "canonical 320-row meter registry (id = THE canonical id-space; name, table_name, mfm_type_id, load_group)",
+            "lt_mfm_outgoing": "panel->downstream-member feed edges (93 rows; fan-out direction)",
+            "lt_mfm_incoming": "exact mirror of outgoing (used only for upstream/SLD source rendering)",
+            "lt_mfm_type": "meter type codes (mis-types DG MFMs as lt_panel — asset_type wins)",
+            "asset / asset_type": "asset-table-only meters (pqm_*) mapped to ASSET_ID_BASE(100000)+asset.id",
+            "device_mappings": "table_name wiring signal (22306 rows; 0 rows for a meter = never_wired)",
+            "lt_parameter + lt_config_field / lt_config_value": "nameplate rating/limit params per meter (lt_config_field=14 rows; lt_parameter/lt_config_value mostly empty -> honest-degrade)",
+            "asset_3d_model / lt_asset_3d": "3D model registry (currently empty, honest-degrade)",
+            "note": "the old CMD_V2 'lt_panels' per-meter tables are NOT read by v48 — data/lt_panels/ is only the fan-out module's package name; v48 reads gic_* directly"
+          },
+          "connectivity_now_2026_07_12": {
+            "pg_isready_5432": "127.0.0.1:5432 - accepting connections (exit 0)",
+            "pg_isready_5433": "127.0.0.1:5433 - accepting connections (exit 0)",
+            "cmd_catalog_live_counts": "card_handling=145, app_config=309, card_payloads=155, registry_lt_mfm=320; 53 public tables + 22 equipment tables, 0 views",
+            "neuract_live_counts": "373 tables in schema neuract, 302 gic_* tables, lt_mfm=320, lt_mfm_outgoing=93, lt_config_field=14, device_mappings=22306",
+            "verdict": "BOTH DBs reachable right now; both exact DSNs answered read-only queries"
+          }
+        },
+        "gotchas": [
+          "A bare psycopg2.connect(dbname=...) defaults to the local socket and MISSES the tunneled data/registry DBs — always go through conn_env(db)/pg_connect(db) (warning encoded in data/db_client.py:24-27 docstring)",
+          "cfg() REPLACES, it does not merge: a DB app_config row fully overrides the code-default dict, so JSON-vocab knobs must be re-seeded whenever the code default changes (tools/seed_quantity_vocab.py exists exactly for this drift)",
+          "cfg() is process-cached via lru_cache(1): after seeding/editing app_config in a running process you must call config.app_config.reload(); long-running servers otherwise only see new knobs on restart",
+          "page_catalog_cards is a v47 artifact — it does NOT exist in v48 (no Python reference, no view in the live cmd_catalog); v48 uses the page_layout_cards table",
+          "equipment.mfm.id is a DIFFERENT id space from canonical lt_mfm.id — the only safe bridge is table_name, and duplicated table_names (dual-view twins) are un-bridgeable per-row (data/equipment/bridge.py)",
+          "Fan-out topology must use lt_mfm_outgoing (FROM side) only; lt_mfm_incoming is a mirror meant for upstream/SLD rendering — misreading direction inverts parent/child (TOPO-02 in panel_members.py)",
+          "neuract gic_* timestamps are ISO-8601 TEXT, not timestamptz — every time comparison needs the ::timestamptz cast (DATA_TS_CAST / neuract_dsn.ts_cast()); the ts column is timestamp_utc, NOT ts",
+          "Never cache an empty resolution from a tunneled read: a :5433 flap once poisoned panel_aggregate cards blank for the whole 8h process life; the fix is never-cache-empty + TTLCache, and new cache sites must follow both patterns",
+          "PGCONNECT_TIMEOUT only bounds the CONNECT phase; query runtime is unlimited — a reachable-but-slow tunnel can still stall long queries",
+          "q() runs psql as a subprocess and returns all-text CSV rows; '' vs None must be normalized by callers (see data/equipment/db.py), and booleans arrive as 't'/'f' strings (see lt_mfm.py _bool)",
+          "The registry mirror decision (_home() in data/registry/lt_mfm.py) is itself TTL-cached — if you drop/rebuild registry_* tables the routing self-corrects only after cache.resolution_ttl_s (120s) or a restart",
+          "Both DBs are reachable right now, but memory notes the :5433 tunnel is historically flaky (ExitOnForwardFailure fix) — treat tunnel reachability as transient, not guaranteed"
+        ]
+      },
+      "generation-data": {
+        "summary": "Both DBs are reachable and were queried read-only. Connection wiring lives in /home/rohith/desktop/BFI/backend/layer2/pipeline_v48/config/databases.py: catalog DB `cmd_catalog` at 127.0.0.1:5432 (user postgres, no password) and the live data/registry DB `target_version1` schema `neuract` at 127.0.0.1:5433 (archbox tunnel). Access helpers: data/db_client.py q(db,sql) / pg_connect(db), which route per-db via conn_env().\n\nTHE HEADLINE: V48 already contains a working automatic prompt generator — validation/corpus/ (universe.py + templates.py + generate.py + mutate.py). universe() reads cmd_catalog ground truth (registry_lt_mfm 320 assets → 14 name-classes, pcc_panel_alias 28 aliases, page_specs 49 live pages, cards 113, card_handling) and generate() deterministically (seed=48, sha1 case ids) permutes it against templates.py's WORKFLOW TAXONOMY into 940 JSONL cases today, each with an expected outcome for judging: single_asset 400, historical 250, mutated 60, panel_aggregate 56, ambiguous 36, alias 28, narrative 20, compare_2/3/5/mixed 17/13/6/2, knowledge 10, mixed 10, sld 8, view_3d 8, sankey 6, off_domain 6, invalid 4. Class-appropriate metric pairing is encoded in templates.METRICS (e.g. 'fuel efficiency'→DG only, 'thermal oil'→Compressor/Dryer), plus TIME_WINDOWS (8), CONCEPTS (10 knowledge Qs), OFF_DOMAIN (6), INVALID (4). validation/runner.py executes cases against /api/run. A second DB-editable prompt matrix exists: cmd_catalog.render_guarantee_matrix (15 rows: tag, asset_selector like 'name~ups-01&has_data', page_glob, time_window, phrasing template '{page} {a}') + render_guarantee_page_phrase (7 page-seg→NL verb phrase), consumed by tests/test_render_guarantee_50.py via config/prompt_matrix.py. Third corpora: copilot/copilot_index.sqlite entities table (440 question, 325 metric w/ unit, 210 asset, 145 card, 75 page, 12 area, 18 time entities with keywords+popularity) and tools/asset_sweep.py's 9 pinned asset-dashboard prompts (DG-1 id 2, Transformer-01 id 171, GIC-01-N3-UPS-01 id 11).\n\nGround-truth inventories for generation: (1) cmd_catalog.card_handling — 145 cards, 7 handling classes: single_asset_series 52, single_asset_derived 37, panel_aggregate 24, asset_3d 23, narrative_ai 4, nav_index 3, topology_sld 2; columns card_id/page_key/title/primary_component/handling_class/resolver_scope/payload_family/backend_strategy/data_sources/verified. (2) Pages — routable_pages has exactly the 18 enabled page_keys (4 DG deep-tabs, 4 feeder, 5 panel-overview, 2 transformer, 3 UPS); card_handling spans 53 page_keys (incl. BMS + legacy areas); pages table = 12 legacy areas; page_specs = the live-status page list (49 used by the corpus). (3) Assets — neuract.lt_mfm 320 rows (id, name, table_name, db_link, panel_id, mfm_type_id, role, rated_capacity_kva), types: LT Panel 257 / UPS 34 / APFC 15 / Transformer 14; mirrored locally as cmd_catalog.registry_lt_mfm (+table_exists: 306 wired) so prompt gen never needs the flaky :5433. PCC-Panel-1..4 = mfm ids 317/318/319/320. Confirmed homonyms: Solar Incomer-1 ×4 (ids 17,46,73,107), Solar Incomer-2 ×4 (19,49,75,97), HHF-01/HHF-02 repeated across GIC blocks, Transformer-01..04 duplicated (GIC-15 pair 164-168 vs [Secure Elite300] pair 171-174). (4) Metric vocab — cmd_catalog.app_config JSON rows quantity.name_classes (125 name-token→class entries: voltage/volt, current/amps, power/kw/kva/kvar/demand, energy/kwh/consumption, frequency/hz, temperature/hotspot, lol/lolpct→lifetime …), quantity.unit_classes (49), quantity.semantic_families — seeded by tools/seed_quantity_vocab.py from layer2/quantity_class.py; plus metric_class (page_key→required_class, 14 rows) and derived_metrics (metric_key/label/sql_fragment/unit: active_mwh, vDev, vUnbalance, iUnbalance, secKwhPt …). (5) equipment schema — 22 tables (asset_meter, asset_threshold, bms_meter, bms_meter_limit, breaker, core_assettype, core_paneltype, data_source, equipment, equipment_config, feeder, kitpreview_* ×7, mfm, nameplate, rtm_threshold); equipment.equipment 182 rows keyed by slug (pcc-3b, dg-07, tx-standby, lam-8-1) with core_assettype = 15 classes (grid, dg, ups, solar, bms, chiller, ahu, csu, air_washer, air_washer_exhaust, air_compressor, air_dryer, vacuum_degasser, pressurization_unit, general_air_exhaust); equipment.mfm is the table_name bridge (303 rows wired).",
+        "key_files": [
+          {
+            "path": "/home/rohith/desktop/BFI/backend/layer2/pipeline_v48/config/databases.py",
+            "purpose": "Single source of DB wiring: cmd_catalog @127.0.0.1:5432, target_version1/neuract @127.0.0.1:5433 tunnel, conn_env() per-db routing"
+          },
+          {
+            "path": "/home/rohith/desktop/BFI/backend/layer2/pipeline_v48/data/db_client.py",
+            "purpose": "q(db,sql) psql CSV helper + pg_connect(db) psycopg2 — the read path prompt-gen code should reuse"
+          },
+          {
+            "path": "/home/rohith/desktop/BFI/backend/layer2/pipeline_v48/validation/corpus/universe.py",
+            "purpose": "Ground-truth universe reader: registry_lt_mfm→14 asset classes, unique_names(306)/homonym_tokens(30)/panel_aliases(28)/pages(49)/cards(113)"
+          },
+          {
+            "path": "/home/rohith/desktop/BFI/backend/layer2/pipeline_v48/validation/corpus/templates.py",
+            "purpose": "THE workflow taxonomy: 18 prompt categories with expected outcomes, class-gated METRICS map, TIME_WINDOWS, CONCEPTS, OFF_DOMAIN, INVALID"
+          },
+          {
+            "path": "/home/rohith/desktop/BFI/backend/layer2/pipeline_v48/validation/corpus/generate.py",
+            "purpose": "Deterministic corpus generator (seed=48, sha1 ids) — currently emits 940 cases {id, category, prompt, expect, meta}"
+          },
+          {
+            "path": "/home/rohith/desktop/BFI/backend/layer2/pipeline_v48/validation/runner.py",
+            "purpose": "Parallel prompt executor: runs corpus cases against /api/run"
+          },
+          {
+            "path": "/home/rohith/desktop/BFI/backend/layer2/pipeline_v48/tests/test_render_guarantee_50.py",
+            "purpose": "DB-driven 50-prompt matrix built from cmd_catalog.render_guarantee_matrix × live pages × registry names"
+          },
+          {
+            "path": "/home/rohith/desktop/BFI/backend/layer2/pipeline_v48/tools/asset_sweep.py",
+            "purpose": "9 pinned asset-dashboard prompts (page, prompt, asset_id): DG-1=2, Transformer-01=171, UPS-01=11"
+          },
+          {
+            "path": "/home/rohith/desktop/BFI/backend/layer2/pipeline_v48/tools/seed_quantity_vocab.py",
+            "purpose": "Seeds quantity.name_classes/unit_classes/semantic_families into cmd_catalog.app_config from layer2/quantity_class.py"
+          },
+          {
+            "path": "/home/rohith/desktop/BFI/backend/layer2/pipeline_v48/copilot/copilot_index.sqlite",
+            "purpose": "Copilot entity index: 440 questions, 325 metrics(+unit), 210 assets, 145 cards, 75 pages, 12 areas, 18 time entities"
+          },
+          {
+            "path": "/home/rohith/desktop/BFI/backend/layer2/pipeline_v48/copilot/starters.py",
+            "purpose": "LLM-generated starter commands from real asset listing (5 distinct intents: RT/trend/V&I/PQ/alarms)"
+          },
+          {
+            "path": "/home/rohith/desktop/BFI/backend/layer2/pipeline_v48/layer2/quantity_class.py",
+            "purpose": "Code-default quantity vocab dicts (_NAME_CLASSES_DEFAULT 125 keys, _UNIT_CLASSES_DEFAULT 49 keys)"
+          }
+        ],
+        "details": {
+          "db_connections": {
+            "cmd_catalog": "psql -U postgres -h 127.0.0.1 -p 5432 -d cmd_catalog (local, no password) — REACHABLE",
+            "neuract_data": "psql -U postgres -h 127.0.0.1 -p 5433 -d target_version1, schema neuract (archbox tunnel) — REACHABLE at query time",
+            "mirror": "cmd_catalog.registry_lt_mfm/registry_lt_mfm_type/registry_asset/... = :5432 mirror of neuract registry (scripts/sync_neuract_registry.py) — use for tunnel-independent prompt gen"
+          },
+          "card_handling": {
+            "table": "cmd_catalog.public.card_handling (145 rows, PK card_id)",
+            "columns": [
+              "card_id",
+              "page_key",
+              "title",
+              "primary_component",
+              "contract_component",
+              "handling_class",
+              "resolver_scope",
+              "payload_family",
+              "produced_by_v47",
+              "backend_strategy",
+              "source_selector",
+              "capacity_ref",
+              "node_id_namespace",
+              "data_sources",
+              "notes",
+              "verified",
+              "verify_note"
+            ],
+            "class_counts": {
+              "single_asset_series": 52,
+              "single_asset_derived": 37,
+              "panel_aggregate": 24,
+              "asset_3d": 23,
+              "narrative_ai": 4,
+              "nav_index": 3,
+              "topology_sld": 2
+            },
+            "sample_rows": [
+              [
+                1,
+                "Control & Metric Strip (Incoming/Outgoing/Panel Status/Critical/Warning)",
+                "panel-overview-shell/overview-sld-3d",
+                "panel_aggregate"
+              ],
+              [
+                2,
+                "Single-Line Diagram (Panel Schematic)",
+                "panel-overview-shell/overview-sld-3d",
+                "topology_sld"
+              ],
+              [
+                3,
+                "Individual-Asset Overview (3D core + phase strip + KPI column)",
+                "panel-overview-shell/overview-sld-3d",
+                "asset_3d"
+              ],
+              [
+                5,
+                "Real Time Monitoring (Feeder Heatmap)",
+                "panel-overview-shell/real-time-monitoring",
+                "panel_aggregate"
+              ],
+              [
+                6,
+                "Live Scrubber / Step Control",
+                "panel-overview-shell/real-time-monitoring",
+                "nav_index"
+              ],
+              [
+                8,
+                "AI Summary",
+                "panel-overview-shell/real-time-monitoring",
+                "narrative_ai"
+              ],
+              [
+                9,
+                "Total Feeder Consumption / Supply",
+                "panel-overview-shell/real-time-monitoring",
+                "panel_aggregate"
+              ],
+              [
+                10,
+                "Consumption Trend / Supply Trend",
+                "panel-overview-shell/real-time-monitoring",
+                "panel_aggregate"
+              ],
+              [
+                11,
+                "Quick Stats",
+                "panel-overview-shell/real-time-monitoring",
+                "panel_aggregate"
+              ],
+              [
+                12,
+                "Energy Input & Distribution",
+                "panel-overview-shell/energy-distribution",
+                "panel_aggregate"
+              ]
+            ]
+          },
+          "pages": {
+            "routable_pages_18_enabled": [
+              "diesel-generator-asset-dashboard/{engine-cooling,fuel-efficiency,operations-runtime,voltage-current}",
+              "individual-feeder-meter-shell/{energy-power,power-quality,real-time-monitoring,voltage-current}",
+              "panel-overview-shell/{energy-distribution,energy-power,harmonics-pq,real-time-monitoring,voltage-current}",
+              "transformer-asset-dashboard/{tap-rtcc,thermal-life}",
+              "ups-asset-dashboard/{battery-autonomy,output-load-capacity,source-transfer}"
+            ],
+            "card_counts_key_pages": {
+              "panel-overview-shell/real-time-monitoring": 8,
+              "individual-feeder-meter-shell/overview": 8,
+              "source-generation/source-generation": 8,
+              "panel-overview-shell/overview-sld-3d": 5,
+              "panel-overview-shell/harmonics-pq": 5,
+              "panel-overview-shell/voltage-current": 5,
+              "individual-feeder-meter-shell/energy-power": 4,
+              "individual-feeder-meter-shell/voltage-current": 4,
+              "diesel-generator-asset-dashboard/voltage-current": 4,
+              "diesel-generator-asset-dashboard/operations-runtime": 4,
+              "transformer-asset-dashboard/tap-rtcc": 4,
+              "transformer-asset-dashboard/thermal-life": 4,
+              "ups-asset-dashboard/battery-autonomy": 4,
+              "ups-asset-dashboard/output-load-capacity": 3,
+              "ups-asset-dashboard/source-transfer": 3
+            },
+            "other_tables": "pages = 12 legacy areas (Asset · DG, Panel · Real-Time, ...); page_specs(page_key,status) = live-page list the corpus uses (49); card_handling spans 53 distinct page_keys incl. ~25 BMS pages (bms/chiller/*, bms/air-compressor/*, chiller/condenser, ahu-csu/ahu-overview, ...)"
+          },
+          "assets": {
+            "source": "neuract.lt_mfm (320 rows) JOIN neuract.lt_mfm_type; local mirror cmd_catalog.registry_lt_mfm adds table_exists (306 wired) + never_wired",
+            "lt_mfm_columns": [
+              "id",
+              "name",
+              "db_link",
+              "table_name",
+              "panel_id",
+              "mfm_type_id",
+              "load_group",
+              "asset_3d_override_id",
+              "parent_series",
+              "rated_capacity_kva",
+              "role"
+            ],
+            "type_counts": {
+              "LT Panel": 257,
+              "UPS": 34,
+              "APFC": 15,
+              "Transformer": 14
+            },
+            "corpus_classes": {
+              "Load": 91,
+              "Panel": 69,
+              "UPS": 34,
+              "AHU": 26,
+              "Incomer": 20,
+              "APFCR": 15,
+              "DG": 14,
+              "Transformer": 14,
+              "Fan": 11,
+              "Chiller": 8,
+              "AirWasher": 6,
+              "Compressor": 5,
+              "Pump": 4,
+              "Feeder": 3
+            },
+            "sample_assets": [
+              "2 DG-1 MFM (LT Panel)",
+              "3 DG-2 MFM",
+              "4 DG-3 MFM",
+              "5 DG-4 MFM",
+              "6 DG-5 MFM",
+              "7 DG-6 MFM",
+              "8 GIC-01-N10-HHF-01 (TYPE-01) 300A +600KVAR",
+              "11 GIC-01-N3-UPS-01 CL:600KVA (UPS)",
+              "12 GIC-01-N4-UPS-02 CL:600KVA",
+              "13 GIC-01-N5-UPS-03 CL:600KVA",
+              "17 GIC-01-N9-Solar Incomer-1",
+              "18 GIC-02-N10-HHF-02 (TYPE-01)",
+              "19 GIC-02-N1-Solar Incomer-2",
+              "23 GIC-02-N5-UPS-04 CL:600KVA (0-row empty meter)",
+              "47 GIC-04-N5-HHF-01 (TYPE-02) 300A+750KVAR (APFCR-01) (APFC)",
+              "67 GIC-06-N3-UPS-07 CL:600 KVA",
+              "121 GIC-11-N11-20 kVA UPS",
+              "137 GIC-12-N3-UPS Supply Laminator-3.1 (LT Panel)",
+              "164 GIC-15-N10-PCC-01 (Transformer-01)",
+              "171 GIC-15-N3-PCC-01 (Transformer-01) [Secure Elite300]",
+              "263 GIC-24-N3-PCC-03 (Transformer-05)",
+              "306 GIC-29-N1-33KV Main Transformer-1 Feeder [Schneider PM8000]",
+              "309 GIC-30-N1-11KV Power Transformer Grid Inc [Secure Elite300]",
+              "310 GIC-30-N2-11KV HT DG Incomer",
+              "316 Main-HT-PLC",
+              "317 PCC-Panel-1",
+              "318 PCC-Panel-2",
+              "319 PCC-Panel-3",
+              "320 PCC-Panel-4",
+              "AUX-HSD-PLC (SCADA, no electrical cols)"
+            ],
+            "homonyms": {
+              "Solar Incomer-1": [
+                17,
+                46,
+                73,
+                107
+              ],
+              "Solar Incomer-2": [
+                19,
+                49,
+                75,
+                97
+              ],
+              "Transformer-01..04": "duplicated: GIC-15 pair (164,166,167,168) vs [Secure Elite300] pair (171,172,173,174)",
+              "HHF-01/HHF-02": "repeated across GIC-01/02/04/06/07/09 blocks (also norm-key collides per render_guarantee_matrix tag 'ambiguous')"
+            },
+            "pcc_panel_alias": "28 alias rows: pcc-1a/pcc-1b/pcc-1/pcc-panel-1→mfm 317, pcc-2*→318, pcc-3*→319, pcc-4*→320 (columns alias, pcc_slug, panel_mfm_id, panel_name, section, note)"
+          },
+          "metric_vocab": {
+            "home": "cmd_catalog.app_config JSON rows: quantity.name_classes (125 keys), quantity.unit_classes (49 keys), quantity.semantic_families — NOT a dedicated table",
+            "sample_name_keys": [
+              "voltage",
+              "volt",
+              "current",
+              "amps",
+              "ampere",
+              "power",
+              "kw",
+              "kva",
+              "kvar",
+              "watt",
+              "demand",
+              "kwh",
+              "kvah",
+              "kvarh",
+              "mwh",
+              "energy",
+              "consumption",
+              "frequency",
+              "hz",
+              "temperature",
+              "temp",
+              "hotspot",
+              "lol->lifetime",
+              "lolpct->lifetime"
+            ],
+            "sample_unit_keys": [
+              "v",
+              "kv",
+              "a",
+              "ka",
+              "kw",
+              "mw",
+              "kva",
+              "kvar",
+              "kwh",
+              "mwh",
+              "kvah",
+              "kvarh",
+              "hz",
+              "%",
+              "pct",
+              "score",
+              "/100",
+              "degc"
+            ],
+            "metric_class_table": "cmd_catalog.metric_class(page_key, required_class): energy-power->power+energy, real-time-monitoring->power+voltage+current, voltage-current->voltage+current, power-quality->thd, harmonics-pq->thd, overview-sld-3d->breaker (14 rows)",
+            "derived_metrics_table": "cmd_catalog.derived_metrics(metric_key, label, base_columns, sql_fragment, nameplate_refs, unit, exact, source): active_mwh, reactive_mvarh, apparentMvah, totalEnergyKwh, lossEnergyKwh, secKwhPt, vDev, vUnbalance, iUnbalance ...",
+            "copilot_metrics": "copilot_index.sqlite entities type='metric' 325 rows with display+unit: Active Energy Import kWh, Active Power Total kW, Battery Backup %, Battery Temperature degC, Battery Voltage V ..."
+          },
+          "equipment_schema": {
+            "tables_22": [
+              "asset_meter",
+              "asset_threshold",
+              "bms_meter",
+              "bms_meter_limit",
+              "breaker",
+              "core_assettype",
+              "core_paneltype",
+              "data_source",
+              "equipment",
+              "equipment_config",
+              "feeder",
+              "kitpreview_app_kv",
+              "kitpreview_asset_rules",
+              "kitpreview_cat_asset",
+              "kitpreview_cat_group",
+              "kitpreview_combo",
+              "kitpreview_preset",
+              "kitpreview_version",
+              "kitpreview_viewer_rule",
+              "mfm",
+              "nameplate",
+              "rtm_threshold"
+            ],
+            "equipment_table": "182 rows (id, name, key/slug, distribution_panel, metered, asset_type_id, panel_type_id) — e.g. PCC-3B/pcc-3b, DG-7/dg-07, 20 MVA Tx-Standby/tx-standby, UPS supply Lam-8.1/lam-8-1; asset_type set on only 34 rows (ups 16, dg 8, air_dryer 3, air_compressor 3, solar 1, grid 1, ...)",
+            "core_assettype_15": [
+              "grid",
+              "dg",
+              "ups",
+              "solar",
+              "bms",
+              "chiller",
+              "ahu",
+              "csu",
+              "air_washer",
+              "air_washer_exhaust",
+              "air_compressor",
+              "air_dryer",
+              "vacuum_degasser",
+              "pressurization_unit",
+              "general_air_exhaust"
+            ],
+            "mfm_bridge": "equipment.mfm (303 rows with table_name) — the table_name-only bridge to neuract gic_* data tables; also carries role, section, zone, rated_capacity_kva, energy_direction, energy/power_scale"
+          },
+          "prompt_generation_sources": {
+            "corpus_generator": "validation/corpus/generate.py — RUNS TODAY: 940 deterministic cases across 18 categories with expected outcomes (cards|picker|knowledge|refused|empty|compare:N)",
+            "category_budget": {
+              "single_asset": 400,
+              "historical": 250,
+              "mutated": 60,
+              "panel_aggregate": 56,
+              "ambiguous": 36,
+              "alias": 28,
+              "narrative": 20,
+              "compare_2": 17,
+              "compare_3": 13,
+              "knowledge": 10,
+              "mixed": 10,
+              "sld": 8,
+              "view_3d": 8,
+              "compare_5": 6,
+              "off_domain": 6,
+              "sankey": 6,
+              "invalid": 4,
+              "compare_mixed": 2
+            },
+            "render_guarantee_matrix": "cmd_catalog.render_guarantee_matrix 15 tags (ambiguous, apfcr, dg_duplicate, empty_meter, feeder_generic, history_30d/ytd, incomer, pcc_aggregate, populated_feeder, reversed_ct, scada, tm_ups ...) with asset_selector DSL (name~x, class=UPS&has_data, concept:harmonic-filter), page_glob, phrasing '{page} {a}'; + render_guarantee_page_phrase 7 NL phrases",
+            "copilot_questions": "copilot_index.sqlite 440 pre-authored NL questions tied to cards (e.g. 'Which feeder, in which section, is running hot right now and on which metric?')",
+            "asset_sweep_9": "tools/asset_sweep.py PROMPTS: (page, prompt, pinned mfm_id) for DG-1(2)/Transformer-01(171)/UPS-01(11) across the 9 asset deep-tab pages",
+            "time_windows": [
+              "today",
+              "yesterday",
+              "over the last hour",
+              "over the last 30 minutes",
+              "over the last 7 days",
+              "over the last 30 days",
+              "this month",
+              "this week"
+            ]
+          }
+        },
+        "gotchas": [
+          "Page-key spaces are inconsistent: pages.area = 12 legacy display areas ('Asset · DG'), card_handling.page_key = 53 slugs (mixing legacy areas + real slugs), routable_pages = the 18 ENABLED pipeline pages, page_specs status='live' = what the corpus generator uses (49). There is NO page_catalog_cards view in v48 cmd_catalog (that was v47). Pick routable_pages for the 18-page acceptance surface, page_specs for full coverage.",
+          "PCC panel ids per live DB: PCC-Panel-1=317, 2=318, 3=319, 4=320 (project memory notes saying 318/319/320/321 are off by one vs current DB). pcc_panel_alias maps pcc-1a/pcc-1/pcc-panel-1 etc. to these ids; PCC-Panel-4 (320) is genuinely data-empty per memory.",
+          "validation/corpus/universe.py homonym_tokens is currently degenerate: the unit-token regex matches the 'GIC-N' prefix so all 30 homonym tokens are GIC-1..GIC-30, not real homonyms (Solar Incomer-1 x4, HHF-01/02, Transformer-01 twice). Ambiguity prompt generation should derive homonyms from lt_mfm name suffix grouping (SQL regexp_replace shown works) or fix the regex.",
+          "Quantity vocab is NOT a table — it is 3 JSON rows in cmd_catalog.app_config (quantity.name_classes/unit_classes/semantic_families); cfg() REPLACES not merges, so read via app_config, and layer2/quantity_class.py holds the code defaults.",
+          "Use cmd_catalog.registry_lt_mfm (:5432 mirror, has table_exists flag; 306/320 wired) for prompt generation instead of neuract.lt_mfm so generation survives :5433 tunnel flaps — this is exactly what validation/corpus/universe.py and test_render_guarantee_50.py already do (name-hint fallback).",
+          "equipment.equipment.asset_type_id is NULL on 148/182 rows — class coverage there is partial; the corpus's table-name classifier (_NAME_CLASS in universe.py) is the more complete class signal.",
+          "Some assets are deliberate negative-prompt material: GIC-02-N5-UPS-04 (0-row empty meter -> honest blank), AUX-HSD-PLC (SCADA, no electrical columns -> class-gate blank), dg_N_mfm vs empty gic_28_*_jk duplicates — these are encoded as render_guarantee_matrix tags and should stay in any generated corpus.",
+          "psql to :5433 does not accept 'SET search_path=...; \\d x' in -c; qualify as neuract.lt_mfm or use information_schema."
+        ]
+      },
+      "harnesses-tests": {
+        "summary": "V48 already has three tiers of prompt-testing infrastructure. Tier 1 — live fire harnesses that POST prompts to the host (:8770 /api/run): tools/cert_fire18.sh (18 pages, waves of 3 background curls, dumps /tmp/cert18/cert_<nn>.json + routed/timing TSV), tools/campaign_fire_extras.sh (cross-class/multi-asset/knowledge families, sequential, /tmp/campaign/*.json + manifest.tsv), the scratchpad deep-sweep harness (deep_sweep.py/deep_sweep2.py — NOT in repo, lives in a v47-session scratchpad; 20/32 prompts, ThreadPoolExecutor max_workers=2, per-leaf seed-diff REAL/EMPTY + RENDERS_BUT_NO_DATA flag), and tools/asset_sweep.py (9 pinned prompts, in-process run_pipeline, cross-quantity proxy-leak audit). Tier 2 — offline replay/AB tools over logged corpora: tools/morphmap_live_ab.py (diffs two saved response dumps of the same prompts: leaf_stats real counts, payload byte-equality, hardcoded fabrication SEED scan), tools/morphmap_ab.py, tools/wall_corpus_replay.py (replays every logged L2 emit through the current gates, false-positive suspects, committed baseline diff = the acceptance harness for wall changes), tools/replay_item17_guided_asset_resolve.py. Tier 3 — agent-workflow sweeps: scripts/wf_18card_fullsweep_logged.js, wf_cert_verify18.js (SSR + fab-scan audit of the cert dumps), wf_fast_loop_round.js/wf_batch12_layer2.js (fix→verify→recheck loop with the structured residual schema {page, card_id, issue, layer, log_evidence}).\n\nCrucially, a NEW framework skeleton was already started TODAY (2026-07-12) at validation/ — __init__.py declares the full plan (runner, checks/expectations, checks/datesync, checks/determinism, coverage, failures, metrics, report_json/html, replay, cli) but only config.py (per-lane concurrency: run lane default 2 / max 3 vs frame lane 8, auto-throttle on rolling error rate), response.py (the ONE /api/run parser encoding every field gotcha + a 7-value outcome vocabulary: refused/knowledge/compare/cards/picker/unavailable/empty), and corpus/ (universe.py from cmd_catalog, templates.py taxonomy, generate.py deterministic seed=48 JSONL generator, mutate.py alias mutators) exist so far. Any new prompt-testing framework should almost certainly complete THIS package rather than start fresh.\n\nPer-leaf REAL/EMPTY logic exists in two forms: the production render verdict validate/render_verdict.py (compute() at :232 — declared fields + roster_stats + undeclared numeric leaves; blank = None/'—'/''; verdict render/partial/honest_blank; scaffold/time-axis exclusion; narrative and asset_3d special cases) backed by validate/leaf_classify.py (type-only DATA/METADATA split, full-string numeric regex at :87, vocab-driven chrome exemptions); and the seed-diff harness form in the scratchpad deep_sweep.py (is_real(), placeholder detection 0/0.0/null/''/'-'/'—', seed_list_is_data strings=chrome, RENDERS_BUT_NO_DATA = verdict∈(render,partial) AND 0 real leaves). The memory doc warns the seed-diff over-flags (card_payloads has multiple rows per card_id; the fix TODO is matching by (card_id, render_card_id)) and prescribes the nonzero-number regex `:\\s*-?\\d+\\.\\d+` (>=3 hits = real) as the verification pass — that regex exists only in the memory doc, not committed code. SSR render checks: host/web/scripts/ssr_repro.tsx (debug, per-card THROWS/NULL/rendered-OK + SSR_GREP markup check), ssr_gate.mjs (standing pass/fail gate over globs, exit 1 on any throwing or NULL-with-payload card), client_repro.tsx (jsdom client-mode with effects — catches chart-draw/NaN-SVG crashes SSR misses, `npm run client-gate`), datesync_repro.tsx (date-sync propagation contract). The 883-function pytest suite is flat under tests/ with conftest.py providing the layer2 package pin, the `live` marker (`pytest -m \"not live\"` is the standard offline run; only 6 live tests), and an autouse fixture clearing config lru caches; there is NO shared fake-LLM fixture — tests patch llm.client.call_qwen per-module. Failure recording is already standardized: obs/failures.py (failures_<run_id>.jsonl), obs/stage.py (pipeline_<run_id>.jsonl), obs/ai_log.py (ai_<run_id>.jsonl, every LLM call), and host/server.py:182-189 durably dumps every /api/run response to outputs/logs/response_<run_id>.json — disk is the source of truth, correlated by run_id.",
+        "key_files": [
+          {
+            "path": "/home/rohith/desktop/BFI/backend/layer2/pipeline_v48/validation/__init__.py",
+            "purpose": "The NEW validation framework's module plan (started 2026-07-12): generate|run|report|replay CLI; only config/response/corpus exist so far — runner.py, checks/, coverage.py, failures.py, metrics.py, report_json.py, report_html.py, replay.py, cli.py are declared but not yet written"
+          },
+          {
+            "path": "/home/rohith/desktop/BFI/backend/layer2/pipeline_v48/validation/config.py",
+            "purpose": "Framework knobs: per-lane concurrency (run lane default 2, hard max 3 for vLLM; frame lane 8), 420s run timeout treated as stage='transport' failure, auto-throttle (halve lane when rolling error rate of last 10 calls > 0.5), session dirs under outputs/validation/sessions/<id>/cases"
+          },
+          {
+            "path": "/home/rohith/desktop/BFI/backend/layer2/pipeline_v48/validation/response.py",
+            "purpose": "The ONE /api/run response parser: every field gotcha (asset.candidates not top-level; render.verdict is OPTIMISTIC — use render.leaf_stats; payload_error = fabrication risk; ascii_safe surrogate guard) + outcome classification refused|knowledge|compare|cards|picker|unavailable|empty"
+          },
+          {
+            "path": "/home/rohith/desktop/BFI/backend/layer2/pipeline_v48/validation/corpus/generate.py",
+            "purpose": "Deterministic corpus generator: templates x cmd_catalog universe, seed=48, sha1 case ids, JSONL cases {id, category, prompt, expect, meta}"
+          },
+          {
+            "path": "/home/rohith/desktop/BFI/backend/layer2/pipeline_v48/tools/cert_fire18.sh",
+            "purpose": "18-page live cert fire: waves of 3 parallel curls to :8770/api/run (320s timeout), dumps /tmp/cert18/cert_<nn>.json + /tmp/cert_routed.tsv (routed page_key vs expected, MISROUTE flag, timing, HTTP code)"
+          },
+          {
+            "path": "/home/rohith/desktop/BFI/backend/layer2/pipeline_v48/tools/campaign_fire_extras.sh",
+            "purpose": "Non-18-page acceptance families: 9 CROSS edge prompts, 3 MULTI-asset lanes (asset_ids pins [11,23], [11,23,16]), 4 KNOWLEDGE routing cases; sequential (zero vLLM contention); /tmp/campaign/<family>_<nn>.json + manifest.tsv"
+          },
+          {
+            "path": "/home/rohith/desktop/BFI/backend/layer2/pipeline_v48/tools/asset_sweep.py",
+            "purpose": "In-process sweep (run.harness.run_pipeline, no HTTP): 9 asset-dashboard prompts with pinned asset_id, audits every data_instructions field for cross-quantity proxy leaks via layer2.quantity_class; outputs/asset_sweep_result.json; exit 0=clean"
+          },
+          {
+            "path": "/home/rohith/desktop/BFI/backend/layer2/pipeline_v48/tools/morphmap_live_ab.py",
+            "purpose": "Live A/B verdict over two saved response dumps of the SAME prompts (arm off vs on): swap agreement, payload byte-equality, leaf_stats real-count regression, fabrication seed scan (SEEDS list at :17: '1500','2700','389.2','13:14:10','lt_panel_simulator','1,820,542'); exit 1 on regression"
+          },
+          {
+            "path": "/home/rohith/desktop/BFI/backend/layer2/pipeline_v48/tools/wall_corpus_replay.py",
+            "purpose": "Offline corpus replay of every logged L2 emit (ai_r_*.jsonl + _log_archive) through the CURRENT gates; per-rule blank counts + false-positive suspects; committed baseline (outputs/wall_replay_baseline.json/.md) diffed after every wall change"
+          },
+          {
+            "path": "/home/rohith/.tmp/claude-1000/-home-rohith-desktop-BFI-backend-layer2-pipeline-v47/091476f9-9653-4559-ac4f-50493e9b5d27/scratchpad/deep_sweep.py",
+            "purpose": "The 2026-07-09 deep per-leaf validation harness (NOT in repo): POST 20 prompts (deep_sweep2.py = 32) to :8770 at 2-concurrency with panel asset_id pins; diff filled payload vs card_payloads seed (seeds.json via json_agg); is_real()/placeholder(0,0.0,null,'','-','—')/seed_list_is_data(strings=chrome); flags RENDERS_BUT_NO_DATA; writes deep_results.json"
+          },
+          {
+            "path": "/home/rohith/desktop/BFI/backend/layer2/pipeline_v48/validate/render_verdict.py",
+            "purpose": "Production per-leaf verdict: compute() (:232) folds declared field leaves (:99) + roster_stats + undeclared numeric leaves (:142) into render|partial|honest_blank; scaffold-key exclusion (:28), narrative credit (:163), asset_3d envelope (:214); verdicts are telemetry, never render gates"
+          },
+          {
+            "path": "/home/rohith/desktop/BFI/backend/layer2/pipeline_v48/validate/leaf_classify.py",
+            "purpose": "Type-only DATA vs METADATA leaf classifier: full-string numeric regex _NUM_STR (:87), vocab-driven chrome subtree/element keys, occurrence-bool arrays (:118), numeric-string axis detection (:125); returns {data_leaves:[{path,kind}], metadata_leaves, demand}"
+          },
+          {
+            "path": "/home/rohith/desktop/BFI/backend/layer2/pipeline_v48/host/web/scripts/ssr_repro.tsx",
+            "purpose": "SSR render debug harness: renderToString over the real renderCmd path per card of a saved response JSON; prints rendered-OK/THROWS+stack/NULL; SSR_GREP env asserts markup contains text; run `cd host/web && npx vite-node scripts/ssr_repro.tsx <abs response.json> [card_id...]`"
+          },
+          {
+            "path": "/home/rohith/desktop/BFI/backend/layer2/pipeline_v48/host/web/scripts/ssr_gate.mjs",
+            "purpose": "Standing pass/fail SSR gate (family H): globs many response JSONs, exit 1 on any card that THROWS or falls to NULL renderCmd while carrying a payload; `npm run ssr-gate -- '<glob>'`"
+          },
+          {
+            "path": "/home/rohith/desktop/BFI/backend/layer2/pipeline_v48/host/web/scripts/client_repro.tsx",
+            "purpose": "Client-mode render gate under jsdom with effects flushed (catches chart-draw/measure/NaN-SVG-attribute crashes SSR misses); debug mode + `npm run client-gate` (defaults to outputs/logs/response_*.json)"
+          },
+          {
+            "path": "/home/rohith/desktop/BFI/backend/layer2/pipeline_v48/tests/conftest.py",
+            "purpose": "Suite plumbing: layer2 package-shadow pin (:4-15), obs.ai_log installed with run_id 'pytest' (:17-19), `live` marker (:22-23), autouse fixture clearing config.app_config._load + config.vocab.vocab lru caches before/after every test (:29-38)"
+          },
+          {
+            "path": "/home/rohith/desktop/BFI/backend/layer2/pipeline_v48/tests/test_render_guarantee_50.py",
+            "purpose": "50-prompt end-to-end acceptance suite (in-process run_pipeline + host.build_response): DB-driven prompt derivation from the live registry, invariants I1-I6 (verdict present, no crash, no seed leak, blank-carries-reason, aggregate coverage, live watermark); explicit preflight policy (loud SKIP on tunnel outage, hard FAIL on wrong schema)"
+          },
+          {
+            "path": "/home/rohith/desktop/BFI/backend/layer2/pipeline_v48/scripts/wf_cert_verify18.js",
+            "purpose": "Agent-workflow adversarial audit of the 18 cert dumps: SSR gate invocation (:74), fab-scan, neuract cross-check; PAGES table (prompt, expected page_key, pin) mirrors cert_fire18.sh; JSON schema for per-page/per-card verdicts"
+          },
+          {
+            "path": "/home/rohith/desktop/BFI/backend/layer2/pipeline_v48/scripts/wf_fast_loop_round.js",
+            "purpose": "Fix->verify->recheck loop round: residuals grouped by layer into parallel fix agents with disjoint file fences, then targeted re-verify + SSR gate; residual schema {page, card_id, issue, layer, log_evidence} is the de facto failure-categorization format"
+          },
+          {
+            "path": "/home/rohith/desktop/BFI/backend/layer2/pipeline_v48/obs/failures.py",
+            "purpose": "Append-only failure recorder: record(stage, reason, card_id, detail, run_id) -> outputs/logs/failures_<run_id>.jsonl"
+          },
+          {
+            "path": "/home/rohith/desktop/BFI/backend/layer2/pipeline_v48/obs/ai_log.py",
+            "purpose": "Monkeypatches urllib urlopen to log EVERY :8200 LLM call (full request+response) to outputs/logs/ai_<run_id>.jsonl — the corpus wall_corpus_replay/morphmap_ab replay over"
+          },
+          {
+            "path": "/home/rohith/desktop/BFI/backend/layer2/pipeline_v48/host/server.py",
+            "purpose": "Host :8770; :182-189 persists every /api/run response to outputs/logs/response_<run_id>.json (disk = source of truth for sweeps; curl timeout harmless)"
+          },
+          {
+            "path": "/home/rohith/desktop/BFI/backend/layer2/pipeline_v48/data/db_client.py",
+            "purpose": "q(db, sql) via psql subprocess (raises on error, no silent empty) + pg_connect() psycopg2 routed to tunnel :5433 vs local :5432 — how everything (tests included) reaches cmd_catalog/neuract"
+          },
+          {
+            "path": "/home/rohith/desktop/BFI/backend/layer2/pipeline_v48/tools/stack_monitor.sh",
+            "purpose": "Detached keep-alive for long campaigns: restarts host :8770 / fe :5188 / ems :8890, health-logs vLLM :8200 + neuract :5433, tracks cert/campaign dump counts; stop via /tmp/stack_monitor.stop"
+          },
+          {
+            "path": "/home/rohith/desktop/BFI/backend/layer2/pipeline_v48/outputs/emit_correctness_battery.py",
+            "purpose": "In-process scenario battery proving the L2 emit binds the correct field (run_pipeline scenarios, asserts on resolved data_instructions.fields, no out-of-catalog fn)"
+          }
+        ],
+        "details": {
+          "live_fire_harnesses": {
+            "cert_fire18.sh": {
+              "transport": "curl POST http://127.0.0.1:8770/api/run, -m 320",
+              "prompts": "18 inline heredoc rows: nn<TAB>prompt<TAB>expected_page_key",
+              "concurrency": "waves of 3 backgrounded fire() + wait (<=3 page-concurrency to protect vLLM)",
+              "output": "/tmp/cert18/cert_<nn>.json per page + /tmp/cert_routed.tsv (nn, prompt, expected, routed, ok|MISROUTE, secs, http_code)"
+            },
+            "campaign_fire_extras.sh": {
+              "prompts": "CROSS 9 edge prompts (heredoc), MULTI 3 lanes with asset_ids pins, KNOW 4 routing cases",
+              "concurrency": "strictly sequential",
+              "output": "/tmp/campaign/<family>_<nn>.json + manifest.tsv (family, nn, http_code, note, secs, body)"
+            },
+            "deep_sweep(scratchpad)": {
+              "location": "/home/rohith/.tmp/claude-1000/-home-rohith-desktop-BFI-backend-layer2-pipeline-v47/091476f9-9653-4559-ac4f-50493e9b5d27/scratchpad/{deep_sweep.py,deep_sweep2.py,seeds.json}",
+              "prompts": "inline list of (prompt, asset_id_pin) — 20 in v1, 32 in v2; panels pinned 317-320 so Layer 2 runs",
+              "concurrency": "concurrent.futures.ThreadPoolExecutor(max_workers=2)",
+              "output": "deep_results.json / deep_results2.json; stdout per-prompt line with FLAGGED count",
+              "seed_source": "card_payloads.payload_stripped dumped via json_agg to seeds.json keyed by cid (KNOWN BUG: one row per card_id, loses variants -> false RENDERS_BUT_NO_DATA)"
+            },
+            "asset_sweep.py": {
+              "transport": "in-process run.harness.run_pipeline(prompt, asset_id=pin) — no HTTP",
+              "prompts": "9 hardcoded (page, prompt, asset_id) tuples",
+              "concurrency": "sequential",
+              "output": "outputs/asset_sweep_result.json + stdout table; exit 0 clean / 1 proxy leaks"
+            }
+          },
+          "per_leaf_real_empty": {
+            "production": "validate/render_verdict.py compute() — three leaf sources (declared fields, roster_stats, undeclared numeric via leaf_classify); blank = None|'—'|'' (_blank_scalar :48); verdict: skeleton_blank/payload_error->honest_blank, n_data==0->render-if-has_payload, n_real==0->honest_blank, all-real->render, else partial",
+            "seed_diff_harness": "scratchpad deep_sweep.py: placeholder = seed scalar in (None,'','-','—',0,0.0) (:47-49); data-array = seed list whose first elem is not str (:29-33); is_real = non-null/non-zero/non-empty, recursive any() for list/dict (:20-27); RENDERS_BUT_NO_DATA = verdict in (render,partial) and 0 real over >0 slots (:62)",
+            "nonzero_regex": "`:\\s*-?\\d+\\.\\d+` with >=3 matches = real — prescribed in memory doc v48-deep-validation-sweep.md as the verify pass for flags; NOT committed anywhere in-repo",
+            "fabrication_scan_seeds": "tools/morphmap_live_ab.py:17 SEEDS = ['1500','2700','389.2','13:14:10','lt_panel_simulator','1,820,542'] substring scan of payload JSON",
+            "deterministic_guards": "ems_exec/executor/fab_guards.py (epoch-ms leak / null-column reading / no-source value) + ems_exec/executor/verify.py per-value NaN/Inf/non-numeric -> None"
+          },
+          "ssr_harness": {
+            "debug": "host/web/scripts/ssr_repro.tsx — npx vite-node scripts/ssr_repro.tsx <abs response.json> [card_id...]; SSR_GREP='text' checks markup visibility",
+            "gate": "host/web/scripts/ssr_gate.mjs — npm run ssr-gate -- '<glob>'; exit 1 on THROW or NULL-with-payload",
+            "client_effects": "host/web/scripts/client_repro.tsx — npm run client-gate; jsdom + react-dom/client, catches effect-phase and NaN-SVG-attribute crashes",
+            "datesync": "host/web/scripts/datesync_repro.tsx — date-sync propagation contract under jsdom with mocked fetch",
+            "checks": "each card must print 'rendered OK'; 'THROWS' = family-H defect; 'renderCmd returned NULL' with payload = registry hole"
+          },
+          "pytest_suite": {
+            "size": "96 files flat in tests/, 883 test functions, only 6 @pytest.mark.live",
+            "standard_run": "pytest -m 'not live' (offline; expected GREEN in every wf loop)",
+            "fake_llm": "no shared fixture — per-module unittest.mock.patch.object of call_qwen (e.g. tests/test_layer1b_basket_logged_floor.py:42) or transport stubs in tests/test_llm_truncation_budget.py",
+            "db_access": "data/db_client.q (psql subprocess) — ~10 test files import it; offline tests monkeypatch q/eq_q (tests/test_has_data_outage.py:24, tests/test_equipment_3d.py:111); config caches auto-cleared by conftest autouse fixture",
+            "live_e2e": "tests/test_render_guarantee_50.py needs :5433+:5432+:8200+:8890 with loud-skip-on-tunnel-outage / hard-fail-on-wrong-schema preflight"
+          },
+          "run_correlation_artifacts": {
+            "per_run_id": [
+              "outputs/logs/response_<run_id>.json (host/server.py:182-189)",
+              "outputs/logs/pipeline_<run_id>.jsonl (obs/stage.py)",
+              "outputs/logs/ai_<run_id>.jsonl (obs/ai_log.py)",
+              "outputs/logs/failures_<run_id>.jsonl (obs/failures.py)"
+            ],
+            "prompt_to_run_id": "grep host log for [r_<id>] PROMPT text='<prompt>'"
+          },
+          "new_framework_already_started": {
+            "package": "validation/ (created 2026-07-12)",
+            "exists": [
+              "__init__.py (full module plan + CLI contract)",
+              "config.py",
+              "response.py",
+              "corpus/universe.py",
+              "corpus/templates.py",
+              "corpus/generate.py",
+              "corpus/mutate.py"
+            ],
+            "missing_per_plan": [
+              "runner.py",
+              "checks/expectations.py",
+              "checks/datesync.py",
+              "checks/determinism.py",
+              "coverage.py",
+              "failures.py",
+              "metrics.py",
+              "report_json.py",
+              "report_html.py",
+              "replay.py",
+              "cli.py"
+            ]
+          },
+          "failure_report_formats": {
+            "residual_schema": "{page, card_id, issue, layer, log_evidence} — wf_fast_loop_round.js/wf_batch12_layer2.js RES schema; layer regex-grouped into layer2|strip|emsexec|fe fix fences",
+            "page_rollup": "validate/report.py: fail | pass_with_gaps | warn | pass (legacy any-fail behind validation.rollup_legacy_any_fail)",
+            "outcome_vocab": "validation/response.py parse(): refused|knowledge|compare|cards|picker|unavailable|empty + fabrication_risk=payload_errors>0"
+          }
+        },
+        "gotchas": [
+          "The new framework home already exists: validation/ was scaffolded TODAY (2026-07-12) with config/response/corpus done and runner/checks/coverage/reports/replay/cli still missing — build there, do not create a parallel package (and do not confuse it with the older validate/ package, which is the in-pipeline pre-Layer-2 validation pass, a different concern).",
+          "Concurrency is the one hard operational constraint: >2-3 concurrent /api/run calls CONTEND on the single vLLM and manufacture fake 'llm timeout' failures (certified 2026-07-06). Every existing harness respects this (cert_fire18 waves of 3, deep_sweep max_workers=2, validation/config.py RUN_CONCURRENCY_MAX=3). /api/frame is no-LLM and tolerates ~8.",
+          "render.verdict is OPTIMISTIC — it is NOT a has-data signal; a verdict='render' card can ship an empty chart (Event-Timeline defect class). Per-leaf truth is render.leaf_stats {real,data}; any new checker must judge leaves, not verdict counts.",
+          "The deep-sweep seed-diff OVER-FLAGS: card_payloads has multiple rows per card_id (variants/subcards) and the seeds.json dump keeps only one, plus filled payloads nest differently than seeds — verify every RENDERS_BUT_NO_DATA with the nonzero-number regex (`:\\s*-?\\d+\\.\\d+`, >=3 = real); the proper fix is matching seed by (card_id, render_card_id).",
+          "Picker candidates live at asset.candidates, NOT top-level candidates — the #1 false-FAIL in early sweeps (encoded in validation/response.py:28).",
+          "Never echo raw neuract asset names to stdout — they can carry UTF-8 surrogates that kill an agent/harness; always ascii-encode (validation/response.py ascii_safe; wf scripts mandate open(..., errors='replace')).",
+          "Disk is the source of truth for live sweeps: the host persists every response to outputs/logs/response_<run_id>.json, so a curl/client timeout is harmless — read the dump, don't re-fire.",
+          "Honest-blank with a per-leaf reason is a PASS (telemetry), not a defect — the wf audit contracts and test_render_guarantee_50 all encode this; a naive 'card has no data = fail' checker will mass-false-fail.",
+          "morphmap_live_ab.py does not fire prompts itself — it only diffs two already-captured response dump sets; pair it with a fire script.",
+          "test_render_guarantee_50.py's preflight distinguishes reachable-but-wrong-schema DB (hard FAIL, would fake-green) from genuinely unreachable tunnel (loud SKIP) — copy this policy so infra outages never read as code failures.",
+          "The pytest suite has no shared fake-LLM fixture to import — mocking is per-module patch.object(mod, 'call_qwen', ...); conftest's autouse cache-clear fixture is what keeps config-monkeypatching tests order-independent.",
+          "tests/conftest.py pins the layer2 package in sys.modules because backend/layer2/ shadows pipeline_v48/layer2 — any new test entrypoint outside pytest needs the same pin or PYTHONPATH=pipeline_v48-root."
+        ]
+      },
+      "workflows-features": null,
+      "live-state": {
+        "summary": "The V48 stack is fully UP and live end-to-end runs are possible right now. All six probe targets passed: (1) Host API on :8770 is UP — the root `/` returns a 404 JSON by design (routes live under `/api/*`); `curl -s http://localhost:8770/api/health` → `{\"ok\": true, \"sb_base\": \"http://100.90.185.31:6008\"}` and `/api/site` → `{\"ok\": true, \"site\": \"PEGEPL · SEETARAMPUR\", \"live\": true}` (that `live: true` is a real SELECT 1 against the neuract tunnel DB). The serving process is `python3 host/server.py` (pid 2247859, uptime 2d 13h), and the Vite web frontend on :5188 answers HTTP 200. (2) vLLM :8200 is UP serving Qwen/Qwen3.6-35B-A3B-FP8 (max_model_len 65536) via user systemd unit vllm.service (active/running). (3) Copilot :8772 is UP (serves the \"EMS Query Copilot\" HTML UI at `/`; no /health route) via ems-copilot.service, and its LLM :8201 is UP serving Qwen/Qwen3-4B-Instruct-2507-FP8 via vllm-copilot.service.\n\n(4) Postgres: both endpoints accept connections — `pg_isready -h localhost -p 5432` → \"accepting connections\" (local cmd_catalog endpoint) and `pg_isready -h localhost -p 5433` → \"accepting connections\" (the archbox ssh tunnel — listener is an ssh process, pid 2752773, plus cmd-v2-tv-backend-tunnel.service active). Real queries succeed: `psql -h 127.0.0.1 -p 5432 -U postgres -d cmd_catalog -c 'select count(*) from card_handling'` → 145, and `psql -h 127.0.0.1 -p 5433 -U postgres -d target_version1 -c 'select count(*) from neuract.lt_mfm'` → 320. Live data is fresh: max(timestamp_utc) on neuract.gic_16_n1_bpdb_1_for_lamination_01_02_ng = 2026-07-11T23:47:09+05:30 (last night, ~hours old as of today 2026-07-12 — the logger is actively writing).\n\n(5) Logs: /home/rohith/desktop/BFI/backend/layer2/pipeline_v48/outputs/logs/ holds 253 pipeline_*.jsonl files; newest is pipeline_r_66c37cc5bb.jsonl at Jul 11 19:26 (with matching ai_/response_ files), i.e. the pipeline ran successfully yesterday evening. (6) GPU: NVIDIA RTX PRO 6000 Blackwell Max-Q Workstation Edition, 90116 MiB / 97887 MiB used — consistent with both vLLM models resident (35B main + 4B copilot).\n\nVerdict per component: Host :8770 UP, Vite :5188 UP, vLLM :8200 UP (Qwen3.6-35B-A3B-FP8), Copilot :8772 UP, Copilot LLM :8201 UP (Qwen3-4B-Instruct-2507-FP8), Postgres :5432 UP (cmd_catalog reachable+queryable), Postgres :5433 tunnel UP (neuract reachable+queryable+fresh), GPU loaded. Nothing needs a restart for a live end-to-end run.",
+        "key_files": [
+          {
+            "path": "/home/rohith/desktop/BFI/backend/layer2/pipeline_v48/host/server.py",
+            "purpose": "V48 host API server (stdlib http.server, binds 0.0.0.0:8770 via env V48_HOST_PORT); GET routes are /api/health, /api/assets, /api/site (live-DB probe); POST /api/frame etc. Root / is 404 by design."
+          },
+          {
+            "path": "/home/rohith/desktop/BFI/backend/layer2/pipeline_v48/config/databases.py",
+            "purpose": "Single source of DB wiring: neuract live DB = 127.0.0.1:5433/target_version1 schema neuract (archbox ssh tunnel); cmd_catalog = local 127.0.0.1:5432; user postgres, no password; PGCONNECT_TIMEOUT=5 fail-fast."
+          },
+          {
+            "path": "/home/rohith/desktop/BFI/backend/layer2/pipeline_v48/outputs/logs/",
+            "purpose": "Run logs: 253 pipeline_*.jsonl; newest pipeline_r_66c37cc5bb.jsonl Jul 11 19:26."
+          },
+          {
+            "path": "/home/rohith/desktop/BFI/backend/layer2/pipeline_v48/config/neuract_dsn.py",
+            "purpose": "Neuract DSN builder: postgresql://postgres@127.0.0.1:5433/target_version1?options=-csearch_path=neuract."
+          }
+        ],
+        "details": {
+          "host_api": {
+            "status": "UP",
+            "port": 8770,
+            "process": "python3 host/server.py (pid 2247859, uptime 2d13h, not a systemd unit — bare process)",
+            "evidence": "curl -s http://localhost:8770/api/health → {\"ok\": true, \"sb_base\": \"http://100.90.185.31:6008\"}",
+            "live_db_probe": "curl /api/site → {\"ok\": true, \"site\": \"PEGEPL · SEETARAMPUR\", \"live\": true}",
+            "note": "GET / returns 404 {\"ok\": false, \"error\": \"not found\"} by design — only /api/* routes exist"
+          },
+          "vite_frontend": {
+            "status": "UP",
+            "port": 5188,
+            "evidence": "curl -o /dev/null -w %{http_code} http://localhost:5188/ → 200 (node pid 2138503)"
+          },
+          "vllm_main": {
+            "status": "UP",
+            "port": 8200,
+            "model": "Qwen/Qwen3.6-35B-A3B-FP8",
+            "max_model_len": 65536,
+            "unit": "vllm.service (user systemd, active running)",
+            "evidence": "curl http://localhost:8200/v1/models → {\"id\":\"Qwen/Qwen3.6-35B-A3B-FP8\",...}"
+          },
+          "copilot": {
+            "status": "UP",
+            "port": 8772,
+            "unit": "ems-copilot.service (user systemd, active running)",
+            "evidence": "curl http://localhost:8772/ → EMS Query Copilot HTML UI (title 'EMS Query Copilot'); /health is 404 (no such route)"
+          },
+          "copilot_llm": {
+            "status": "UP",
+            "port": 8201,
+            "model": "Qwen/Qwen3-4B-Instruct-2507-FP8",
+            "max_model_len": 8192,
+            "unit": "vllm-copilot.service (user systemd, active running)",
+            "evidence": "curl http://localhost:8201/v1/models → {\"id\":\"Qwen/Qwen3-4B-Instruct-2507-FP8\",...}"
+          },
+          "postgres_cmd_catalog": {
+            "status": "UP",
+            "endpoint": "127.0.0.1:5432 db=cmd_catalog user=postgres",
+            "pg_isready": "localhost:5432 - accepting connections",
+            "query": "select count(*) from card_handling → 145"
+          },
+          "postgres_neuract_tunnel": {
+            "status": "UP",
+            "endpoint": "127.0.0.1:5433 db=target_version1 schema=neuract user=postgres (ssh tunnel, listener ssh pid 2752773; cmd-v2-tv-backend-tunnel.service active)",
+            "pg_isready": "localhost:5433 - accepting connections",
+            "query": "select count(*) from neuract.lt_mfm → 320",
+            "data_freshness": "max(timestamp_utc) on neuract.gic_16_n1_bpdb_1_for_lamination_01_02_ng = 2026-07-11T23:47:09.621+05:30"
+          },
+          "logs": {
+            "dir": "/home/rohith/desktop/BFI/backend/layer2/pipeline_v48/outputs/logs/",
+            "pipeline_jsonl_count": 253,
+            "newest": "pipeline_r_66c37cc5bb.jsonl Jul 11 19:26 (with ai_r_66c37cc5bb.jsonl + response_r_66c37cc5bb.json)"
+          },
+          "gpu": {
+            "name": "NVIDIA RTX PRO 6000 Blackwell Max-Q Workstation Edition",
+            "memory": "90116 MiB / 97887 MiB used — both vLLM models resident",
+            "evidence": "nvidia-smi --query-gpu=name,memory.used,memory.total --format=csv"
+          },
+          "verdict": "Live end-to-end runs are possible right now — every dependency (host, FE, both LLMs, both DBs, tunnel, GPU) is UP."
+        },
+        "gotchas": [
+          "Host :8770 has NO / or /health route — probing them returns 404 JSON which looks like 'down' but the server IS up; the real health endpoint is /api/health (and /api/site actually probes the live neuract DB connection).",
+          "The host server is a bare python3 process (pid 2247859), NOT a systemd unit — systemctl greps for 'v48' find nothing; a machine reboot would not auto-restart it (vllm/copilot/tunnel ARE user systemd units).",
+          "Copilot :8772 serves its HTML UI at / and has no /health route (404) — root-page 200 with the 'EMS Query Copilot' title is the up-signal.",
+          ":5433 is an ssh tunnel (listener is an ssh process) — pg_isready passing now does not immunize against the historical tunnel-flap issue; the TTLCache fix (cache.resolution_ttl_s=120) self-heals a flap without restart.",
+          "graph-summary.service (user unit) is in activating/auto-restart i.e. crash-looping — unrelated to the V48 pipeline path but it does call vLLM :8200, so it may add background LLM load.",
+          "GPU is at 90/96 GiB used — near-full by design (both vLLM models resident, util 0.60 on main); no headroom for loading another model without unloading one.",
+          "Newest neuract data point seen is 2026-07-11T23:47 IST (last night); if it's now well into 2026-07-12 daytime, verify the logger is still writing before trusting 'live' windows ending at now."
+        ]
+      }
+    },
+    "missing": [
+      "workflows-features"
+    ]
+  },
+  "workflowProgress": [
+    {
+      "type": "workflow_phase",
+      "index": 1,
+      "title": "Map"
+    },
+    {
+      "type": "workflow_agent",
+      "index": 1,
+      "label": "map:entrypoint",
+      "phaseIndex": 1,
+      "phaseTitle": "Map",
+      "agentId": "aea2d539cac88372f",
+      "model": "claude-fable-5",
+      "state": "done",
+      "startedAt": 1783802595662,
+      "queuedAt": 1783802595643,
+      "attempt": 1,
+      "lastToolName": "StructuredOutput",
+      "lastToolSummary": "HTTP path: the V48 host API is a stdlib ThreadingHTTPServer…",
+      "promptPreview": "Read the V48 pipeline code at /home/rohith/desktop/BFI/backend/layer2/pipeline_v48 to answer: HOW IS A PROMPT EXECUTED END-TO-END, both over HTTP and programmatically?\nFocus on /home/rohith/desktop/BFI/backend/layer2/pipeline_v48/host/ (there is a host API expected on port 8770), /home/rohith/desktop/BFI/backend/layer2/pipeline_v48/run/, /home/rohith/desktop/BFI/backend/layer2/pipeline_v48/service…",
+      "lastProgressAt": 1783802879913,
+      "tokens": 88672,
+      "toolCalls": 23,
+      "durationMs": 284250,
+      "resultPreview": "{\"summary\":\"HTTP path: the V48 host API is a stdlib ThreadingHTTPServer in host/server.py bound to 0.0.0.0:8770 (env V48_HOST_PORT, server.py:47,358). No auth of any kind; CORS is wide open (Access-Control-Allow-Origin: *, server.py:203). POST /api/run with {\\\"prompt\\\": str, \\\"asset_id\\\": int|null, \\\"asset_ids\\\": [int]|null, \\\"date_window\\\": {range,start,end,sampling}|null, \\\"history\\\": [{prompt,a…"
+    },
+    {
+      "type": "workflow_agent",
+      "index": 2,
+      "label": "map:stages-logging",
+      "phaseIndex": 1,
+      "phaseTitle": "Map",
+      "agentId": "a07f8ea44b95345c6",
+      "model": "claude-fable-5",
+      "state": "done",
+      "startedAt": 1783802595663,
+      "queuedAt": 1783802595643,
+      "attempt": 1,
+      "lastToolName": "StructuredOutput",
+      "lastToolSummary": "V48 pipeline stages (single-asset /api/run path, in executi…",
+      "promptPreview": "Read the V48 pipeline code at /home/rohith/desktop/BFI/backend/layer2/pipeline_v48 to answer: WHAT ARE THE PIPELINE STAGES AND WHAT LOGGING/TELEMETRY DOES EACH EMIT?\nFocus on /home/rohith/desktop/BFI/backend/layer2/pipeline_v48/obs/, /home/rohith/desktop/BFI/backend/layer2/pipeline_v48/layer1a/, /home/rohith/desktop/BFI/backend/layer2/pipeline_v48/layer1b/, /home/rohith/desktop/BFI/backend/layer2/…",
+      "lastProgressAt": 1783802962248,
+      "tokens": 105501,
+      "toolCalls": 39,
+      "durationMs": 366585,
+      "resultPreview": "{\"summary\":\"V48 pipeline stages (single-asset /api/run path, in execution order): (0) HTTP entry host/server.py do_POST /api/run (:241) -> build_response (:100), with an optional knowledge-layer detour (:316-323) and multi-asset lane host/multi_asset.build_response_multi (:334-338). (1) run/harness.py run_pipeline (:184) logs stage PROMPT (:188) then fires Layer 1a (layer1a/build.run_1a - page rou…"
+    },
+    {
+      "type": "workflow_agent",
+      "index": 3,
+      "label": "map:db-config",
+      "phaseIndex": 1,
+      "phaseTitle": "Map",
+      "agentId": "a18c5ca2c56804216",
+      "model": "claude-fable-5",
+      "state": "done",
+      "startedAt": 1783802595664,
+      "queuedAt": 1783802595643,
+      "attempt": 1,
+      "lastToolName": "StructuredOutput",
+      "lastToolSummary": "V48 connects to TWO Postgres endpoints through ONE wiring m…",
+      "promptPreview": "Read the V48 pipeline code at /home/rohith/desktop/BFI/backend/layer2/pipeline_v48 to answer: HOW DOES THE CODE CONNECT TO ITS DATABASES AND CONFIG?\nFocus on /home/rohith/desktop/BFI/backend/layer2/pipeline_v48/data/, /home/rohith/desktop/BFI/backend/layer2/pipeline_v48/db/, /home/rohith/desktop/BFI/backend/layer2/pipeline_v48/config/, /home/rohith/desktop/BFI/backend/layer2/pipeline_v48/registrie…",
+      "lastProgressAt": 1783802902927,
+      "tokens": 65219,
+      "toolCalls": 33,
+      "durationMs": 307263,
+      "resultPreview": "{\"summary\":\"V48 connects to TWO Postgres endpoints through ONE wiring module, config/databases.py (\\\"THE SINGLE PLACE for DB wiring — nothing else hard-codes a host/port/db/schema\\\"). The live logging DB is target_version1, schema neuract, reached over the archbox SSH tunnel at 127.0.0.1:5433 (PG_HOST/PG_PORT/PG_DB/PG_SCHEMA/PG_USER/PG_PASSWORD env vars, defaults 127.0.0.1/5433/target_version1/neu…"
+    },
+    {
+      "type": "workflow_agent",
+      "index": 4,
+      "label": "map:generation-data",
+      "phaseIndex": 1,
+      "phaseTitle": "Map",
+      "agentId": "ad810fba3b32443c7",
+      "model": "claude-fable-5",
+      "state": "done",
+      "startedAt": 1783802595664,
+      "queuedAt": 1783802595643,
+      "attempt": 1,
+      "lastToolName": "StructuredOutput",
+      "lastToolSummary": "Both DBs are reachable and were queried read-only. Connecti…",
+      "promptPreview": "Read V48 code at /home/rohith/desktop/BFI/backend/layer2/pipeline_v48 and its cmd_catalog/neuract databases to answer: WHAT DATA CAN DRIVE AUTOMATIC PROMPT GENERATION covering every supported workflow?\nFirst find the DB connection details in /home/rohith/desktop/BFI/backend/layer2/pipeline_v48/data/ or /home/rohith/desktop/BFI/backend/layer2/pipeline_v48/db/ (likely Postgres, possibly localhost:54…",
+      "lastProgressAt": 1783802978098,
+      "tokens": 72975,
+      "toolCalls": 44,
+      "durationMs": 382434,
+      "resultPreview": "{\"summary\":\"Both DBs are reachable and were queried read-only. Connection wiring lives in /home/rohith/desktop/BFI/backend/layer2/pipeline_v48/config/databases.py: catalog DB `cmd_catalog` at 127.0.0.1:5432 (user postgres, no password) and the live data/registry DB `target_version1` schema `neuract` at 127.0.0.1:5433 (archbox tunnel). Access helpers: data/db_client.py q(db,sql) / pg_connect(db), w…"
+    },
+    {
+      "type": "workflow_agent",
+      "index": 5,
+      "label": "map:harnesses-tests",
+      "phaseIndex": 1,
+      "phaseTitle": "Map",
+      "agentId": "aaf5606ff2a95fcd4",
+      "model": "claude-fable-5",
+      "state": "done",
+      "startedAt": 1783802595664,
+      "queuedAt": 1783802595643,
+      "attempt": 1,
+      "lastToolName": "StructuredOutput",
+      "lastToolSummary": "V48 already has three tiers of prompt-testing infrastructur…",
+      "promptPreview": "Read V48 code at /home/rohith/desktop/BFI/backend/layer2/pipeline_v48 to answer: WHAT TEST/SWEEP HARNESSES ALREADY EXIST that a new prompt-testing framework should reuse or supersede?\nFocus on /home/rohith/desktop/BFI/backend/layer2/pipeline_v48/tests/ (a ~882-test pytest suite), /home/rohith/desktop/BFI/backend/layer2/pipeline_v48/tools/, /home/rohith/desktop/BFI/backend/layer2/pipeline_v48/valid…",
+      "lastProgressAt": 1783802934523,
+      "tokens": 106741,
+      "toolCalls": 36,
+      "durationMs": 338859,
+      "resultPreview": "{\"summary\":\"V48 already has three tiers of prompt-testing infrastructure. Tier 1 — live fire harnesses that POST prompts to the host (:8770 /api/run): tools/cert_fire18.sh (18 pages, waves of 3 background curls, dumps /tmp/cert18/cert_<nn>.json + routed/timing TSV), tools/campaign_fire_extras.sh (cross-class/multi-asset/knowledge families, sequential, /tmp/campaign/*.json + manifest.tsv), the scra…"
+    },
+    {
+      "type": "workflow_agent",
+      "index": 6,
+      "label": "map:workflows-features",
+      "phaseIndex": 1,
+      "phaseTitle": "Map",
+      "agentId": "a15751739010cfb2c",
+      "model": "claude-fable-5",
+      "state": "error",
+      "startedAt": 1783802595665,
+      "queuedAt": 1783802595643,
+      "attempt": 1,
+      "lastToolName": "Bash",
+      "lastToolSummary": "sed -n 1,25p /home/rohith/desktop/BFI/backend/layer2/pipeli…",
+      "promptPreview": "Read V48 code at /home/rohith/desktop/BFI/backend/layer2/pipeline_v48 to answer: WHAT ARE ALL THE SUPPORTED USER-FACING WORKFLOWS a prompt can trigger? I am enumerating test coverage dimensions.\nLook at /home/rohith/desktop/BFI/backend/layer2/pipeline_v48/layer1a/ (routing: what route kinds exist — page routes, the 18 pages list), /home/rohith/desktop/BFI/backend/layer2/pipeline_v48/layer1b/ (asse…",
+      "lastProgressAt": 1783802872681,
+      "error": "You've hit your session limit · resets 7am (Asia/Kolkata)",
+      "tokens": 100118,
+      "toolCalls": 48,
+      "durationMs": 277016
+    },
+    {
+      "type": "workflow_agent",
+      "index": 7,
+      "label": "map:live-state",
+      "phaseIndex": 1,
+      "phaseTitle": "Map",
+      "agentId": "a9fe7e2c4482665fa",
+      "model": "claude-fable-5",
+      "state": "done",
+      "startedAt": 1783802595665,
+      "queuedAt": 1783802595643,
+      "attempt": 1,
+      "lastToolName": "StructuredOutput",
+      "lastToolSummary": "The V48 stack is fully UP and live end-to-end runs are poss…",
+      "promptPreview": "Check the CURRENT live state of the V48 stack on this machine (read-only probes, no restarts, no writes):\n1. Host API: curl -s -m 5 http://localhost:8770/ (and likely /health or /docs) — is the V48 host up? Find the exact port by reading /home/rohith/desktop/BFI/backend/layer2/pipeline_v48/host/ server code and /home/rohith/desktop/BFI/backend/layer2/pipeline_v48/ops/ or systemd units (systemctl l…",
+      "lastProgressAt": 1783802712793,
+      "tokens": 36539,
+      "toolCalls": 14,
+      "durationMs": 117128,
+      "resultPreview": "{\"summary\":\"The V48 stack is fully UP and live end-to-end runs are possible right now. All six probe targets passed: (1) Host API on :8770 is UP — the root `/` returns a 404 JSON by design (routes live under `/api/*`); `curl -s http://localhost:8770/api/health` → `{\\\"ok\\\": true, \\\"sb_base\\\": \\\"http://100.90.185.31:6008\\\"}` and `/api/site` → `{\\\"ok\\\": true, \\\"site\\\": \\\"PEGEPL · SEETARAMPUR\\\", \\\"liv…"
+    }
+  ],
+  "totalTokens": 575765,
+  "totalToolCalls": 237
+}

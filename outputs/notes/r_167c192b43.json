@@ -1,0 +1,36 @@
+{
+ "run_id": "r_167c192b43",
+ "loop1": [
+  {
+   "card_id": 18,
+   "title": "Events KPI Strip",
+   "answerability": "partial",
+   "note": "Showing aggregate event counts for the last 7 days across all PRIMARY outgoing feeders. Per-member worst-case voltage/current deviation and imbalance values are aggregated from member meters; some members (UPS-05, UPS-06) have no data and are omitted from the worst-case rollup."
+  },
+  {
+   "card_id": 19,
+   "title": "AI Summary",
+   "answerability": "partial",
+   "note": "AI narrative is generated from panel-aggregate event counts; per-phase voltage/current columns are not logged on this panel stub, so the narrative relies on aggregate sag/swell/neutral event totals."
+  },
+  {
+   "card_id": 20,
+   "title": "Event Timeline at {period}",
+   "answerability": "partial",
+   "note": "Showing per-member event counts and worst deviations from PRIMARY feeders; GIC-02-N6-UPS-05 and GIC-02-N7-UPS-06 are dark (no data) and will render as honest blanks."
+  },
+  {
+   "card_id": 21,
+   "title": "Current Distribution at {period}",
+   "answerability": "partial",
+   "note": "Showing current_avg per outgoing feeder; sag/swell/voltage metrics are not measured by this panel's aggregate table and are honest-blanked."
+  },
+  {
+   "card_id": 22,
+   "title": "Other Panels Event at {period}",
+   "answerability": "partial",
+   "note": "Showing per-panel event frequency and voltage/current stats for the last 7 days. Solar Incomer-1 and Solar Incomer-2 have no live data (has_data=N) and will render as blanks."
+  }
+ ],
+ "loop2": null
+}

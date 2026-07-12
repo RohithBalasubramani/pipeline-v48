@@ -9,7 +9,6 @@ code default with the DB down (data.db_client.q raises on connect failure). [#4/
 Keys:
   topology.loss_plausible_min_pct  (0.0)   — lower bound of the trusted input↔output loss band; below → output_only
   topology.loss_plausible_max_pct  (10.0)  — upper bound; a bigger figure means the paired meter is not truly upstream
-  topology.trend_deadband          (0.05)  — ±fraction deadband for trend_status (rising/stable/falling)
 """
 from config import quality_policy as _qp
 
@@ -31,7 +30,3 @@ def loss_plausible_band_pct():
     return (lo, hi)
 
 
-def trend_deadband():
-    """The ±fraction deadband for trend_status — |Δ| within this fraction of |baseline| reads 'stable' (no spurious
-    arrows). Editable row topology.trend_deadband. Default 0.05 (±5%)."""
-    return _num("topology.trend_deadband", 0.05)

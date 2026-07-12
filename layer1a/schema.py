@@ -1,11 +1,12 @@
 """layer1a/schema.py — assemble + validate the full (enriched) Layer1aOutput. [contract 2/4]"""
 
+from layer1a.types import Layer1aOutput   # annotation-only typed core [typing F2]
 _INTENTS = {"trend", "distribution", "snapshot", "table", "events"}
 _LAYOUT_KEYS = ("layout_primitive", "grid_template_columns", "grid_template_rows",
                 "layout_gap", "layout_padding", "layout_shape", "render_shell")
 
 
-def build_layer1a_output(route_result, cards, layout, groups):
+def build_layer1a_output(route_result, cards, layout, groups) -> "Layer1aOutput":
     spec = route_result["page_spec"]
     return {
         "page_key": route_result["page_key"],

@@ -5,7 +5,7 @@
    "card_id": 39,
    "title": "Today's Energy",
    "answerability": "partial",
-   "note": "Showing 30-day active and reactive energy totals; subsidy, target, and SEC metrics are not configured for this asset."
+   "note": "Showing 30-day active and reactive energy totals; SEC, subsidy limits, and progress percentages are omitted as they require unmeasured production data or unconfigured commercial targets."
   },
   {
    "card_id": 40,
@@ -17,13 +17,13 @@
    "card_id": 41,
    "title": "Input vs Output Energy",
    "answerability": "partial",
-   "note": "Showing total active power and energy \u2014 per-phase power isn't measured for this asset; lossPct used as proxy for loss percentage of input."
+   "note": "Showing total active energy import/export and efficiency \u2014 per-phase energy and direct delta percentages are not measured for this asset."
   },
   {
    "card_id": 42,
    "title": "Load Anomalies",
    "answerability": "partial",
-   "note": "Showing actual load as % of rated capacity \u2014 expected load profiles, anomaly counts, and range bounds are not measured by this asset's meter schema."
+   "note": "Showing actual load and load factor \u2014 expected load, range, and anomaly events are not measured for this UPS asset."
   }
  ],
  "loop2": null

@@ -1,0 +1,30 @@
+{
+ "run_id": "r_375e2a0ee8",
+ "loop1": [
+  {
+   "card_id": 14,
+   "title": "Cumulative Energy",
+   "answerability": "partial",
+   "note": "Showing cumulative active and reactive energy for this month across outgoing feeders; SEC (kWh/t) is not measured as no production tonnage data is available."
+  },
+  {
+   "card_id": 16,
+   "title": "Energy Consumption Trend",
+   "answerability": "partial",
+   "note": "Showing total active and reactive energy for the panel's fed feeders (PRIMARY side); some members (Axial Fan Panel-2, Curing Line CSU-01, Fire Fighting System, Domestic Water Pump) are dark and honest-blank their slots."
+  },
+  {
+   "card_id": 15,
+   "title": "Today live power analysis",
+   "answerability": "partial",
+   "note": "Showing total apparent power and active/reactive breakdown \u2014 rated capacity and peak markers are ungroundable for this asset."
+  },
+  {
+   "card_id": 17,
+   "title": "Daily Power Demand by Feeder",
+   "answerability": "partial",
+   "note": "Showing total panel active power demand (Worst Peak, Load Factor) \u2014 per-feeder breakdown (UPS, BPDP, HHF) is not measured for this panel as those specific feeder groups are not present in the PRIMARY member roster."
+  }
+ ],
+ "loop2": null
+}

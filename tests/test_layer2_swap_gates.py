@@ -63,8 +63,9 @@ def test_a_cascade_all_or_nothing():
 
 # ── (b) force-swap of an unrenderable current card ───────────────────────────────────────────────
 def test_b_unrenderable_vocab_is_the_config_knob():
-    # no hardcoded verdict list in the gate: the vocab IS config.feasibility.UNRENDERABLE_VERDICTS (DB-driven).
-    assert gate_force_renderable.UNRENDERABLE_VERDICTS is feas_cfg.UNRENDERABLE_VERDICTS
+    # no hardcoded verdict list in the gate: the vocab IS config.feasibility.UNRENDERABLE_VERDICTS (DB-driven,
+    # lazy PEP-562 attr — each access re-reads cfg(), so equality not identity).
+    assert tuple(feas_cfg.UNRENDERABLE_VERDICTS) == ("drop", "no_data")
     for v in feas_cfg.UNRENDERABLE_VERDICTS:
         assert gate_force_renderable.is_unrenderable(v)
     for v in ("render_real", "static_chrome", None, ""):

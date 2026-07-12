@@ -5,7 +5,7 @@ import React from "react";
 // view-model helper + types. This barrel keeps the ./fill/*.tsx glob match (non-recursive: `*` does not cross `/`, so
 // the folder files load only through here) and re-exports the CARDS registry.
 //
-// FRAMES=PAYLOADS [architecture]: ems_backend is RETIRED — the host emits `frames={}` EMPTY. So the ONLY data source
+// FRAMES=PAYLOADS [architecture]: host-served is RETIRED — the host emits `frames={}` EMPTY. So the ONLY data source
 // is the Layer-2 `payload` (ems_exec-completed props: real neuract values + honest-blank '—'); the old live-frame /
 // mapper / assetPageSocket path is DELETED. Each card renders its REAL CMD V2 component DIRECTLY from the payload.
 //

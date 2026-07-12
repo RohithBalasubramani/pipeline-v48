@@ -5,19 +5,25 @@
    "card_id": 39,
    "title": "Today's Energy",
    "answerability": "partial",
-   "note": "Showing monthly active, reactive, and total energy consumption \u2014 subsidy limits, targets, and specific consumption metrics are not measured for this asset."
+   "note": "Showing monthly active and reactive energy consumption \u2014 energy target and subsidy metrics are not configured or measured for this asset."
+  },
+  {
+   "card_id": 40,
+   "title": "Power Energy Analysis",
+   "answerability": "partial",
+   "note": "one or more leaves could not be bound for this card on this asset \u2014 those leaves render an honest blank (per-leaf reasons attached), every other leaf fills"
   },
   {
    "card_id": 41,
    "title": "Input vs Output Energy",
    "answerability": "partial",
-   "note": "Showing total input/output energy and derived efficiency/loss metrics \u2014 per-phase energy and specific loss-ratio percentages are not directly measured for this asset."
+   "note": "Showing total active power as a proxy for UPS input/output energy trend; per-phase or dedicated rail power isn't measured for this asset."
   },
   {
    "card_id": 42,
    "title": "Load Anomalies",
    "answerability": "partial",
-   "note": "Showing actual load trend and load factor \u2014 anomaly events, expected load, and range data are not measured for this asset."
+   "note": "Showing actual load trend and load factor \u2014 anomaly events, expected load profiles, and threshold limits are not computable from this asset's logged power/energy columns."
   }
  ],
  "loop2": null

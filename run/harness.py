@@ -8,9 +8,12 @@ LAYER 3 IS RETIRED (archived at archive/layer3_archive_20260702.tar.gz — do NO
 Layer 2: it produces {1a, 1b, layer2} and passes them through. The per-card DATA fill happens at the HOST via
 ems_exec.serve.run.run_card (host/server.py) — real neuract leaves + honest-blank else, NO ws/mfm frame-fetch,
 NO Layer 3 payload-cleaner. `V48_SKIP_LAYER3` is gone (L3 is always-off / removed). [ems_exec swap]"""
+from obs.errfmt import fmt_exc as _fmt_exc   # the ONE exception string [EH F4]
+from run.types import PipelineResult      # annotation-only typed core [typing F2]
 import copy
 import os
 import obs.ai_log as ai_log
+from layer1b.how import RESOLVED_ANY as _HOW_RESOLVED_ANY
 from run.parallel import run_parallel
 from run.run_id import make_run_id
 from run.layer2_all import run_2_all
@@ -23,6 +26,12 @@ from config.databases import CMD_CATALOG  # canonical metadata DB name (edit in 
 from obs.failures import record
 from obs.notes import record as record_notes
 from obs.stage import stage          # end-to-end pipeline log → stderr (host log) + outputs/logs/pipeline_<run_id>.jsonl
+
+try:
+    from replay.hooks import pipeline_out as _replay_pipeline_out   # full out-dict → trace bundle artifact (fail-open)
+except Exception:
+    def _replay_pipeline_out(out):
+        pass
 
 _MAX_ATTEMPTS = 2                     # attempt 1 + ONE re-route (loop 1 → loop 2 note). Matches the 2-loop design.
 
@@ -42,9 +51,9 @@ def _validate(out, db, run_id):
         stage(run_id, "validate", verdict=(out["validation"] or {}).get("verdict"),
               expected_gap_frac=(out["validation"] or {}).get("expected_gap_frac"))
     except Exception as e:
-        out["errors"]["validation"] = f"{type(e).__name__}: {e}"
+        out["errors"]["validation"] = _fmt_exc(e)
         record("validation", "layer-exception", detail=str(e), run_id=run_id)
-        stage(run_id, "validate", ERROR=f"{type(e).__name__}: {e}")
+        stage(run_id, "validate", ERROR=_fmt_exc(e))
 
 
 def _preflight_reroute(out, prompt, db, run_id):
@@ -82,7 +91,7 @@ def _preflight_reroute(out, prompt, db, run_id):
         stage(run_id, "1a", page=(out["layer1a"] or {}).get("page_key"), reroute="preflight",
               cards=len((out["layer1a"] or {}).get("cards") or []))
     except Exception as e:
-        out["errors"]["preflight_reroute"] = f"{type(e).__name__}: {e}"
+        out["errors"]["preflight_reroute"] = _fmt_exc(e)
 
 
 def _reflect_loop(out, prompt, db, run_id, no_reroute=False):
@@ -108,9 +117,9 @@ def _reflect_loop(out, prompt, db, run_id, no_reroute=False):
         try:
             l2 = run_2_all(rid, out["layer1a"], out["layer1b"])
         except Exception as e:
-            out["errors"]["layer2"] = f"{type(e).__name__}: {e}"
+            out["errors"]["layer2"] = _fmt_exc(e)
             record("layer2", "layer-exception", detail=str(e), run_id=rid)
-            stage(rid, "layer2", ERROR=f"{type(e).__name__}: {e}")
+            stage(rid, "layer2", ERROR=_fmt_exc(e))
             return
         out["layer2"] = l2
         gaps = [o for o in l2.values() if (o or {}).get("gap")]
@@ -173,7 +182,7 @@ def _reflect_loop(out, prompt, db, run_id, no_reroute=False):
                 stage(rid, "1a", page=(out["layer1a"] or {}).get("page_key"), reroute=True,
                       cards=len((out["layer1a"] or {}).get("cards") or []))
             except Exception as e:
-                out["errors"]["reroute"] = f"{type(e).__name__}: {e}"
+                out["errors"]["reroute"] = _fmt_exc(e)
                 out["notes"]["loop2"] = f"Could not re-route after the data gap: {e}"
                 return
         else:                                                   # exhausted the re-route → persistent gap (loop-2 note)
@@ -181,10 +190,47 @@ def _reflect_loop(out, prompt, db, run_id, no_reroute=False):
             stage(rid, "reflect", loop=attempt, gaps=len(gaps), unresolved=True)  # host still fills best-effort layout
 
 
-def run_pipeline(prompt, *, asset_id=None, db=None, run_id=None, layer1a=None):
+def run_pipeline(prompt, *, asset_id=None, db=None, run_id=None, layer1a=None) -> "PipelineResult":
+    """OBS boundary — a direct call (CLI / test / sweep) with no active trace mints its OWN trace (kind='cli') and
+    closes it on return; under the host the middleware already opened the trace and this is a pass-through. Either
+    way the (deterministic, prompt-hash) run_id binds onto the trace so legacy logs join obs_traces.run_ids."""
+    from obs import trace as obs_trace
+    if obs_trace.current() is not None:
+        return _run_pipeline_inner(prompt, asset_id=asset_id, db=db, run_id=run_id, layer1a=layer1a)
+    obs_trace.new_trace(kind="cli", prompt=prompt, asset_id=asset_id)
+    try:
+        out = _run_pipeline_inner(prompt, asset_id=asset_id, db=db, run_id=run_id, layer1a=layer1a)
+    except Exception as e:
+        try:
+            t = obs_trace.current()
+            if t is not None:
+                with t["lock"]:
+                    t["errors"].append(f"unhandled: {type(e).__name__}: {e}")
+            obs_trace.end_trace(status="error")
+        except Exception:
+            pass
+        raise
+    try:
+        degraded = bool(out.get("data_unavailable") or out.get("asset_no_data")
+                        or out.get("validation_blocked") or out.get("asset_pending"))
+        status = "error" if out.get("errors") else ("degraded" if degraded else "ok")
+        obs_trace.end_trace(status=status, response_summary={
+            "run_id": out.get("run_id"), "page_key": (out.get("layer1a") or {}).get("page_key"),
+            "n_cards": len((out.get("layer1a") or {}).get("cards") or []),
+            "asset_pending": out.get("asset_pending"), "asset_no_data": out.get("asset_no_data"),
+            "validation_blocked": out.get("validation_blocked"),
+            "data_unavailable": out.get("data_unavailable"), "errors": out.get("errors") or {}})
+    except Exception:
+        pass
+    return out
+
+
+def _run_pipeline_inner(prompt, *, asset_id=None, db=None, run_id=None, layer1a=None):
+    from obs import trace as obs_trace
     db = db or CMD_CATALOG
     run_id = run_id or make_run_id(prompt)
     ai_log.set_run_id(run_id)
+    obs_trace.bind_run_id(run_id)
     stage(run_id, "PROMPT", text=repr(prompt), asset_id=asset_id)
 
     # SHARED-TEMPLATE LANE [multi-asset author-once-per-class]: a compare lane (run_pipeline_multi) INJECTS the already-
@@ -208,9 +254,9 @@ def run_pipeline(prompt, *, asset_id=None, db=None, run_id=None, layer1a=None):
     for name in ("layer1a", "layer1b"):
         r = results[name]
         if isinstance(r, Exception):
-            out["errors"][name] = f"{type(r).__name__}: {r}"
+            out["errors"][name] = _fmt_exc(r)
             record(name, "layer-exception", detail=str(r), run_id=run_id)
-            stage(run_id, name, ERROR=f"{type(r).__name__}: {r}")
+            stage(run_id, name, ERROR=_fmt_exc(r))
         else:
             out[name] = r
 
@@ -221,6 +267,7 @@ def run_pipeline(prompt, *, asset_id=None, db=None, run_id=None, layer1a=None):
     _apply_degrade_gate(out)
     if out.get("data_unavailable"):
         stage(run_id, "degrade", kind="data_unavailable", layer=(out.get("degrade") or {}).get("layer"))
+        obs_trace.set_degradation(data_unavailable=True, degrade=out.get("degrade"))
 
     l1a, l1b = out["layer1a"] or {}, out["layer1b"] or {}
     if out["layer1a"] is not None:
@@ -256,7 +303,9 @@ def run_pipeline(prompt, *, asset_id=None, db=None, run_id=None, layer1a=None):
         _apply_degrade_gate(out)
         if out.get("data_unavailable"):
             stage(run_id, "degrade", kind="data_unavailable", layer="validation")
+            obs_trace.set_degradation(data_unavailable=True, degrade=out.get("degrade"))
             record_notes(run_id, out["notes"])
+            _replay_pipeline_out(out)                       # replay artifact: the degraded-terminal lane too
             return out
 
         # PRE-L2 EXPECTED-GAP RE-ROUTE — the deterministic topology-infeasibility roll-up from run_validate re-routes
@@ -285,9 +334,15 @@ def run_pipeline(prompt, *, asset_id=None, db=None, run_id=None, layer1a=None):
         # collision_gate_fullname = the DETERMINISTIC full-name pin (the user spelled ONE colliding row out in full,
         # e.g. 'PCC Panel 1' / 'GIC-01-N3-UPS-01') — a RESOLVED-WITH-DATA state exactly like "AI", just attributed to the
         # collision gate instead of the model. It MUST render (not fall to the picker), so it belongs in the resolved set.
-        asset_resolved = (how in {"AI", "user-choice", "no_data", "collision_gate_fullname"}
+        asset_resolved = (how in _HOW_RESOLVED_ANY
                           and bool((out["layer1b"] or {}).get("asset")))
-        asset_pinned = (asset_resolved and not out["validation_blocked"])   # asset resolved by name AND page renderable
+        # a RESOLVED no_data asset stays PINNED even though its validation necessarily fails (a dark table passes ZERO
+        # of its declared columns by definition, so n_columns>0 ∧ n_pass==0 is the EXPECTED state, not a new question
+        # for the picker): the block is EXPLAINED by no_data, and the no-data contract is the per-leaf-null skeleton +
+        # greyed notice + onward-pick alternatives. Without this precedence the "→ Layer 2 (no-data skeleton)" lane is
+        # unreachable for a genuinely dark asset (test_harness_no_data_runs_layer2_skeleton). validation_blocked stays
+        # TRUE in `out` (honest telemetry); it just no longer outranks the more specific no_data explanation.
+        asset_pinned = (asset_resolved and (not out["validation_blocked"] or out["asset_no_data"]))
         out["asset_pending"] = (not asset_resolved and not out["validation_blocked"])
         stage(run_id, "asset_gate", pinned=asset_pinned, how=how, no_data=out["asset_no_data"],
               validation_blocked=out["validation_blocked"], verdict=(out["validation"] or {}).get("verdict"),
@@ -295,6 +350,10 @@ def run_pipeline(prompt, *, asset_id=None, db=None, run_id=None, layer1a=None):
                         ("→ Layer 2" if asset_pinned else
                          ("VALIDATION-FAIL → picker (Layer 2 NOT run)" if out["validation_blocked"]
                           else "PENDING → asset popup (Layer 2 NOT run)"))))
+        if out["asset_no_data"] or out["validation_blocked"] or out["asset_pending"]:
+            obs_trace.set_degradation(asset_no_data=out["asset_no_data"] or None,
+                                      validation_blocked=out["validation_blocked"] or None,
+                                      asset_pending=out["asset_pending"] or None)
 
         # LAYER 2 + DEGRADE→REFLECT loop (skippable via V48_SKIP_LAYER2=1). Runs for a no_data asset too — emitting the
         # per-leaf-null skeleton — but a no_data page has NO real columns anywhere, so the reflect loop's re-route (which
@@ -311,7 +370,7 @@ def run_pipeline(prompt, *, asset_id=None, db=None, run_id=None, layer1a=None):
                         out["layer2"], (out["layer1a"] or {}).get("page_key"),
                         (out["validation"] or {}).get("data") or {"columns": [], "summary": {}})
                 except Exception as e:
-                    out["errors"]["payload_final"] = f"{type(e).__name__}: {e}"
+                    out["errors"]["payload_final"] = _fmt_exc(e)
             # HONEST PAGE NOTE [no_data skeleton]: a no_data page renders every card's REAL component with per-leaf-null
             # leaves (structure preserved), so it must not look like a normal answered page. Record the honest reason and
             # the onward-pick count so the run is self-explaining even when the emit reported no per-card gaps.
@@ -323,6 +382,7 @@ def run_pipeline(prompt, *, asset_id=None, db=None, run_id=None, layer1a=None):
                                          f"{_alts} data-bearing alternative(s) offered in the picker.")
 
     record_notes(run_id, out["notes"])                          # persist loop1/loop2 notes for later user-facing explain
+    _replay_pipeline_out(out)                                   # replay artifact: the lane's full stage-level out dict
     return out
 
 
@@ -335,8 +395,13 @@ def run_pipeline_multi(prompt, assets, *, db=None):
     per-asset Layer 2. `assets` = the resolved as_asset dicts (host resolves the picker's asset_ids). Returns
     {layer1a, run_id, groups:[{class, lane, assets}]}: `lane` is a full run_pipeline result whose layer2 IS the class
     recipe, `assets` the same-class members that reuse it. ONE asset → ONE group == the single-asset pipeline verbatim."""
+    from obs import trace as obs_trace
     db = db or CMD_CATALOG
     run_id = make_run_id(prompt)
+    _own_trace = obs_trace.current() is None                    # direct (CLI/test) call → ONE trace for ALL lanes
+    if _own_trace:
+        obs_trace.new_trace(kind="multi", prompt=prompt)
+    obs_trace.bind_run_id(run_id)                               # the multi ENVELOPE id; each lane binds its own below
     by_class = {}
     for a in (assets or []):
         by_class.setdefault((a or {}).get("class") or "?", []).append(a)
@@ -349,4 +414,15 @@ def run_pipeline_multi(prompt, assets, *, db=None):
         if shared_1a is None:
             shared_1a = lane.get("layer1a")                     # the FIRST class ROUTES the template; the rest lock to it
         groups.append({"class": cls, "lane": lane, "assets": members})
-    return {"layer1a": shared_1a, "run_id": run_id, "groups": groups}
+    result = {"layer1a": shared_1a, "run_id": run_id, "groups": groups}
+    if _own_trace:
+        try:
+            _lanes = [g.get("lane") or {} for g in groups]
+            _degraded = any(ln.get("data_unavailable") or ln.get("asset_no_data") for ln in _lanes)
+            _errored = any(ln.get("errors") for ln in _lanes)
+            obs_trace.end_trace(status=("error" if _errored else ("degraded" if _degraded else "ok")),
+                                response_summary={"run_id": run_id, "n_groups": len(groups),
+                                                  "classes": sorted(by_class.keys())})
+        except Exception:
+            pass
+    return result

@@ -4,14 +4,14 @@ Verifies the DB rows the sweep flagged as missing (fullsweep_20260706_004334 pag
 Viewer: 'neuract lt_asset_3d/asset_3d_model 0 rows while dg-final-v2 registered+glb exists → avoidable blank'):
   · cmd_catalog.reason_template carries the generic sweep causes (db/seed_reason_templates_sweep.sql + no_asset_3d);
   · neuract.lt_asset_3d carries the REAL dg models and ONLY generator meters carry the tier-1 override;
-  · the served GLB file physically exists in the ems_backend media root and is a real binary glTF.
+  · the served GLB file physically exists in the web media root (host/web/public/media) and is a real binary glTF.
 neuract checks SKIP (never fail) when the :5433 tunnel is down — the seed is DB state, not code under test."""
 import os
 
 import pytest
 
 _V48 = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-_MEDIA = os.path.normpath(os.path.join(_V48, "..", "pipeline_v45", "ems_backend", "media"))
+_MEDIA = os.path.normpath(os.path.join(_V48, "host", "web", "public", "media"))
 
 
 def _neuract():
@@ -71,8 +71,8 @@ def test_override_binds_generators_only():
 def test_dg_glb_present_in_media_root():
     p = os.path.join(_MEDIA, "3d", "glb", "dg_final_v2.glb")
     if not os.path.isdir(_MEDIA):
-        pytest.skip("ems_backend media root not present on this checkout")
-    assert os.path.isfile(p), "dg_final_v2.glb missing from ems_backend media root — seeded url would 404"
+        pytest.skip("web media root not present on this checkout")
+    assert os.path.isfile(p), "dg_final_v2.glb missing from the web media root — seeded url would 404"
     with open(p, "rb") as f:
         assert f.read(4) == b"glTF"                                # binary-glTF magic — a real model file
     assert os.path.getsize(p) > 100_000

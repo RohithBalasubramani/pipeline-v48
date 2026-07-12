@@ -1,7 +1,7 @@
 /**
  * card 23 — PqTopStrip (issue summary strip).
  *
- * PAYLOAD-DIRECT (ems_backend RETIRED — `frame` is always empty now). The Layer-2
+ * PAYLOAD-DIRECT (host-served RETIRED — `frame` is always empty now). The Layer-2
  * completed payload IS the render source: payload.strip = { pres, filterSelection,
  * timeChoice, timeOptions, stats, selectedTileKey }, carrying REAL neuract counts /
  * worst V-I or honest-blank per leaf. The old live snapshotFromFrame(frame) branch AND

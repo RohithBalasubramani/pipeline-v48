@@ -1,11 +1,11 @@
-"""layer2/emit/data/consumer_binding/domain.py — a card's VALID endpoint set (its canonical live screen + that domain's
+"""layer2/emit/instructions/consumer_binding/domain.py — a card's VALID endpoint set (its canonical live screen + that domain's
 date-capable history variants) shown to the AI as a STRONG preference, plus the RETIRED-names prompt emphasis. The AI
 must pick ONE of `domain_endpoints` (live for a now card, a history variant for a trend card); RETIRED_ENDPOINTS are
 folded-away legacy names the AI must never emit (build() does not snap — the prompt forbids them). [config → DB]"""
-from layer2.emit.data.endpoint_registry import HISTORY_BY_DOMAIN
+from layer2.emit.instructions.endpoint_registry import HISTORY_BY_DOMAIN
 from config.app_config import cfg
 
-from layer2.emit.data.consumer_binding.screen_map import canonical_screen
+from layer2.emit.instructions.consumer_binding.screen_map import canonical_screen
 
 _HISTORY_BY_DOMAIN = HISTORY_BY_DOMAIN                                # alias for domain_endpoints() below
 

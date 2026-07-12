@@ -17,27 +17,37 @@ asset_3d_model / lt_asset_3d are currently empty and honest-degrade.
 """
 from __future__ import annotations
 
-from registries.neuract.members import (
-    members_of, incomers_of, outgoers_of, member_tables,
-)
-from registries.neuract.meters import (
-    meter_by, table_for, name_for, type_of, list_meters,
-)
-from registries.neuract.topology import edges, neighbors
-from registries.neuract.nameplate import params_for, param, rated_kva
-from registries.neuract.assets3d import (
-    model_for, model_for_asset, model_by_id, model_by_key, list_models,
-)
+# Re-exports are LAZY (PEP-562, same pattern as config/): the eager `from registries.neuract.members import …` block
+# made this __init__ + all five submodules ONE import SCC — each submodule's `from registries.neuract import _db`
+# re-entered a partially-initialized package, and it worked only by import-order luck. Now importing the package
+# executes nothing; `from registries.neuract import member_tables` resolves through __getattr__ on first use.
+# [cycle-kill 2026-07-12]
 
-__all__ = [
+# public name → owning submodule (the ONE dispatch table; extend it when a concern gains a public name)
+_EXPORTS = {
     # members (aggregation source)
-    "members_of", "incomers_of", "outgoers_of", "member_tables",
+    "members_of": "members", "incomers_of": "members", "outgoers_of": "members", "member_tables": "members",
     # meter registry
-    "meter_by", "table_for", "name_for", "type_of", "list_meters",
+    "meter_by": "meters", "table_for": "meters", "name_for": "meters", "type_of": "meters", "list_meters": "meters",
     # topology
-    "edges", "neighbors",
+    "edges": "topology", "neighbors": "topology",
     # nameplate
-    "params_for", "param", "rated_kva",
+    "params_for": "nameplate", "param": "nameplate", "rated_kva": "nameplate",
     # 3d
-    "model_for", "model_for_asset", "model_by_id", "model_by_key", "list_models",
-]
+    "model_for": "assets3d", "model_for_asset": "assets3d", "model_by_id": "assets3d",
+    "model_by_key": "assets3d", "list_models": "assets3d",
+}
+
+__all__ = sorted(_EXPORTS)
+
+
+def __getattr__(name):
+    mod = _EXPORTS.get(name)
+    if mod is None:
+        raise AttributeError(f"module 'registries.neuract' has no attribute {name!r}")
+    from importlib import import_module
+    return getattr(import_module(f"registries.neuract.{mod}"), name)
+
+
+def __dir__():
+    return sorted(set(globals()) | set(_EXPORTS))

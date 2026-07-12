@@ -16,14 +16,6 @@ from config.quality_policy import num as _policy_num
 from data.lt_panels.panel_members import panel_members
 
 
-def panel_member_tables(mfm_id):
-    """Ordered list of the panel's POPULATED (reporting) member feeder tables — the tables an aggregate worker sums.
-    Delegates to panel_members (value-aware). Empty/non-reporting members are excluded here (they are still counted in
-    the coverage denominator by expand_basket_with_siblings). [] for a leaf/orphan."""
-    res = panel_members(mfm_id, meaningful=True)
-    return [m["table"] for m in res.get("members", []) if m.get("reporting") and m.get("table")]
-
-
 def expand_basket_with_siblings(basket, asset):
     """Add topology-sibling member tables + coverage metadata to a card-agnostic basket, IN PLACE (and returned).
     Only fires for an aggregate panel (asset.has_feeders); a leaf/real meter is returned unchanged. The column set is

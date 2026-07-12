@@ -5,7 +5,7 @@
 // whose `onChange` fires on Apply with a committed `SamplingSelection`
 // { preset, range:{start,end}|null, resolution?, shift? }. Cards 71/73 translate that → the
 // host date_window vocabulary via `samplingToWindow` and hand it to the host onDateChange.
-// (ems_backend is RETIRED so the host re-fetch is now a no-op, but the picker is real CMD V2
+// (host-served is RETIRED so the host re-fetch is now a no-op, but the picker is real CMD V2
 // chrome and the committed window is still surfaced.) Mirrors the DG tab's OWN
 // config.samplingToFilter() preset→resample pairing:
 //   range      ∈ today | yesterday | last-7-days | this-month | custom-range

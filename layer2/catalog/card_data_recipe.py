@@ -1,17 +1,6 @@
 """layer2/catalog/card_data_recipe.py — the UNRESOLVED recipe Layer 2 resolves into data_instructions. [spec §10 L2]"""
-import json
-
-from data.db_client import q
+from data.db_client import q, first_row, json_cell as _j   # None-on-corrupt (this reader's contract, D12)
 from layer2.catalog import card_fill_recipe
-
-
-def _j(v):
-    if not v:
-        return None
-    try:
-        return json.loads(v)
-    except Exception:
-        return None
 
 
 def read(card_id):

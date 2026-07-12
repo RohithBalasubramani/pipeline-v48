@@ -9,7 +9,22 @@ from data.db_client import pg_connect                                # routed co
 from layer1b.basket.col_dict import real_table_cols
 
 
+try:
+    from replay import hooks as _replay_hooks                  # record/replay seam (fail-open; None → bare calls)
+except Exception:
+    _replay_hooks = None
+
+
 def load_asset_frame(table, columns, *, limit=PROBE_ROWS):
+    """The public probe — semantics in _load_asset_frame_raw. REPLAY SEAM [replay/hooks.py]: the (DataFrame, cols,
+    ordered) result is recorded during a traced request and reconstructed from the tape during a pinned replay, so
+    validation reproduces without the :5433 tunnel."""
+    if _replay_hooks is None:
+        return _load_asset_frame_raw(table, columns, limit=limit)
+    return _replay_hooks.frame_probe(_load_asset_frame_raw, table, columns, limit)
+
+
+def _load_asset_frame_raw(table, columns, *, limit=PROBE_ROWS):
     """Return (DataFrame, loaded_columns, ordered). Selects TIME_COLUMN + the real basket columns, newest first.
     ORDER BY casts the ISO-8601 TEXT timestamp (DATA_TS_CAST) — a plain text sort is chronological only within ONE
     tz offset, and neuract mixes +00:00/+05:30 (the latent sibling of the stale-'ts' bug). `ordered` tells the

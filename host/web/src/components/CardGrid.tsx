@@ -12,10 +12,6 @@ const bySlot = (a: Card, b: Card) => (a.slot?.slot_order ?? 0) - (b.slot?.slot_o
 // Lays cards out in the page's REAL template (cmd_catalog page_specs, carried by 1a) — edge-to-edge, no debug frame.
 // page_specs.layout_primitive decides the strategy:  flex → region columns (RTM);  grid → CSS grid + cell placement.
 // Mirrors pipeline_v47 V47Grid. [placement = page_specs grid ⊕ page_layout_cards region/cell/slot ⊕ card_grid_size]
-// frame for a card = frames[card.endpoint] (Option A: that card's CMD V2 mapper consumes it), else the page frame.
-const frameFor = (c: Card, frames?: Record<string, any>, liveFrame?: any) =>
-  (c.endpoint && frames && frames[c.endpoint]) || liveFrame;
-
 // MULTI-ASSET compare: cards carry `card.asset` (id/name/class). When 2+ distinct assets are present, stack one full
 // page-grid per asset under an asset header (each group reuses the SAME shared template — 1a ran once). A single asset
 // (or an untagged single-asset run) falls straight through to the normal grid below. [author-once-per-class]
@@ -30,7 +26,7 @@ function AssetHeader({ name, cls }: { name?: string | null; cls?: string | null 
   );
 }
 
-export function CardGrid({ cards, layout, frames, liveFrame }: { cards: Card[]; layout?: PageLayout | null; frames?: Record<string, any>; liveFrame?: any }) {
+export function CardGrid({ cards, layout }: { cards: Card[]; layout?: PageLayout | null }) {
   if (!cards.length) return null;
 
   // grouped compare view — one stacked, scrollable full-height page per asset
@@ -45,7 +41,7 @@ export function CardGrid({ cards, layout, frames, liveFrame }: { cards: Card[]; 
             <section key={String(aid)} style={{ flex: "none", height: "90vh", minHeight: 520, display: "flex", flexDirection: "column", borderBottom: "1px solid #e6e0d4" }}>
               <AssetHeader name={a0?.name} cls={a0?.class} />
               <div style={{ flex: 1, minHeight: 0 }}>
-                <CardGrid cards={group} layout={layout} frames={frames} liveFrame={liveFrame} />
+                <CardGrid cards={group} layout={layout} />
               </div>
             </section>
           );
@@ -64,9 +60,9 @@ export function CardGrid({ cards, layout, frames, liveFrame }: { cards: Card[]; 
 
   return (
     <div style={shell}>
-      {band.map((c) => <CmdCard key={c.card_id} card={c} h={cardH(c)} liveFrame={frameFor(c, frames, liveFrame)} pageFrame={liveFrame} />)}
-      {G.primitive === G.vocab.flex_primitive ? <RtmFlex G={G} cards={body} frames={frames} />
-                              : <RealGrid G={G} cards={body} frames={frames} liveFrame={liveFrame} />}
+      {band.map((c) => <CmdCard key={c.card_id} card={c} h={cardH(c)} />)}
+      {G.primitive === G.vocab.flex_primitive ? <RtmFlex G={G} cards={body} />
+                              : <RealGrid G={G} cards={body} />}
     </div>
   );
 }
@@ -81,7 +77,7 @@ export function CardGrid({ cards, layout, frames, liveFrame }: { cards: Card[]; 
 //   • a card that is ALONE in its column spans every row (full-height side rail — power-quality card 47);
 //   • gridTemplateRows = the template's rows if it already declares enough tracks, else repeat(N,minmax(0,1fr)) for the
 //     N rows actually used → equal fractions of the viewport, no implicit auto rows that would overflow.
-function RealGrid({ G, cards, frames, liveFrame }: { G: ReturnType<typeof pageGrid>; cards: Card[]; frames?: Record<string, any>; liveFrame?: any }) {
+function RealGrid({ G, cards }: { G: ReturnType<typeof pageGrid>; cards: Card[] }) {
   const plan = planGrid(cards, G.rows, G.vocab);               // PURE placement: cells → concrete (col,row) + row tracks
   const byId = new Map(cards.map((c) => [c.card_id, c]));
   const style: React.CSSProperties = {
@@ -93,7 +89,7 @@ function RealGrid({ G, cards, frames, liveFrame }: { G: ReturnType<typeof pageGr
         const c = byId.get(s.card_id)!;
         return (
           <div key={c.card_id} style={{ ...s.style, minHeight: 0, overflow: "hidden" }}>
-            <CmdCard card={c} liveFrame={frameFor(c, frames, liveFrame)} pageFrame={liveFrame} />
+            <CmdCard card={c} />
           </div>
         );
       })}
@@ -105,14 +101,14 @@ function RealGrid({ G, cards, frames, liveFrame }: { G: ReturnType<typeof pageGr
 // composite Cards (RealTimeMonitoringLayout). Lay them out in the page's REAL 2-column template (G.cols, e.g.
 // "minmax(0,1fr) 300px") and let RtmComposite render the LEFT heatmap Card (col 1) + RIGHT rail Card (col 2),
 // each merging its 4 cards borderless. Backend untouched — RtmComposite still renders each card by its own
-// identity (renderCmd / the fill fns) from the card's own payload + frame. Only the GRID path uses RealGrid.
-function RtmFlex({ G, cards, frames }: { G: ReturnType<typeof pageGrid>; cards: Card[]; frames?: Record<string, any> }) {
+// identity (renderCmd / the fill fns) from the card's own payload. Only the GRID path uses RealGrid.
+function RtmFlex({ G, cards }: { G: ReturnType<typeof pageGrid>; cards: Card[] }) {
   const style: React.CSSProperties = {
     display: "grid", gridTemplateColumns: G.cols, gridTemplateRows: G.rows, gap: G.gap, flex: 1, minHeight: 0,
   };
   return (
     <div style={style}>
-      <RtmComposite cards={cards} frames={frames} />
+      <RtmComposite cards={cards} />
     </div>
   );
 }

@@ -1,0 +1,24 @@
+{
+ "run_id": "r_eb2585d82f",
+ "loop1": [
+  {
+   "card_id": 16,
+   "title": "Energy Consumption Trend",
+   "answerability": "partial",
+   "note": "Showing total active and reactive energy consumption for the panel's outgoing feeders (UPS, BPDP, HHF). Per-member breakdown is aggregated from member meters; rated/contracted lines are omitted as nameplate ratings are unknown for this asset."
+  },
+  {
+   "card_id": 15,
+   "title": "Today live power analysis",
+   "answerability": "partial",
+   "note": "Showing live active/reactive power from outgoing feeders; capacity and peak markers are omitted because the panel's rated kVA is unknown and load factor is not measured."
+  },
+  {
+   "card_id": 17,
+   "title": "Daily Power Demand by Feeder",
+   "answerability": "partial",
+   "note": "Showing worst peak power and UPS/BPDB demand trends; Load Factor and HHF demand are not measured (no HHF feeders on this panel, and Load Factor requires a rated capacity which is unknown)."
+  }
+ ],
+ "loop2": null
+}

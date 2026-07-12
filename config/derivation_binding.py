@@ -28,21 +28,6 @@ def base_columns(metric):
     return b["base_columns"] if b else []
 
 
-def bindable(metric, present_columns):
-    """True iff every non-nameplate base column of `metric` is in `present_columns` (the endpoint's fetched set).
-    nameplate:* pseudo-columns are satisfied by the nameplate table, so they don't gate on the frame."""
-    b = binding(metric)
-    if not b:
-        return False
-    present = set(present_columns or [])
-    for col in b["base_columns"]:
-        if col.startswith("nameplate:"):
-            continue
-        if col not in present:
-            return False
-    return True
-
-
 def all_bindings():
     rows = q("cmd_catalog", "SELECT " + ",".join(_COLS) + " FROM derivation_binding ORDER BY metric")
     return [{"metric": r[0], "fn": r[1], "base_columns": _split(r[2]), "fidelity": r[3]} for r in rows]
@@ -72,5 +57,4 @@ def _split(base):
     return [c.strip() for c in (base or "").split(",") if c.strip()]
 
 
-def _esc(s):
-    return str(s).replace("'", "''")
+from config.policy_read import esc as _esc  # the ONE shared SQL-quote escape  # noqa: E402

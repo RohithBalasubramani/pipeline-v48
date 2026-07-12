@@ -1,0 +1,30 @@
+{
+ "run_id": "r_7cc76adb64",
+ "loop1": [
+  {
+   "card_id": 39,
+   "title": "Today's Energy",
+   "answerability": "partial",
+   "note": "Showing total active, active, and reactive energy for the month \u2014 SEC, subsidy limits, and energy targets are not measured for this asset."
+  },
+  {
+   "card_id": 40,
+   "title": "Power Energy Analysis",
+   "answerability": "partial",
+   "note": "one or more leaves could not be bound for this card on this asset \u2014 those leaves render an honest blank (per-leaf reasons attached), every other leaf fills"
+  },
+  {
+   "card_id": 41,
+   "title": "Input vs Output Energy",
+   "answerability": "partial",
+   "note": "Showing total active power and import energy \u2014 per-phase power and dedicated output power metrics aren't measured for this asset, so efficiency and delta percentages are approximated or omitted."
+  },
+  {
+   "card_id": 42,
+   "title": "Load Anomalies",
+   "answerability": "partial",
+   "note": "Showing actual load trend and load factor \u2014 expected load profiles, anomaly counts, and threshold lines are not measured by this asset."
+  }
+ ],
+ "loop2": null
+}

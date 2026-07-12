@@ -1,0 +1,24 @@
+{
+ "run_id": "r_fe2c589cf5",
+ "loop1": [
+  {
+   "card_id": 63,
+   "title": "Fuel Tank Anatomy",
+   "answerability": "partial",
+   "note": "This meter class (electrical) does not measure fuel volume, flow, or temperature; all fuel-specific slots are intentionally blank."
+  },
+  {
+   "card_id": 64,
+   "title": "All Runs (Fuel Log)",
+   "answerability": "partial",
+   "note": "Showing total energy and average load \u2014 fuel, run hours, and start counts are not measured by this electrical meter."
+  },
+  {
+   "card_id": 65,
+   "title": "Fuel & Tank \u2014 Composite",
+   "answerability": "partial",
+   "note": "Showing electrical power/energy/voltage as proxy for fuel/temperature \u2014 fuel-specific metrics are not measured by this electrical meter."
+  }
+ ],
+ "loop2": null
+}

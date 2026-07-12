@@ -1,0 +1,24 @@
+{
+ "run_id": "r_336c3ced9b",
+ "loop1": [
+  {
+   "card_id": 47,
+   "title": "Power Quality",
+   "answerability": "partial",
+   "note": "Showing total current THD (I-THD) as proxy for harmonic distortion; per-order harmonics (H5/H7) and flicker/crest factor are not measured by this incomer meter."
+  },
+  {
+   "card_id": 48,
+   "title": "Distortion & Harmonic Profile",
+   "answerability": "partial",
+   "note": "Showing per-phase current and voltage THD trends \u2014 5th/7th harmonics are not measured for this asset."
+  },
+  {
+   "card_id": 49,
+   "title": "Load Impact & Transformer Stress",
+   "answerability": "partial",
+   "note": "Showing Displacement PF and True PF \u2014 K-factor and Phase Angle are not measured by this asset; PF Gap is derived from Displacement PF."
+  }
+ ],
+ "loop2": null
+}

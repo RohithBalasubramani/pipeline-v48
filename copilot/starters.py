@@ -81,11 +81,13 @@ def starters(n=5, timeout=30.0):
         if len(picks) >= 5:
             break
     a = picks + ["the panel"] * 6
-    _CACHE = [
+    # DO NOT cache the fallback: if :8201 is still loading at copilot boot (the warmup thread calls starters() then),
+    # caching here would pin this deterministic fallback for the whole process life — the never-cache-an-unavailable
+    # rule the suggest cache states 40 lines away (server.py:41-49). Return it; the next call retries the model.
+    return [
         {"tag": "RT", "text": f"real-time power and current for {a[0]}"},
         {"tag": "TRND", "text": f"energy and power trend for {a[1]} today"},
         {"tag": "V·I", "text": f"voltage and current for {a[2]}"},
         {"tag": "PQ", "text": f"power quality and harmonics for {a[3]}"},
         {"tag": "ALM", "text": f"active alarms and events for {a[4]}"},
     ][:n]
-    return _CACHE

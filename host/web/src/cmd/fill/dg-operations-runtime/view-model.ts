@@ -6,7 +6,7 @@
 // Cards 70 (LiveOpsCard) + 72 (EnergyReliabilityCard) render DIRECTLY from their Layer-2 payload via COMPONENTS
 // (Cmp70 / Cmp72) — they never reach FILL, so no code for them lives here.
 //
-// FRAMES=PAYLOADS [architecture]: ems_backend is RETIRED — the host emits `frames={}` EMPTY. So the ONLY data source is
+// FRAMES=PAYLOADS [architecture]: host-served is RETIRED — the host emits `frames={}` EMPTY. So the ONLY data source is
 // the Layer-2 `payload`; the old live-frame / energy-power column-row reducer / OpsFrame-from-frame machinery is DELETED.
 //
 // HONEST-DEGRADE contract [per card_handling]: the DG run-hours / duty history + per-run-event log are runtime-LOG data
@@ -25,7 +25,7 @@ import type {
 } from "@cmd-v2/pages/assets/diesel-generator/tabs/operations-runtime/types";
 
 /** A ZERO-runtime `OpsSnapshot` — every runtime/reliability/energy field 0, status Idle. There is NO neuract source
- *  for this domain now (ems_backend retired), so the whole snapshot is the honest empty baseline. Passed through the
+ *  for this domain now (host-served retired), so the whole snapshot is the honest empty baseline. Passed through the
  *  DG tab's OWN `buildOperationsRuntimeViewModel` so the page draws its real chrome / labels / colours. */
 function emptyOpsSnapshot(): OpsSnapshot {
   return {

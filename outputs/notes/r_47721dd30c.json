@@ -1,0 +1,18 @@
+{
+ "run_id": "r_47721dd30c",
+ "loop1": [
+  {
+   "card_id": 43,
+   "title": "Voltage Live Health",
+   "answerability": "partial",
+   "note": "Showing live phase voltages and deviation \u2014 Rate Change (V/min) is not measured by this meter's snapshot columns."
+  },
+  {
+   "card_id": 46,
+   "title": "Current History",
+   "answerability": "partial",
+   "note": "Showing per-phase current history and peak/average stats; expected range lines omitted because the asset's rated current is unknown."
+  }
+ ],
+ "loop2": null
+}

@@ -18,6 +18,19 @@ def stage(run_id, name, **fields):
             f.write(json.dumps({"ts": time.time(), "stage": name, **fields}) + "\n")
     except Exception:
         pass
+    # TRACE FORWARD [obs]: mirror this legacy stage line into the ACTIVE trace as a kind='legacy' annotation event
+    # (obs_stage_events, stage='legacy.<name>') — every existing call site becomes trace-queryable with zero call-site
+    # edits, and the run_id binds onto the trace so pipeline_<rid>.jsonl joins obs_traces.run_ids. No trace → no-op.
+    try:
+        from obs import trace as _trace
+        t = _trace.current()
+        if t is not None:
+            if run_id and run_id not in ("-", "default", "pytest"):   # placeholder ids never bind
+                _trace.bind_run_id(run_id)
+            from obs import event as _event, bus as _bus
+            _bus.emit(_event.legacy_event(t, run_id, name, fields))
+    except Exception:
+        pass
     # failures fan-out [#17; fullsweep_20260706 telemetry gap: failures_ fired on 1/42 defect cards — it only saw
     # llm/harness records]. Every layer already reports its defects THROUGH this stage hook (host exec ok=False,
     # L2.card fail=…, reflect gaps=N, ERROR=… everywhere), so mirror those signals onto obs.failures without touching

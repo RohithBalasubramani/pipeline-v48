@@ -5,31 +5,31 @@
    "card_id": 23,
    "title": "PQ Issues KPI Strip (Total Issues / I-THD Events / V-THD Events / PF Gap Feeders / Neutral Stress / Worst I-THD / Worst V-THD)",
    "answerability": "partial",
-   "note": "Showing total PQ issues and I-THD/V-THD events for PCC Panel 4 feeders; 3rd harmonic, peak-THD, and k-factor columns are not measured by this asset's member meters."
+   "note": "Showing I-THD, V-THD, PF Gap, and Neutral Stress counts for the panel's outgoing feeders; V-THD and specific harmonic order (h5/h7) data is unavailable for some members, so those metrics are approximate or blank where data is missing."
   },
   {
    "card_id": 24,
    "title": "Harmonics & PQ Timeline",
    "answerability": "partial",
-   "note": "Showing per-panel harmonic and event data from live member meters; supply-side members (Solar Incomers) are dark and honest-blanked."
+   "note": "Showing per-panel THD and event breach counts via roster; limit lines are blank because this asset's nameplate rating is unknown."
   },
   {
    "card_id": 25,
    "title": "AI Summary",
    "answerability": "partial",
-   "note": "Showing current THD (I-THD) \u2014 voltage THD (V-THD) is not measured for this asset."
+   "note": "nothing could be bound for this card on this asset \u2014 every data leaf renders an honest blank (per-leaf reasons attached), not a zero"
   },
   {
    "card_id": 26,
    "title": "Feeder PQ At {period}",
    "answerability": "partial",
-   "note": "Showing I-THD and V-THD (current only) \u2014 voltage THD columns (thd_voltage_*) are present in schema but have no data for this asset; 3rd, 5th, 7th, and peak harmonics are not measured."
+   "note": "Showing per-feeder THD and power quality metrics for the last 7 days; some feeders (Axial Fan Panel-2, Curing Line CSU-01, Fire Fighting System, Domestic Water Pump) are dark and omitted from the roster."
   },
   {
    "card_id": 27,
    "title": "Signature",
    "answerability": "partial",
-   "note": "Showing harmonic signatures for active feeders; 3rd harmonic, k-factor, and peak-THD columns are not measured by this meter class."
+   "note": "Showing current THD (I-THD) and power (kW) \u2014 voltage THD (V-THD) and specific harmonic orders (H3, H5, H7) are not measured for this asset."
   }
  ],
  "loop2": null

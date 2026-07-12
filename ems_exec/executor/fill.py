@@ -19,7 +19,7 @@ the panel out to its members and rolled the electrical up may inject that fleet-
 raw scalar fields then fill from THAT row (see the fill()/_field_value agg_row hook) so the aggregate renderer reuses this
 executor verbatim for its KPI/scalar leaves. Member resolution + node-list assembly stay in the renderer, not here.
 Self-contained: reads live values from ems_exec.data.neuract, derivations from ems_exec.derivations, and every
-gate/rating/binding from a DB-driven config/* accessor with a code default. No ems_backend, no layer3, no daphne, no WS.
+gate/rating/binding from a DB-driven config/* accessor with a code default. No legacy EMS service, no layer3, no daphne, no WS.
 
 THIS FILE = the orchestrator FACADE: the per-field dispatch (_field_value) + the fill() pass order live here; every
 other seam is an atomic sibling module (paths / verify / derived / series_fill / wildcards / indexed_families / gaps /
@@ -31,12 +31,9 @@ from __future__ import annotations
 import copy
 
 from ems_exec.data import neuract as _nx
-from ems_exec.derivations import registry as _registry
 from config import nameplates as _np
 from config import nameplate_slot_map as _slot_map
 from config import derivation_binding as _deriv
-from config import quality_policy as _qp
-from config import neuract_dsn as _dsn
 
 # ── the atomic executor seams, re-exported byte-compatibly (the facade contract) ──────────────────────────────────────
 from ems_exec.executor.paths import (                                                        # noqa: F401
@@ -59,6 +56,8 @@ from ems_exec.executor.gaps import (                                            
 from ems_exec.executor.graft import (                                                         # noqa: F401
     _graft_seedfree, _graft_container, _null_untouched_placeholders, _restore_array_containers)
 from ems_exec.executor.window_policy import _range_start, _honor_range, _window_of            # noqa: F401
+from ems_exec.executor import field_routing as _field_routing   # the pre-pass routing PLAN (monoliths F6)
+from ems_exec.executor import degrade as _degrade            # pass-failure telemetry (EH F3)
 
 
 def _fields_of(data_instructions):
@@ -116,8 +115,8 @@ def _windowed_register_delta(asset_table, col, window):
         from config.app_config import cfg
         if str(cfg("fill.window_register_delta", "on")).strip().lower() == "off":
             return False, None
-    except Exception:
-        pass
+    except Exception as e:
+        _degrade.note("register_delta", e)   # telemetry-only; fail-open contract unchanged [EH F3]
     try:
         from ems_exec.executor import members as _members
         pairs = _members.register_pairs()
@@ -237,8 +236,8 @@ def fill(payload, data_instructions, ctx, default_payload=None, shape_ref=None):
     try:
         from ems_exec.executor import roster as _roster
         _roster.prepare_ctx(data_instructions, ctx)
-    except Exception:
-        pass
+    except Exception as e:
+        _degrade.note("roster.prepare_ctx", e)   # telemetry-only; fail-open contract unchanged [EH F3]
     asset_table = ctx.get("asset_table") or ctx.get("table") or ctx.get("table_name")
     agg_row = ctx.get("_agg_row")                                # panel-aggregate: injected fleet-rolled superset row
     fields = _fields_of(data_instructions)
@@ -264,38 +263,11 @@ def fill(payload, data_instructions, ctx, default_payload=None, shape_ref=None):
 
     axis_ms = None                                             # the card's bucket-timestamp axis, computed lazily ONCE
     written_value_paths = set()                                # F2: leaf paths the executor wrote (display-sibling reconcile)
-    # WILDCARD ARRAY-GROW pre-pass [composite cards 56/59]: fields whose slot is `<array>[*].<key>` cannot be resolved by
-    # the scalar loop below (the '*' is neither a dict key nor a list index). Grow each such array ONCE across the shared
-    # bucket axis (per-point OBJECT array), then skip those fields in the main loop.
-    wild_fields = []
-    for f in fields:
-        sp = _split_wildcard(f.get("slot"))
-        if sp:
-            wild_fields.append((f, sp[0], sp[1]))
-    # SINGLE-INDEX SERIES PROMOTION [card 73 false-blank, Family C]: Layer 2 sometimes fans a per-bucket trend into
-    # `<array>[0].<key>` fields — several DISTINCT keys ALL at index 0 (buckets[0].active/reactive/apparent/pf) — meaning
-    # "grow this array across the bucket axis; each bucket's <key> ← its column's bucketed value". A `kind='bucketed'`
-    # (series) field pointed at a SCALAR per-bucket element is a series, not a scalar. The per-index family pre-pass below
-    # only fires on ≥2 SAME-key fields (sparkline[0..29].loadPct — point i ← series i); DISTINCT-key SOLO fields fall to
-    # the scalar loop, which crams the WHOLE ordered series into element[0].<key> (chart geometry destroyed) or blanks it
-    # when the array is empty — yet maxY still computes from the same column (proving the frame carried data), so the trend
-    # FALSE-BLANKS. Route ONLY the SOLO single-index fields (their (array,key) group has exactly one member — NOT a
-    # same-key sparkline family) through the SAME wildcard array-grow as `[*]`, so the array grows to the full per-bucket
-    # series. Generic — array/key from the slot, no card ids; a genuinely null bucket → honest None.
-    _idx_by_key: dict = {}
-    for f in fields:
-        if (f.get("kind") or "").lower() != "bucketed" or _split_wildcard(f.get("slot")):
-            continue
-        sp = _split_indexed(f.get("slot"))
-        if sp and _scalar_point_slot(out, default_payload, f.get("slot")):
-            _idx_by_key.setdefault((sp[0], sp[2]), []).append(f)   # group by (array_path, elem_key)
-    promoted_ids = set()
-    for (array_path, elem_key), grp in _idx_by_key.items():
-        if len(grp) != 1:
-            continue                                           # ≥2 SAME-key indices = a sparkline family → indexed-fill
-        f = grp[0]
-        wild_fields.append((f, array_path, elem_key))          # (field, array_path, elem_key) — a wildcard-grow member
-        promoted_ids.add(id(f))
+    # FIELD-ROUTING PLAN [monoliths F6, 2026-07-12]: the wildcard/promotion/family GROUPING decisions live in
+    # executor/field_routing.py (one home for the family-shape classification whose inline split-brain caused the
+    # card-58 defect); fill() executes the plan. Two phases on purpose — the wildcard GROW below mutates `out`
+    # before the family grouping probes it (original inline order preserved byte-for-byte).
+    wild_fields, promoted_ids = _field_routing.plan_wildcards(fields, out, default_payload)
     wild_paths = set()
     if wild_fields:
         wild_paths = _fill_wildcard_arrays(out, default_payload, wild_fields, asset_table, present_cols, window,
@@ -303,33 +275,7 @@ def fill(payload, data_instructions, ctx, default_payload=None, shape_ref=None):
         for p in wild_paths:                                   # a GROWN array is fill-produced: its zeros are real
             written_value_paths.add(p)                         # readings/honest Nones — exempt from placeholder-null
             written_value_paths.add(f"data.{p}")               # (both address forms _leaf_path_for resolves)
-    # PER-INDEX SERIES FAMILY pre-pass [card 58 sparkline]: group `<array>[i].<key>` bucketed fields per (array, key)
-    # and fill each family from ONE shared series (point i ← bucket i, end-aligned). The scalar loop below would hand
-    # EACH such slot the whole series — or [] when the field is column-less (the all-empty sparkline). Fields already
-    # PROMOTED to the wildcard array-grow above (single-index per-bucket series) are excluded — they are grown, not indexed.
-    idx_groups = {}
-    for f in fields:
-        # ROUTE on is_series_family_field (not the literal kind=='bucketed'): the LIVE card-58 emit fans the sparkline into
-        # `kind='derived'` per-point fields (fn='loadFactorPct') — a literal 'bucketed' gate excluded them so all 30 fell to
-        # the scalar loop and BROADCAST one window value. The predicate accepts both bucketed points and per-bucket derived
-        # points, while still returning False for the paired kind='time'/'const' label/axis leaf (its own path, untouched).
-        if not is_series_family_field(f) or _split_wildcard(f.get("slot")):
-            continue
-        if id(f) in promoted_ids:
-            continue
-        sp = _split_indexed(f.get("slot"))
-        if sp and _scalar_point_slot(out, default_payload, f.get("slot")):
-            idx_groups.setdefault((sp[0], sp[2]), []).append((f, sp[1]))
-
-    def _homogeneous_series(members):
-        # A genuine per-bucket SERIES binds ONE metric/fn across ALL its points (card-58: loadFactorPct ×30 → fan the real
-        # per-bucket series). DISTINCT-metric siblings are NOT a time series: card-72 energyReliability.cells[0]=active /
-        # [1]=reactive / [2]=apparent are separate KPIs that happen to share an array+key — fanning a single bucketed series
-        # across them is wrong (it blanks the real active 24h delta). Only a metric-homogeneous group is a fan-able series;
-        # a mixed-metric group falls through to the scalar loop so each KPI fills (or honest-blanks) on its own.
-        sig = {((f.get("metric") or "").strip().lower(), (f.get("fn") or "").strip().lower()) for f, _ in members}
-        return len(sig) == 1
-    families = {k: v for k, v in idx_groups.items() if len(v) >= 2 and _homogeneous_series(v)}
+    families = _field_routing.plan_families(fields, out, default_payload, promoted_ids)
     consumed_ids = set()
     if families:
         consumed_ids = _fill_indexed_families(out, default_payload, families, asset_table, present_cols, window,
@@ -390,8 +336,8 @@ def fill(payload, data_instructions, ctx, default_payload=None, shape_ref=None):
                 from ems_exec.executor import yscale as _ys
                 if _ys.is_scale_key(toks[-1] if toks else ""):
                     continue
-            except Exception:
-                pass
+            except Exception as e:
+                _degrade.note("fill_pass", e)   # telemetry-only; fail-open contract unchanged [EH F3]
             if axis_ms is None:
                 axis_ms = _anchor_timestamps(fields, asset_table, present_cols, window)
             key = (toks[-1] if toks else "").lower()
@@ -443,8 +389,8 @@ def fill(payload, data_instructions, ctx, default_payload=None, shape_ref=None):
     if isinstance(out, dict) and isinstance(payload, dict):
         try:
             _null_untouched_placeholders(out, payload, written_value_paths)
-        except Exception:
-            pass
+        except Exception as e:
+            _degrade.note("placeholder_null", e)   # telemetry-only; fail-open contract unchanged [EH F3]
 
     # ── ROSTER seam #2: the member-scope slots (elements / groups / aggregates / sections / sankey) — the generic
     # interpreter fills them from the members resolved in seam #1. Per-slot honest-degrade; no-op when not prepared.
@@ -453,8 +399,8 @@ def fill(payload, data_instructions, ctx, default_payload=None, shape_ref=None):
             from ems_exec.executor import roster as _roster
             out = _roster.run_roster(out, (data_instructions or {}).get("roster"), ctx,
                                      default_payload=default_payload)
-        except Exception:
-            pass
+        except Exception as e:
+            _degrade.note("placeholder_null", e)   # telemetry-only; fail-open contract unchanged [EH F3]
         # ROSTER REASONS [card-12 render.gaps=null family]: every roster-written data leaf that stayed BLANK (a dark
         # member, an alias of a blank sibling, a recipe honest-null with its DB-authored why) gets a per-leaf gap
         # record on the SAME reason channel — a rebuilt roster tree is invisible to the sources-based scan below
@@ -462,8 +408,8 @@ def fill(payload, data_instructions, ctx, default_payload=None, shape_ref=None):
         try:
             from ems_exec.executor import roster_gaps as _rgaps
             gaps.extend(_rgaps.collect(out, ctx.get("_roster_state"), existing=gaps))
-        except Exception:
-            pass
+        except Exception as e:
+            _degrade.note("roster.run_roster", e)   # telemetry-only; fail-open contract unchanged [EH F3]
 
     # POST-FILL Y-SCALE DERIVATION [cards 44/46/48/49 + 37/38/40]: a chart's scale object ({maxY,minY,yTicks}, the
     # yMax/yMin naming, prefix pairs like demandYMax/demandYMin, and ticks-ONLY axes) was stripped to 0.0/[] — or
@@ -475,8 +421,8 @@ def fill(payload, data_instructions, ctx, default_payload=None, shape_ref=None):
         try:
             from ems_exec.executor import yscale as _yscale
             out = _yscale.apply(out, shape_ref=shape_ref)
-        except Exception:
-            pass
+        except Exception as e:
+            _degrade.note("yscale", e)   # telemetry-only; fail-open contract unchanged [EH F3]
 
     # POST-FILL NORMALIZED-SERIES CONTRACT [card 36]: a chart whose DEFAULT series values ALL live in [0,1] (the
     # normalized strip-chart contract — PowerEnergyChart clamps every point to 0..1) must never receive raw kW; the
@@ -487,8 +433,8 @@ def fill(payload, data_instructions, ctx, default_payload=None, shape_ref=None):
         try:
             from ems_exec.executor import norm_series as _norm_series
             out = _norm_series.apply(out, shape_ref)
-        except Exception:
-            pass
+        except Exception as e:
+            _degrade.note("norm_series", e)   # telemetry-only; fail-open contract unchanged [EH F3]
 
     # POST-FILL X-AXIS LABELS [cards 44/46]: a default-proven CLOCK-LABEL axis the strip blanked ('' × 10) re-derives
     # from the card's own filled epoch-ms time axis (site-tz HH:MM at evenly spaced tick positions; a default-proven
@@ -509,8 +455,8 @@ def fill(payload, data_instructions, ctx, default_payload=None, shape_ref=None):
 
             out = _xaxis.apply(out, shape_ref if shape_ref is not None else default_payload, gaps,
                                ts_provider=_bucket_axis)
-        except Exception:
-            pass
+        except Exception as e:
+            _degrade.note("xaxis", e)   # telemetry-only; fail-open contract unchanged [EH F3]
 
     # POST-FILL CHROME RESTORE [family H render-safety, cards 7/10/18/23/47/49]: a PRESENTATION-CONFIG leaf the emit /
     # honest-blank / seed-leak pass stripped to null/0/'' — the active-VIEW selector (loadImpact.view), an enum
@@ -527,8 +473,8 @@ def fill(payload, data_instructions, ctx, default_payload=None, shape_ref=None):
                 p = ".".join(str(t) for t in _rp)
                 written_value_paths.add(p)
                 written_value_paths.add(f"data.{p}")
-        except Exception:
-            pass
+        except Exception as e:
+            _degrade.note("fill_pass", e)   # telemetry-only; fail-open contract unchanged [EH F3]
 
     # POST-FILL VIEW SELECT [card 48]: a multi-view chart whose `view` selector points at a DATA-LESS view while a
     # sibling view carries the real filled series opens on the data-bearing view instead (shape-driven, honest).
@@ -536,8 +482,8 @@ def fill(payload, data_instructions, ctx, default_payload=None, shape_ref=None):
         try:
             from ems_exec.executor import view_select as _vsel
             out = _vsel.apply(out)
-        except Exception:
-            pass
+        except Exception as e:
+            _degrade.note("view_select", e)   # telemetry-only; fail-open contract unchanged [EH F3]
 
     # DISPLAY-SIBLING RECONCILE [F2: no Storybook projection survives beside a filled value]. A CMD_V2 reading is a
     # STRUCTURED object {value, displayValue, decimals, delta, deltaText, …}; fill overwrote only `value`, so its sibling
@@ -550,8 +496,8 @@ def fill(payload, data_instructions, ctx, default_payload=None, shape_ref=None):
         try:
             from ems_exec.executor import display as _display
             out = _display.apply(out, written_value_paths)
-        except Exception:
-            pass
+        except Exception as e:
+            _degrade.note("display", e)   # telemetry-only; fail-open contract unchanged [EH F3]
 
     # HONEST STATE DERIVATIONS [family H, cards 36/37/38 + 7/10 class]: two blank-only, shape-driven passes —
     #   freshness   — the RTM {status,label,tone,lastUpdateLabel} view-model derives from the asset's OWN newest-sample
@@ -564,13 +510,13 @@ def fill(payload, data_instructions, ctx, default_payload=None, shape_ref=None):
         try:
             from ems_exec.executor import freshness as _freshness
             out = _freshness.apply(out, asset_table)
-        except Exception:
-            pass
+        except Exception as e:
+            _degrade.note("freshness", e)   # telemetry-only; fail-open contract unchanged [EH F3]
         try:
             from ems_exec.executor import trend_badge as _tbadge
             out = _tbadge.apply(out)
-        except Exception:
-            pass
+        except Exception as e:
+            _degrade.note("freshness", e)   # telemetry-only; fail-open contract unchanged [EH F3]
 
     # POST-FILL FABRICATION GUARDS [slot-name-INDEPENDENT class killers]: ONE deterministic pass over the FINISHED
     # payload that blanks whole fabrication CLASSES regardless of the slot the AI mislabeled — the adversarial audit
@@ -594,8 +540,8 @@ def fill(payload, data_instructions, ctx, default_payload=None, shape_ref=None):
                                          shape_ref=shape_ref)
             if _fab_gaps:
                 gaps.extend(_fab_gaps)
-        except Exception:
-            pass
+        except Exception as e:
+            _degrade.note("fill_pass", e)   # telemetry-only; fail-open contract unchanged [EH F3]
 
     # POST-FILL SCALAR-MEAN RESCUE [R4 residual, card 40]: an UNBOUND measurable scalar-average leaf (…AvgKw/…MaxKw —
     # a quantity + statistic key) the AI emitted NO field for, yet a SIBLING data field on this card already binds a
@@ -609,8 +555,8 @@ def fill(payload, data_instructions, ctx, default_payload=None, shape_ref=None):
             from ems_exec.executor import scalar_mean_fill as _smf
             _smf_paths = _smf.apply(out, fields, asset_table, window, honest_blank_paths=hb_paths)
             written_value_paths |= _smf_paths
-        except Exception:
-            pass
+        except Exception as e:
+            _degrade.note("scalar_mean_fill", e)   # telemetry-only; fail-open contract unchanged [EH F3]
 
     # POST-FILL LABEL-KEYED TILE RESCUE [DEFECT A, card 50 ups-battery-autonomy]: a {label,value} tile whose data lives
     # under the neutral key `value` (the quantity is in the sibling LABEL, e.g. "Output Voltage") that Layer 2 emitted NO
@@ -626,8 +572,8 @@ def fill(payload, data_instructions, ctx, default_payload=None, shape_ref=None):
             _stf_paths = _stf.apply(out, asset_table, window, written_value_paths=written_value_paths,
                                     honest_blank_paths=hb_paths)
             written_value_paths |= _stf_paths
-        except Exception:
-            pass
+        except Exception as e:
+            _degrade.note("scalar_tile_fill", e)   # telemetry-only; fail-open contract unchanged [EH F3]
 
     # POST-FILL LOAD-FACTOR RESCUE [R4 residual, cards 70/71 — dg_1_mfm]: a BLANK derived load-factor-% KPI (avgLoadPct
     # 'Average load' / availabilityPct 'Availability') the hourly-AVG derivation over-blanked — a standby genset's ~1.6 h
@@ -642,8 +588,8 @@ def fill(payload, data_instructions, ctx, default_payload=None, shape_ref=None):
             from ems_exec.executor import load_factor_fill as _lff
             _lff_paths = _lff.apply(out, fields, asset_table, window, honest_blank_paths=hb_paths)
             written_value_paths |= _lff_paths
-        except Exception:
-            pass
+        except Exception as e:
+            _degrade.note("load_factor_fill", e)   # telemetry-only; fail-open contract unchanged [EH F3]
 
     # REASONS-ALWAYS completion scan [cards 63/79/48]: any data leaf STILL blank after fill+roster+yscale+display that
     # no declared field explained gets a per-leaf 'unbound_by_emit' record — no bare '—' ever ships reasonless. Stale
@@ -653,11 +599,23 @@ def fill(payload, data_instructions, ctx, default_payload=None, shape_ref=None):
         try:
             gaps = _prune_stale_gaps(out, gaps)
             _attach_unbound_gaps(out, (payload, default_payload), gaps)
-        except Exception:
-            pass
+        except Exception as e:
+            _degrade.note("gaps_reconcile", e)   # telemetry-only; fail-open contract unchanged [EH F3]
 
     # attach the honest-gap reason channel LAST (after roster may replace `out`) — telemetry the host pops (pop_gaps)
     if gaps and isinstance(out, dict):
         out[GAPS_KEY] = gaps
+
+    # DERIVED/RAW SERIES-FAMILY ROUTER — wired EXPLICITLY as the final pass [monoliths F4 step B, 2026-07-12]. This
+    # replaces the sys.meta_path import-hook that used to monkey-patch fill.fill from indexed_families (built when
+    # this file was fence-frozen); order is byte-identical to the wrapper (the WHOLE body above — including the gaps
+    # attach — then the router), same groups guard + never-raise contract. A card with no derived/raw series family
+    # is untouched.
+    try:
+        from ems_exec.executor import series_router as _series_router
+        if isinstance(out, dict) and _series_router._series_family_groups((data_instructions or {}).get("fields") or []):
+            out = _series_router.route_series_families(out, data_instructions, ctx, default_payload=default_payload)
+    except Exception as e:
+        _degrade.note("series_router", e)   # telemetry-only; fail-open contract unchanged [EH F3]
 
     return out

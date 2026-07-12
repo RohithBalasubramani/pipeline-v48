@@ -72,7 +72,9 @@ def _derive(newest, now=None):
     if newest is None:
         return {"status": "unknown", "label": "Offline", "tone": "neutral",
                 "lastUpdateLabel": f"Last update {DASH}", "title": "No backend timestamp is available yet"}
-    now = now or datetime.now(timezone.utc)
+    if now is None:
+        from replay.clock import now as _replay_now             # frozen during replay: live/stale badge reproduces
+        now = _replay_now(timezone.utc)
     if newest.tzinfo is None:
         newest = newest.replace(tzinfo=timezone.utc)
     label_hms = newest.astimezone(_site_tz()).strftime("%H:%M:%S")

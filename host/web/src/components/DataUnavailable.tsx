@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useSiteStatus } from "../hooks/useSiteStatus";
 
 // DB-DOWN / LIVE-DATA-OFFLINE panel — the honest terminal the user sees when the pipeline answered but there is no
 // live data to render (the :5433 neuract link is down → response.data_unavailable, or a resolved run produced 0 cards).
@@ -9,20 +9,7 @@ export function DataUnavailable({ prompt, onRetry }: {
   prompt?: string;
   onRetry?: (prompt: string) => void;
 }) {
-  const [live, setLive] = useState(false);
-  const [checkedAt, setCheckedAt] = useState<string>("");
-
-  useEffect(() => {
-    let alive = true;
-    const probe = () =>
-      fetch("/api/site")
-        .then((r) => r.json())
-        .then((d) => { if (alive) { setLive(!!d.live); setCheckedAt(new Date().toLocaleTimeString()); } })
-        .catch(() => { if (alive) { setLive(false); setCheckedAt(new Date().toLocaleTimeString()); } });
-    probe();
-    const t = window.setInterval(probe, 12000);
-    return () => { alive = false; window.clearInterval(t); };
-  }, []);
+  const { live, checkedAt } = useSiteStatus(12000);
 
   const canRetry = !!(prompt && onRetry);
   const dot = live ? "var(--sage-400, #7a9e6e)" : "#d9a300";

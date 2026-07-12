@@ -26,47 +26,8 @@ export function healthPhaseVariant(payload: any): PhaseVariant {
   return (payload?.phaseVariant as PhaseVariant) ?? "bars";
 }
 
-/** GUARD-RAIL (the sanitizeSupply pattern): HealthSummaryPanel `.map`s `band.labels` (band optional) and runs
- *  Math.min/max on `widthPct`/`markerPct` (the `bars` variant). A partially-elided seed (Layer 2 drops leaves)
- *  or an honest-blank '—' in a pct slot must reach the panel as its OWN guarded shape: a band without a labels
- *  array is dropped (the panel skips the row), a non-finite pct clamps to 0 (empty bar / left marker) — never a
- *  `.map` crash, never a NaN%. `metrics`/`phases` arrays are proven by the caller's usable() gate. */
-export function sanitizeHealth(d: HealthCardData): HealthCardData {
-  const pct = (n: unknown) => (Number.isFinite(Number(n)) ? Number(n) : 0);
-  return {
-    ...d,
-    band: d.band && Array.isArray(d.band.labels) ? { ...d.band, markerPct: pct(d.band.markerPct) } : undefined,
-    phases: d.phases.map((p) => ({ ...p, widthPct: pct(p.widthPct), markerPct: pct(p.markerPct) })),
-  };
-}
-
-/** GUARD-RAIL: HistoryPanel `.map`s legend/stats/yTicks/xLabels/xLabelIndexes/events/series[i].values and scales
- *  minY/maxY/expectedMin/expectedMax/maxLine.value/minLine.value — the caller's usable() gate only proves `series`,
- *  so guarantee every OTHER array leaf ([] when elided; per-LEAF honest degrade — present leaves keep rendering)
- *  and finitize every scaled scalar: an honest-blank '—' bucket value becomes a null GAP (LinePath breaks the
- *  line), a '—' yTick is dropped (Math.round('—') would render a visible "NaN" tick), a non-finite ref-line is
- *  omitted — never a crash, never a NaN on screen. */
-export function sanitizeHistory(d: HistoryPanelData): HistoryPanelData {
-  const arr = (a: unknown): any[] => (Array.isArray(a) ? a : []);
-  const num = (n: unknown) => (Number.isFinite(Number(n)) ? Number(n) : 0);
-  const line = (l: any) => (l && Number.isFinite(Number(l.value)) ? { ...l, value: Number(l.value) } : undefined);
-  return {
-    ...d,
-    stats: arr(d.stats),
-    legend: arr(d.legend),
-    events: arr(d.events),
-    series: arr(d.series).map((s: any) => ({
-      ...s,
-      values: arr(s?.values).map((v: any) => (v == null || !Number.isFinite(Number(v)) ? null : Number(v))),
-    })),
-    yTicks: arr(d.yTicks).map(Number).filter((t) => Number.isFinite(t)),
-    xLabels: arr(d.xLabels),
-    xLabelIndexes: arr(d.xLabelIndexes).map((v: any, i: number) => (Number.isFinite(Number(v)) ? Number(v) : i)),
-    minY: num(d.minY),
-    maxY: num(d.maxY),
-    expectedMin: num(d.expectedMin),
-    expectedMax: num(d.expectedMax),
-    maxLine: line(d.maxLine),
-    minLine: line(d.minLine),
-  };
-}
+/* ── sanitize — the ONE shared implementation (../shared/vc-sanitize, F4 2026-07-12). The DG folder's old local
+ * copy zeroed expectedMin/Max unconditionally (a degenerate 0-band when showExpectedRange came true) and did not
+ * object-filter rows — the shared feeder-strict version hides a non-finite band instead and filters non-objects;
+ * client-gate verified over saved DG responses (identical clean/throw/NaN counts). */
+export { sanitizeHistory, sanitizeHealth } from "../shared/vc-sanitize";

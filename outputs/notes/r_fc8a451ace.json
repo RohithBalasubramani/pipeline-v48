@@ -1,0 +1,30 @@
+{
+ "run_id": "r_fc8a451ace",
+ "loop1": [
+  {
+   "card_id": 18,
+   "title": "Events KPI Strip",
+   "answerability": "partial",
+   "note": "Showing per-member event counts and worst deviations from the 6 active outgoing feeders; 2 feeders (UPS-05, UPS-06) are dark and honest-blanked."
+  },
+  {
+   "card_id": 20,
+   "title": "Event Timeline at {period}",
+   "answerability": "partial",
+   "note": "Showing event timeline for PRIMARY members (UPS-01 to UPS-06, BPDB-01, BPDB-02); Solar Incomers and Transformers are dark (no data) and omitted from roster."
+  },
+  {
+   "card_id": 21,
+   "title": "Current Distribution at {period}",
+   "answerability": "partial",
+   "note": "Showing current draw for 8 outgoing feeders; 2 feeders (UPS-05, UPS-06) are dark (no live data) and render as blanks."
+  },
+  {
+   "card_id": 22,
+   "title": "Other Panels Event at {period}",
+   "answerability": "partial",
+   "note": "Showing per-panel event counts and voltage/current metrics for the 8 primary outgoing feeders; 2 members (GIC-02-N6-UPS-05, GIC-02-N7-UPS-06) are dark (no data) and render as blanks."
+  }
+ ],
+ "loop2": null
+}

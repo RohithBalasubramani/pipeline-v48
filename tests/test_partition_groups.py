@@ -1,6 +1,6 @@
 """Partition — union-find unit + live RTM group (orphan 160 via fallback)."""
 from layer1a.db_reads.cards_intent import read_page_cards
-from partition.group_detect import _union_find, detect_groups
+from layer1a.partition.group_detect import _union_find, detect_groups
 
 RTM = "panel-overview-shell/real-time-monitoring"
 

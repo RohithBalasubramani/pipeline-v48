@@ -21,7 +21,7 @@ equipment.topology.enabled kill-switch), parent_ids/outgoing_edges/outgoing_feed
 two-sided-guarded roster from data/equipment/edges.py instead of the mirror rows; every other id (and knobs-off,
 and ANY equipment failure — the import is lazy + guarded) stays byte-identical to the mirror path.
 """
-from data.db_client import q
+from data.db_client import q, pg_bool
 from config.databases import CMD_CATALOG, DATA_DB, DATA_SCHEMA
 from data.ttl_cache import TTLCache
 
@@ -47,7 +47,7 @@ def _home():
 
 
 def _bool(v):
-    return str(v).strip().lower() in ("t", "true", "1")
+    return pg_bool(v)
 
 
 def registry_rows():

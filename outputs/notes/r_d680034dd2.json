@@ -5,31 +5,31 @@
    "card_id": 23,
    "title": "PQ Issues KPI Strip (Total Issues / I-THD Events / V-THD Events / PF Gap Feeders / Neutral Stress / Worst I-THD / Worst V-THD)",
    "answerability": "partial",
-   "note": "Showing panel aggregate PQ health via roster_spec; individual scalar fields (I-THD/V-THD counts, worst values) are computed by the panel_aggregate renderer from member meters, not emitted as direct fields."
+   "note": "Showing panel aggregate event counts and worst-case feeder stats; per-phase THD columns (thd_current_*, thd_voltage_*) are not present on the panel stub table, so the roster aggregates feeder-level data from the outgoing members."
   },
   {
    "card_id": 24,
    "title": "Harmonics & PQ Timeline",
    "answerability": "partial",
-   "note": "Showing per-feeder THD and event counts from member meters; panel-level THD limits and PF floors are static config defaults as nameplate ratings are unknown for this asset."
+   "note": "Showing event counts and worst deviations from member meters; sag/swell/current/neutral event columns are not present in the panel's own schema, so event series are unbound."
   },
   {
    "card_id": 25,
    "title": "AI Summary",
    "answerability": "partial",
-   "note": "Showing current THD (thd_compliance_i_avg) and power metrics; voltage THD (thd_compliance_v_avg) and harmonic orders (h3/h5/h7) are not measured by this meter and are omitted."
+   "note": "Showing AI narrative text \u2014 no live numeric data columns are measured for this panel's own table; the narrative is generated from sibling cards' computed fleet PQ numbers."
   },
   {
    "card_id": 26,
    "title": "Feeder PQ At {period}",
    "answerability": "partial",
-   "note": "Showing current THD (iThd) \u2014 voltage THD (vThd) is not measured for this asset (columns failed validation)."
+   "note": "Showing per-feeder PQ metrics (iThd, vThd, kW, PF) from member meters; 3rd harmonic, peak-THD, k-factor, and driver diagnosis are not measured by these UPS/BPDB meters."
   },
   {
    "card_id": 27,
    "title": "Signature",
    "answerability": "partial",
-   "note": "Showing current THD (I-THD) and power (kW) \u2014 voltage THD (V-THD) and k-factor are not measured for this asset."
+   "note": "Showing harmonic distribution (H5, H7, I-THD, V-THD) and active power (kw) for the panel's outgoing feeders. 3rd harmonic (H3), K-factor, and peak-THD are not measured by these member meters and are omitted."
   }
  ],
  "loop2": null

@@ -23,12 +23,35 @@ from config.asset_granularity import belongs_on_panel
 from data.registry.lt_mfm import registry_rows, parent_ids, outgoing_edges
 from layer1b.resolve.has_data import tables_with_data, tables_with_values
 
-# authoritative class codes → the pipeline class vocabulary (aligned with class_from_subject's labels)
+# authoritative class codes → the pipeline class vocabulary (aligned with class_from_subject's labels).
+# Code-default MIRRORS — the live rows are app_config `vocab.asset_type_class` / `vocab.mfm_type_class` (json
+# {code: Class}), so a NEW asset class's canonical code maps with a row edit, no code change. Read through
+# _class_code_maps(), never directly.
 _ASSET_TYPE_CLASS = {"dg": "DG", "ups": "UPS", "lt_transformer": "Transformer"}
 _MFM_TYPE_CLASS = {"apfc": "APFCR", "transformer": "Transformer", "ups": "UPS"}   # lt_panel untrusted (DG mis-typed)
 
+
+def _class_code_maps():
+    """(asset_type_code→class, mfm_type_code→class) from the DB vocab rows, else the code mirrors. Exact-key lookup
+    (codes are canonical lowercase — byte-identical to the old direct dict reads). Never raises (DB outage → mirrors)."""
+    a, m = _ASSET_TYPE_CLASS, _MFM_TYPE_CLASS
+    try:
+        from config.app_config import cfg
+        va = cfg("vocab.asset_type_class", None)
+        vm = cfg("vocab.mfm_type_class", None)
+        if isinstance(va, dict) and va:
+            a = {str(k): str(v) for k, v in va.items()}
+        if isinstance(vm, dict) and vm:
+            m = {str(k): str(v) for k, v in vm.items()}
+    except Exception:
+        pass
+    return a, m
+
 # fallback vocabulary — equipment class from the table name (first match wins; order matters: UPS before Panel;
-# Incomer BEFORE DG so 'gic_30_n2_11kv_ht_dg_incomer_se' is an Incomer, not a genset [hardening])
+# Incomer BEFORE DG so 'gic_30_n2_11kv_ht_dg_incomer_se' is an Incomer, not a genset [hardening]).
+# Code-default MIRROR — the live table is app_config `vocab.asset_name_class` (json [[needles…], class] pairs, order
+# preserved; seed db/seed_asset_name_class_vocab.sql), so SITE naming ('lamination', 'curing', a new plant's tokens)
+# extends with a row edit, no code change. Read through _name_class_rules(), never directly.
 _NAME_CLASS = (
     (("ups",), "UPS"),
     (("transformer", "xformer", "_tfr"), "Transformer"),
@@ -48,9 +71,28 @@ _NAME_CLASS = (
 )
 
 
+def _name_class_rules():
+    """The ordered (needles, class) rules from the DB vocab row, else the _NAME_CLASS code mirror. A malformed row
+    entry is skipped (never a crash); an empty/absent row → the mirror. Never raises (DB outage → mirror)."""
+    try:
+        from config.app_config import cfg
+        v = cfg("vocab.asset_name_class", None)
+        if isinstance(v, list):
+            rules = []
+            for pair in v:
+                if (isinstance(pair, (list, tuple)) and len(pair) == 2
+                        and isinstance(pair[0], (list, tuple)) and pair[0] and isinstance(pair[1], str)):
+                    rules.append((tuple(str(n).lower() for n in pair[0]), pair[1]))
+            if rules:
+                return tuple(rules)
+    except Exception:
+        pass
+    return _NAME_CLASS
+
+
 def _name_class(table):
     nm = (table or "").lower()
-    for needles, cls in _NAME_CLASS:
+    for needles, cls in _name_class_rules():
         if any((nm.startswith(n) if n == "dg_" else n in nm) for n in needles):
             return cls
     return "Load"
@@ -58,8 +100,9 @@ def _name_class(table):
 
 def _class_of(r):
     """asset_type.code (authoritative) → trusted lt_mfm_type.code → name-pattern fallback. [AUDIT-3 class order]"""
-    return (_ASSET_TYPE_CLASS.get(r.get("asset_type_code") or "")
-            or _MFM_TYPE_CLASS.get(r.get("mfm_type_code") or "")
+    a_map, m_map = _class_code_maps()
+    return (a_map.get(r.get("asset_type_code") or "")
+            or m_map.get(r.get("mfm_type_code") or "")
             or _name_class(r.get("table")))
 
 

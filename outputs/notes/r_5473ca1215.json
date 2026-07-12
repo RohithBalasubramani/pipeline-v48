@@ -1,0 +1,36 @@
+{
+ "run_id": "r_5473ca1215",
+ "loop1": [
+  {
+   "card_id": 18,
+   "title": "Events KPI Strip",
+   "answerability": "partial",
+   "note": "Showing event counts and worst deviations for the panel's fed feeders (PRIMARY side); some members (Axial Fan Panel-2, Curing Line CSU-01, Fire Fighting System, Domestic Water Pump) are dark and honest-blank their slots."
+  },
+  {
+   "card_id": 19,
+   "title": "AI Summary",
+   "answerability": "partial",
+   "note": "Showing AI narrative summary; numeric event stats (sag/swell/current/neutral) are not measured by this meter class and are omitted."
+  },
+  {
+   "card_id": 20,
+   "title": "Event Timeline at {period}",
+   "answerability": "partial",
+   "note": "Showing event counts and worst deviations for members with live data (FCBC-1, AHU-1, AHU-2, AHU-3, AHU-9 South, AHU-10 South, AHU-11 South, Electrical Room External-South, Chiller & CHW CWP-1/2/3/4, PCW Panel, AHU-4, General Exhaust, PDB For RM, Irrigation Water Pump, Air Washer-1/2/3, Axial Fan Panel-4, Exhaust Fan-1/2/3); Axial Fan Panel-2, Curing Line CSU-01, Fire Fighting System, Domestic Water Pump, Solar Incomers, and Transformer-08 are dark (no data) and honest-blanked."
+  },
+  {
+   "card_id": 21,
+   "title": "Current Distribution at {period}",
+   "answerability": "partial",
+   "note": "Showing current distribution across outgoing feeders; some feeders (Axial Fan Panel-2, Curing Line CSU-01, Fire Fighting System, Domestic Water Pump) have no live data and are omitted from the roster."
+  },
+  {
+   "card_id": 22,
+   "title": "Other Panels Event at {period}",
+   "answerability": "partial",
+   "note": "Showing per-panel event counts and voltage/current metrics for the 24 active feeders; 4 feeders (Axial Fan Panel-2, Curing Line CSU-01, Fire Fighting System, Domestic Water Pump) are dark and honest-blanked."
+  }
+ ],
+ "loop2": null
+}

@@ -6,7 +6,7 @@
 // (one ChartVM). The Layer-2 payload for these cards carries ONLY the `chart` slice (real or honest-blank '—'), NOT the
 // series points.
 //
-// FRAMES=PAYLOADS [architecture]: ems_backend is RETIRED (the host emits frames={} EMPTY) — the ONLY data source is the
+// FRAMES=PAYLOADS [architecture]: host-served is RETIRED (the host emits frames={} EMPTY) — the ONLY data source is the
 // Layer-2 payload, and the old live-frame / mapper / assetPageSocket path is DELETED. DATA REALITY [honest-degrade]:
 // every plotted engine metric (coolant / oil / intake / exhaust temperature, oil pressure, engine speed, load%) is
 // ENGINE-DOMAIN telemetry with NO neuract column, so Layer-2 carries no series points. We build CMD V2's OWN typed-empty

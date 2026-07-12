@@ -6,7 +6,7 @@ import React from "react";
 // match (non-recursive: `*` does not cross `/`, so the folder files are only loaded through here) and re-exports the
 // CARDS registry.
 //
-// ALL FOUR cards share ONE live ems_backend asset-page frame and ONE shared view-model — mirroring the CMD V2 tab,
+// ALL FOUR cards share ONE live host-served asset-page frame and ONE shared view-model — mirroring the CMD V2 tab,
 // which builds every card from a single frame via `mapTapRtccToFrame` → `buildTapRtccViewModel` (REUSED here, never
 // re-implemented). The regulation card (79) is the ELECTRICAL one — the regulated bus voltage is a real neuract
 // measurement, so it fills for real once the frame carries the AVR setpoint. Tap position (78), recent changes (80)

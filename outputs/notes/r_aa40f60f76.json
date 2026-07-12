@@ -5,37 +5,25 @@
    "card_id": 7,
    "title": "Context Rail Header (Overview / Section / Feeder)",
    "answerability": "partial",
-   "note": "Showing aggregate panel power and per-member breakdowns; supply-side incomers (Solar, Transformer) are dark (no data), so their slots are honest-blank."
+   "note": "Showing total feeder consumption and quick stats for active members (UPS, BPDB). Solar Incomers are listed in breakdown but have no live data (has_data=N)."
   },
   {
    "card_id": 5,
    "title": "Real Time Monitoring (Feeder Heatmap)",
    "answerability": "partial",
-   "note": "Showing real-time power distribution across active feeders (UPS-01/02/03, BPDB-01/02, UPS-04); incomers and UPS-05/06 are dark (no live data) and render as blank rows."
-  },
-  {
-   "card_id": 8,
-   "title": "AI Summary",
-   "answerability": "partial",
-   "note": "AI narrative is generated from panel aggregate data; per-member narrative details are not available for dark feeders (GIC-01-N9, GIC-02-N1, GIC-15-N10, GIC-15-N11, GIC-02-N6, GIC-02-N7)."
-  },
-  {
-   "card_id": 9,
-   "title": "Total Feeder Consumption / Supply",
-   "answerability": "partial",
-   "note": "Showing total active power \u2014 contracted supply (denominator) is unknown for this asset; headroom calculation is unavailable."
+   "note": "Showing live power distribution across all LT-PCC feeders. Load % (loadPct) is honest-blanked because the asset's rated_kva is unknown (nameplate is '\u2014'), so a percentage cannot be calculated. Dark feeders (UPS-05, UPS-06) have no live data and render as blank rows."
   },
   {
    "card_id": 10,
    "title": "Consumption Trend / Supply Trend",
    "answerability": "partial",
-   "note": "Showing consumption trend for active feeders (UPS-01/02/03, BPDB-01/02, UPS-04); supply incomers and UPS-05/06 are dark (no data) and omitted from the trend."
+   "note": "Showing panel aggregate consumption trend from 6 active outgoing feeders (UPS-01/02/03, BPDB-01/02, UPS-04); 2 feeders (UPS-05/06) are dark and honest-blanked."
   },
   {
    "card_id": 11,
    "title": "Quick Stats",
    "answerability": "partial",
-   "note": "Showing panel aggregate stats from 5 active feeders; 3 feeders are offline and will render as blanks."
+   "note": "Showing total current and unbalance from member UPS feeders; transformer incomers are offline."
   }
  ],
  "loop2": null

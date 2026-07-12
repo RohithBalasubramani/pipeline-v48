@@ -1,4 +1,4 @@
-"""config/schema_map.py — thin reader over cmd_catalog.schema_slot_map (seeded by db/seed_schema_and_endpoints.py).
+"""config/schema_map.py — thin reader over cmd_catalog.schema_slot_map (seeded by scripts/seed_schema_and_endpoints.py).
 
 The routed column map: for a schema FINGERPRINT (p1_72 / tm_ups_56 / feedbacks_35 / ng_se_jk_70), which real physical
 column fills each logical SLOT. A slot whose column_name is '' is NOT present in that fingerprint → the routed mapper
@@ -43,11 +43,4 @@ def has_quantity(fingerprint, quantity):
     return bool(rows)
 
 
-def fingerprints():
-    """All known fingerprint keys."""
-    rows = q("cmd_catalog", "SELECT DISTINCT fingerprint FROM schema_slot_map ORDER BY 1")
-    return [r[0] for r in rows]
-
-
-def _esc(s):
-    return str(s).replace("'", "''")
+from config.policy_read import esc as _esc  # the ONE shared SQL-quote escape  # noqa: E402

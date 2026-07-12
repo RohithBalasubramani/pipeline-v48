@@ -3,7 +3,7 @@ the editable cmd_catalog.asset_nameplate table (read via config.nameplates) — 
 NAMEPLATE dict, NO 'live kW ÷ load%' back-out from phantom columns that never existed in neuract [RN-01, DS-10, DID-03].
   - rated_kva(asset_table) / feeder_rated_kw(asset_table) / section_contracts → config.nameplates.rated_kva by table.
   - ups_rated_kva → parsed from the asset NAME ('CL:<n>KVA') → works with no DB (the name travels with the asset).
-  - nominal_voltage → voltage_avg/(1+dev%) → works on ANY db that kept voltage_avg + the deviation column.
+  (nominal voltage lives in derivations/voltage.nominal_voltage_ln — the registry-wired home.)
 A missing nameplate row honest-degrades the ONE affected slot (loading% denominator) — it never fabricates a rating."""
 from __future__ import annotations
 
@@ -12,21 +12,23 @@ import re
 from config import nameplates as _np
 
 try:
-    from config.app_config import cfg as _cfg
-except Exception:  # pragma: no cover — the pure-fn module must import even without the pipeline config on the path
+    from config.failopen import cfg_safe as _cfg   # THE guarded cfg reader (D3)
+except Exception:  # pragma: no cover — import-safe without the pipeline config on the path
     def _cfg(key, default):
         return default
 
 _UPS_KVA = re.compile(r"CL\s*:\s*(\d+(?:\.\d+)?)\s*KVA", re.I)
 
 # rated kW ≈ rated kVA × nominal PF. The PF-of-record is CONFIG-DRIVEN (cmd_catalog.app_config key `nameplate.nominal_pf`)
-# so the kVA→kW convention is editable with no code change; falls back to the stated 0.8 convention. NO magic literal.
+# so the kVA→kW convention is editable with no code change. OWNER-DECIDED 2026-07-12 (hardcoding F7): 0.9, aligned
+# with `rating.feeder_pf` (derive_ratings' key, seeded 0.9) so one asset can no longer show rated kW differing 12.5%
+# between the two fill paths; seed db/seed_pf_of_record.sql, code default = the row's mirror. NO magic literal.
 def _nominal_pf():
     try:
-        pf = float(_cfg("nameplate.nominal_pf", 0.8))
+        pf = float(_cfg("nameplate.nominal_pf", 0.9))
     except (TypeError, ValueError):
-        pf = 0.8
-    return pf if 0.0 < pf <= 1.0 else 0.8
+        pf = 0.9
+    return pf if 0.0 < pf <= 1.0 else 0.9
 
 
 def feeder_rated_kw(asset_table, load_pct=None):
@@ -54,16 +56,6 @@ def ups_rated_kva(name):
     the name has no CL:<n>KVA token (don't fabricate)."""
     m = _UPS_KVA.search(name or "")
     return float(m.group(1)) if m else None
-
-
-def nominal_voltage(voltage_avg, voltage_deviation_pct):
-    """L-N nominal voltage = avg ÷ (1 + deviation%). Works on ANY db that kept voltage_avg + the deviation column."""
-    try:
-        v = float(voltage_avg); dev = float(voltage_deviation_pct)
-    except (TypeError, ValueError):
-        return None
-    denom = 1.0 + dev / 100.0
-    return v / denom if denom > 0 else None
 
 
 def section_id(name, role, type_code=None, asset_table=None):

@@ -1,0 +1,24 @@
+{
+ "run_id": "r_1d420f5eea",
+ "loop1": [
+  {
+   "card_id": 14,
+   "title": "Cumulative Energy",
+   "answerability": "partial",
+   "note": "Showing cumulative energy (kWh/kVArh) for outgoing feeders; subsidy limit and SEC are not measured for this panel."
+  },
+  {
+   "card_id": 15,
+   "title": "Today live power analysis",
+   "answerability": "partial",
+   "note": "Showing total apparent power, active, and reactive power aggregated from outgoing feeders; rated capacity and worst-peak markers are ungroundable due to missing nameplate ratings on member meters."
+  },
+  {
+   "card_id": 17,
+   "title": "Daily Power Demand by Feeder",
+   "answerability": "partial",
+   "note": "Showing worst peak power and per-feeder demand trends (UPS, BPDB, HHF); Load Factor and Critical Demand threshold are omitted as they require a nameplate rating or energy counter not available for this panel aggregate."
+  }
+ ],
+ "loop2": null
+}

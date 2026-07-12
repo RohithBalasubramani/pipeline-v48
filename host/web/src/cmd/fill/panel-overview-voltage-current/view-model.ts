@@ -1,6 +1,6 @@
 // Shared aggregate-page view-model helpers for the lt-pcc panel-overview Voltage&Current tab (cards 18-22).
 //
-// PAYLOAD-DIRECT (ems_backend RETIRED — the host emits frames={} EMPTY). The ONLY data
+// PAYLOAD-DIRECT (host-served RETIRED — the host emits frames={} EMPTY). The ONLY data
 // source is each card's Layer-2 completed `payload` (real neuract values + honest-blank '—',
 // shaped as the CMD V2 card props). The old LIVE path (aggregate-envelope frame → AggregateState
 // → mapPanelVoltageCurrentAggregateToSnapshot → createPanelVoltageCurrentViewModel) is dead code

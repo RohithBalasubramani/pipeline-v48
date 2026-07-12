@@ -42,21 +42,3 @@ def split(payload):
     return walk(payload, "", None), data_paths
 
 
-def metadata_paths(payload):
-    """(metadata_leaf_paths, data_paths) — the leaves the byte-identity gate checks."""
-    skel, data = split(payload)
-    out = []
-
-    def walk(o, path):
-        if o == DATA_SLOT:
-            return
-        if isinstance(o, dict):
-            for k, v in o.items():
-                walk(v, f"{path}.{k}" if path else k)
-        elif isinstance(o, list):
-            for i, v in enumerate(o):
-                walk(v, f"{path}[{i}]")
-        else:
-            out.append(path)
-    walk(skel, "")
-    return out, data

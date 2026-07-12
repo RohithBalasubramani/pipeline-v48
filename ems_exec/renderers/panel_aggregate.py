@@ -36,18 +36,14 @@ from __future__ import annotations
 from ems_exec.data import neuract as _nx                       # noqa: F401  (the ONE neuract module — test patch anchor)
 from ems_exec.executor import fill as _fill
 from ems_exec.executor import members as _members
-from ems_exec.renderers import _agg
 from ems_exec.derivations import energy as _energy
 from ems_exec.derivations import power as _power
 
+# the card_handling classes this renderer serves — the package __init__ discovers this declaration (self-registration)
+HANDLING_CLASSES = ("panel_aggregate",)
 
-def _cfg(key, default):
-    """A cmd_catalog app_config knob with a code-default fallback (the ONE config door here)."""
-    try:
-        from config.app_config import cfg
-        return cfg(key, default)
-    except Exception:
-        return default
+
+from config.failopen import cfg_safe as _cfg   # THE guarded cfg reader (D3)
 
 
 # ── the neuract leaf columns the aggregate superset row rolls up (present-tolerant: an absent one → None per member) ───

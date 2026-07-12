@@ -5,19 +5,19 @@
    "card_id": 63,
    "title": "Fuel Tank Anatomy",
    "answerability": "partial",
-   "note": "This card renders its metadata frame (Fuel Tank Anatomy) but has no fuel-specific data fields (level, rate, temp, autonomy, efficiency) because the DG-1 meter is an electrical meter that does not log fuel quantities."
+   "note": "Showing electrical meter snapshot \u2014 fuel level, rate, temp, autonomy, and SFC are not measured by this asset's electrical meter."
   },
   {
    "card_id": 64,
    "title": "All Runs (Fuel Log)",
    "answerability": "partial",
-   "note": "Showing total energy and average load factor \u2014 fuel volume, run hours, start counts, and fault statuses are not measured by this electrical meter."
+   "note": "Showing total energy and average load \u2014 fuel, starts, run hours, and faults are not measured by this electrical meter."
   },
   {
    "card_id": 65,
    "title": "Fuel & Tank \u2014 Composite",
    "answerability": "partial",
-   "note": "Showing active power and energy trends \u2014 fuel level, burn rate, and temperature are not measured for this asset."
+   "note": "Showing Efficiency and Load % \u2014 fuel level, burn rate, temperature, SFC and cost are not measured by this electrical meter."
   }
  ],
  "loop2": null

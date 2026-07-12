@@ -28,9 +28,6 @@ one — its enum is read from config/windows.TIME_WINDOWS (+ a "none" sentinel),
 prompt the way the page_key candidates do.
 """
 
-_ON = ("1", "true", "yes", "t", "on")     # same truthy vocabulary as config/app_config.py _cast('bool')
-
-
 def route_answer_schema(keys, metric_vocab, intent_vocab):
     """The router's enum-constrained answer schema when llm.guided_json.route is on, else None (default: off / absent
     row / DB down → call_qwen builds today's byte-identical json_object request). Never raises, never blocks import.
@@ -48,8 +45,8 @@ def route_answer_schema(keys, metric_vocab, intent_vocab):
     None so the host keeps its today/latest default). Kept LAST to match the taught reply shape in prompts/system.md.
     """
     try:
-        from config.app_config import cfg
-        on = str(cfg("llm.guided_json.route", "off")).strip().lower() in _ON
+        from config.app_config import flag_on
+        on = flag_on("llm.guided_json.route")   # THE boolean-knob vocabulary (D6)
     except Exception:
         on = False
     if not on:

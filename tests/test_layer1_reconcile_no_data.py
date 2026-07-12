@@ -88,6 +88,7 @@ def test_no_data_outcome_without_cands_is_empty():
     assert o and o["how"] == "no_data" and o["candidates"] == []
 
 
+@pytest.mark.live
 def test_no_data_outcome_carries_alternatives():
     cands = asset_candidates()
     # a fabricated dark PANEL asset — alternatives must be REAL data-bearing rows, none of them the dark asset
@@ -99,6 +100,7 @@ def test_no_data_outcome_carries_alternatives():
     assert all(c["has_data"] for c in o["candidates"])          # every alternative is renderable
 
 
+@pytest.mark.live
 def test_no_data_alternatives_prefer_same_class_first():
     cands = asset_candidates()
     dark = {"mfm_id": 10 ** 9, "name": "Dark-UPS", "class": "UPS", "has_data": False}
@@ -110,6 +112,7 @@ def test_no_data_alternatives_prefer_same_class_first():
         assert first_ups < first_other
 
 
+@pytest.mark.live
 def test_has_data_asset_is_not_no_data():
     assert no_data_outcome({"mfm_id": 1, "name": "Live", "has_data": True}, asset_candidates()) is None
 
@@ -118,9 +121,18 @@ def test_has_data_asset_is_not_no_data():
 @pytest.mark.live
 def test_harness_no_data_runs_layer2_skeleton():
     """A no_data page must NOT skip Layer 2: every card gets a structure-preserving metadata payload (not None), so the
-    FE mounts its real component with per-leaf-null leaves instead of a generic placeholder."""
+    FE mounts its real component with per-leaf-null leaves instead of a generic placeholder.
+    DATA-STATE-PROOF [2026-07-12]: the original hardcoded fixture ('PCC Panel 4') started logging real data, which
+    flipped the test's premise, not the contract. The dark asset is now DISCOVERED from the live registry and pinned
+    by id — the pinned path still runs the no_data gate (layer1b/resolve/pinned_skip.py), so resolution is
+    deterministic — and the test honestly skips when the whole plant is data-bearing."""
     from run.harness import run_pipeline
-    out = run_pipeline("harmonics and power quality for PCC Panel 4")
+    from layer1b.resolve.asset_candidates import as_asset
+    dark = next((c for c in asset_candidates() if len(c) > 6 and not c[6]), None)
+    if dark is None:
+        pytest.skip("every registry asset currently has data — no dark asset to exercise the no_data skeleton")
+    asset = as_asset(dark)
+    out = run_pipeline(f"harmonics and power quality for {asset['name']}", asset_id=asset["mfm_id"])
     assert out.get("asset_no_data") is True                     # telemetry preserved (FE greys the dark asset)
     l2 = out.get("layer2")
     assert l2, "Layer 2 must run for a no_data asset (skeleton), not be skipped"

@@ -3,7 +3,7 @@ import React from "react";
 // (the single in-house SVG timeline: level / rate / temp + KPI strip + mode strip + AI insight) rendered from a
 // FuelEfficiencyViewModel built off the Layer-2 payload {chart}.
 //
-// FRAMES=PAYLOADS [architecture]: ems_backend is RETIRED (frames={} EMPTY), so there is no live-frame / mapper path.
+// FRAMES=PAYLOADS [architecture]: host-served is RETIRED (frames={} EMPTY), so there is no live-frame / mapper path.
 // FuelCompositeCard reads `vm.chart` (title/kpis/legend/insight — carried on the Layer-2 payload) AND `vm.points`
 // (the plotted numeric series). The fuel history series are DG telemetry neuract does NOT carry, so Layer-2 omits the
 // points — fuelCompositeVm overlays the payload's real `chart` chrome onto CMD V2's OWN empty view-model (EMPTY points).

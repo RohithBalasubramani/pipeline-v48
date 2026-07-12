@@ -17,7 +17,10 @@ except Exception:                                              # pragma: no cove
     def equipment_fact_lines(asset):
         return ()
 from layer2.emit.slot_catalog import build_slot_catalog, render_slot_catalog
-from layer2.emit.data.consumer_binding import domain_endpoints
+from layer2.emit.instructions.consumer_binding import domain_endpoints
+# OVERSIZED-PROMPT compaction HOME = emit/prompt_compact.py (monoliths F9, 2026-07-12); re-exported byte-compatibly.
+from layer2.emit.prompt_compact import (                                                   # noqa: F401
+    _compact_arrays, _compact_catalog, maybe_compact as _maybe_compact)
 
 
 def _fields_optional_classes():
@@ -122,70 +125,11 @@ def _dual_owned_line(skeleton):
             f"frame at fill time: {', '.join(hits)}")
 
 
-# ── OVERSIZED-PROMPT CONTEXT CAP [c24 harmonics-timeline: a ~23.4K-tok emit prompt blew the l2_emit budget and the
-# card shipped payload_error=llm_timeout]. DB-config, generic (NO card ids) [db/seed_emit_coherence.sql]:
-#   emit.prompt_char_budget       — user-message char budget (0 = off). Over it, the message is REBUILT compacted:
-#   emit.oversize_array_exemplars — skeleton arrays longer than this show only their first K elements + a marker
-#                                   (the AI authors the visible exemplars; omitted tail ships byte-identical defaults
-#                                   via enforce_exact_metadata — nothing is lost, nothing fabricated);
-#   emit.oversize_basket_cap      — DB SCHEMA lines cap (rank order kept; a '+N more' trailer says the rest exist);
-#   emit.oversize_sibling_exemplars — sibling per-element slot lines (panels[0..9].kw) collapse to K exemplars + ONE
-#                                   summary line per [*] group (the shape is identical; binding stays per-element).
-def _compact_arrays(node, keep):
-    """The skeleton with every list longer than `keep` truncated to its first `keep` elements + ONE marker string.
-    Display-only: the AI is told the omitted tail ships as byte-identical defaults (enforce_exact_metadata restores
-    any array whose shape drifted), so the compaction can never fabricate or lose a rendered default."""
-    if isinstance(node, dict):
-        return {k: _compact_arrays(v, keep) for k, v in node.items()}
-    if isinstance(node, list):
-        if len(node) > keep:
-            return [_compact_arrays(v, keep) for v in node[:keep]] + [
-                f"… +{len(node) - keep} more identical-shape elements (byte-identical defaults — do NOT author them; "
-                f"they ship as defaults / are rebuilt live)"]
-        return [_compact_arrays(v, keep) for v in node]
-    return node
-
-
-def _compact_catalog(catalog, keep):
-    """(kept_entries, summary_lines) — collapse sibling per-element slot lines (…panels[0].kw / …panels[1].kw / …)
-    to the first `keep` exemplars per [*]-normalized group + ONE summary line naming the omitted index range. The
-    contract is unchanged: the omitted slots are STILL real, bindable leaf paths (one field per element index) — only
-    their near-identical prompt lines are folded (the card-77 lesson: never HIDE slots silently; the summary line
-    keeps them named)."""
-    import re as _re
-    star = _re.compile(r"\[\d+\]")
-    kept, counts, first_idx = [], {}, {}
-    for e in catalog:
-        norm = star.sub("[*]", str(e.get("slot")))
-        n = counts.get(norm, 0)
-        counts[norm] = n + 1
-        if norm != str(e.get("slot")) and n == 0:
-            first_idx[norm] = str(e.get("slot"))
-        if n < keep or norm == str(e.get("slot")):
-            kept.append(e)
-    summaries = []
-    for norm, n in counts.items():
-        if n > keep and norm != first_idx.get(norm, norm):
-            summaries.append(f"  slot={norm}  — ×{n} sibling elements total; only the first {keep} lines are shown "
-                             f"(prompt budget). The OTHER indices are REAL fillable slots with the SAME shape: bind "
-                             f"each element path [i].<key> the same way (its OWN member/phase column) — or leave them "
-                             f"to the roster when this card is roster-served. NEVER invent a different token.")
-    return kept, summaries
-
-
 def build_user(card_in):
     """The per-card user message — rebuilt COMPACTED when it exceeds the DB-config char budget (oversized prompts
-    were a deterministic l2_emit timeout: the c24 23.4K-tok family). Compaction is honesty-preserving (see the knob
-    block above); the compacted message says so in its own header so ai_ logs show which emits ran compacted."""
-    from config.app_config import cfg as _cfg
-    msg = _build(card_in)
-    budget = int(_cfg("emit.prompt_char_budget", 36000) or 0)
-    if budget and len(msg) > budget:
-        compacted = _build(card_in, oversize=True)
-        if len(compacted) < len(msg):
-            return compacted
-    return msg
-
+    were a deterministic l2_emit timeout: the c24 23.4K-tok family). The budget decision + engine live in
+    emit/prompt_compact.py (monoliths F9); compaction is honesty-preserving and self-announcing in ai_ logs."""
+    return _maybe_compact(_build, card_in)
 
 def _build(card_in, *, oversize=False):
     s, cr, asset = card_in["story"], card_in["catalog_row"], card_in.get("asset") or {}
@@ -226,7 +170,7 @@ def _build(card_in, *, oversize=False):
     _ep_hint = (f"your card's NATURAL endpoints (prefer one): {_valid}  — `{de['live']}` is the LIVE/now screen; "
                 f"{de['history'] or 'none'} are its DATE-CAPABLE history variants for a trend/profile card. "
                 f"(The closed set / retired blocklist / choose-by rules are in the system prompt.)"
-                if de["live"] else "this card has NO ems_backend screen (non-data card) — omit the ems_backend block.")
+                if de["live"] else "this card has NO live endpoint (non-data card) — omit the fetch block.")
     cands = "\n".join(
         f"  - cand {c['card_id']} \"{c['title']}\" {c['width_px']}x{c['height_px']} | role:{c.get('analytical_role')} "
         f"| purpose:{c.get('card_purpose')} | viz:{c.get('visualization')}" for c in card_in.get("swap_candidates", []))
@@ -293,7 +237,7 @@ def _build(card_in, *, oversize=False):
         f"  handling_class: {cr.get('handling_class')}   resolver_scope: {cr.get('resolver_scope')}   "
         f"payload_family: {cr.get('payload_family')} [REF-ONLY: DATA-fill dialect]",
         f"  contract: component={con.get('component')} host_cmd_component={con.get('host_cmd_component')} shape={con.get('canonical_shape')}",
-        f"  ems_backend ENDPOINT — {_ep_hint}",
+        f"  fetch ENDPOINT — {_ep_hint}",
         f"  recipe (UNRESOLVED — resolve into data_instructions.fields): shape={rec.get('payload_shape')} "
         f"orientation={rec.get('orientation')} entity_dim={rec.get('entity_dim')} selection_dim={rec.get('selection_dim')} "
         f"selection_role={rec.get('selection_role')}",
@@ -319,21 +263,21 @@ def _build(card_in, *, oversize=False):
         ]
     if cr.get("handling_class") in _fields_optional_classes():
         # THREE no-fields stories, one branch each [A5]: a member-scope card WITH a roster_spec is a ROSTER CARD (its
-        # DATA rides data_instructions.roster — the old two-way split dropped it into the NO-FIELDS/OMIT-ems_backend
-        # chrome text while the roster_spec block above said 'roster MUST conform': 12-of-23 emitted ems_backend,
+        # DATA rides data_instructions.roster — the old two-way split dropped it into the NO-FIELDS/OMIT-fetch
+        # chrome text while the roster_spec block above said 'roster MUST conform': 12-of-23 emitted the fetch block,
         # 11 omitted, card 18 dropped the roster entirely). A panel_aggregate with NO roster_spec rides its consumer's
         # panel fan-out. Everything else is chrome/special-renderer. All three are LEGITIMATE fields: [] emissions.
         if rec.get("roster_spec"):
             # Written against the gate's REAL acceptance (gates.gate_data_instructions + gate_roster): fields: []
             # beside a non-empty roster CONFORMS; gate_roster folds clean column choices in and backfills omitted
-            # recipe slots verbatim; the ems_backend block feeds the consumer's window/range knobs (consumer_build
+            # recipe slots verbatim; the fetch block feeds the consumer's window/range knobs (consumer_build
             # ai_spec) — it is NOT omitted on a roster card.
             parts += [
                 "  ★ ROSTER CARD (member-scope, roster_spec above): this card's DATA rides data_instructions.roster — "
                 "emit `roster` (one entry per recipe slot, slot copied VERBATIM; your ONLY decision is the COLUMN "
                 "inside col/delta/phase_mean/prefer_abs bindings, from the DB SCHEMA above) AND "
                 "data_instructions.fields: [] (an EMPTY list — LEGITIMATE beside a roster, passes the gate). KEEP the "
-                "ems_backend block (endpoint per the hint above — it drives the member fan-out's window/range knobs); "
+                "fetch block (endpoint per the hint above — it drives the member fan-out's window/range knobs); "
                 "do NOT invent per-member fields or values. Author the FULL exact_metadata per the shape below. "
                 "answerability = MEMBER COVERAGE: \"full\" when every member reports (has_data=Y in the PANEL MEMBERS "
                 "block), \"partial\" when some members are dark (they honest-blank per-leaf — name them in data_note).",
@@ -353,7 +297,7 @@ def _build(card_in, *, oversize=False):
                 f"  ★ NO-FIELDS CARD (handling_class={cr.get('handling_class')}): this card's DATA is NOT filled from "
                 "fields[] — it is pure UI chrome or a special renderer (narrative/topology/3D widgets built server-side). "
                 "Emit data_instructions.fields: [] (an EMPTY list — this is LEGITIMATE here and passes the gate), OMIT the "
-                "ems_backend block, and author the FULL exact_metadata per the shape below (that IS the render). "
+                "fetch block, and author the FULL exact_metadata per the shape below (that IS the render). "
                 "answerability=\"full\" (the card renders completely from its metadata). Do NOT invent data fields. "
                 "TIME-CURSOR chrome (history tick labels / currentLabel / a scrubber's step state) CANNOT be known when you "
                 "author: emit history as an EMPTY list ([]) and currentLabel as \"\" with canStepBack/canStepForward false — "

@@ -1,0 +1,12 @@
+{
+ "run_id": "r_0173578f52",
+ "loop1": [
+  {
+   "card_id": 45,
+   "title": "Current Live Health",
+   "answerability": "partial",
+   "note": "Showing per-phase currents, average, unbalance, and peak \u2014 neutral-to-phase ratio is not measured for this asset."
+  }
+ ],
+ "loop2": "GIC-01-N9-Solar Incomer-1 has no logged data \u2014 every card renders its real component with per-leaf-null leaves (honest empty). 262 data-bearing alternative(s) offered in the picker."
+}

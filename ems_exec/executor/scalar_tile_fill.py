@@ -172,19 +172,4 @@ def _under_written(p, written):
     return any(toks[:j] in written for j in range(1, len(toks) + 1))
 
 
-def _honest_blanked(path, hb):
-    """True when `path` (a tile object path OR a tile value-leaf path, dotted) matches a slot the AI EXPLICITLY
-    honest-blanked. `hb` holds tokens-tuples normalized both address-ways by fill._honest_blank_paths; a '[*]' segment
-    matches any index at that position. A match on the tile OBJECT path also blocks (an honest-blanked tile shouldn't be
-    resurrected via a deeper value key)."""
-    if not hb:
-        return False
-    toks = tuple(_toks(path))
-    if not toks:
-        return False
-    if toks in hb:
-        return True
-    for entry in hb:
-        if len(entry) == len(toks) and all(e == t or e == "*" for e, t in zip(entry, toks)):
-            return True
-    return False
+from ems_exec.executor.rescue_common import honest_blanked as _honest_blanked   # THE shared matcher (D5)

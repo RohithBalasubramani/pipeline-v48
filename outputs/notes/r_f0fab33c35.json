@@ -2,11 +2,12 @@
  "run_id": "r_f0fab33c35",
  "loop1": [
   {
-   "card_id": 9,
-   "title": "Total Feeder Consumption / Supply",
+   "card_id": 36,
+   "title": "Power & Energy (Real-Time)",
    "answerability": "partial",
-   "note": "Showing total active power demand \u2014 contracted capacity is unknown for this asset, so the denominator and consumption percentage are omitted."
+   "note": "Showing total active and reactive power trends; projected demand is derived from load factor as no direct demand meter is present."
   }
  ],
- "loop2": null
+ "loop2": null,
+ "reconcile": "asset 'GIC-01-N8-BPDB-01 For Lamination-01&02' has_feeders=False but the routed page 'panel-overview-shell/real-time-monitoring' is the panel-aggregate granularity \u2014 reconciled to 'individual-feeder-meter-shell/real-time-monitoring'"
 }

@@ -1,7 +1,7 @@
 /**
  * card 24 — PqTimelineCard.
  *
- * PAYLOAD-DIRECT (ems_backend RETIRED — `frame` is always empty now). The Layer-2
+ * PAYLOAD-DIRECT (host-served RETIRED — `frame` is always empty now). The Layer-2
  * completed payload IS the render source: payload.timeline = { pres, limits, periods,
  * selectedLabel, focus }, carrying REAL per-bucket periods or honest-blank. The old live
  * snapshotFromFrame(frame) branch AND the buildPQPeriods() fabrication fallback (synthetic

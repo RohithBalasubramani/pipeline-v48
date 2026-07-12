@@ -12,75 +12,42 @@ kwargs means repeated metadata reads reuse one connection; a DSN edit rotates to
 """
 from __future__ import annotations
 
-import threading
-
-from config import neuract_dsn as _dsn
-
-_LOCK = threading.Lock()
-_POOL: dict = {}          # frozen-kwargs key -> psycopg2 connection
-_COLS_CACHE: dict = {}    # table -> frozenset(present columns) (schema is stable per process)
+from data import neuract_pool as _pool          # THE pooled psycopg2 door (D1) — lifecycle + shared schema cache
 
 
-def _key():
-    kw = _dsn.conn_kwargs()
-    return tuple(sorted((k, str(v)) for k, v in kw.items()))
-
-
-def _conn():
-    """A live psycopg2 connection to neuract from the pool (reconnect if the pooled one died). None on any failure."""
-    import psycopg2
-    key = _key()
-    with _LOCK:
-        c = _POOL.get(key)
-        if c is not None and not getattr(c, "closed", 1):
-            return c
-        try:
-            c = psycopg2.connect(**_dsn.conn_kwargs())
-            c.autocommit = True
-            try:
-                c.set_session(readonly=True)          # belt-and-braces: this package NEVER writes
-            except Exception:
-                pass
-            _POOL[key] = c
-            return c
-        except Exception:
-            return None
+try:
+    from replay import hooks as _replay_hooks                  # record/replay seam (fail-open; None → bare calls)
+except Exception:
+    _replay_hooks = None
 
 
 def rows(sql, params=None):
-    """Run a read → list-of-tuples ([] on any error / dead connection — honest-degrade, never raise)."""
-    c = _conn()
-    if c is None:
-        return []
-    try:
-        with c.cursor() as cur:
-            cur.execute(sql, params or ())
-            return cur.fetchall()
-    except Exception:
-        with _LOCK:
-            try:
-                _POOL.pop(_key(), None)               # drop a broken pooled conn; next call reconnects
-            except Exception:
-                pass
-        return []
+    """Run a read → list-of-tuples ([] on any error / dead connection — honest-degrade, never raise).
+    REPLAY SEAM [replay/hooks.py]: recorded during a traced request; tape-served during a pinned replay."""
+    if _replay_hooks is None:
+        return _rows_raw(sql, params)
+    return _replay_hooks.db_rows(_rows_raw, "sql.reg", sql, params)
 
 
 def dicts(sql, params=None):
-    """Run a read → list-of-dicts keyed by the SELECT column names ([] on any error — honest-degrade, never raise)."""
-    c = _conn()
-    if c is None:
-        return []
+    """Run a read → list-of-dicts keyed by the SELECT column names ([] on any error — honest-degrade, never raise).
+    REPLAY SEAM: same contract as rows() (separate tape kind — different result shape)."""
+    if _replay_hooks is None:
+        return _dicts_raw(sql, params)
+    return _replay_hooks.db_rows(_dicts_raw, "sql.regd", sql, params)
+
+
+def _rows_raw(sql, params=None):
     try:
-        with c.cursor() as cur:
-            cur.execute(sql, params or ())
-            cols = [d[0] for d in (cur.description or [])]
-            return [dict(zip(cols, r)) for r in cur.fetchall()]
+        return _pool.run_read(sql, params, readonly=True)   # the pool drops a broken conn itself (D1)
     except Exception:
-        with _LOCK:
-            try:
-                _POOL.pop(_key(), None)
-            except Exception:
-                pass
+        return []
+
+
+def _dicts_raw(sql, params=None):
+    try:
+        return _pool.run_read(sql, params, readonly=True, dict_rows=True)
+    except Exception:
         return []
 
 
@@ -91,24 +58,10 @@ def one(sql, params=None):
 
 
 def present_columns(table):
-    """The frozenset of columns that PHYSICALLY exist on `table` in the neuract schema (cached). frozenset() on error."""
-    if not table:
-        return frozenset()
-    hit = _COLS_CACHE.get(table)
-    if hit is not None:
-        return hit
-    got = rows(
-        "SELECT column_name FROM information_schema.columns "
-        "WHERE table_schema = %s AND table_name = %s",
-        (_dsn.schema(), table),
-    )
-    cols = frozenset(r[0] for r in got)
-    _COLS_CACHE[table] = cols
-    return cols
-
-
-def has_column(table, col):
-    return bool(col) and col in present_columns(table)
+    """The frozenset of columns that PHYSICALLY exist on `table` in the neuract schema — the SHARED never-cache-empty
+    probe (data/neuract_pool, D1; this door's old plain-dict cache could pin an empty set on a tunnel flap — the
+    member-cache-poison class, audit H2). frozenset() on error, re-probed next call."""
+    return _pool.present_columns(table, rows)
 
 
 def table_exists(table):

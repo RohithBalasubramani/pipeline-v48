@@ -10,7 +10,9 @@ from __future__ import annotations
 
 import os
 
-BASE_URL = os.environ.get("V48_VALIDATE_BASE", "http://127.0.0.1:8770")
+from config.endpoints import HOST_BASE as _HOST_BASE   # the ONE :8770 home (config F7) — env-only import, no DB
+
+BASE_URL = os.environ.get("V48_VALIDATE_BASE", _HOST_BASE)
 
 # per-lane concurrency (see module doc). The CLI's --concurrency sets the REQUESTED level; the runner clamps the
 # /api/run lane to run_concurrency_max and lets /api/frame checks use frame_concurrency.

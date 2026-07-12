@@ -1,0 +1,18 @@
+{
+ "run_id": "r_3879bdc3ae",
+ "loop1": [
+  {
+   "card_id": 43,
+   "title": "Voltage Live Health",
+   "answerability": "partial",
+   "note": "Showing live per-phase currents, unbalance, max spread, and neutral current; deviation % is derived from active power and rated kVA. The 'Rate Change' slot was replaced with 'Neutral Current' as the meter does not measure time-derivative rates."
+  },
+  {
+   "card_id": 44,
+   "title": "Voltage History",
+   "answerability": "partial",
+   "note": "Showing per-phase current history and max/spread stats \u2014 sag/swell event counts and rated reference lines are not measured for this asset."
+  }
+ ],
+ "loop2": null
+}

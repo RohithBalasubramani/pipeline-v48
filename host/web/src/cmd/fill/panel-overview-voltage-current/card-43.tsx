@@ -1,7 +1,7 @@
 import React from "react";
 // Card 43 · Voltage Health Summary (equipment-detail CMD V2 page).
 //
-// PAYLOAD-DIRECT (ems_backend RETIRED — `frame` is always empty now). Priority:
+// PAYLOAD-DIRECT (host-served RETIRED — `frame` is always empty now). Priority:
 // payload skeleton → HONEST-EMPTY card. HealthSummaryPanel maps data.metrics + data.phases;
 // if the payload elided those leaves, fall back to a STRUCTURE-PRESERVING honest-empty card
 // (honestEmptyHealth — payload chrome + empty metrics/phases) so the panel still renders —

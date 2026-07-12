@@ -18,6 +18,13 @@ import obs.ai_log as _ai  # noqa: E402  (install the LLM logger early)
 
 _ai.set_run_id("pytest")
 
+# HERMETIC OBS [trace layer]: tests exercise the real trace/span machinery (console + per-trace jsonl), but must
+# never write trace rows into the PRODUCTION cmd_catalog obs_* store — stub the pg sink's enqueue for the whole
+# session. test_obs_trace.py additionally gates per-test via the bus knob monkeypatch.
+import obs.sink_pg as _sink_pg  # noqa: E402
+
+_sink_pg.write = lambda event: None
+
 
 def pytest_configure(config):
     config.addinivalue_line("markers", "live: exercises a live Qwen call (tolerant of fail-open)")

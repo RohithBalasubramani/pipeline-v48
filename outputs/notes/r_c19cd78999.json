@@ -1,0 +1,36 @@
+{
+ "run_id": "r_c19cd78999",
+ "loop1": [
+  {
+   "card_id": 7,
+   "title": "Context Rail Header (Overview / Section / Feeder)",
+   "answerability": "partial",
+   "note": "Showing Panel-1A aggregate readings from 3 active UPS feeders and 2 active BPDB feeders; 2 UPS feeders and 2 Solar Incomers are dark (no data)."
+  },
+  {
+   "card_id": 5,
+   "title": "Real Time Monitoring (Feeder Heatmap)",
+   "answerability": "partial",
+   "note": "Showing live power distribution across 8 active feeders (UPS, BPDB, Solar Incomers); 2 UPS feeders (UPS-05, UPS-06) are dark (no data). Load % is omitted as no rated_kva is available for these meters."
+  },
+  {
+   "card_id": 9,
+   "title": "Total Feeder Consumption / Supply",
+   "answerability": "partial",
+   "note": "Showing total active power \u2014 contracted capacity is unknown for this asset, so the consumption % and denominator are omitted."
+  },
+  {
+   "card_id": 10,
+   "title": "Consumption Trend / Supply Trend",
+   "answerability": "partial",
+   "note": "Showing panel aggregate consumption trend from 6 active outgoing feeders; 2 UPS feeders (GIC-02-N6, GIC-02-N7) are dark and honest-blanked."
+  },
+  {
+   "card_id": 11,
+   "title": "Quick Stats",
+   "answerability": "partial",
+   "note": "Showing per-member panel rollup (Primary outgoing feeders); 2 members (UPS-05, UPS-06) are dark and will render as honest blanks."
+  }
+ ],
+ "loop2": null
+}

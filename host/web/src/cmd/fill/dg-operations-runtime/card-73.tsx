@@ -7,11 +7,11 @@ import React from "react";
 // So this card is rendered ENTIRELY from metadata + honest-empty: the demand-limit reference line is a frontend
 // nameplate const (DEMAND_LIMIT_KW) the panel needs to draw its axis, and `buckets` is EMPTY.
 //
-// FRAMES=PAYLOADS [architecture]: ems_backend is RETIRED (frames={} EMPTY), so there is no live-frame path anyway. The
+// FRAMES=PAYLOADS [architecture]: host-served is RETIRED (frames={} EMPTY), so there is no live-frame path anyway. The
 // per-bucket demand_present_kw / active_energy / reactive_energy time-series is DERIVED from the DG duty run-hours
 // history, which has NO neuract source — so `buckets` is always empty and the panel draws its own empty-state chrome
 // (axes + legend + SamplingPicker, no bars) — never a fabricated bar or seed number.
-// This card owns a SamplingPicker + a bucket drilldown, so it holds local sampling + selection state. With ems_backend
+// This card owns a SamplingPicker + a bucket drilldown, so it holds local sampling + selection state. With host-served
 // retired the onDateChange re-fetch is a no-op, but the control is real CMD V2 chrome and still renders.
 import { PowerEnergyAnalysisPanel } from "@cmd-v2/components/charts/primitives";
 import type { SamplingSelection } from "@cmd-v2/components/charts/primitives";

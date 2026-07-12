@@ -6,8 +6,9 @@ Returns {card_id: Layer2CardOutput}. Each card is an INDEPENDENT AI emit, so the
 SWAP-COLLISION POST-PASS [META-04]: the parallel emits each run with an EMPTY already_chosen, so two slots can each
 independently swap to the SAME off-page target → a duplicate card. After all emits, grounding.swap_settle.settle runs a
 DETERMINISTIC second pass (highest-confidence-first) that reverts the lower-priority colliding swap to KEEP — both slots
-still render distinct + byte-identical defaults. This settles swaps BEFORE Layer 3 so each L3 call is a pure function of
-its own (settled) card. [contract: swaps resolved deterministically BEFORE L3]"""
+still render distinct + byte-identical defaults. Swaps are settled here, before the executor fill, so every downstream
+pass is a pure function of its own (settled) card. [contract: swaps resolved deterministically before data-fill]"""
+from obs.errfmt import fmt_exc as _fmt_exc   # the ONE exception string [EH F4]
 from run.parallel import run_parallel
 from layer2.build import run_card, _page_card_ids
 from grounding.swap_settle import settle as settle_swaps
@@ -15,14 +16,14 @@ from obs.stage import stage
 
 
 def _err(cid, e):
-    return {"card_id": cid, "exception": f"{type(e).__name__}: {e}", "conforms": False,
+    return {"card_id": cid, "exception": _fmt_exc(e), "conforms": False,
             "exact_metadata": None, "payload": None, "swap_decision": {"action": "keep"}}
 
 
 def _fill(o):
     """NO server-side DATA fill, NO default-replay seed (user: no default mode / no fallbacks anywhere). The payload IS
     the AI's `exact_metadata` (the METADATA tier, data leaves elided). The DATA is filled LIVE on the FRONTEND from the
-    ems_backend frame (Option A) via each CMD V2 card's OWN mapper. No live frame ⇒ the card shows 'connecting' (honest),
+    legacy-EMS frame (Option A, retired) via each CMD V2 card's OWN mapper. No live frame ⇒ the card shows 'connecting' (honest),
     never a replayed default."""
     if o.get("exception"):
         return o
@@ -32,6 +33,26 @@ def _fill(o):
 
 
 def run_2_all(run_id, l1a, l1b):
+    """OBS wrapper — the whole per-page fan-out is ONE `layer2_card_ai` parent span; each card's
+    `layer2_card_ai.card` span (layer2/build.run_card) nests under it via the run_parallel context hop."""
+    from obs.span import stage_span
+    with stage_span("layer2_card_ai", inputs={"page_key": (l1a or {}).get("page_key"),
+                                              "n_cards": len((l1a or {}).get("cards") or [])}) as sp:
+        out = _run_2_all_inner(run_id, l1a, l1b)
+        gaps = sum(1 for o in out.values() if (o or {}).get("gap"))
+        hard_fails = sum(1 for o in out.values() if not (o or {}).get("conforms"))
+        sp.set_outputs(cards=len(out),
+                       conform=sum(1 for o in out.values() if (o or {}).get("conforms")),
+                       partial=sum(1 for o in out.values() if (o or {}).get("answerability") == "partial"),
+                       gaps=gaps, hard_fails=hard_fails,
+                       swaps=sum(1 for o in out.values()
+                                 if ((o or {}).get("swap_decision") or {}).get("origin") == "swapped"))
+        if gaps or hard_fails:
+            sp.set_degradation(gaps=gaps or None, hard_fails=hard_fails or None)
+        return out
+
+
+def _run_2_all_inner(run_id, l1a, l1b):
     cards = (l1a or {}).get("cards") or []
     if not cards:
         return {}
@@ -61,11 +82,12 @@ def run_2_all(run_id, l1a, l1b):
             stage(run_id, "L2.swap_revert", id=rv.get("card_id"), target=rv.get("target"),
                   reason=rv.get("reason"))
     except Exception as e:
-        stage(run_id, "L2.swap_revert", ERROR=f"{type(e).__name__}: {e}")
+        stage(run_id, "L2.swap_revert", ERROR=_fmt_exc(e))
 
     for cid, o in out.items():
         sw = o.get("swap_decision") or {}
         stage(run_id, "L2.card", id=cid, swap=sw.get("action"), to=(sw.get("swap_to_id") or cid),
+              confidence=sw.get("confidence"),                  # the AI's swap confidence (admin dashboard; None on keep)
               conforms=o.get("conforms"), fill=o.get("fill_source"),
               answerability=o.get("answerability"), gap=o.get("gap"), note=o.get("data_note"),
               keys=list((o.get("exact_metadata") or {}).keys())[:4],

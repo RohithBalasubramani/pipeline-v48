@@ -1,0 +1,30 @@
+{
+ "run_id": "r_fcbb229175",
+ "loop1": [
+  {
+   "card_id": 14,
+   "title": "Cumulative Energy",
+   "answerability": "partial",
+   "note": "Showing total active and reactive energy for the month \u2014 per-phase breakdown is not measured for this aggregate panel view."
+  },
+  {
+   "card_id": 16,
+   "title": "Energy Consumption Trend",
+   "answerability": "partial",
+   "note": "Showing historical energy trends for UPS, BPDB, and HHF feeders; rated and contracted reference lines are omitted because the asset's nameplate and contract ratings are unknown."
+  },
+  {
+   "card_id": 15,
+   "title": "Today live power analysis",
+   "answerability": "partial",
+   "note": "Showing panel aggregate apparent power (kW) and power quality metrics (THD, PF) from the 8 outgoing feeder members. Per-phase and detailed harmonic breakdowns (h3/h5/h7) are not measured by the member meters and are omitted."
+  },
+  {
+   "card_id": 17,
+   "title": "Daily Power Demand by Feeder",
+   "answerability": "partial",
+   "note": "Showing UPS and BPDB power demand trends \u2014 Load Factor is not measured for this asset."
+  }
+ ],
+ "loop2": null
+}

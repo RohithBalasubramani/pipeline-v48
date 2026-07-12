@@ -1,0 +1,18 @@
+{
+ "run_id": "r_f014381810",
+ "loop1": [
+  {
+   "card_id": 12,
+   "title": "Energy Input & Distribution",
+   "answerability": "partial",
+   "note": "Showing total active power and energy for all outgoing feeders; per-feeder utilization is not measured as rated capacity is unknown for these assets."
+  },
+  {
+   "card_id": 13,
+   "title": "Energy Flow Diagram",
+   "answerability": "partial",
+   "note": "Showing total active power and energy delta for the panel's PRIMARY outgoing feeders (UPS, BPDB). Incomers (Solar) and some UPS feeders (GIC-02-N6, GIC-02-N7) are dark (no live data) and render as blanks."
+  }
+ ],
+ "loop2": null
+}

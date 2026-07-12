@@ -1,0 +1,30 @@
+{
+ "run_id": "r_6a02dc364a",
+ "loop1": [
+  {
+   "card_id": 39,
+   "title": "Today's Energy",
+   "answerability": "partial",
+   "note": "Showing total active energy consumption for the month; reactive energy, SEC, and subsidy metrics are not measured or configured for this asset."
+  },
+  {
+   "card_id": 40,
+   "title": "Power Energy Analysis",
+   "answerability": "partial",
+   "note": "Showing weekly active and reactive power trends; rated and contracted power lines are omitted because the asset's nameplate ratings are unknown."
+  },
+  {
+   "card_id": 41,
+   "title": "Input vs Output Energy",
+   "answerability": "partial",
+   "note": "Showing total active power and derived efficiency/loss \u2014 per-phase power and dedicated output energy aren't measured for this asset."
+  },
+  {
+   "card_id": 42,
+   "title": "Load Anomalies",
+   "answerability": "partial",
+   "note": "Showing actual load trend and load factor \u2014 anomaly/dip/surge event counts are not measured by this meter."
+  }
+ ],
+ "loop2": null
+}

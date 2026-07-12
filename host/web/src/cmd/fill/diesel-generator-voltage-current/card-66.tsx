@@ -3,7 +3,7 @@ import React from "react";
 // tab). HealthSummaryPanel fed its OWN Layer-2 payload's voltage `data` (HealthCardData), phaseVariant="bars" (11 kV L-L
 // genset labels).
 //
-// ems_backend is RETIRED → the payload IS the render source. The harvested story args are `{ variant, data:
+// host-served is RETIRED → the payload IS the render source. The harvested story args are `{ variant, data:
 // HealthCardData }` (real neuract values + honest-blank '—'), so we read `payload.data` straight. Honest-degrade: a
 // payload with no usable HealthCardData (Layer 2 elided the metrics/phases leaves) falls back to CMD V2's OWN
 // structured-empty slice — NEVER a blank/null card, NEVER a mock/seed number. NO date/range control → no onDateChange.

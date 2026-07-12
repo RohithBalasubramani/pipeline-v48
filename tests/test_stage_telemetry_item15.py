@@ -1,7 +1,7 @@
 """tests/test_stage_telemetry_item15.py — ITEM 15 [outputs/AI_QUALITY_BACKLOG.md B2]: the basket / asset_resolve /
 stories LLM call sites must THREAD THEIR STAGE NAME into the failure recorder (before: 84 outage entries bucketed as
 stage='-'), replace their literal timeouts with the DB-driven llm.timeout.<stage> rows, and degrade HONESTLY:
-  · layer1b/basket/column_basket — stage='basket', retry_once, llm_failed rides in the basket and is surfaced via
+  · layer1b/basket/column_basket — stage='basket', transient-only retry (llm/transient_retry), llm_failed rides in the basket and is surfaced via
     layer1b contract_problems (the basket falls back to the logged floor — never silently empty, never fabricated);
   · layer1b/resolve/asset_resolve — stage='asset_resolve' (timeout now read INSIDE the client from the same
     llm.timeout.asset_resolve row the call site used to read locally);
@@ -48,17 +48,28 @@ def _run_basket(recorder):
 
 
 def test_basket_stage_named_and_retry_once_on_outage():
-    """An outage-shaped {} is retried EXACTLY once, every attempt carries stage='basket' (no literal timeout — the
-    per-stage row llm.timeout.basket drives it inside the client), and llm_failed=True rides in the basket while the
-    logged floor still fills the columns (honest degrade, never an empty basket)."""
-    rec = _Recorder([{}])
+    """A TRANSIENT outage (marker kind not in llm.no_retry_kinds) is retried EXACTLY once, every attempt carries
+    stage='basket' (no literal timeout — the per-stage row llm.timeout.basket drives it inside the client), and
+    llm_failed=True rides in the basket while the logged floor still fills the columns (honest degrade, never an
+    empty basket). [llm/transient_retry — the ONE shared policy]"""
+    rec = _Recorder([{"_llm_error": "http", "_llm_error_detail": "connection refused"}])
     b = _run_basket(rec)
-    assert len(rec.calls) == 2                                        # retry_once: one bounded retry, no more
+    assert len(rec.calls) == 2                                        # transient: one bounded retry, no more
     assert all(c.get("stage") == "basket" for c in rec.calls)
     assert all("timeout" not in c for c in rec.calls)                 # DB row (llm.timeout.basket), not a literal
     assert b["llm_failed"] is True
     assert b["n_columns"] == 2                                        # logged floor rescued the real columns
     assert all(col["has_data"] for col in b["columns"])               # floor columns are real — nothing fabricated
+
+
+def test_basket_deterministic_failure_fails_fast_no_retry():
+    """The no-retry rule [emit-timeout gotcha]: a DETERMINISTIC failure kind (llm.no_retry_kinds — timeout/truncated)
+    is NEVER re-sent (retrying doubles the hang); the basket still degrades honestly to the logged floor."""
+    rec = _Recorder([{"_llm_error": "timeout", "_llm_error_detail": "read timed out"}])
+    b = _run_basket(rec)
+    assert len(rec.calls) == 1                                        # fail fast: no second attempt
+    assert b["llm_failed"] is True
+    assert b["n_columns"] == 2                                        # logged floor rescued the real columns
 
 
 def test_basket_stage_named_single_call_on_success():
@@ -105,7 +116,7 @@ def test_asset_resolve_stage_named_no_literal_timeout():
 
 def test_asset_resolve_outage_still_retries_once_with_stage():
     from layer1b.resolve import empty_fallback as ef                  # the outage path browses the registry — mock it
-    rec = _Recorder([{}])
+    rec = _Recorder([{"_llm_error": "http", "_llm_error_detail": "connection refused"}])   # TRANSIENT outage marker
     with patch.object(ar, "asset_candidates", return_value=[list(r) for r in _ROWS]), \
          patch.object(ef, "asset_candidates", return_value=[list(r) for r in _ROWS]), \
          patch.object(ar, "class_from_subject", return_value=None), \

@@ -3,7 +3,7 @@ import React from "react";
 // (its own three.js Canvas, from dg-overview) rendered DIRECTLY from the Layer-2 payload {snapshot, display} — the
 // payload IS the props.
 //
-// FRAMES=PAYLOADS [architecture]: ems_backend is RETIRED (the host emits frames={} EMPTY), so there is no live-frame /
+// FRAMES=PAYLOADS [architecture]: host-served is RETIRED (the host emits frames={} EMPTY), so there is no live-frame /
 // mapper path — the Layer-2 payload is the only data source. DOMAIN GAP: fuel level / rate / temp are DG telemetry
 // neuract does NOT carry, so Layer-2 honest-blanks those leaves. FuelTankAnatomy reads snapshot.fuelLevel/fuelRate/
 // fuelTemp PLAINLY with `.toFixed(0)` (no null guard) and drives the 3D fill from `snapshot.fuelLevel`, so tankSnapshot

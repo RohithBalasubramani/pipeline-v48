@@ -5,37 +5,19 @@
    "card_id": 7,
    "title": "Context Rail Header (Overview / Section / Feeder)",
    "answerability": "partial",
-   "note": "Showing aggregate panel totals and member breakdowns; 4 of 10 panel members (GIC-01-N9, GIC-02-N1, GIC-15-N10, GIC-15-N11) are dark (no data) and render as honest blanks."
+   "note": "Showing aggregate panel readings from 6 active outgoing feeders (GIC-01-N3-UPS-01, GIC-01-N4-UPS-02, GIC-01-N5-UPS-03, GIC-01-N8-BPDB-01, GIC-02-N2-BPDB-02, GIC-02-N5-UPS-04); 2 feeders (GIC-02-N6-UPS-05, GIC-02-N7-UPS-06) are dark and omitted from the aggregate."
   },
   {
    "card_id": 5,
    "title": "Real Time Monitoring (Feeder Heatmap)",
    "answerability": "partial",
-   "note": "Showing live power distribution across active feeders (UPS-01/02/03, BPDB-01/02, UPS-04); 4 members (Solar Incomers, Transformers, UPS-05/06) are dark and render as blank rows."
-  },
-  {
-   "card_id": 8,
-   "title": "AI Summary",
-   "answerability": "partial",
-   "note": "AI narrative generated from panel rollup; per-member narrative slots are rendered from member meters (GIC-01-N3, GIC-01-N4, GIC-01-N5, GIC-01-N8, GIC-02-N2, GIC-02-N5) which have data; supply-side members (Solar Incomers, Transformers) are dark and do not contribute to the narrative."
-  },
-  {
-   "card_id": 9,
-   "title": "Total Feeder Consumption / Supply",
-   "answerability": "partial",
-   "note": "Showing total feeder consumption and per-member breakdown (UPS/BPDB) from live panel members; denominator (contracted capacity) is unknown for this asset and omitted."
-  },
-  {
-   "card_id": 10,
-   "title": "Consumption Trend / Supply Trend",
-   "answerability": "partial",
-   "note": "Showing panel aggregate consumption trend and peak; per-member data is live for UPS-01/02/03, BPDB-01/02, UPS-04, but dark for UPS-05/06 and all supply incomers."
+   "note": "Showing live power distribution for active feeders (UPS, BPDB, Solar Incomers). UPS-05 and UPS-06 are dark (no data). Load % is omitted because no rated_kva is available for these GIC meters."
   },
   {
    "card_id": 11,
    "title": "Quick Stats",
    "answerability": "partial",
-   "note": "Showing panel aggregate stats from 6 active feeders; 2 feeders (UPS-05, UPS-06) are dark and honest-blank their slots."
+   "note": "Showing per-phase Voltage, Current Unbalance, and Total Current for the 6 active outgoing feeders; 2 feeders (UPS-05, UPS-06) are dark and honest-blanked."
   }
  ],
  "loop2": null

@@ -3,7 +3,7 @@ import React from "react";
 // VoltageRegulationCard fed its OWN Layer-2 payload's `regulation` slice: the regulated bus-voltage timeline + OLTC step
 // line + AVR dead-band overlay.
 //
-// ems_backend is RETIRED → the payload IS the render source. ELECTRICAL slot (the regulated bus voltage IS a real
+// host-served is RETIRED → the payload IS the render source. ELECTRICAL slot (the regulated bus voltage IS a real
 // neuract measurement) → this is the card that fills for REAL first: when the payload carries the voltage timeline,
 // `regulationVM` renders it. ALWAYS-DRAWS: a payload with no usable regulation slice renders the tab's OWN empty chrome
 // (points [], KPI/legend '—', valid axes/labels/colours) — the chart frame STILL DRAWS, never a blank/null card, never a

@@ -1,0 +1,36 @@
+{
+ "run_id": "r_66c37cc5bb",
+ "loop1": [
+  {
+   "card_id": 18,
+   "title": "Events KPI Strip",
+   "answerability": "partial",
+   "note": "Showing panel-aggregate event counts and worst-panel readings from 6 active feeders; 2 feeders (UPS-05, UPS-06) are dark and honest-blanked."
+  },
+  {
+   "card_id": 19,
+   "title": "AI Summary",
+   "answerability": "partial",
+   "note": "Showing AI narrative summary for 8 active feeders; UPS-06 and UPS-07 are dark (no data)."
+  },
+  {
+   "card_id": 20,
+   "title": "Event Timeline at {period}",
+   "answerability": "partial",
+   "note": "Showing event counts and worst deviations for PRIMARY members (GIC-01-N3-UPS-01 through GIC-02-N7-UPS-06); members with no data (GIC-02-N6-UPS-05, GIC-02-N7-UPS-06) are honest-blanked."
+  },
+  {
+   "card_id": 21,
+   "title": "Current Distribution at {period}",
+   "answerability": "partial",
+   "note": "Showing current_avg per outgoing feeder; sag/swell/voltage/unbalance/neutral metrics are not measured by this panel's aggregate table and are honest-blanked."
+  },
+  {
+   "card_id": 22,
+   "title": "Other Panels Event at {period}",
+   "answerability": "partial",
+   "note": "Showing per-panel event counts and voltage/current metrics for the 8 primary outgoing feeders; 2 context-only incomers (Solar Incomer-1, Solar Incomer-2) are listed but have no live data."
+  }
+ ],
+ "loop2": null
+}

@@ -5,13 +5,7 @@
    "card_id": 43,
    "title": "Voltage Live Health",
    "answerability": "partial",
-   "note": "Showing instantaneous phase voltages, average voltage, deviation, and unbalance; rate-of-change is not measured by this asset."
-  },
-  {
-   "card_id": 44,
-   "title": "Voltage History",
-   "answerability": "partial",
-   "note": "Showing voltage history and deviation \u2014 sag/swell event counts and primary event narrative are not measured by this meter."
+   "note": "Showing live phase voltages, deviation, and unbalance \u2014 Rate Change and statutory band marker are not measured for this asset."
   }
  ],
  "loop2": null

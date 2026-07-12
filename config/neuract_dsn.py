@@ -49,6 +49,15 @@ def ts_cast():
     return cfg("neuract.ts_cast", _db.DATA_TS_CAST)
 
 
+def ts_index_fn():
+    """The IMMUTABLE schema-qualified wrapper fn for the ts EXPRESSION INDEX [R3 / audit F1]. EMPTY by default → reads
+    use the raw '::timestamptz' cast (current behavior, no index dependency). Set to 'ts_imm' AFTER
+    db/create_neuract_ts_indexes.py has created neuract.ts_imm() + the per-table indexes: reads then order/filter on
+    neuract.ts_imm(timestamp_utc), which MATCHES the index expression, turning the seq scans into index scans. The
+    query expression and the index expression must be identical, so this is the paired code side of that DDL."""
+    return str(cfg("neuract.ts_index_fn", "")).strip()
+
+
 def dsn():
     """The full libpq DSN string (search_path pinned to the neuract schema). This is the user-locked target by default."""
     opts = quote(f"-csearch_path={schema()}", safe="")
@@ -58,12 +67,33 @@ def dsn():
 
 
 def conn_kwargs():
-    """psycopg2.connect(**kwargs) for the neuract DB — used by data/neuract.py's pool (search_path via options)."""
+    """psycopg2.connect(**kwargs) for the neuract DB — used by BOTH pooled doors (ems_exec/data/neuract.py and
+    registries/neuract/_db.py), so a knob edited here moves both.
+
+    HALF-DEAD-TUNNEL GUARD [2026-07-12]: the neuract DB rides an SSH tunnel on :5433 that is documented to flap
+    (config/databases.py). Without these, a half-open socket (TCP established, forwarding dead) parks a connect for the
+    OS TCP timeout (~2 min) and a mid-query stall for the kernel retransmission timeout (~15 min) — HOLDING the pooled
+    connection's lock so EVERY other executor thread wedges behind it. `connect_timeout` + TCP keepalives turn that into
+    a fast failure the honest-degrade path converts to `data_unavailable` in seconds. These only fire on a genuinely
+    dead socket, so the healthy path is byte-identical. All DB-knob-driven with safe code defaults.
+
+    `statement_timeout` is opt-in (code default 0 = unlimited, i.e. current behavior) because a too-tight value would
+    blank slow-but-working queries; set `neuract.statement_timeout_ms` once the ::timestamptz index work (audit F1/P3)
+    lands so no legitimate read is near the limit."""
+    opts = f"-c search_path={schema()}"
+    st_ms = int(cfg("neuract.statement_timeout_ms", 0))
+    if st_ms > 0:
+        opts += f" -c statement_timeout={st_ms}"
     return {
         "dbname": dbname(),
         "user": user(),
         "password": (password() or None),
         "host": host(),
         "port": port(),
-        "options": f"-c search_path={schema()}",
+        "options": opts,
+        "connect_timeout": int(cfg("neuract.connect_timeout_s", 5)),
+        "keepalives": 1,
+        "keepalives_idle": int(cfg("neuract.keepalives_idle_s", 10)),
+        "keepalives_interval": int(cfg("neuract.keepalives_interval_s", 5)),
+        "keepalives_count": int(cfg("neuract.keepalives_count", 3)),
     }

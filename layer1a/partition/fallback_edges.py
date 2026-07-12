@@ -1,4 +1,4 @@
-"""partition/fallback_edges.py — orphan rescue: attach a standalone card to a group it shares page_layout_cards (region,tab) with. [REVIEW G4, OPEN]"""
+"""layer1a/partition/fallback_edges.py — orphan rescue: attach a standalone card to a group it shares page_layout_cards (region,tab) with. [REVIEW G4, OPEN]"""
 from data.db_client import q
 
 

@@ -2,7 +2,7 @@ import React from "react";
 // Card 64 — All Runs (Fuel Log) (page diesel-generator-asset-dashboard/fuel-efficiency). The REAL RunsList (rendered
 // through the shared DataTable primitive) rendered DIRECTLY from the Layer-2 payload {stats} — the payload IS the props.
 //
-// FRAMES=PAYLOADS [architecture]: ems_backend is RETIRED (frames={} EMPTY), so there is no live-frame / mapper path.
+// FRAMES=PAYLOADS [architecture]: host-served is RETIRED (frames={} EMPTY), so there is no live-frame / mapper path.
 // The Layer-2 payload carries the `stats` slice (title + column labels + aggregates — real or honest-blank '—'); the
 // DG start/run LOG is telemetry neuract does NOT carry, so there is no `runs` leaf on the payload → runs is always [].
 // RunsList then renders its OWN empty state ("No runs in this period") under a real header — a correct blank tile,

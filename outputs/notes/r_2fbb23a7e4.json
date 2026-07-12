@@ -1,0 +1,13 @@
+{
+ "run_id": "r_2fbb23a7e4",
+ "loop1": [
+  {
+   "card_id": 36,
+   "title": "Power & Energy (Real-Time)",
+   "answerability": "partial",
+   "note": "Showing active power and energy directly; reactive power, apparent power, and projected demand are approximated using load factor as exact kVA/kVAR columns are not measured for this asset."
+  }
+ ],
+ "loop2": null,
+ "reconcile": "asset 'GIC-19-N9-AW-EX-Panel-06' has_feeders=False but the routed page 'panel-overview-shell/real-time-monitoring' is the panel-aggregate granularity \u2014 reconciled to 'individual-feeder-meter-shell/real-time-monitoring'"
+}

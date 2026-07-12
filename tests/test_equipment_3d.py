@@ -141,7 +141,9 @@ def test_kitpreview_fallback_fires(monkeypatch, tmp_path):
     out = m3d.emit_asset_3d({"mfm_id": 42, "name": "PCC-1A", "table": "gic_pcc_1a"}, PAGE_IND)
     obj = out["object"]
     assert obj["slug"] == "pcc-1a" and obj["url"].endswith(glb)
-    assert obj["url"].startswith("http")                           # the SERVED url — never the checked FS path
+    # the SERVED url — never the checked FS path. Absolute OR root-relative: since 2026-07-12 the web origin itself
+    # serves /media/ (legacy EMS media service retired), so the default base is '/media/'.
+    assert obj["url"].startswith(("http", "/media/"))
     assert str(tmp_path) not in obj["url"]
     assert isinstance(obj["preset"], dict) and obj["preset"]       # default_overrides ⊕ rule.preset merged
     assert isinstance(obj["template"], dict)                       # pcc-1a carries a KPI-overlay template

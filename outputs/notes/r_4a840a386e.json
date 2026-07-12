@@ -1,0 +1,25 @@
+{
+ "run_id": "r_4a840a386e",
+ "loop1": [
+  {
+   "card_id": 39,
+   "title": "Today's Energy",
+   "answerability": "partial",
+   "note": "Showing total active energy consumption (kWh) and reactive energy (kVArh) for the month \u2014 per-phase energy breakdown and subsidy/target figures are not measured for this asset."
+  },
+  {
+   "card_id": 40,
+   "title": "Power Energy Analysis",
+   "answerability": "partial",
+   "note": "Showing active and reactive power trends over the last 7 days; rated and contracted power lines are omitted because the asset's nameplate ratings are unknown."
+  },
+  {
+   "card_id": 41,
+   "title": "Input vs Output Energy",
+   "answerability": "partial",
+   "note": "Showing total active power and derived efficiency/loss metrics \u2014 per-phase and dedicated LV output energy aren't measured for this asset."
+  }
+ ],
+ "loop2": null,
+ "reconcile": "asset 'GIC-15-N3-PCC-01 (Transformer-01) [Secure Elite300]' has_feeders=False but the routed page 'panel-overview-shell/energy-power' is the panel-aggregate granularity \u2014 reconciled to 'individual-feeder-meter-shell/energy-power'"
+}

@@ -1,7 +1,7 @@
 import React from "react";
 // Card 22 · Other Panels Table — lt-pcc panel-overview Voltage&Current tab.
 //
-// PAYLOAD-DIRECT (ems_backend RETIRED — `frame` is always empty now). Priority:
+// PAYLOAD-DIRECT (host-served RETIRED — `frame` is always empty now). Priority:
 // payload → CMD V2 HONEST-EMPTY view-model. OtherPanelsTable feeds `rows={period.panels}`
 // to DataTable (rows.length/map/reduce); if the payload elided the panels leaf, fall back to
 // the page's OWN honest-empty model (empty panels, chrome only, NO fabrication). NEVER null.

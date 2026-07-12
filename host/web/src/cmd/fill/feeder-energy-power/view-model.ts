@@ -9,7 +9,7 @@
 //
 // FRAMES ARE RETIRED. The host emits `frames={}`; the ONLY data source is the payload (real neuract values +
 // honest-blank '—'/null, shape = the CMD V2 component's props). So each card reads `payload.data` straight — no
-// ems_backend frame, no live mapper, no reducer.
+// host-served frame, no live mapper, no reducer.
 //
 // ALWAYS-DRAWS [GOAL]: when the payload elides a card's whole `data` slice (missing / not a usable object) we fall
 // back to CMD V2's OWN `createUnavailableEnergyPowerViewModel` slice — the byte-faithful EMPTY-but-valid shape whose

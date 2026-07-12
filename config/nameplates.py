@@ -6,9 +6,8 @@ the loading% slot (never fabricates a denominator). [RN-01/02/05/07, DS-10, DID-
 
 Also derives the full rating field-set from a single nameplate kVA (derive_ratings — ported from
 CMD/backend2/core/config.py:16-47 feeder_rating_overrides, incl. the CRITICAL L-L→L-N nominal conversion so the
-statutory band is drawn over the per-phase ~240 V data, not the stored 415 V L-L → a permanent fake violation), the
-window capacity/utilization (capacity_utilization — energydist.py:71-78 _cap_util), and the per-asset→class-default→None
-contracted-kVA fallback (config.asset_class_defaults). All knobs are editable rows (config.rating_knobs). Honest-degrade
+statutory band is drawn over the per-phase ~240 V data, not the stored 415 V L-L → a permanent fake violation), and the
+per-asset→class-default→None contracted-kVA fallback (config.asset_class_defaults). All knobs are editable rows (config.rating_knobs). Honest-degrade
 throughout — a missing input returns None, never a guessed value.
 """
 import math
@@ -19,7 +18,7 @@ from config import rating_knobs as _rk
 from config import asset_class_defaults as _acd
 
 try:
-    from config.app_config import cfg as _cfg
+    from config.failopen import cfg_safe as _cfg   # THE guarded cfg reader (D3)
 except Exception:  # pragma: no cover — import-safe without the pipeline config on the path
     def _cfg(key, default):
         return default
@@ -235,30 +234,6 @@ def pq_limit(asset_table, field, default=None):
     return default
 
 
-def pq_limits(asset_table):
-    """{field: value} for every feeder-PQ limit field of an asset (per-asset nameplate → class default → OMITTED). A
-    field with no honest per-asset OR class value is left OUT of the dict (never a fabricated key) — so services/
-    mfm_config.py + the feeder-PQ mapper get real per-asset limits and honest-degrade the rest to the IEEE-519 code
-    default. Ports powerQualityMapper.ts:157-207 (nameplate limits before PQ_LIMITS fallback)."""
-    out = {}
-    for f in _PQ_LIMIT_FIELDS:
-        v = pq_limit(asset_table, f, None)
-        if v is not None:
-            out[f] = v
-    return out
-
-
-def capacity_utilization(kwh, rated_kva, hours):
-    """(capacity_kwh, utilization_pct) over a window from the nameplate rating (ports energydist _cap_util).
-    capacity_kwh = rated_kva × capacity_pf × hours; utilization_pct = kwh / capacity × 100. Returns (None, None)
-    without a nameplate / non-positive window so the FE shows '—', never a fabricated value."""
-    if not rated_kva or float(rated_kva) <= 0 or not hours or hours <= 0 or kwh is None:
-        return None, None
-    cap = round(float(rated_kva) * _rk.capacity_pf() * float(hours), 1)
-    util = round(float(kwh) / cap * 100, 1) if cap > 0 else None
-    return cap, util
-
-
 def role_section(asset_table):
     """(role, section) for heatmap sectioning / limit lookup, or (None, None)."""
     np = get_nameplate(asset_table)
@@ -270,17 +245,4 @@ def asset_category(asset_table):
     return np["asset_category"] if np else None
 
 
-def all_nameplates():
-    """Every row (for a build-time audit / bulk resolve)."""
-    rows = q("cmd_catalog", "SELECT " + ",".join(_COLS) + " FROM asset_nameplate ORDER BY asset_table")
-    out = []
-    for r in rows:
-        d = dict(zip(_COLS, r))
-        for k in ("rated_kva", "contracted_kva", "nominal_voltage_ll"):
-            d[k] = _num(d[k])
-        out.append(d)
-    return out
-
-
-def _esc(s):
-    return str(s).replace("'", "''")
+from config.policy_read import esc as _esc  # the ONE shared SQL-quote escape  # noqa: E402

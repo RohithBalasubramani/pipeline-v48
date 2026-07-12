@@ -1,0 +1,30 @@
+{
+ "run_id": "r_02a78d58e2",
+ "loop1": [
+  {
+   "card_id": 18,
+   "title": "Events KPI Strip",
+   "answerability": "partial",
+   "note": "Showing total event counts and worst-panel deviations for the selected time bucket; per-panel aggregate values are derived from member meters."
+  },
+  {
+   "card_id": 20,
+   "title": "Event Timeline at {period}",
+   "answerability": "partial",
+   "note": "Showing per-member event counts and worst deviations from PRIMARY feeders; 2 members (UPS-05, UPS-06) have no data and are omitted from the roster."
+  },
+  {
+   "card_id": 21,
+   "title": "Current Distribution at {period}",
+   "answerability": "partial",
+   "note": "Showing current_avg per outgoing feeder; sag/swell/voltage/unbalance/deviation slots are honest-blanked as this meter class does not measure those quantities."
+  },
+  {
+   "card_id": 22,
+   "title": "Other Panels Event at {period}",
+   "answerability": "partial",
+   "note": "Showing per-panel event counts and metrics for the 10 listed members. Note: GIC-02-N6-UPS-05, GIC-02-N7-UPS-06, GIC-01-N9-Solar Incomer-1, GIC-02-N1-Solar Incomer-2, and GIC-15-N10-PCC-01 (Transformer-01) and GIC-15-N11-PCC-01 (Transformer-02) have no live data (has_data=N) and will render as blanks."
+  }
+ ],
+ "loop2": null
+}

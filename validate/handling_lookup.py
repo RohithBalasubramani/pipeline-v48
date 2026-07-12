@@ -1,15 +1,9 @@
-"""validate/handling_lookup.py — read ONE card's card_handling.handling_class (cmd_catalog) for the payload validator.
-
-Single concern: the payload validator needs the handling CLASS to know whether a card renders WITHOUT a harvested
-card_payloads default (the payload-exempt classes — mirrors layer2/catalog/feasibility_recompute.PAYLOAD_EXEMPT).
-Fail-open: any DB error / absent row → None (the validator then falls back to its normal warn path). [validate]"""
-from data.db_client import q
+"""validate/handling_lookup.py — validate-side FACADE over THE card_handling read (layer2/catalog/card_handling —
+dedup D11, 2026-07-12; the SQL lives there now). Kept as a facade (not deleted) so validate keeps its documented
+property of importing without layer2 imports at module time — the delegate import is lazy, inside the call."""
 
 
 def handling_class_for(card_id):
     """The card_handling.handling_class for card_id, or None (absent row / DB error — honest fail-open)."""
-    try:
-        r = q("cmd_catalog", f"SELECT handling_class FROM card_handling WHERE card_id={int(card_id)} LIMIT 1")
-        return r[0][0] if r and r[0] and r[0][0] else None
-    except Exception:
-        return None
+    from layer2.catalog.card_handling import handling_class
+    return handling_class(card_id)

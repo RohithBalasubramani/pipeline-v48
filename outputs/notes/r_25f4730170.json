@@ -5,19 +5,25 @@
    "card_id": 39,
    "title": "Today's Energy",
    "answerability": "partial",
-   "note": "Showing total active and reactive energy for the current month; subsidy and target metrics are not measured for this asset."
+   "note": "Showing monthly active and reactive energy totals \u2014 per-phase energy breakdown and progress metrics are not measured for this asset."
+  },
+  {
+   "card_id": 40,
+   "title": "Power Energy Analysis",
+   "answerability": "partial",
+   "note": "one or more leaves could not be bound for this card on this asset \u2014 those leaves render an honest blank (per-leaf reasons attached), every other leaf fills"
   },
   {
    "card_id": 41,
    "title": "Input vs Output Energy",
    "answerability": "partial",
-   "note": "Showing input power and energy delta \u2014 UPS efficiency and loss are derived from total active power and energy imports, as specific output energy and loss-ratio metrics are not directly logged for this asset."
+   "note": "Showing UPS efficiency and loss via active power/energy; expected loss is a placeholder as the asset's nameplate rating is unknown."
   },
   {
    "card_id": 42,
    "title": "Load Anomalies",
    "answerability": "partial",
-   "note": "Showing actual load trend and load factor \u2014 expected load profiles, anomaly events, and threshold ratings are not measured by this UPS meter."
+   "note": "Showing actual load trend and load factor \u2014 expected load, anomaly events, and threshold data are not measured for this asset."
   }
  ],
  "loop2": null

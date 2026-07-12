@@ -30,15 +30,19 @@ def _panel_alias_index():
     alias-typed name. RAW aliases (normalize at use): the splitter needs the alias's own tokens to build a tolerant
     regex ('pcc-2a' -> pcc[-_ ]*2a matches 'PCC-2A'; a pre-normalized 'pcc2a' could not). Process-cached; {} on any
     failure (fail-open — name-only detection still works). [compare-alias fix]"""
+    global _ALIAS_IDX
     if _ALIAS_IDX:
         return _ALIAS_IDX
     try:
         from data.db_client import q
+        built = {}                     # build LOCALLY, publish only after the FULL read succeeds
         for pname, alias in q("cmd_catalog", "SELECT panel_name, alias FROM pcc_panel_alias WHERE panel_name IS NOT NULL"):
             if pname and alias:
-                _ALIAS_IDX.setdefault(_norm(pname), []).append(str(alias))
+                built.setdefault(_norm(pname), []).append(str(alias))
+        _ALIAS_IDX = built
     except Exception:
-        pass
+        return {}                      # a mid-stream tunnel flap left a PARTIAL index that the old code pinned for the
+        # process life (never-cache-partial); fail-open without caching so the next call self-heals. [2026-07-12]
     return _ALIAS_IDX
 
 

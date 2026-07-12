@@ -1,5 +1,8 @@
 # V48 L3 Rework — the payload cleaner
 
+> **SUPERSEDED (2026-07):** Layer 3 was retired; the deterministic clean/verify concern lives in
+> `ems_exec/executor/` (fill + fab_guards) and `validate/render_verdict.py`. Kept for history.
+
 **GOAL:** every card renders a COMPLETE, clean, crash-proof, real-or-"—" payload. L3 = deterministic clean/detect/verify
 with a TARGETED AI repair (last, only on flagged problems, FIXES-not-INVENTS, cached). Determinism guarantees; AI does
 heavy diagnosis/repair on a tiny targeted input.

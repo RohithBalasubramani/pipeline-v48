@@ -150,12 +150,6 @@ def _mfm_pattern():
 
 
 # ── the role walk ──────────────────────────────────────────────────────────────────────────────────
-def _is_dict_subtree(ancestors, dict_keys):
-    """True when ANY ancestor key is a dictionary-subtree key (substring 'vocab' or an exact dict key)."""
-    for a in ancestors:
-        if "vocab" in a or a in dict_keys:
-            return True
-    return False
 
 
 def _parent_is_derived_pick(ancestors, pick_parents):

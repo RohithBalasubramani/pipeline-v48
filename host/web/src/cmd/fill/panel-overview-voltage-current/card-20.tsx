@@ -1,7 +1,7 @@
 import React from "react";
 // Card 20 · Event Timeline — lt-pcc panel-overview Voltage&Current tab.
 //
-// PAYLOAD-DIRECT (ems_backend RETIRED — `frame` is always empty now). Priority:
+// PAYLOAD-DIRECT (host-served RETIRED — `frame` is always empty now). Priority:
 // payload → CMD V2 HONEST-EMPTY view-model. EventTimelineChart maps/flatMaps `points`;
 // if the payload elided the points leaf, fall back to the page's OWN honest-empty model
 // (fallbackViewModel — empty points, chrome only, NO fabrication). NEVER null.

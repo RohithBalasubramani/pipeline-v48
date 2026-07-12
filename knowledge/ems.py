@@ -68,10 +68,24 @@ def _user_message(prompt, history):
 def ask(prompt, history=None):
     """ONE call → {'kind','answer','refused'}. dashboard on ANY failure (fail-open; the card pipeline runs as before).
     An empty knowledge answer degrades to the refusal (honest — never a fabricated paragraph, never a blank).
-    `history` = prior knowledge turns (oldest-first) so a follow-up question keeps the conversation's context."""
+    `history` = prior knowledge turns (oldest-first) so a follow-up question keeps the conversation's context.
+    OBS: the whole gate is ONE `knowledge_gate` stage span (kind/refused as outputs; the LLM call attributes to it)."""
+    from obs.span import stage_span
+    with stage_span("knowledge_gate", inputs={"prompt": prompt, "history_turns": len(history or [])}) as sp:
+        out = _ask(prompt, history)
+        sp.set_outputs(kind=out["kind"], refused=out["refused"], answer_chars=len(out.get("answer") or ""))
+        if out["kind"] == "off_scope":
+            sp.set_degradation(off_scope=True)
+        return out
+
+
+def _ask(prompt, history=None):
     if not enabled():
         return {"kind": "dashboard", "answer": "", "refused": False}
     try:
+        # DECISION INSPECTOR: a 3-way classification over the closed kind vocabulary (+ the answer written in-call).
+        from obs import llm_tap
+        llm_tap.set_decision(kind="classification", candidate_kind="kind", candidates=list(_KINDS))
         out = call_qwen(_prompt(), _user_message(prompt, history), stage="knowledge_ems", schema=_SCHEMA) or {}
         kind = str(out.get("kind", "")).strip().lower()
         answer = str(out.get("answer", "")).strip()

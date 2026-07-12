@@ -1,0 +1,24 @@
+{
+ "run_id": "r_7a5131a033",
+ "loop1": [
+  {
+   "card_id": 43,
+   "title": "Voltage Live Health",
+   "answerability": "partial",
+   "note": "Showing live phase voltages and deviation; Rate Change (V/min) is not measured by this meter."
+  },
+  {
+   "card_id": 44,
+   "title": "Voltage History",
+   "answerability": "partial",
+   "note": "Showing per-phase voltage history and deviation \u2014 sag/swell event counts are not measured by this asset."
+  },
+  {
+   "card_id": 46,
+   "title": "Current History",
+   "answerability": "partial",
+   "note": "Showing peak, average, and unbalance current from live logged columns; expected range lines omitted because the asset's rated current is unknown."
+  }
+ ],
+ "loop2": null
+}

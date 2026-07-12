@@ -17,6 +17,7 @@ row reasons.max_roster_records (default 80). Telemetry only — never raises, ne
 from __future__ import annotations
 
 from ems_exec.executor import roster_stats as _rs
+from ems_exec.executor import blank as _blank_mod
 
 
 def _cap():
@@ -36,7 +37,7 @@ def _sentence(cause, metric):
 
 
 def _blank(v):
-    return v is None or v == "—" or v == "" or v == []
+    return _blank_mod.is_blank(v, empty_list=True)   # scalars + the honest-empty [] [shared predicate: executor.blank]
 
 
 def _rec(slot, cause, metric, *, reason=None, column=None, fn=None):

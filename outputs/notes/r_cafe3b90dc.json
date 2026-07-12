@@ -5,13 +5,7 @@
    "card_id": 44,
    "title": "Voltage History",
    "answerability": "partial",
-   "note": "Showing per-phase voltage history against expected statutory range (207V-253V); event counts and specific deviation stats are not directly measured, so derived values are used for max/min lines."
-  },
-  {
-   "card_id": 46,
-   "title": "Current History",
-   "answerability": "partial",
-   "note": "Showing per-phase current history and peak/average stats \u2014 expected range lines are omitted because the asset's rated current is unknown."
+   "note": "Showing per-phase voltage history and derived worst deviation/spread stats \u2014 exact 'Max Deviation' and 'Worst Spread' columns are not logged, so derived and aggregate proxies are used."
   }
  ],
  "loop2": null

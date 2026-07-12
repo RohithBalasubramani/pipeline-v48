@@ -85,8 +85,8 @@ def _is_scrubbed_clock_list(v):
 
 
 def _is_epoch_list(v):
-    return (isinstance(v, list) and len(v) >= 2 and
-            all(isinstance(x, (int, float)) and not isinstance(x, bool) and x > 1e10 for x in v) and
+    from ems_exec.executor.epoch import is_epoch_number_list
+    return (is_epoch_number_list(v) and
             all(v[i] <= v[i + 1] for i in range(len(v) - 1)))
 
 

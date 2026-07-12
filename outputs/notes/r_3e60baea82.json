@@ -1,0 +1,30 @@
+{
+ "run_id": "r_3e60baea82",
+ "loop1": [
+  {
+   "card_id": 39,
+   "title": "Today's Energy",
+   "answerability": "partial",
+   "note": "Showing total, active, and reactive energy for the selected period; SEC, subsidy, and target metrics are not measured for this asset."
+  },
+  {
+   "card_id": 40,
+   "title": "Power Energy Analysis",
+   "answerability": "partial",
+   "note": "Showing active and reactive power demand profiles \u2014 rated and contracted power reference lines are omitted because the asset's nameplate ratings are unknown."
+  },
+  {
+   "card_id": 41,
+   "title": "Input vs Output Energy",
+   "answerability": "partial",
+   "note": "Showing HV-to-LV delivery loss and efficiency \u2014 per-phase loss/efficiency isn't measured for this asset; deltaPct is bound to load factor as a proxy."
+  },
+  {
+   "card_id": 42,
+   "title": "Load Anomalies",
+   "answerability": "partial",
+   "note": "Showing load anomaly events and load factor derived from active power and rated capacity; dip/surge events and Y-axis scalars are not measured by this meter."
+  }
+ ],
+ "loop2": "GIC-01-N9-Solar Incomer-1 has no logged data \u2014 every card renders its real component with per-leaf-null leaves (honest empty). 262 data-bearing alternative(s) offered in the picker."
+}

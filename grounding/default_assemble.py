@@ -31,7 +31,6 @@ from data.db_client import q
 from grounding.event_skeleton_scrub import empty_event_instance_lists
 from grounding.measured_annotation_scrub import scrub_measured_annotation_strings
 from grounding.role_scrub import scrub_active_string_leaves
-from layer2.catalog.card_payload import default_for
 from validate.leaf_classify import classify
 from validate.payload_lookup import card_payloads_for
 
@@ -139,17 +138,10 @@ def _esc(s):
     return str(s).replace("'", "''")
 
 
-def _last_seg(path):
-    """The trailing key of a classify path ('data.insight' → 'insight', 'snapshot.h5.valuePct' → 'valuePct')."""
-    if not path:
-        return ""
-    seg = path.rsplit(".", 1)[-1]
-    return seg.split("[", 1)[0].lower()          # drop any list index
-
-
-# classify-style dotted/indexed path addressing: the ONE shared home (ems_exec/executor/paths.py).
-# _set_at ≡ paths._set_path (silent no-op on a vanished path); _get_at ≡ paths._leaf_at (None on a miss).
-from ems_exec.executor.paths import _set_path as _set_at, _leaf_at as _get_at
+# classify-style dotted/indexed path addressing: the ONE shared home (lib/leaf_paths.py — moved out of
+# ems_exec so grounding never imports the executor package; cycle-kill 2026-07-12).
+# _set_at ≡ leaf_paths._set_path (silent no-op on a vanished path); _get_at ≡ leaf_paths._leaf_at (None on a miss).
+from lib.leaf_paths import _set_path as _set_at, _leaf_at as _get_at
 
 _NUM_STR = re.compile(r"^\s*[+-]?\d")
 

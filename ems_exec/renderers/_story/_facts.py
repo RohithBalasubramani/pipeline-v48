@@ -5,7 +5,7 @@ ONLY from neuract (ems_exec.data.neuract) via the fan-out door (data.lt_panels.p
 name as the label. Every read honest-degrades: a missing table / column / value → None (never fabricated). The builders
 then compute their own Python verdicts over these facts — this file NEVER judges, it only gathers.
 
-NO simulator, NO ems_backend. Members come from the ONE fan-out door (panel_members.panel_members); a single-asset scope
+NO simulator, NO legacy EMS service. Members come from the ONE fan-out door (panel_members.panel_members); a single-asset scope
 with no members degrades to a one-member "self" list so the RTM/feeder builders still have a subject to narrate.
 [atomic; DB-driven-underneath; honest-degrade]
 """
@@ -32,6 +32,16 @@ REACTIVE_IMPORT_KVARH = "reactive_energy_import_kvarh"
 
 def _num(v):
     return float(v) if isinstance(v, (int, float)) and not isinstance(v, bool) else None
+
+
+def sev_warn_fraction():
+    """The 'warn at this fraction of the limit' severity policy the story builders share (voltage_current,
+    harmonics_pq). DB-editable as story.sev_warn_fraction; code default 0.7. Never raises."""
+    try:
+        from config.app_config import cfg
+        return float(cfg("story.sev_warn_fraction", 0.7))
+    except Exception:
+        return 0.7
 
 
 def resolve_members(ctx):

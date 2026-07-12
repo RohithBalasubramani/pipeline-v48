@@ -1,0 +1,18 @@
+{
+ "run_id": "r_70e51fb8ce",
+ "loop1": [
+  {
+   "card_id": 15,
+   "title": "Today live power analysis",
+   "answerability": "partial",
+   "note": "Showing live apparent power and active/reactive power; Load Factor and Capacity marker are omitted because the asset's nameplate rating is unknown and member load factor data is unavailable."
+  },
+  {
+   "card_id": 17,
+   "title": "Daily Power Demand by Feeder",
+   "answerability": "partial",
+   "note": "Showing Worst Peak and UPS/BPDB/HHF demand trends \u2014 Load Factor and Critical Threshold are omitted because the asset's nameplate rating is unknown and no live threshold column exists."
+  }
+ ],
+ "loop2": null
+}

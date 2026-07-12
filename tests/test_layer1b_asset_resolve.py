@@ -3,6 +3,8 @@ CANONICAL id-space (2026-07-04 streamline): candidates come from the cmd_catalog
 neuract registry (lt_mfm ⋈ types ⋈ asset; data/registry/lt_mfm.py), id = lt_mfm.id. Rows are 9-element
 [id, name, table, mfm_type_id, load_group, class, has_data, has_feeders, never_wired].
 Anchor = GIC-03-N6-AHU-5 (canonical lt_mfm.id 36, table gic_03_n6_ahu_5_p1)."""
+import pytest
+
 from layer1b.resolve.asset_candidates import asset_candidates, as_asset
 from layer1b.resolve.asset_resolve import resolve_asset
 from layer1b.resolve.candidate_list import for_picker
@@ -13,6 +15,7 @@ AHU5_NAME = "GIC-03-N6-AHU-5"
 AHU5_TABLE = "gic_03_n6_ahu_5_p1"
 
 
+@pytest.mark.live
 def test_asset_candidates_live():
     cands = asset_candidates()
     assert len(cands) > 50
@@ -38,17 +41,20 @@ def test_for_picker_shape():
     assert for_picker(cands)[0]["mfm_id"] == 1
 
 
+@pytest.mark.live
 def test_resolve_confident_live():
     r = resolve_asset("voltage and current health for AHU-5")
     assert r["how"] == "AI" and r["asset"]["mfm_id"] == AHU5_ID and r["asset"]["class"] == "AHU"
 
 
+@pytest.mark.live
 def test_resolve_ambiguous_live():
     r = resolve_asset("battery health and backup autonomy")
     assert r["how"] == "ambiguous" and r["candidates"]
     assert all(c["class"] == "UPS" for c in r["candidates"])          # all of the inferred class
 
 
+@pytest.mark.live
 def test_resolve_picker_roundtrip():
     r = resolve_asset("voltage and current health", asset_id_override=str(AHU5_ID))
     assert r["how"] == "user-choice" and r["asset"]["mfm_id"] == AHU5_ID

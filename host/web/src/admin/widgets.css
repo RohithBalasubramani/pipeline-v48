@@ -1,0 +1,37 @@
+/* admin/widgets.css — the shared report widgets (bar lists, day sparks, filter bar, replay form).
+   Chart language per the dataviz pass: single-series marks = teal-500 (identity carried by labels, not hue);
+   verdict mix = sage-400 / mustard-400 / slate-soft WITH 2px surface gaps AND adjacent text labels (contrast relief);
+   coral = errors only. One axis, thin marks, recessive grid. */
+
+.px-bars { display: flex; flex-direction: column; gap: 5px; }
+.px-bar-row { display: grid; grid-template-columns: minmax(90px, 220px) 1fr 60px; gap: 8px; align-items: center; font-family: var(--font-mono); font-size: 11px; }
+.px-bar-row .lbl { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.px-bar-row .track { height: 12px; background: var(--cream-200); border-radius: 4px; overflow: hidden; }
+.px-bar-row .fill { height: 100%; background: var(--teal-500); border-radius: 4px 0 0 4px; min-width: 2px; }
+.px-bar-row .fill.err { background: var(--coral-500); }
+.px-bar-row .val { text-align: right; font-variant-numeric: tabular-nums; color: var(--teal-700); }
+
+.px-spark { display: flex; align-items: flex-end; gap: 2px; height: 56px; padding: 4px 0; }
+.px-spark .col { flex: 1; min-width: 3px; background: var(--teal-500); border-radius: 3px 3px 0 0; opacity: 0.85; }
+.px-spark .col:hover { opacity: 1; background: var(--teal-700); }
+.px-sparkwrap { background: #fff; border: 1px solid var(--hairline); border-radius: 8px; padding: 10px 12px; }
+.px-sparkwrap .cap { font-size: 9.5px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--slate-500); margin-bottom: 2px; font-family: var(--font-sans); }
+.px-sparkwrap .axis { display: flex; justify-content: space-between; font-family: var(--font-mono); font-size: 9px; color: var(--slate-soft); }
+
+/* verdict mix — status colors with 2px gaps; counts ALWAYS printed beside (never color alone) */
+.px-mix { display: inline-flex; align-items: center; gap: 6px; font-family: var(--font-mono); font-size: 10.5px; }
+.px-mix .strip { display: inline-flex; gap: 2px; height: 10px; border-radius: 3px; overflow: hidden; }
+.px-mix .seg { height: 100%; }
+.px-mix .seg.render { background: var(--sage-400); }
+.px-mix .seg.partial { background: var(--mustard-400); }
+.px-mix .seg.honest_blank { background: var(--slate-soft); }
+
+.px-grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; align-items: start; }
+@media (max-width: 1000px) { .px-grid2 { grid-template-columns: 1fr; } }
+.px-panel { background: #fff; border: 1px solid var(--hairline); border-radius: 8px; padding: 12px 14px; }
+.px-panel > h3 { margin: 0 0 8px; font-family: var(--font-sans); font-size: 11px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--slate-500); }
+
+.px-runlink { color: var(--brown-600); text-decoration: none; font-family: var(--font-mono); }
+.px-runlink:hover { text-decoration: underline; }
+
+.px-replay-form { display: flex; gap: 8px; align-items: flex-end; flex-wrap: wrap; background: #fff; border: 1px solid var(--hairline); border-radius: 8px; padding: 12px 14px; margin-bottom: 12px; }

@@ -81,6 +81,3 @@ def neighbors(mfm_ref, direction="down"):
     return [r[0] for r in got if r and r[0] is not None]
 
 
-def reset_cache():
-    """Drop the edge cache (test hook / after a DSN rotate)."""
-    _CACHE.clear()

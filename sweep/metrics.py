@@ -12,8 +12,8 @@ import json
 import math
 import os
 
-from validation import config
-from validation.response import ascii_safe
+from sweep import config
+from sweep.response import ascii_safe
 
 
 def _round3(x) -> float:

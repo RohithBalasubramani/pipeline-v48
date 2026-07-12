@@ -1,0 +1,30 @@
+{
+ "run_id": "r_fe09fe6e39",
+ "loop1": [
+  {
+   "card_id": 14,
+   "title": "Cumulative Energy",
+   "answerability": "partial",
+   "note": "Showing cumulative active and reactive energy for this month from panel members; SEC and capacity/subsidy limit are not measured for this asset."
+  },
+  {
+   "card_id": 16,
+   "title": "Energy Consumption Trend",
+   "answerability": "partial",
+   "note": "Showing total active and reactive energy consumption for UPS, BPDB, and HHF feeders. Rated and Contracted energy lines are omitted because the asset's nameplate rating (rated_kva/rated_kw) is unknown, so no derived reference lines can be calculated."
+  },
+  {
+   "card_id": 15,
+   "title": "Today live power analysis",
+   "answerability": "partial",
+   "note": "Showing apparent power (kVA) and active/reactive power (kW/kVAr) from outgoing feeders; rated capacity and worst-peak markers are omitted because this asset's nameplate rating is unknown and no windowed-peak reducer exists."
+  },
+  {
+   "card_id": 17,
+   "title": "Daily Power Demand by Feeder",
+   "answerability": "partial",
+   "note": "Showing Worst Peak and Feeder Demand (UPS, BPDP) \u2014 Load Factor and Critical Threshold are not measured for this asset."
+  }
+ ],
+ "loop2": null
+}

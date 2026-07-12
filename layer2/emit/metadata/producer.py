@@ -4,8 +4,6 @@ by construction). The AI DECIDES the morphs; this deterministic producer does th
 import copy
 import re
 
-from layer2.emit.metadata.split import split, DATA_SLOT
-
 _SEG = re.compile(r"([^.\[\]]+)|\[(\d+)\]")
 
 

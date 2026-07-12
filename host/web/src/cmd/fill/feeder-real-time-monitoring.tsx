@@ -4,11 +4,11 @@ import React from "react";
 // on the CMD V2 RealTimeMonitoringTab. Atomised into ./feeder-real-time-monitoring/ —
 // one file per card + shared payload readers (payload-unwrap / types).
 //
-// PAYLOAD-DIRECT (ems_backend RETIRED — the host emits frames={} EMPTY): the ONLY data
+// PAYLOAD-DIRECT (host-served RETIRED — the host emits frames={} EMPTY): the ONLY data
 // source is the Layer-2 completed `payload` ({ data, freshness } — real neuract values +
 // honest-blank '—', shaped as the CMD V2 panel props). Each card renders its panel straight
 // from that payload; a missing leaf degrades to the CMD V2 "unavailable" view-model slice
-// (structured, empty series → "—", NEVER mock). The old ems_backend frame→reducer→mapper
+// (structured, empty series → "—", NEVER mock). The old host-served frame→reducer→mapper
 // path (frame-view-model.ts) is dead code now and was DELETED.
 //
 // ALWAYS-DRAW: each card renders real values when the payload carries them and structured

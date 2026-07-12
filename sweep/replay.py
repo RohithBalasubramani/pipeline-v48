@@ -15,9 +15,9 @@ import os
 import time
 import urllib.request
 
-from validation import config
-from validation.response import parse, ascii_safe
-from validation.checks.expectations import judge
+from sweep import config
+from sweep.response import parse, ascii_safe
+from sweep.checks.expectations import judge
 
 
 def _load_json(path: str):

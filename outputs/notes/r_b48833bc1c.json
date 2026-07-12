@@ -1,0 +1,18 @@
+{
+ "run_id": "r_b48833bc1c",
+ "loop1": [
+  {
+   "card_id": 12,
+   "title": "Energy Input & Distribution",
+   "answerability": "partial",
+   "note": "Showing total active power and energy for each outgoing feeder; per-feeder utilization is not measured because no rated capacity is available for these assets."
+  },
+  {
+   "card_id": 13,
+   "title": "Energy Flow Diagram",
+   "answerability": "partial",
+   "note": "Showing energy distribution via roster members \u2014 direct panel energy/power columns are not measured for this aggregate; values are derived from member meters."
+  }
+ ],
+ "loop2": null
+}

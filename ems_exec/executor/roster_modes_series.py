@@ -330,3 +330,8 @@ def _series_split_legend(payload, legend, per_series, order, series_defs, defaul
             if isinstance(entry, dict) and entry.get(key_field) in last:
                 v = last[entry.get(key_field)]
                 entry[value_field] = str(v) if v is not None else None
+
+
+# the slot MODES this module serves — roster.py's dispatch DISCOVERS this declaration from every roster_modes_* sibling
+# (self-registration): a NEW mode = a new roster_modes_<x>.py declaring MODES, no dispatch edit.
+MODES = {"series": _series_slot, "series_split": _series_split_slot}

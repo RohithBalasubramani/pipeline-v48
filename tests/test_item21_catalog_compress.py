@@ -11,6 +11,8 @@
 Offline-safe: fixture tests below run without the DB; the *_live tests read cmd_catalog/neuract like the rest of the
 layer1 suites (no LLM call — not `live`-marked, per suite convention).
 """
+import pytest
+
 from config.available_pages import AVAILABLE_PAGES
 from layer1a.catalog_compress import merge_story
 from layer1b.basket.describe import describe, title_label
@@ -101,6 +103,7 @@ def test_describe_label_dedup_offline():
     assert title_label("voltage_ll_ry") == "Voltage Ll Ry"                    # the on-demand display derivation
 
 
+@pytest.mark.live  # reads the neuract gic_* table columns over the :5433 tunnel (offline lane must not touch it)
 def test_col_dict_rows_deduped_and_saving_live():
     from layer1b.basket.col_dict import col_dict
     rows = col_dict("gic_03_n6_ahu_5_p1")                                     # the suite's anchor meter

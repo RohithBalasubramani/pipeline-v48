@@ -10,7 +10,7 @@ panel). That blank was AVOIDABLE, so per the fix-order mandate (prompts → DB r
 WHAT IT DOES (idempotent, re-runnable):
   1. reads the model rows from cmd_catalog.asset_3d_registry (the CMD_V2 ground-truth catalog — slug, label,
      category, description, file_abs). NO model metadata is invented here.
-  2. copies each registry GLB into the ems_backend MEDIA_ROOT (…/pipeline_v45/ems_backend/media/3d/glb/) so the
+  2. copies each registry GLB into the v48 web media home (host/web/public/media/3d/glb/ — served by the web origin) so the
      emitted absolute url (config.asset3d_media: viewer.glb_media_base + file) actually serves. sha256-compared —
      copied only when absent/different.
   3. upserts neuract.lt_asset_3d (key, name, category, file, description) — the table the 4-tier resolver reads.
@@ -50,11 +50,11 @@ ENGINE_SLUG = "dg-final-v2"                                # tier-1 override tar
 GENERATOR_NAME_SQL = (r"name ~* '\mDG[- ]?0?[1-6]\M' AND name NOT ILIKE '%%incomer%%' AND name NOT ILIKE '%% OG%%'")
 MAX_GENERATOR_MATCHES = 20                                 # sanity fuse — a broader match means the pattern drifted
 
-# ems_backend MEDIA_ROOT (the daphne :8890 codebase = pipeline_v45/ems_backend, settings MEDIA_ROOT=BASE_DIR/'media').
+# GLB media home = host/web/public/media (the v48 web origin serves it directly; legacy-EMS :8890 RETIRED 2026-07-12).
 _V48 = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 MEDIA_ROOT = os.environ.get(
     "EMS_MEDIA_ROOT",
-    os.path.normpath(os.path.join(_V48, "..", "pipeline_v45", "ems_backend", "media")))
+    os.path.normpath(os.path.join(_V48, "host", "web", "public", "media")))
 MEDIA_SUBDIR = "3d/glb"                                    # lt_asset_3d.file = '3d/glb/<basename>' hangs off /media/
 
 

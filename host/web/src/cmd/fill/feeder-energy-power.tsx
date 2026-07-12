@@ -6,7 +6,7 @@ import React from "react";
 // `*` does not cross `/`, so the folder files are only loaded through here) and re-exports the CARDS registry.
 //
 // FRAMES ARE RETIRED: each card renders its REAL CMD V2 component DIRECTLY from the Layer-2 payload (`{ variant, data }`)
-// — no ems_backend frame, no live mapper. EVERY card ALWAYS DRAWS [GOAL]: real values from the payload slice, else
+// — no host-served frame, no live mapper. EVERY card ALWAYS DRAWS [GOAL]: real values from the payload slice, else
 // honest-degrades to CMD V2's OWN empty-but-valid view-model (structure + typed-empty, all labels/colours) — NEVER
 // `return null` (a blank card), NEVER a seed mock number.
 //

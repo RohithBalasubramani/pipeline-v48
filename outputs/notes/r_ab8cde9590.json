@@ -1,0 +1,30 @@
+{
+ "run_id": "r_ab8cde9590",
+ "loop1": [
+  {
+   "card_id": 14,
+   "title": "Cumulative Energy",
+   "answerability": "partial",
+   "note": "Showing month-to-date cumulative active and reactive energy for outgoing feeders; specific consumption (SEC) and capacity/target metrics are not measured for this panel."
+  },
+  {
+   "card_id": 16,
+   "title": "Energy Consumption Trend",
+   "answerability": "partial",
+   "note": "Showing total active power \u2014 per-phase power isn't measured for this asset; roster aggregates PRIMARY members (UPS, BPDB, HHF)."
+  },
+  {
+   "card_id": 15,
+   "title": "Today live power analysis",
+   "answerability": "partial",
+   "note": "Showing live apparent power and active/reactive components \u2014 rated capacity and peak markers are omitted because this asset's nameplate rating is unknown."
+  },
+  {
+   "card_id": 17,
+   "title": "Daily Power Demand by Feeder",
+   "answerability": "partial",
+   "note": "Showing UPS and BPDB feeder demand \u2014 HHF feeders are not present on this panel (roster match empty)."
+  }
+ ],
+ "loop2": null
+}

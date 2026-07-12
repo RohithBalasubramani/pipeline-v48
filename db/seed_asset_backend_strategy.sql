@@ -5,14 +5,14 @@
 -- CONVENTION (mirrors the individual-feeder-meter-shell cards 28-49, the routable "single asset meter -> neuract"
 -- pattern): backend_strategy = 'consumers/<neuract-screen>/lt_panel.py'. layer2/emit/data/consumer_binding/
 -- screen_map.canonical_screen() takes the segment AFTER 'consumers/' (hyphenated) as the card's neuract screen; that
--- string MUST be one of ems_backend's LIVE endpoints (endpoint_registry.LIVE_ENDPOINTS): overview,
+-- string MUST be one of the LIVE fetch endpoints (endpoint_registry.LIVE_ENDPOINTS): overview,
 -- real-time-monitoring, energy-power, energy-power-history, demand-profile, load-anomalies, energy-distribution,
 -- voltage-current, voltage-history, current-history, power-quality-summary. All values below use ONLY those, so the
 -- AI's endpoint choice stays on-domain. Tiles/table cards -> the LIVE screen; flat_series (trend) cards -> the
 -- in-domain HISTORY variant where one exists, else the live screen (exactly as feeder cards 43-46 do
 -- voltage-current/voltage-history/current-history).
 --
--- These are NOT the ems_backend/assets simulator consumers (that path is owned by other work); we deliberately point
+-- These are NOT the legacy EMS assets-simulator consumers (that path is owned by other work); we deliberately point
 -- at the real per-meter neuract screens via lt_panel, same as the feeder shell. Idempotent: pure UPDATE by card_id
 -- (rows already exist — pages/cards were NOT re-inserted). Re-runnable with no drift.
 -- Run: psql -h localhost -p 5432 -d cmd_catalog -f db/seed_asset_backend_strategy.sql

@@ -135,8 +135,8 @@ def _endpoint_sets():
     """(live, retired) endpoint name lists for the system-prompt placeholders — run-constant (same substitution every
     call, so the shared prefix stays cacheable). Sourced from the SAME registries the user-message hint uses."""
     try:
-        from layer2.emit.data.consumer_binding import RETIRED_ENDPOINTS
-        from layer2.emit.data.endpoint_registry import LIVE_ENDPOINTS
+        from layer2.emit.instructions.consumer_binding import RETIRED_ENDPOINTS
+        from layer2.emit.instructions.endpoint_registry import LIVE_ENDPOINTS
         return sorted(LIVE_ENDPOINTS), sorted(RETIRED_ENDPOINTS)
     except Exception:
         return [], []
@@ -206,13 +206,23 @@ def emit(card_in, feedback=None):
                  "Fix ONLY these (everything else was fine) and re-emit the FULL JSON object:\n"
                  + "\n".join(f"  - {i}" for i in feedback))
     sysmsg = _system(card_in)
-    raw = call_qwen(sysmsg, user, stage="l2_emit", on_error="marker")
-    retries = max(0, int(cfg("llm.transport_retry", 1)))
-    # A 'timeout'/'truncated' error is DETERMINISTIC for this prompt (the same large emit will time out / overrun
-    # again), so retrying only DOUBLES the wall-clock hang (the card-5 32K-tok heatmap 2x-timeout page-hang). Retry
-    # ONLY transient failures (transport/5xx); a deterministic failure honest-fails fast → build.py degrades honestly.
-    no_retry = {k.strip() for k in (cfg("llm.no_retry_kinds", "timeout,truncated") or "").split(",") if k.strip()}
-    while isinstance(raw, dict) and raw.get("_llm_error") and raw.get("_llm_error") not in no_retry and retries > 0:
-        retries -= 1
-        raw = call_qwen(sysmsg, user, stage="l2_emit", on_error="marker")
-    return raw or {}
+    # Transient-only bounded retry — the ONE shared policy (llm/transient_retry): a deterministic
+    # 'timeout'/'truncated' fails fast (retrying doubles the wall-clock hang — the card-5 32K-tok heatmap
+    # 2x-timeout page-hang); a transport/5xx blip is re-sent within llm.transport_retry.
+    from llm.transient_retry import retry_transient
+    # DECISION INSPECTOR: the slot's swap pool IS the selection set of PART 1 (keep-vs-swap) — declared per attempt
+    # (call_qwen clears the context on return) so the llm event's `decision` names the pool this card chose from.
+    # Fan-out threads each carry their own contextvar copy (run/parallel), so per-card contexts never cross.
+    from obs import llm_tap
+    _swap_pool = [{"card_id": c.get("card_id"), "title": c.get("title")}
+                  for c in (card_in.get("swap_candidates") or [])]
+
+    def _call():
+        llm_tap.set_decision(kind="selection", candidate_kind="swap_target", candidates=_swap_pool,
+                             card_id=card_in.get("card_id"), gate_feedback_retry=bool(feedback))
+        return call_qwen(sysmsg, user, stage="l2_emit", on_error="marker")
+
+    # legacy fetch-block key (replay tapes / old cached emissions) normalized ONCE here — every downstream reader
+    # (build, window_backfill, recipe, gates) sees only data_instructions.fetch. [rename 2026-07-12]
+    from domain.fetch_spec import normalize
+    return normalize(retry_transient(_call))

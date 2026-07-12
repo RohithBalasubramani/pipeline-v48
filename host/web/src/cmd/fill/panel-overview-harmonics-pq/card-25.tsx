@@ -1,7 +1,7 @@
 /**
  * card 25 — PqAiSummaryCard.
  *
- * PAYLOAD-DIRECT (ems_backend RETIRED — `frame` is always empty now). The Layer-2
+ * PAYLOAD-DIRECT (host-served RETIRED — `frame` is always empty now). The Layer-2
  * completed payload IS the render source: payload.summary = { pres, period, focus, stats,
  * selectedPanel }, carrying REAL selected-period stats or honest-blank. The old live
  * snapshotFromFrame(frame) branch AND the buildPQPeriods() fabrication fallback (synthetic

@@ -8,9 +8,7 @@ compare/resolve_names.py) to tell whether a compare prompt spells out a specific
 import re
 
 
-def _norm(s):
-    """space/punctuation/case-insensitive match key: 'PCC Panel 2 A' == 'pcc panel 2a' == 'PCC-Panel-2A'."""
-    return re.sub(r"[^a-z0-9]+", "", str(s).lower())
+from layer1b.normalize import norm as _norm  # the ONE asset-name match key (D9); re-exported for compare/resolve_names
 
 
 def _discriminators(name):

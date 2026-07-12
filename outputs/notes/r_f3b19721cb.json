@@ -5,25 +5,25 @@
    "card_id": 74,
    "title": "Thermal Life",
    "answerability": "partial",
-   "note": "Showing total active power as a proxy for thermal loss \u2014 winding temperature, oil temperature, and thermal stress are not measured by this electrical meter."
+   "note": "Showing total active power as loss proxy; winding and oil temperatures are not measured by this asset."
   },
   {
    "card_id": 76,
    "title": "Thermal Timeline",
    "answerability": "partial",
-   "note": "Showing load factor trend (active_power_total_kw) \u2014 temperature sensors (hotspot, oil, winding) are not measured by this electrical meter."
+   "note": "Showing 3-hourly active power load trend \u2014 temperature (hotspot, oil, winding) and efficiency are not measured by this electrical meter."
   },
   {
    "card_id": 75,
    "title": "Life & Capacity",
    "answerability": "partial",
-   "note": "Showing load factor as proxy for thermal stress \u2014 insulation aging and nameplate ratings are not measured for this asset."
+   "note": "Showing life remaining (derived from energy consumption) and load/capacity fill percentages \u2014 aging caption and headroom are omitted because the asset's nameplate rating is unknown, making derated capacity and headroom calculations impossible."
   },
   {
    "card_id": 77,
    "title": "Insulation Aging & Loss of Life",
    "answerability": "partial",
-   "note": "Showing aging factor and loss of life derived from active power \u2014 temperature and direct aging metrics are not measured by this asset; hotspot temperature is omitted."
+   "note": "Showing aging factor and loss of life proxies (load factor, window energy) \u2014 no dedicated temperature or insulation aging columns are measured for this asset."
   }
  ],
  "loop2": null

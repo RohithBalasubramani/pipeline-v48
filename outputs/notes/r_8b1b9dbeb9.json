@@ -1,0 +1,18 @@
+{
+ "run_id": "r_8b1b9dbeb9",
+ "loop1": [
+  {
+   "card_id": 15,
+   "title": "Today live power analysis",
+   "answerability": "partial",
+   "note": "Showing live power (kVA) and active/reactive power (kW/kVAr) from panel members; rated capacity (kVA) and load factor are not measured for this asset, so capacityValue and Load Factor are blank."
+  },
+  {
+   "card_id": 17,
+   "title": "Daily Power Demand by Feeder",
+   "answerability": "partial",
+   "note": "Showing panel aggregate demand profile from member meters (UPS, BPDB, HHF); specific KPIs and thresholds are rendered by the panel-aggregate member fan-out."
+  }
+ ],
+ "loop2": null
+}

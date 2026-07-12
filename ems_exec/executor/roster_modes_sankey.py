@@ -346,3 +346,8 @@ def _sankey_rebuild(payload, spec, state, default_payload):
                 out_groups.append(group)
         for lcontainer, lkey, _lm in _targets(payload, default_payload, leg.get("slot")):
             lcontainer[lkey] = copy.deepcopy(out_groups)       # wholesale — no foreign fixture legend survives
+
+
+# the slot MODES this module serves — roster.py's dispatch DISCOVERS this declaration from every roster_modes_* sibling
+# (self-registration): a NEW mode = a new roster_modes_<x>.py declaring MODES, no dispatch edit.
+MODES = {"sankey_match": _sankey_slot}

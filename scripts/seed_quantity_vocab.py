@@ -1,10 +1,10 @@
-"""tools/seed_quantity_vocab.py — materialize the quantity-vocab CODE DEFAULTS into cmd_catalog.app_config.
+"""scripts/seed_quantity_vocab.py — materialize the quantity-vocab CODE DEFAULTS into cmd_catalog.app_config.
 
 WHY: cfg() REPLACES (a DB `quantity.*` row overrides the code default entirely, it does not merge). The DB rows had
 DRIFTED behind the code default (the unit-count keys #/count/events/nos were added to the code default but never
 re-seeded), and the asset-domain classes (tap-position/engine-speed/pressure/fuel/autonomy/…) are new. This applier
 makes the CODE DEFAULT the single source of truth and regenerates the DB rows from it — one home, no drift. Idempotent
-(UPSERT the full dict). READ the code default, WRITE the DB. Run: python3 tools/seed_quantity_vocab.py [--dry]
+(UPSERT the full dict). READ the code default, WRITE the DB. Run: python3 scripts/seed_quantity_vocab.py [--dry]
 
 Re-run it any time a quantity_class default dict changes, so the live DB row never lags the code again.
 """
@@ -17,14 +17,14 @@ from layer2 import quantity_class as qc
 SYNC = {
     "quantity.name_classes": (qc._NAME_CLASSES_DEFAULT,
         "name token / adjacent-pair → quantity class (leaf-most first, PAIR before single). Source of truth: "
-        "layer2/quantity_class.py _NAME_CLASSES_DEFAULT. Regenerate via tools/seed_quantity_vocab.py."),
+        "layer2/quantity_class.py _NAME_CLASSES_DEFAULT. Regenerate via scripts/seed_quantity_vocab.py."),
     "quantity.unit_classes": (qc._UNIT_CLASSES_DEFAULT,
         "unit token → quantity class. Source of truth: layer2/quantity_class.py _UNIT_CLASSES_DEFAULT. "
-        "Regenerate via tools/seed_quantity_vocab.py."),
+        "Regenerate via scripts/seed_quantity_vocab.py."),
     "quantity.semantic_families": (qc._SEMANTIC_FAMILIES_DEFAULT,
         "name-level semantic family {family: {markers, classes}} — a slot naming a family binds only a same-family "
         "source (guards same-dimension '%' puns). Source of truth: quantity_class.py _SEMANTIC_FAMILIES_DEFAULT. "
-        "Regenerate via tools/seed_quantity_vocab.py."),
+        "Regenerate via scripts/seed_quantity_vocab.py."),
 }
 
 dry = "--dry" in sys.argv

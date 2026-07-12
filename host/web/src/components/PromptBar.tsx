@@ -1,36 +1,12 @@
 import { useEffect, useRef, useState } from "react";
 
-type Suggest = { autofill: string; ghost: string; suggestions: string[]; latency_ms?: number };
+import { copilotSuggest, type Suggest } from "../api";
 
 /** Chip-prefill signal: bumping `n` re-seeds the bar with `text` (sets value, focuses, fetches). */
 export type Seed = { text: string; n: number };
 
-// AI signal — sparkle (Neuract: AI provenance, brown not coral)
-function Spark({ size = 16 }: { size?: number }) {
-  return (
-    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor"
-      strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M12 3l1.9 5.6L19.5 10l-5.6 1.9L12 17.5l-1.9-5.6L4.5 10l5.6-1.4z" />
-    </svg>
-  );
-}
-// command-return (in-bar submit)
-function Return() {
-  return (
-    <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-      strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">
-      <polyline points="9 10 4 15 9 20" /><path d="M20 4v7a4 4 0 0 1-4 4H4" />
-    </svg>
-  );
-}
-// dropdown row search glyph
-function Mag() {
-  return (
-    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round">
-      <circle cx="11" cy="11" r="7" /><line x1="21" y1="21" x2="16.65" y2="16.65" />
-    </svg>
-  );
-}
+// shared chrome icons (ONE source — components/icons)
+import { Spark, Return, Mag } from "./icons";
 
 export function PromptBar({
   onRun,
@@ -94,13 +70,7 @@ export function PromptBar({
     ctrl.current = new AbortController();
     const my = ++seq.current;
     try {
-      const r = await fetch("/copilot/suggest", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ text }),
-        signal: ctrl.current.signal,
-      });
-      const d: Suggest = await r.json();
+      const d: Suggest = await copilotSuggest(text, ctrl.current.signal);
       if (cache.current.size > 300) cache.current.clear();
       cache.current.set(text, d);
       if (my !== seq.current) return; // a newer keystroke superseded this

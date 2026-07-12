@@ -1,0 +1,30 @@
+{
+ "run_id": "r_d799a92b1c",
+ "loop1": [
+  {
+   "card_id": 70,
+   "title": "Live Operations & Runtime",
+   "answerability": "partial",
+   "note": "Showing load factor as availability proxy and energy-derived estimates for runtime/service metrics \u2014 specific runtime counts and durations are not measured by this meter."
+  },
+  {
+   "card_id": 71,
+   "title": "Runtime & Duty",
+   "answerability": "partial",
+   "note": "Showing average load percentage \u2014 run-hours and start counts are not measured by this asset's meter."
+  },
+  {
+   "card_id": 72,
+   "title": "Energy & Reliability",
+   "answerability": "partial",
+   "note": "Showing total active energy, apparent energy, and power factor \u2014 per-phase energy and reliability metrics (MTBF/MTTR) are not measured by this asset."
+  },
+  {
+   "card_id": 73,
+   "title": "Power Energy Analysis",
+   "answerability": "partial",
+   "note": "Showing active and reactive power totals \u2014 event counts and per-phase breakdowns are not measured by this asset."
+  }
+ ],
+ "loop2": null
+}

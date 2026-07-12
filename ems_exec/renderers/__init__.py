@@ -44,15 +44,33 @@ from __future__ import annotations
 
 from ems_exec.renderers import asset_3d, fuel_anatomy, panel_aggregate, narrative_ai
 
-# handling_class → the renderer module whose render(asset, card, ctx) builds that class's payload. Only the classes that
-# render OUTSIDE the per-card column-fill executor (need fan-out / GLB / LLM) are here; every other class (single_asset_*,
-# nav_index) is NOT special → run_special returns None and the host uses the generic executor. panel_aggregate DOES fan
-# out (a panel → its members) so it renders here, then REUSES the per-card executor for its KPI/scalar leaves.
-_BY_KIND = {
-    "asset_3d": asset_3d,
-    "panel_aggregate": panel_aggregate,
-    "narrative_ai": narrative_ai,
-}
+# handling_class → the renderer module whose render(asset, card, ctx) builds that class's payload — DISCOVERED from the
+# package itself: every non-underscore sibling module that declares HANDLING_CLASSES = ("<class>", …) self-registers.
+# Adding a special renderer = dropping ONE new module in this folder with that declaration (+ its cmd_catalog.
+# card_handling rows) — no dict edit here, no host edit (host/exec_cards derives its special set from special_kinds()
+# below). Deterministic: modules scan in sorted name order, first claim of a class wins; a module that fails to import
+# is skipped (one broken renderer must never take down the registry — the shipped four are still hard-imported above,
+# so a defect in THOSE fails loudly exactly as before). Only the classes that render OUTSIDE the per-card column-fill
+# executor (need fan-out / GLB / LLM) belong here; every other class (single_asset_*, nav_index) is NOT special →
+# run_special returns None and the host uses the generic executor. panel_aggregate DOES fan out (a panel → its members)
+# so it renders here, then REUSES the per-card executor for its KPI/scalar leaves.
+def _discover_by_kind():
+    import importlib
+    import pkgutil
+    by_kind = {}
+    for name in sorted(m.name for m in pkgutil.iter_modules(__path__) if not m.name.startswith("_")):
+        try:
+            mod = importlib.import_module(f"{__name__}.{name}")
+        except Exception:
+            continue
+        for k in (getattr(mod, "HANDLING_CLASSES", ()) or ()):
+            k = str(k).strip()
+            if k:
+                by_kind.setdefault(k, mod)
+    return by_kind
+
+
+_BY_KIND = _discover_by_kind()
 
 # TELEMETRY-SNAPSHOT DISCRIMINATOR [card-63 hardcode removal]: a handful of cards carry handling_class='asset_3d' in the
 # DB but are NOT GLB cards — they mount a 3D component fed by a plain telemetry SNAPSHOT payload (e.g. the Fuel Tank
@@ -93,7 +111,29 @@ def _is_telemetry_3d(card):
 # the member-scope classes served by the GENERIC ROSTER INTERPRETER (ems_exec.executor.roster) FIRST — a card with a
 # card_fill_recipe row renders through the interpreter; a recipe-less card falls through to its legacy builder (_BY_KIND)
 # if it has one (panel_aggregate → the recipe-less agg-row render; topology_sld → no builder → None → host skeleton).
-_ROSTER_KINDS = ("topology_sld", "panel_aggregate")
+# DB-DRIVEN: the live set is the app_config row renderers.roster_kinds (json list) so a NEW member-scope class is a row
+# edit, no code change; the code default below is the shipped pair.
+_ROSTER_KINDS_DEFAULT = ("topology_sld", "panel_aggregate")
+
+
+def _roster_kinds():
+    """The handling classes the roster interpreter serves first. Editable app_config renderers.roster_kinds row;
+    code-default _ROSTER_KINDS_DEFAULT. Never raises."""
+    try:
+        from config.app_config import cfg
+        v = cfg("renderers.roster_kinds", None)
+        if isinstance(v, (list, tuple)) and v:
+            return tuple(str(k) for k in v)
+    except Exception:
+        pass
+    return _ROSTER_KINDS_DEFAULT
+
+
+def special_kinds():
+    """EVERY handling_class that renders via run_special (the discovered registry classes ∪ the roster-interpreter
+    classes) — the ONE source the host's special-vs-generic split derives from (host/exec_cards). A new renderer module
+    or a new roster_kinds row extends this automatically; no host edit."""
+    return tuple(sorted(set(_BY_KIND) | set(_roster_kinds())))
 
 
 def _interpreter_payload(asset, card, ctx):
@@ -143,7 +183,7 @@ def run_special(kind, asset, card, ctx):
     # ── ROSTER-INTERPRETER first (member-scope panel classes) ────────────────────────────────────────────────────────
     # A roster kind (topology_sld / panel_aggregate) renders through the ONE generic interpreter when it has a
     # card_fill_recipe row. A recipe-less card returns None here and falls through to its legacy builder below.
-    if kind in _ROSTER_KINDS:
+    if kind in _roster_kinds():
         out = _interpreter_payload(asset, card, ctx)
         if out is not None:
             return out                   # the generic recipe path IS the render
@@ -183,4 +223,4 @@ def _card_id(card):
         return None
 
 
-__all__ = ["run_special", "asset_3d", "fuel_anatomy", "panel_aggregate", "narrative_ai"]
+__all__ = ["run_special", "special_kinds", "asset_3d", "fuel_anatomy", "panel_aggregate", "narrative_ai"]

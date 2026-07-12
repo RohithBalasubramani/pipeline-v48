@@ -15,39 +15,17 @@ DB-driven / atomic: the human sentence is an editable `reason_template` row (cau
 FINGERPRINTS are an editable list here (the only policy this file owns) — extend the list, don't scatter string checks.
 """
 
-# The substrings that identify a LIVE-DATA-SOURCE outage inside a layer's exception text. Editable policy (the single
-# home for "what a DB/tunnel outage looks like"); every fingerprint is a connection/transport failure, never a query
-# or logic error. A logic error (bad SQL, missing table, KeyError) is deliberately NOT matched → it stays a real error
-# surfaced in out["errors"], not silently absorbed as "no data".
-_OUTAGE_FINGERPRINTS = (
-    "connection refused",
-    "could not connect",
-    "connection to server",
-    "no route to host",
-    "network is unreachable",
-    "connection timed out",
-    "timed out",
-    "connection reset",
-    "server closed the connection",
-    "terminating connection",
-    "the database system is",          # starting up / shutting down / in recovery
-    "llm transport/parse failure",     # layer1a route fail-closed raise (vLLM :8200 outage / unparseable completion)
-)
+# The outage fingerprint list + matcher HOME moved to data/outage.py (the data-layer probes in data/value_probe.py
+# consume the split and must not import upward into run/) — re-exported here so every existing
+# `from run.degrade_gate import is_outage_error` caller keeps working. Edit the fingerprint list THERE.
+# [cycle-kill 2026-07-12]
+from data.outage import _OUTAGE_FINGERPRINTS, is_outage_error   # noqa: F401  (re-export; single policy home = data/outage.py)
 
 # The layers whose failure means "we never even reached ground truth" → the page is a data_unavailable terminal.
 # 'validation' closes the fail-open hole: a :5433 outage during the validate probe used to swallow into
 # errors.validation → validation None → validation_blocked False → Layer 2 ran with ZERO validation. An outage-shaped
 # validate error is the same honest terminal; a NON-outage validate exception stays annotate-only (not matched here).
 _INFRA_LAYERS = ("layer1a", "layer1b", "validation")
-
-
-def is_outage_error(detail):
-    """True iff an exception detail string looks like a LIVE-DATA-SOURCE outage (transport/connection failure), not a
-    logic bug. Case-insensitive substring match against the editable fingerprint list."""
-    if not detail:
-        return False
-    d = str(detail).lower()
-    return any(fp in d for fp in _OUTAGE_FINGERPRINTS)
 
 
 def apply(out):

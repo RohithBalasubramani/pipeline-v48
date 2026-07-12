@@ -1,7 +1,7 @@
 /**
  * SHARED (payload derivation + honest-empty concern) — panel-overview-harmonics-pq.
  *
- * PAYLOAD-DIRECT (ems_backend RETIRED — the host emits frames={} EMPTY): the ONLY data
+ * PAYLOAD-DIRECT (host-served RETIRED — the host emits frames={} EMPTY): the ONLY data
  * source is the Layer-2 completed `payload`. The old snapshot-derived helpers
  * (presentation(snap) / liveTablePeriod(snap,...) that read a mapped aggregate snapshot)
  * are dead code now and were DELETED, along with snapshot.ts.

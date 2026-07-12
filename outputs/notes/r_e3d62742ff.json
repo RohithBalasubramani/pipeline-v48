@@ -1,0 +1,30 @@
+{
+ "run_id": "r_e3d62742ff",
+ "loop1": [
+  {
+   "card_id": 39,
+   "title": "Today's Energy",
+   "answerability": "partial",
+   "note": "Showing monthly active and reactive energy totals \u2014 subsidy limits, targets, and SEC are not configured for this asset."
+  },
+  {
+   "card_id": 40,
+   "title": "Power Energy Analysis",
+   "answerability": "partial",
+   "note": "Showing active and reactive power trends over the last 7 days; rated and contracted power reference lines are omitted because the asset's nameplate ratings are unknown."
+  },
+  {
+   "card_id": 41,
+   "title": "Input vs Output Energy",
+   "answerability": "partial",
+   "note": "Showing total active energy import as input; output energy is not directly measured (export register data=N), so output and efficiency are estimated from import data."
+  },
+  {
+   "card_id": 42,
+   "title": "Load Anomalies",
+   "answerability": "partial",
+   "note": "Showing actual load trend and load factor \u2014 anomaly events, expected load, and threshold data are not measured for this asset."
+  }
+ ],
+ "loop2": null
+}

@@ -30,8 +30,6 @@ def _fab(card):
 def _row(cid, a, b):
     ra, rb = (a.get("render") or {}), (b.get("render") or {})
     la, lb = ra.get("leaf_stats") or {}, rb.get("leaf_stats") or {}
-    em_a = json.dumps(a.get("payload", {}).get("exact_metadata") if isinstance(a.get("payload"), dict) else None,
-                      sort_keys=True)
     # exact_metadata isn't separately shipped; compare the whole payload metadata tier via the served payload bytes
     pa, pb = json.dumps(a.get("payload"), sort_keys=True), json.dumps(b.get("payload"), sort_keys=True)
     real_a, real_b = la.get("real", 0), lb.get("real", 0)

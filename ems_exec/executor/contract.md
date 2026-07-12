@@ -35,7 +35,7 @@ Only `.fields[]` (+ optional `.window`) are consumed. Each `fields[]` entry:
 `data_instructions.window` = `{start, end}` (ISO or bare `YYYY-MM-DD`) — the date window for windowed-delta derivations
 and bucketed series. `ctx.window` overrides it.
 
-The executor does **not** consume `data_instructions.ems_backend`, `.consumer`, `.binding`, `.orientation`, etc. —
+The executor does **not** consume `data_instructions.legacy-EMS`, `.consumer`, `.binding`, `.orientation`, etc. —
 those drove the retired WS/aggregate path. There is **no aggregate kind**.
 
 ## Per-kind fill rules
@@ -99,5 +99,5 @@ still never touches any of it.
   re-expressed in `fill._run_derived` over the new neuract reader.
 - `layer3/clean.py`: the strip → per-field fill → complete-shape ORDER and the `_set_leaf_typed` / `_leaf_path_for` /
   `_complete_shape` logic (promoted into `fill.py`).
-- `ems_backend/lt_panels/derivations/registry.run` + the derivation modules — the named recovery fns.
+- `legacy-EMS/lt_panels/derivations/registry.run` + the derivation modules — the named recovery fns.
 - `config/nameplates`, `config/nameplate_slot_map`, `config/derivation_binding`, `config/quality_policy` — DB-driven.

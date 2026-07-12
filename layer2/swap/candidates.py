@@ -18,30 +18,11 @@ from grounding.default_assemble import has_default
 # cmd_catalog.app_config 'feasibility.pool_verdicts'), NOT a hardcoded list in the SQL. Default: render_real only.
 POOL_VERDICTS = tuple(str(v) for v in cfg("feasibility.pool_verdicts", ["render_real"]))
 
-# minimum affinity-token length — drop 1-2 char noise ('pf' is a real metric so keep len>=2). Editable knob.
-_AFFINITY_MIN_TOK = int(cfg("swap.affinity_min_token_len", 2))
-
-
-def _metric_tokens(metric):
-    """GENERIC affinity vocabulary from the pipeline's 1a metric: lowercased alnum tokens of the metric string
-    (len >= knob), deduped. None/blank/too-short → () → pure-size behavior (fully backward-compatible). Works for
-    any metric word ('voltage','current','energy','thd',…) or phrase — no per-metric list."""
-    if not metric:
-        return ()
-    import re
-    toks = [t for t in re.split(r"[^a-z0-9]+", str(metric).lower()) if len(t) >= _AFFINITY_MIN_TOK]
-    return tuple(dict.fromkeys(toks))            # dedupe, preserve order
-
-
-def _affinity(cand, tokens):
-    """SOFT metric-relevance score of a swap candidate: the count of metric tokens that appear (substring,
-    case-insensitive) anywhere in the card's catalog text (title / analytical_role / card_purpose / visualization).
-    0 = off-metric (deprioritized, NEVER dropped). Generic — the same computation for every metric and every card."""
-    if not tokens:
-        return 0
-    text = " ".join(str(cand.get(k) or "") for k in
-                    ("title", "analytical_role", "card_purpose", "visualization")).lower()
-    return sum(1 for t in tokens if t in text)
+# The generic metric-affinity vocabulary/score HOME moved to domain/metric_affinity.py (grounding/swap_settle replays
+# the same re-rank and must not import a layer — the settle↔candidates lazy-import cycle is dead). Aliased under the
+# historical private names so this module's own call sites and the affinity tests keep working. The min-token knob is
+# read per call there (lazy, campaign style). [cycle-kill 2026-07-12]
+from domain.metric_affinity import metric_tokens as _metric_tokens, affinity as _affinity   # noqa: F401
 
 
 def _available_card_ids():

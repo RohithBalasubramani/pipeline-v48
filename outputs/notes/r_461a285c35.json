@@ -1,0 +1,30 @@
+{
+ "run_id": "r_461a285c35",
+ "loop1": [
+  {
+   "card_id": 39,
+   "title": "Today's Energy",
+   "answerability": "partial",
+   "note": "Showing total active energy consumption for the last 7 days \u2014 per-phase breakdown and reactive energy are derived from total input power; subsidy and target metrics are not measured for this asset."
+  },
+  {
+   "card_id": 40,
+   "title": "Power Energy Analysis",
+   "answerability": "partial",
+   "note": "Showing active power (kW) \u2014 reactive power (kVAr) is not measured for this UPS asset."
+  },
+  {
+   "card_id": 41,
+   "title": "Input vs Output Energy",
+   "answerability": "partial",
+   "note": "Showing total active power \u2014 per-phase power isn't measured for this asset; output_active_power_total_kw has no data (N), so loss/efficiency are derived from available input power only."
+  },
+  {
+   "card_id": 42,
+   "title": "Load Anomalies",
+   "answerability": "partial",
+   "note": "Showing actual load factor \u2014 expected load, range, and anomaly counts are not measured by this meter."
+  }
+ ],
+ "loop2": null
+}

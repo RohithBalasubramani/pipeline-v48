@@ -2,7 +2,7 @@
 as report['_schema_issues'] (annotate-only, consistent with validate_layer1b_output / validate_layer2_card_output).
 [validate, contract V]"""
 
-_VERDICTS = {"pass", "warn", "pass_with_gaps", "fail", "asset_pending"}
+from validate.verdicts import VERDICTS as _VERDICTS   # the ONE verdict vocab home [typing F5]
 
 
 def validate_validation_output(out):

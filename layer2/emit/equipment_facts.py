@@ -13,15 +13,12 @@ data/equipment single door (:5432-local; the flaky :5433 tunnel is never touched
 """
 from __future__ import annotations
 
-_OFF = ("off", "", "0", "false", "no", "none")
-
-
 def _enabled():
     """The equipment-facts knob (equipment.facts.enabled, default 'on'). DB-down → the CODE default (on) — the
     accessors below are themselves fail-open, so a dead equipment schema still degrades to '' per line."""
     try:
-        from config.app_config import cfg
-        return str(cfg("equipment.facts.enabled", "on")).strip().lower() not in _OFF
+        from config.app_config import flag_on
+        return flag_on("equipment.facts.enabled", True)   # THE boolean-knob vocabulary (D6); default-on preserved
     except Exception:
         return True
 

@@ -38,8 +38,13 @@ class Policy:
 
     def __init__(self):
         from config.app_config import cfg
-        self.pf_cols = cfg("roster.pf_columns", ["kpi_true_pf", "power_factor_total"])
-        self.power_col = cfg("roster.power_column", "active_power_total_kw")
+        # FIXED SCHEMA VOCABULARY, not knobs [hardcoding F10 half-knob retired 2026-07-12]: these neuract gic_*
+        # column names are also literals in derivation_binding.base_columns rows, _story LIVE_COLS and the
+        # schema_slot_map seed — a DB row here moved ONE of ~15 consumers, the most misleading state for an
+        # operator. Rows deleted (db/fix_retire_roster_column_knobs.sql); renaming the columns is a schema
+        # migration, not a config edit.
+        self.pf_cols = ["kpi_true_pf", "power_factor_total"]
+        self.power_col = "active_power_total_kw"
         self.status_synonyms = cfg("roster.status_synonyms", {
             "critical": ["critical", "danger"],
             "warning": ["warning", "watch", "warn"],

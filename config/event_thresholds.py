@@ -119,5 +119,4 @@ def specs(aliases):
     return out
 
 
-def _esc(s):
-    return str(s).replace("'", "''")
+from config.policy_read import esc as _esc  # the ONE shared SQL-quote escape  # noqa: E402

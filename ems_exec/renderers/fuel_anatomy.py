@@ -30,6 +30,10 @@ from __future__ import annotations
 from ems_exec.data import neuract as _nx
 from ems_exec.executor.fill import GAPS_KEY
 
+# no class claim: this renderer is reached by SHAPE (an asset_3d card whose own skeleton carries a telemetry snapshot —
+# _is_telemetry_3d in the package __init__), never by handling_class, so it registers nothing.
+HANDLING_CLASSES = ()
+
 
 def render(asset, card, ctx):
     """The {snapshot, display} payload for the fuel-tank-anatomy card.

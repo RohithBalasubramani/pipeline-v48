@@ -23,7 +23,7 @@ Every failure is reported honestly (pytest -q shows each per-prompt verdict via 
 (asset_pending / asset_no_data / validation_blocked) is a VALID honest terminal — the pipeline answered 'this can't render
 live' with a machine-readable reason, which counts as rendered-correctly-or-honest-blank. It is NOT a wrong value.
 
-Requires: the live DATA DB (neuract via :5433) + cmd_catalog (:5432) + LLM (:8200) + ems_backend (:8890). Preflight
+Requires: the live DATA DB (neuract via :5433) + cmd_catalog (:5432) + LLM (:8200); GLB media rides the web origin (legacy EMS media retired 2026-07-12). Preflight
 policy (never fake-green): cmd_catalog down → hard FAIL; DATA DB REACHABLE-BUT-WRONG-SCHEMA (the legacy simulator
 neuract with 0 lt_mfm/gic_* tables) → hard FAIL (running it would fake-green); DATA DB genuinely UNREACHABLE (archbox
 tunnel host down / no :5433 listener) → LOUD machine-readable SKIP, because an environmental outage is a precondition
@@ -176,8 +176,16 @@ def _build_prompts():
 # live registry — so a :5433 outage no longer collapses it to 0. It builds whenever cmd_catalog answers; asset NAMES come
 # from the live registry when reachable, else from each row's audit-named hint. The parametrized live test still refuses
 # to EXECUTE without the DATA DB, and test_infra_data_db_reachable still surfaces the outage loudly.
+# R8 [2026-07-12 audit T2/T5]: _build_prompts() sweeps the live registry's has_data across ~300 gic_* tables — a
+# SLOW un-indexed ::timestamptz scan (>70s until the audit F1/R3 expression index lands) that ran at plain
+# `pytest` collection and made the offline lane uncollectable. It is now GATED to the live cert lane
+# (env V48_LIVE_CERT=1, which the live sweep sets). Offline collection → empty matrix → the parametrized live test
+# collects as ONE honest skip via _NO_MATRIX_REASON (never a fake green — test_infra_data_db_reachable still surfaces
+# a real outage loudly, and the live lane hard-fails on a wrong-schema DB). Set V48_LIVE_CERT=1 to build it.
+import os as _os
+_LIVE_CERT = _os.environ.get("V48_LIVE_CERT", "").strip().lower() in ("1", "true", "yes", "on")
 try:
-    _PROMPTS = _build_prompts() if _catalog_up() else []
+    _PROMPTS = _build_prompts() if (_LIVE_CERT and _catalog_up()) else []
 except Exception as _e:  # pragma: no cover — collection must never crash pytest
     _PROMPTS = []
     _COLLECT_ERR = f"{type(_e).__name__}: {_e}"
@@ -189,6 +197,8 @@ else:
 # placeholder param. test_infra_data_db_reachable still hard-surfaces a DATA-DB outage so it is never mistaken for green.
 if _PROMPTS:
     _NO_MATRIX_REASON = None
+elif not _LIVE_CERT:
+    _NO_MATRIX_REASON = "offline lane — live render-guarantee matrix not built (set V48_LIVE_CERT=1 to run the live cert)"
 elif _COLLECT_ERR:
     _NO_MATRIX_REASON = f"prompt matrix could not be built (collect_err={_COLLECT_ERR})"
 elif not _catalog_up():
@@ -403,7 +413,7 @@ def test_infra_data_db_reachable():
         f"from cmd_catalog and every prompt is exercised under outage (test_render_guarantee_under_outage asserts the "
         f"honest data_unavailable degrade), but per-card LIVE invariants (I1..I6) against real values can only be "
         f"evaluated once the tunnel is back — the whole pipeline (asset resolution, column baskets, grounding probes, "
-        f"ems_backend frames) reads neuract via the down tunnel. Restore the :5433 forward and re-run for the live "
+        f"legacy frames) reads neuract via the down tunnel. Restore the :5433 forward and re-run for the live "
         f"matrix. (collect_err={_COLLECT_ERR})"
     )
 
@@ -413,6 +423,10 @@ def test_prompt_matrix_built():
     ONLY on cmd_catalog (the config source), NOT on the live DATA DB — so a :5433 tunnel outage no longer SKIPs this
     (the previous coupling to registry_for_picker() emptied the matrix and silently skipped). The parametrized live
     test is where DATA-DB availability is required; matrix ENUMERATION is a config concern that must always succeed."""
+    if not _LIVE_CERT:
+        # R8: matrix building is gated to the live cert lane (V48_LIVE_CERT=1) — the offline lane honestly skips
+        # here exactly like the parametrized live test does (via _NO_MATRIX_REASON), never a fake green/red.
+        pytest.skip(_NO_MATRIX_REASON or "offline lane — set V48_LIVE_CERT=1 to build and assert the matrix")
     if not _catalog_up():
         pytest.skip("cmd_catalog (:5432) — the config matrix source — is down; see test_infra_data_db_reachable")
     assert _PROMPTS, (f"no prompts derived from cmd_catalog.render_guarantee_matrix "
@@ -474,6 +488,7 @@ _OUTAGE_PROMPTS = [
 ]
 
 
+@pytest.mark.live
 @pytest.mark.parametrize("prompt,tag", _OUTAGE_PROMPTS, ids=[t for _, t in _OUTAGE_PROMPTS])
 def test_render_guarantee_under_outage(prompt, tag):
     """When the live DATA DB is DOWN, every prompt must still honest-degrade (no crash, page-level data_unavailable +
