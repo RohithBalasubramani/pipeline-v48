@@ -41,6 +41,11 @@ def _slot_window(spec, state):
     rng = spec.get("range")
     if not rng:
         return state["window"]
+    # EXPLICIT USER PICK WINS [date control]: a recipe slot's `range` (a KPI's 'today' reporting pin) is a DEFAULT — a
+    # date-control /api/frame re-fetch marks the window explicit, and the user's pick then moves EVERY card, this KPI
+    # included (the strip stayed on 'today' when the user chose 'last month' otherwise). No-op on the initial serve.
+    if state.get("window_explicit") and state.get("window"):
+        return state["window"]
     w = state["window"] or (None, None)
     return _honor_range(w[0], w[1], rng, authoritative=True)
 

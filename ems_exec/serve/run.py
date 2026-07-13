@@ -45,11 +45,17 @@ def _sweep_sankeys(node):
             _sweep_sankeys(v)
 
 
-def build_ctx(asset_table, *, db_link=None, window=None, mfm_id=None, asset_name=None, card_id=None):
+def build_ctx(asset_table, *, db_link=None, window=None, mfm_id=None, asset_name=None, card_id=None,
+              window_explicit=False):
     """The executor ctx: {asset_table, db_link?, window?, mfm_id?, asset_name?, card_id?}. window = (start,end) tuple
     or {start,end} dict, or None. mfm_id/asset_name/card_id activate the generic ROSTER interpreter seam (member-scope
-    panel cards) inside fill() — harmless for single-meter cards (no roster instruction/recipe → no-op)."""
+    panel cards) inside fill() — harmless for single-meter cards (no roster instruction/recipe → no-op).
+    window_explicit: True when `window` is a USER PICK (a date-control /api/frame re-fetch) rather than a prompt/
+    default — a recipe slot's own `range` (a KPI's 'today' reporting pin) then YIELDS to it, so the date control moves
+    the whole page. False for the initial serve (recipe ranges stay the default)."""
     ctx = {"asset_table": asset_table}
+    if window_explicit:
+        ctx["window_explicit"] = True
     if db_link is not None:
         ctx["db_link"] = db_link
     if window is not None:
@@ -69,7 +75,7 @@ def build_ctx(asset_table, *, db_link=None, window=None, mfm_id=None, asset_name
 
 
 def run_card(exact_metadata, data_instructions, asset_table, *, db_link=None, window=None, default_payload=None,
-             mfm_id=None, asset_name=None, card_id=None, shape_ref=None):
+             mfm_id=None, asset_name=None, card_id=None, shape_ref=None, window_explicit=False):
     """Fill ONE card's payload from neuract. Returns the completed CMD_V2 payload (never raises).
 
     Args:
@@ -98,7 +104,7 @@ def run_card(exact_metadata, data_instructions, asset_table, *, db_link=None, wi
         binding = di.get("binding") if isinstance(di.get("binding"), dict) else {}
         mfm_id = consumer.get("mfm_id") if consumer.get("mfm_id") is not None else binding.get("asset_id")
     ctx = build_ctx(asset_table, db_link=db_link, window=window, mfm_id=mfm_id, asset_name=asset_name,
-                    card_id=card_id)
+                    card_id=card_id, window_explicit=window_explicit)
     try:
         out = _fill.fill(exact_metadata, data_instructions, ctx, default_payload=default_payload,
                          shape_ref=shape_ref)

@@ -135,7 +135,8 @@ def fill_one_card(**kw):
 
 def _fill_one_card_raw(*, cid, render_card_id, handling_class, exact_metadata, data_instructions, asset_table,
                        db_link=None, window=None, requested_window=None, default_payload=None, mfm_id=None,
-                       asset_name=None, member_scope=OUTGOING, section=None, page_key=None, metric=None, intent=None):
+                       asset_name=None, member_scope=OUTGOING, section=None, page_key=None, metric=None, intent=None,
+                       window_explicit=False):
     """Fill ONE card's payload from NEURACT — the SHARED seam used by BOTH the parallel page fan-out (_run_cards._fill)
     AND the interactive /api/frame per-card date re-fetch. Dispatches run_special for a SPECIAL handling_class
     (asset_3d / topology_sld / narrative_ai / panel_aggregate) else run_card. This dispatch is the reason /api/frame
@@ -154,7 +155,8 @@ def _fill_one_card_raw(*, cid, render_card_id, handling_class, exact_metadata, d
         # (the shape oracle fill()/fab_guards need so the panel path does not over-blank order/layout metadata).
         ctx = {"asset_table": asset_table, "mfm_id": mfm_id, "db_link": db_link,
                "window": window, "requested_window": requested_window, "page_key": page_key,
-               "metric": metric, "intent": intent, "member_scope": member_scope, "section": section}
+               "metric": metric, "intent": intent, "member_scope": member_scope, "section": section,
+               "window_explicit": window_explicit}          # user date-pick → recipe slot ranges yield [_slot_window]
         card = {"card_id": cid, "render_card_id": render_card_id, "card_handling": handling_class,
                 "exact_metadata": exact_metadata, "data_instructions": data_instructions,
                 "_default_payload": default_payload, "shape_ref": _raw_default_payload(render_card_id)}
@@ -163,7 +165,7 @@ def _fill_one_card_raw(*, cid, render_card_id, handling_class, exact_metadata, d
     # column-fill path — shape_ref = the RAW harvested default (shape oracle for the post-fill axis/scale/normalize
     # passes). Values are NEVER copied from it (zero-fabrication stands).
     return ems_exec_run.run_card(exact_metadata, data_instructions, asset_table, db_link=db_link, window=window,
-                                 default_payload=default_payload,
+                                 default_payload=default_payload, window_explicit=window_explicit,
                                  shape_ref=_raw_default_payload(render_card_id), card_id=render_card_id)
 
 

@@ -324,10 +324,19 @@ def handle_frame(req):
                                 exact_metadata=exact_metadata, data_instructions=data_instructions,
                                 asset_table=asset_table, db_link=_neuract_dsn.dsn(), window=window,
                                 requested_window=date_window, default_payload=default_payload,
-                                mfm_id=mfm_id, asset_name=asset_name, member_scope=member_scope)
+                                mfm_id=mfm_id, asset_name=asset_name, member_scope=member_scope,
+                                window_explicit=True)       # a date-control re-fetch IS a user pick → overrides recipe ranges
         from host.display_dash import apply as _dash    # same serve-boundary display policy as /api/run
         from ems_exec.executor import roster_stats as _rstats
         _rstats.pop(payload)                             # telemetry key never rides to the FE
+        # PERIOD LABEL on re-fetch [date control]: the in-card title is 'titlePrefix … period.label', and the frame path
+        # (unlike /api/run's enrich) never filled it — so a date change left every title reading 'at Today'. Fill it with
+        # the new window's label here, exactly as enrich does on the initial serve.
+        try:
+            from host.enrich import _fill_period_labels, _period_label
+            _fill_period_labels(payload, _period_label(date_window))
+        except Exception:
+            pass
         payload = _dash(payload, default_payload)
         return 200, {"ok": True, "why": "ok", "endpoint": consumer.get("endpoint"), "payload": payload}
     except Exception as e:

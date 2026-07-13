@@ -154,15 +154,17 @@ def _fill_period_labels(payload, label):
     window, not the comparison; the host title already prepends '· 1A vs 1B', so an AI '1A vs 1B' here doubled it to
     '… · 1A vs 1B at 1A vs 1B'). A REAL time label (a bucket the executor wrote) has no ' vs ' and is left untouched.
     CHROME ONLY, never a reading. In-place, fail-open."""
-    def _is_authoritative(v):                                     # empty, or the AI's section-vs corruption
-        return v in ("", None) or (isinstance(v, str) and " vs " in v)
+    # The window label is HOST-OWNED (it IS the operative time period the header shows), so set it unconditionally: on
+    # the initial serve the seed label is '', and on a date-control re-fetch it must CHANGE (an old 'Today' → the new
+    # 'Last Month') — a conditional fill left the title stuck on the previous window. A genuine per-bucket selection is
+    # FE-only state, never in the served payload, so nothing real is clobbered.
     try:
         stack = [payload]
         while stack:
             node = stack.pop()
             if isinstance(node, dict):
                 per = node.get("period")
-                if isinstance(per, dict) and "label" in per and _is_authoritative(per.get("label")):
+                if isinstance(per, dict) and "label" in per:
                     per["label"] = label
                 stack.extend(node.values())
             elif isinstance(node, list):
