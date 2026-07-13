@@ -18,6 +18,9 @@ import {
 } from "@cmd-v2/components/charts/primitives";
 import { selectionToWindow, resampleForPreset } from "./date-wiring";
 
+// N-generic comparand palette (bus sections / assets) — cycles for any count. Shared by the strip's per-section KPIs.
+export const SECTION_PALETTE = ["#7a4e13", "#4A6FA5", "#c13b38", "#a3c188", "#7e6ea1", "#bc9e44", "#4d6e87", "#c08a3e"];
+
 // ── scalar guards ──────────────────────────────────────────────────────────────────────────────────────────────────
 export const fin = (v: any): number | null => {
   const n = Number(v);
@@ -102,6 +105,15 @@ export function PrimTiles({ strip, statPathByKey = {}, onDateChange }:
     const v = valueOf(key);
     return s && v != null ? [{ key, value: v, color: s.color }] : [];
   });
+  // ★ PER-SECTION KPIs [N-generic]: the executor stamped stats.sections = {tok: {agg_key:value}} on a section compare.
+  // ONE strip, but each KPI tile shows a value PER SECTION (any count — 2, 3, 4 …). The representsAll (Total) tile keeps
+  // the union total. valueOfSec applies the same stat-path lookup within a section's stats.
+  const secStats: any = stats?.sections && typeof stats.sections === "object" ? stats.sections : null;
+  const secToks: string[] = secStats ? Object.keys(secStats) : [];
+  const valueOfSec = (key: string, tok: string): number | null => {
+    const ss = secStats?.[tok] ?? {};
+    return fin(statPathByKey[key] != null ? pathGet(ss, statPathByKey[key]) : ss?.[key]);
+  };
   const c = pres.controls ?? {};
   return (
     <div className="flex flex-col">
@@ -121,8 +133,39 @@ export function PrimTiles({ strip, statPathByKey = {}, onDateChange }:
         onRangeEndChange={(v: string) => fire({ ...selection, rangeEnd: v })}
       />
       {segments.length ? <SegmentBar segments={segments} className="mt-2" /> : null}
-      <MetricTileGrid tiles={tiles} selectedTileKey={selectedTileKey}
-        onTileSelect={(k: string | null) => setSelectedTileKey(k)} />
+      {secToks.length ? (
+        <div className="mt-2 grid border-t"
+          style={{ gridTemplateColumns: `repeat(${(pres.tileOrder ?? []).length || 1}, minmax(0,1fr))` }}>
+          {(pres.tileOrder ?? []).map((key: string) => {
+            const t: any = tileByKey.get(key);
+            if (!t) return null;
+            return (
+              <div key={key} className="px-3 py-2" style={{ borderRight: "1px solid rgba(0,0,0,0.06)" }}>
+                <div style={{ fontSize: 11, opacity: 0.7 }}>{t.label}</div>
+                {t.representsAll ? (
+                  <div style={{ fontSize: 18, fontWeight: 600 }}>{fmtNum(valueOf(key), t.decimals, t.unit)}</div>
+                ) : (
+                  <div className="mt-0.5 flex flex-col gap-0.5">
+                    {secToks.map((tok, i) => (
+                      <div key={tok} className="flex items-center justify-between gap-2" style={{ fontSize: 13 }}>
+                        <span className="inline-flex items-center gap-1">
+                          <span style={{ width: 8, height: 8, background: SECTION_PALETTE[i % SECTION_PALETTE.length],
+                                         borderRadius: 2, display: "inline-block" }} />
+                          <span style={{ opacity: 0.7, fontSize: 11 }}>{tok}</span>
+                        </span>
+                        <span style={{ fontWeight: 600 }}>{fmtNum(valueOfSec(key, tok), t.decimals, t.unit)}</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      ) : (
+        <MetricTileGrid tiles={tiles} selectedTileKey={selectedTileKey}
+          onTileSelect={(k: string | null) => setSelectedTileKey(k)} />
+      )}
     </div>
   );
 }

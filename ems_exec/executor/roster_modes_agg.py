@@ -14,38 +14,70 @@ from ems_exec.executor.roster_eval import (
     _select, _slot_window, _eval_elements, _context_vals, _shared_element)
 
 
+def _member_in_section(member, tok):
+    """True iff the member belongs to bus-section token `tok` — the SAME equipment.mfm dictionary lookup the rest of
+    the overlay uses (data/equipment/sections), zero card knowledge. Unmapped member / lookup miss → not in-section."""
+    try:
+        from data.equipment.sections import section_of
+        return str(section_of(member.get("table")) or "").upper() == str(tok).upper()
+    except Exception:
+        return False
+
+
+def _compute_aggs(aggs, els_for, element_spec, state):
+    """Run the closed reducer map over an element set (els_for(rf, ro) → elements). Sibling-referencing reducers
+    (alias/sum_of/difference/ratio_pct) run last over `computed`. Returns {agg_key: value}. Pure — no payload write,
+    so it serves BOTH the union roll-up and each per-section roll-up (member set differs, math identical)."""
+    slot_rf = None
+    computed, late = {}, {}
+    for k, aspec in (aggs or {}).items():
+        if not isinstance(aspec, dict):
+            continue
+        if (aspec.get("agg") or "").strip().lower() in ("alias", "sum_of", "difference", "ratio_pct"):
+            late[k] = aspec
+            continue
+        rf = aspec.get("role_filter") or slot_rf
+        computed[k] = _reducers.reduce(aspec, els_for(rf), computed=computed, context=_context_vals(state),
+                                       element_spec=element_spec, policy=state["policy"])
+    for k, aspec in late.items():
+        computed[k] = _reducers.reduce(aspec, [], computed=computed, context=_context_vals(state),
+                                       element_spec=element_spec, policy=state["policy"])
+    return computed
+
+
 def _aggregates_slot(payload, spec, state, default_payload):
     element_spec = spec.get("element") if isinstance(spec.get("element"), dict) and spec.get("element") \
         else _shared_element(state)
     slot_rf = spec.get("role_filter") or "all"
     slot_ro = bool(spec.get("reporting_only"))
     slot_win = _slot_window(spec, state)
-    cache = {}
+    pairs_cache = {}
 
-    def _els(rf, ro):
-        k = (rf, ro)
-        if k not in cache:
-            cache[k] = [e for (_m, e) in
-                        _eval_elements(element_spec, _select(spec, state, role_filter=rf, reporting_only=ro), state,
-                                       window=slot_win)]
-        return cache[k]
+    def _pairs(rf):
+        rf = rf or slot_rf
+        if rf not in pairs_cache:
+            pairs_cache[rf] = _eval_elements(element_spec, _select(spec, state, role_filter=rf, reporting_only=slot_ro),
+                                             state, window=slot_win)                    # [(member, element), …]
+        return pairs_cache[rf]
 
-    aggs = spec.get("agg") or {}
-    computed = {}
-    late = {}
-    for k, aspec in aggs.items():
-        if not isinstance(aspec, dict):
-            continue
-        if (aspec.get("agg") or "").strip().lower() in ("alias", "sum_of", "difference", "ratio_pct"):
-            late[k] = aspec                                     # sibling-referencing reducers run after the rest
-            continue
-        rf = aspec.get("role_filter") or slot_rf
-        computed[k] = _reducers.reduce(aspec, _els(rf, slot_ro), computed=computed,
-                                       context=_context_vals(state), element_spec=element_spec,
-                                       policy=state["policy"])
-    for k, aspec in late.items():
-        computed[k] = _reducers.reduce(aspec, [], computed=computed, context=_context_vals(state),
-                                       element_spec=element_spec, policy=state["policy"])
+    def _els_for(member_filter):
+        def _f(rf):
+            return [e for (m, e) in _pairs(rf) if member_filter is None or member_filter(m)]
+        return _f
+
+    computed = _compute_aggs(spec.get("agg") or {}, _els_for(None), element_spec, state)
+
+    # ★ PER-SECTION KPI STRIP [per-section aggregates, N-generic]: when the gate marked this slot `_sections`, recompute
+    # the SAME reducer map once per section (members filtered to that section) → stats.sections = {tok: {agg_key:value}}.
+    # Iterates the token list, so it holds for 2, 3, 4, … sections. The union `computed` still ships (the strip keeps a
+    # combined view); the host renders each KPI per section from stats.sections. A section with no member → honest nulls.
+    sect_toks = spec.get("_sections")
+    if isinstance(sect_toks, list) and sect_toks:
+        computed["sections"] = {
+            str(tok): _compute_aggs(spec.get("agg") or {}, _els_for(lambda m, t=tok: _member_in_section(m, t)),
+                                    element_spec, state)
+            for tok in sect_toks}
+
     for container, key, _marker in _targets(payload, default_payload, spec.get("slot")):
         cur = container.get(key)
         if not isinstance(cur, dict):

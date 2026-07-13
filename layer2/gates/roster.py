@@ -72,6 +72,11 @@ def _section_overlay(normalized, toks):
             # `_sections` marker: the executor's pres pass turns it into the payload-side compare surface
             # (sectionCompare stamp + generic pres morphs) the host's payload-driven renderers key on.
             out.append({**s, "element": el, "_sections": list(toks)})
+        elif mode == "aggregates":
+            # `_sections` marker on an AGGREGATES slot [per-section KPI strip]: the executor recomputes the SAME reducer
+            # map once per section (members filtered to that section) beside the union, stamping stats.sections =
+            # {tok: {agg_key: value}}. N-generic (iterates `toks`); the host strip renders each KPI tile per section.
+            out.append({**s, "_sections": list(toks)})
         else:
             out.append(s)
     return out
