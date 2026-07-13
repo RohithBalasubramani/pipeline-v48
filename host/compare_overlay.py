@@ -128,26 +128,38 @@ def _merge_points(sub, per, toks):
     sub["pres"] = pres
 
 
+def _side_by_side(entries):
+    """The SIDE-BY-SIDE fallback [all-cards coverage]: a card whose payload has no inline-mergeable shape (a scalar KPI
+    card, a gauge, a sankey, a closed-vocab line chart — inline-forcing a comparand series into those would crash the
+    bespoke component or fake a comparison) carries every comparand's FULL payload under `_compare_group`; the FE
+    renders the N per-comparand cards next to each other. Crash-safe (each renders its own unmodified component) and
+    honest (each shows its own panel's real data) — so EVERY card compares, inline where clean, side-by-side else."""
+    return [{"token": tok, "name": (card.get("asset") or {}).get("name"), "payload": (card.get("payload") or {})}
+            for tok, card in entries]
+
+
 def merge_overlay(entries, tokens):
-    """entries: [(tok, card), …] for ONE render_card_id (one card per comparand). Returns the SINGLE merged card in the
-    section-overlay payload shape; `asset` tag dropped so the FE renders it flat (not as a group). Fail-open: an
-    unmergeable card (no data subtree) ships the first comparand's card untagged."""
+    """entries: [(tok, card), …] for ONE render_card_id (one card per comparand). Returns the SINGLE merged card: inline
+    per-comparand in the section-overlay shape when the payload has a mergeable shape (stats / period.panels / points —
+    the shapes with sections-aware FE renderers), else the side-by-side `_compare_group` fallback. `asset` tag dropped
+    so the FE renders it flat (not a group)."""
     base = entries[0][1]
     payload = copy.deepcopy(base.get("payload") or {})
     sk = _subtree_key(payload)
     out = {k: v for k, v in base.items() if k != "asset"}
-    if not sk:
-        out["payload"] = payload
-        return out
-    per = {tok: ((card.get("payload") or {}).get(sk) or {}) for tok, card in entries}
-    sub = payload[sk]
-    if isinstance(sub.get("stats"), dict):
-        _merge_stats(sub, per, tokens)
-    if isinstance((sub.get("period") or {}).get("panels"), list):
-        _merge_panels(sub, per, tokens)
-    if isinstance(sub.get("points"), list):
-        _merge_points(sub, per, tokens)
     out["payload"] = payload
+    sub = payload.get(sk) if sk else None
+    merged_any = False
+    if isinstance(sub, dict):
+        per = {tok: ((card.get("payload") or {}).get(sk) or {}) for tok, card in entries}
+        if isinstance(sub.get("stats"), dict):
+            _merge_stats(sub, per, tokens); merged_any = True
+        if isinstance((sub.get("period") or {}).get("panels"), list):
+            _merge_panels(sub, per, tokens); merged_any = True
+        if isinstance(sub.get("points"), list):
+            _merge_points(sub, per, tokens); merged_any = True
+    if not merged_any:
+        out["_compare_group"] = _side_by_side(entries)         # no inline shape → side-by-side per comparand
     return out
 
 

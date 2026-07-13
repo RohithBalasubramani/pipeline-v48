@@ -22,6 +22,25 @@ export function renderCmd(
   onDateChange?: (dw: any) => void,
 ): React.ReactNode {
   if (!card) return null;
+  // SIDE-BY-SIDE COMPARE [overlay mode, all-cards coverage]: a card the host merge couldn't overlay inline (a scalar
+  // KPI card / gauge / sankey / closed-vocab chart) carries every comparand's full payload under `_compare_group` —
+  // render the N per-comparand cards NEXT TO each other, each through its OWN unmodified component (crash-safe), a
+  // small token header above each. So every card compares: inline where the payload split cleanly, side-by-side else.
+  const grp: any[] | undefined = (card as any)._compare_group;
+  if (Array.isArray(grp) && grp.length > 1) {
+    return (
+      <div className="flex h-full min-h-0 w-full gap-2">
+        {grp.map((g, i) => (
+          <div key={i} className="flex min-w-0 flex-1 flex-col">
+            <div style={{ fontSize: 11, fontWeight: 600, opacity: 0.7, padding: "2px 6px" }}>{g.token ?? g.name}</div>
+            <div className="min-h-0 flex-1">
+              {renderCmd({ ...card, _compare_group: undefined, payload: g.payload } as any, onDateChange)}
+            </div>
+          </div>
+        ))}
+      </div>
+    );
+  }
   const rv: RenderVerdict = card.render ?? {};
   // B1 [residual 'fe']: Layer 2's card-level proxy/substitution disclosure + its own answerability claim — served
   // additively by the host and shown beside the gap sentences in the SAME (i) marker (withGaps on every tier below).
