@@ -103,7 +103,7 @@ def test_multi_cross_class_authors_once_per_class_and_shares_1a(monkeypatch):
 
 # ── build_response_multi: fill per asset, tag by asset, concat, response shape ────────────────────────────────────────
 
-def test_build_response_multi_tags_and_concats(monkeypatch):
+def _multi_two_ups(monkeypatch, cards_for):
     lane = _fake_lane(cards=(1, 2))
     multi = {"layer1a": lane["layer1a"], "run_id": "r_multi",
              "groups": [{"class": "UPS", "lane": lane,
@@ -111,16 +111,40 @@ def test_build_response_multi_tags_and_concats(monkeypatch):
                                     {"mfm_id": 2, "name": "UPS-02", "class": "UPS", "table": "g2"}]}]}
     monkeypatch.setattr(M, "run_pipeline_multi", lambda prompt, assets: multi)
     monkeypatch.setattr(M, "resolve_assets", lambda ids: multi["groups"][0]["assets"])
-    # each lane's assemble returns 2 synthetic cards; tagging + concat is what we assert
-    monkeypatch.setattr(M, "assemble_cards", lambda out, asset, dw: [{"card_id": 1}, {"card_id": 2}])
+    monkeypatch.setattr(M, "assemble_cards", lambda out, asset, dw: cards_for(asset))
+    return multi
 
-    resp = M.build_response_multi("compare ups-01 and ups-02", [1, 2])
-    assert resp["multi_asset"] is True and resp["asset_pending"] is False
+
+def test_build_response_multi_groups_mode_tags_and_concats(monkeypatch):
+    # GROUPS mode (AI-decided): each asset renders its OWN stacked dashboard — cards stay tagged + concatenated.
+    _multi_two_ups(monkeypatch, lambda asset: [{"card_id": 1}, {"card_id": 2}])
+    monkeypatch.setattr("host.compare_mode.compare_mode", lambda prompt: "groups")
+    resp = M.build_response_multi("show the dashboards for ups-01 and ups-02", [1, 2])
+    assert resp["multi_asset"] is True and resp["compare_mode"] == "groups" and resp["asset_pending"] is False
     assert [a["mfm_id"] for a in resp["assets"]] == [1, 2]
     assert len(resp["cards"]) == 4                              # 2 assets × 2 cards, concatenated
     tags = [(c["asset"]["id"], c["asset"]["name"]) for c in resp["cards"]]
     assert tags == [(1, "UPS-01"), (1, "UPS-01"), (2, "UPS-02"), (2, "UPS-02")]
     assert resp["page"]["page_key"] == "energy-power"          # shared template shell
+
+
+def test_build_response_multi_overlay_mode_merges_per_comparand(monkeypatch):
+    # OVERLAY mode (AI-decided): the per-asset cards MERGE into ONE per-comparand set — each card's stats split per
+    # comparand (stats.sections), the asset tag dropped, multi_asset False (flat render). [compare — overlay]
+    def _cards(asset):
+        v = 10 if asset["mfm_id"] == 1 else 4
+        return [{"card_id": 18, "render_card_id": 18,
+                 "payload": {"strip": {"stats": {"total": v, "current": v}}}}]
+    _multi_two_ups(monkeypatch, _cards)
+    monkeypatch.setattr("host.compare_mode.compare_mode", lambda prompt: "overlay")
+    resp = M.build_response_multi("compare current for ups-01 and ups-02", [1, 2])
+    assert resp["multi_asset"] is False and resp["compare_mode"] == "overlay"
+    assert len(resp["cards"]) == 1                              # merged into one per-comparand card
+    st = resp["cards"][0]["payload"]["strip"]["stats"]
+    assert st["total"] == 14                                    # union = sum across comparands
+    assert set(st["sections"].keys()) == {"U01", "U02"}         # per-comparand tokens
+    assert st["sections"]["U01"]["total"] == 10 and st["sections"]["U02"]["total"] == 4
+    assert resp["cards"][0].get("asset") is None                # merged card is untagged (flat render)
 
 
 def test_build_response_multi_propagates_lane_outage(monkeypatch):

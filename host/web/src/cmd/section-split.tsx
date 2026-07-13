@@ -12,7 +12,9 @@ import { EventTimelineChart } from "@cmd-v2/pages/electrical/lt-pcc/panel-overvi
 import { BodyCard, CardBodySkeleton, composeMetricHeader } from "@cmd-v2/components/charts/primitives";
 import { fmtNum } from "./prim/shared";
 
-const baseOf = (k: string) => k.replace(/_[a-z]$/, "");
+// strip the comparand suffix to recover the base series key: "@@<tok>" (multi-panel overlay merge) or "_a"/"_b"
+// (bus-section split) — used for the vWorst abs() semantics + tile dimming, which key on the BASE metric.
+const baseOf = (k: string) => k.replace(/@@.+$/, "").replace(/_[a-z]$/, "");
 const num = (v: unknown) => {
   const n = Number(v ?? 0);
   return Number.isFinite(n) ? n : 0;

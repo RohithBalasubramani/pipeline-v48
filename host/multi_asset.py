@@ -120,7 +120,9 @@ def build_response_multi(prompt, asset_ids, date_window=None):
         if _prompt_window:
             date_window = _prompt_window
 
+    from host.compare_overlay import comparand_token, merge_all
     all_cards = []
+    tokens_by_id = {}                                        # tag id → short comparand label (P1/P2 …) for overlay merge
     for group in groups:
         lane = group.get("lane") or {}
         recipe = lane.get("layer2") or {}                    # the class recipe (authored ONCE for this class)
@@ -131,9 +133,20 @@ def build_response_multi(prompt, asset_ids, date_window=None):
             # sectioned lanes share one mfm_id — the GROUPING id must still be distinct per lane [sections]
             _tid = (f"{asset.get('mfm_id')}{asset.get('section')}" if asset.get("section") else asset.get("mfm_id"))
             tag = {"id": _tid, "name": asset.get("name"), "class": asset.get("class")}
+            tokens_by_id[_tid] = comparand_token(asset.get("name"))
             for c in cards_i:
                 c["asset"] = tag                                          # FE groups + labels by this (additive)
             all_cards.extend(cards_i)
+
+    # ★ COMPARE MODE [overlay vs groups] — the AI decides HOW to render a multi-comparand compare (host/compare_mode):
+    #   overlay = merge the per-asset cards into ONE per-comparand set (each card shows every panel inline — the same
+    #             section-overlay payload shape, N-generic); groups = keep the per-asset stacked dashboards (below).
+    # Only >=2 comparands is a real compare. The merge is deterministic (host/compare_overlay); mode is fail-open overlay.
+    from host.compare_mode import compare_mode
+    mode = compare_mode(prompt) if len(assets) >= 2 else "groups"
+    if mode == "overlay" and len(assets) >= 2:
+        all_cards = merge_all(all_cards, tokens_by_id)
+    _grouped = (mode == "groups")
 
     val = lane0.get("validation") or {}
     # OUTAGE PROPAGATION [honest-terminal parity with build_response]: if any lane hit the data_unavailable terminal
@@ -149,7 +162,8 @@ def build_response_multi(prompt, asset_ids, date_window=None):
         "run_id": multi.get("run_id"),
         "elapsed_ms": int((time.time() - t0) * 1000),
         "sb_base": SB_BASE,
-        "multi_asset": True,                                  # FE: render the grouped (per-asset) grid
+        "multi_asset": _grouped,                              # groups mode → FE per-asset grid; overlay → flat per-comparand cards
+        "compare_mode": mode,                                 # 'overlay' | 'groups' (AI-decided) — telemetry + FE hint
         "assets": [{"mfm_id": a.get("mfm_id"), "name": a.get("name"), "class": a.get("class"),
                     "table": a.get("table")} for a in assets],
         "page": {

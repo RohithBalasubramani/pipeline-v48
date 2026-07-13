@@ -16,15 +16,17 @@ logs and the FE), grouped into the frozensets each consumer means.
 HOW_AI = "AI"
 HOW_USER_CHOICE = "user-choice"
 HOW_COLLISION_GATE = "collision_gate_fullname"
+HOW_ALIAS_DICTIONARY = "alias-dictionary"   # a deterministic pcc_panel_alias dictionary pin (sections rescue) — CONFIDENT
 HOW_NO_DATA = "no_data"
 HOW_AMBIGUOUS = "ambiguous"
 HOW_EMPTY = "empty"
 
 #: every legal `how` value (schema validation).
-ALL = frozenset({HOW_AI, HOW_USER_CHOICE, HOW_COLLISION_GATE, HOW_NO_DATA, HOW_AMBIGUOUS, HOW_EMPTY})
+ALL = frozenset({HOW_AI, HOW_USER_CHOICE, HOW_COLLISION_GATE, HOW_ALIAS_DICTIONARY,
+                 HOW_NO_DATA, HOW_AMBIGUOUS, HOW_EMPTY})
 
 #: pinned to ONE asset that also has data — the basket/no-picker safety checks apply.
-RESOLVED_WITH_DATA = frozenset({HOW_AI, HOW_USER_CHOICE, HOW_COLLISION_GATE})
+RESOLVED_WITH_DATA = frozenset({HOW_AI, HOW_USER_CHOICE, HOW_COLLISION_GATE, HOW_ALIAS_DICTIONARY})
 
 #: a confident single resolution — an asset was pinned by NAME (or named-but-dark no_data) with NO open picker.
 RESOLVED_ANY = RESOLVED_WITH_DATA | {HOW_NO_DATA}
