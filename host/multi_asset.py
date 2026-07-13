@@ -98,6 +98,11 @@ def build_response_multi(prompt, asset_ids, date_window=None):
     t0 = time.time()
     cap = max(1, int(cfg("multi_asset.max_assets", 6)))
     assets = resolve_assets(asset_ids)[:cap]
+    from run.run_id import make_run_id
+    # PROMPT marker parity with the single path: the multi rid's pipeline file otherwise holds ONLY RESPONSE_MULTI
+    # records (lanes log under their own rids), so admin runs.executions() couldn't split appended executions and
+    # latency paired records ACROSS executions (the 2.6h fake-stage bug; console_validation/latency.md 2026-07-12).
+    stage(make_run_id(prompt), "PROMPT", text=prompt, multi_assets=len(assets))
     multi = run_pipeline_multi(prompt, assets)
     groups = multi.get("groups") or []
     shared_1a = multi.get("layer1a") or {}
@@ -109,7 +114,9 @@ def build_response_multi(prompt, asset_ids, date_window=None):
     # honored the asked range — the two response paths had silently drifted.
     if not date_window:
         from host.notes import window_from_preset
-        _prompt_window = window_from_preset(lane0.get("window"))
+        # NARROW DEFAULT [no-range prompt] — parity with build_response: 1a found no prompt range → default 'today'
+        # rather than a per-lane L2-invented wide window. Explicit prompt range / FE pick still win.
+        _prompt_window = window_from_preset(lane0.get("window") or "today")
         if _prompt_window:
             date_window = _prompt_window
 

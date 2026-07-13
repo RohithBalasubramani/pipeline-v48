@@ -202,6 +202,13 @@ def _run_cards(l2, asset_table, db_link=None, date_window=None, run_id="-", asse
         # live/history SCREEN split, not executor capability. [panel-events date-nav]
         if kind == "panel_aggregate" and date_window:
             window = date_window
+            # RANGE RECONCILE [narrow-default parity with /api/frame RC2b]: _window_of / _honor_range is WIDEN-ONLY and
+            # keyed on consumer.range — a Layer-2-baked range (e.g. an invented 'this-month') would WIDEN this authoritative
+            # window back. Anchor consumer.range to the operative window so the fan-out spans exactly what was asked. No-op
+            # when the window carries no range token.
+            if isinstance(date_window, dict) and date_window.get("range"):
+                _con = dict(di.get("consumer") or {}); _con["range"] = date_window["range"]
+                di = {**di, "consumer": _con}
         else:
             window = _date_window_for(di.get("consumer") or {}, date_window)
         rid = (o.get("swap_decision") or {}).get("swap_to_id") or cid  # the RENDERED card's identity (swap target)

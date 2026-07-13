@@ -71,8 +71,13 @@ def build_response(prompt, asset_id=None, date_window=None):
     # is non-null: the exec history seam (host/exec_cards._date_window_for) reads real start/end and the FE date bar
     # initializes to the asked range. An explicit FE pick ALWAYS wins (only fill when absent). No time phrase → out["window"]
     # None → date_window stays None → today/latest default unchanged.
+    # NARROW DEFAULT [no-range prompt, 2026-07-13]: 1a is AUTHORITATIVE on the prompt's time intent (its window enum
+    # includes a 'none' sentinel). When 1a found NO explicit range (out['window'] falsy — the prompt named no time),
+    # DEFAULT to 'today' instead of letting a per-card Layer-2 fetch.range invent a wide window (the 'compare 1a and 1b'
+    # → this-month → 294-hourly-bucket defect: L2 emitted range='this-month' with no prompt justification). A concrete
+    # prompt range ('last 7 days') and an explicit FE pick both still win. Deterministic, coherent across every card.
     if not date_window:
-        _prompt_window = _window_from_preset(out.get("window"))
+        _prompt_window = _window_from_preset(out.get("window") or "today")
         if _prompt_window:
             date_window = _prompt_window
 
