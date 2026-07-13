@@ -188,6 +188,7 @@ def prepare_ctx(data_instructions, ctx):
         "policy": policy,
         "window": window,
         "window_explicit": bool(ctx.get("window_explicit")),   # user date-pick overrides recipe slot ranges [_slot_window]
+        "sampling": ctx.get("sampling"),                       # date-control resample → series bucketing granularity [x-axis]
         "ts_col": ts,
         "energy_col": energy_col,
         "agg_row": ctx.get("_agg_row") or {},

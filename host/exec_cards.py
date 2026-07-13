@@ -156,7 +156,8 @@ def _fill_one_card_raw(*, cid, render_card_id, handling_class, exact_metadata, d
         ctx = {"asset_table": asset_table, "mfm_id": mfm_id, "db_link": db_link,
                "window": window, "requested_window": requested_window, "page_key": page_key,
                "metric": metric, "intent": intent, "member_scope": member_scope, "section": section,
-               "window_explicit": window_explicit}          # user date-pick → recipe slot ranges yield [_slot_window]
+               "window_explicit": window_explicit,          # user date-pick → recipe slot ranges yield [_slot_window]
+               "sampling": (requested_window or {}).get("sampling") if window_explicit else None}   # resample → bucketing [x-axis]
         card = {"card_id": cid, "render_card_id": render_card_id, "card_handling": handling_class,
                 "exact_metadata": exact_metadata, "data_instructions": data_instructions,
                 "_default_payload": default_payload, "shape_ref": _raw_default_payload(render_card_id)}

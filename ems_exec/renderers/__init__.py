@@ -159,6 +159,7 @@ def _interpreter_payload(asset, card, ctx):
                              default_payload=card.get("_default_payload"),
                              shape_ref=card.get("shape_ref"),   # RAW default → fab_guards raw-vs-stripped wall (no over-blank)
                              window_explicit=bool(ctx.get("window_explicit")),   # user date-pick → slot ranges yield [date control]
+                             sampling=ctx.get("sampling"),                        # date-control resample → series bucketing [x-axis]
                              mfm_id=ctx.get("mfm_id"), asset_name=(asset or {}).get("name"), card_id=rid)
     except Exception:
         return None

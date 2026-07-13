@@ -15,6 +15,19 @@ from ems_exec.executor.roster_template import _default_list_at, _merge_template,
 from ems_exec.executor.roster_eval import _select, _series_pairs, _slot_window
 
 
+def _eff_sampling(spec, state, default="hourly"):
+    """Effective bucket sampling + label format for a series slot. The date-control RESAMPLE (state['sampling'], set
+    only on an explicit /api/frame user pick) OVERRIDES the recipe's fixed sampling — so a 'this month' view buckets
+    DAILY (~30 date-labeled points) instead of ~700 hourly points crammed into an unreadable x-axis (the timeline
+    ignored the resample entirely before). Returns (sampling, label_fmt|None): a coarse pick also swaps the HH:MM
+    label for a 'MMM DD' date so the axis reads by day; None keeps the recipe's own format (hourly view unchanged)."""
+    samp = spec.get("sampling") or default
+    if state.get("window_explicit") and state.get("sampling"):
+        samp = state["sampling"]
+    coarse = str(samp).strip().lower() in ("day", "daily", "week", "weekly", "month", "monthly")
+    return samp, ("MMM DD" if coarse else None)
+
+
 def _series_slot(payload, spec, state, default_payload):
     """The member-rolled BUCKETED value array at the slot — the per-bucket fold (`reduce`: sum_magnitude | mean, the
     same quantity rule as the aggregate row) of ONE recipe-declared `column` across the selected members' OWN bucketed
@@ -38,9 +51,10 @@ def _series_slot(payload, spec, state, default_payload):
         _series_multi_slot(payload, spec, state, default_payload)   # multi-KEY per-bucket points (energy trend)
         return
     win = _slot_window(spec, state)
+    _samp, _lf = _eff_sampling(spec, state)
     series = _members.bucketed_rolled_members(_series_pairs(spec, state),
                                               spec.get("column"), win,
-                                              sampling=spec.get("sampling") or "hourly",
+                                              sampling=_samp,
                                               reduce=spec.get("reduce") or "sum_magnitude")
     for st in (spec.get("stats") or []):                            # derived scalars over a rolled series
         if isinstance(st, dict):
@@ -52,7 +66,7 @@ def _series_slot(payload, spec, state, default_payload):
         v_key = spec["value_key"] if "value_key" in spec else "value"
         els = []
         for pt in series:
-            el = {t_key: _bindings.format_ts(pt.get("t"), spec.get("t_fmt"))}
+            el = {t_key: _bindings.format_ts(pt.get("t"), _lf or spec.get("t_fmt"))}
             if v_key:
                 el[v_key] = pt.get("value")
             els.append(el)
@@ -109,11 +123,12 @@ def _series_multi_slot(payload, spec, state, default_payload):
         role_filter / sampling   the member scope + bucket granularity.
     Every point is template-cloned onto the DEFAULT point chrome so unbound keys keep their typed placeholders. Honest
     per-leaf null throughout: a bucket a key never reported → null for THAT key only. [] points when no member reports."""
+    _samp, _lf = _eff_sampling(spec, state, "day")
     rolled = _members.bucketed_multi(state["pairs"], spec.get("columns"), _slot_window(spec, state),
-                                     sampling=spec.get("sampling") or "day",
+                                     sampling=_samp,
                                      role_filter=spec.get("role_filter") or "load")
     label_key = spec.get("label_key") or "label"
-    label_fmt = spec.get("label_fmt")
+    label_fmt = _lf or spec.get("label_fmt")
     derived = spec.get("derived") if isinstance(spec.get("derived"), dict) else {}
     els, labels, totals_by_label, key_totals = [], [], [], {}
     for pt in rolled:
@@ -267,7 +282,7 @@ def _series_split_slot(payload, spec, state, default_payload):
     LAST real bucket (honest-null when the series is dark), matched by the legend entry's own key_field."""
     scope_pairs = _select(spec, state, role_filter=spec.get("role_filter") or "load")
     column = spec.get("column")
-    sampling = spec.get("sampling") or "hourly"
+    sampling, _lf = _eff_sampling(spec, state)
     reduce = spec.get("reduce") or "sum_magnitude"
     ndigits = spec.get("ndigits")
     t_key = spec.get("t_key") or "label"
@@ -300,7 +315,7 @@ def _series_split_slot(payload, spec, state, default_payload):
 
     els = []
     for t in order:
-        el = {t_key: _bindings.format_ts(t, spec.get("t_fmt"))}
+        el = {t_key: _bindings.format_ts(t, _lf or spec.get("t_fmt"))}
         for sd in series_defs:
             key = sd.get("key")
             if key is None:
