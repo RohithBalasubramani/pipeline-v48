@@ -20,13 +20,11 @@ const num = (v: unknown) => {
   return Number.isFinite(n) ? n : 0;
 };
 
-// COMPARISON TITLE [sections]: a split card must READ as a comparison — inject the section tokens into the header
-// ("Event Timeline · 1A vs 1B at Today"). toks are the real bus-section tokens (executor-stamped); no toks → the
-// plain title, so a non-compare render is byte-identical.
-const cmpTitle = (prefix: any, connector: any, label: any, toks: string[]) => {
-  const secs = (toks ?? []).filter(Boolean);
-  const mid = secs.length ? ` · ${secs.join(" vs ")}` : "";
-  return `${prefix ?? ""}${mid}${connector ?? ""}${label ?? ""}`;
+// CARD TITLE — the AI OWNS it. Just `titlePrefix + connector + period.label`, exactly like the original card; Layer 2
+// names the comparison in its own titlePrefix (prompt ★ rule), the host never injects "· 1A vs 1B" (that doubled the
+// AI's own heading). `toks` unused — kept in the signature so callers need no change.
+const cmpTitle = (prefix: any, connector: any, label: any, _toks?: string[]) => {
+  return `${prefix ?? ""}${connector ?? ""}${label ?? ""}`;
 };
 
 // SECTION LEGEND [sections]: a swatch+label row the section cards render themselves (ComparisonRadarChart ships no

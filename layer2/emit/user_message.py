@@ -257,6 +257,10 @@ def _build(card_in, *, oversize=False):
                   "  · every roster ELEMENT slot: keep the recipe and ADD \"section\": {\"a\":\"section\",\"b\":\"attr\"} "
                   "so each row/spoke declares its section; morph pres columns with {\"id\":\"section\",\"header\":\"Sec\"} "
                   "when the card's columns are payload-driven.",
+                  f"  · NAME THE COMPARISON IN THE TITLE: morph the card's title heading (pres.titlePrefix, or the "
+                  f"title/cardTitle leaf this card uses) so the header itself reads as a {' vs '.join(_cmp_secs)} "
+                  f"comparison — e.g. \"{_cmp_secs[0]} vs {_cmp_secs[-1]} — <the card's own name>\". The host does NOT "
+                  f"add any comparison suffix; the title is entirely yours. List the changed path in _morphed.",
                   "  · non-roster leaves stay unchanged; a section with no members in the facts is never invented."]
     parts += [
         "",
