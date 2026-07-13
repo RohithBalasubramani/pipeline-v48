@@ -5,7 +5,6 @@ each asset reuse ITS class recipe (rebind_consumer) + fill from ITS OWN neuract 
 TAG every card by asset → concat into ONE response the FE groups by `card.asset`. The single-asset build_response is
 NEVER touched: N==1 stays on that path byte-for-byte; this file is only reached when the picker returns 2+ ids. [atomic]
 """
-from obs.errfmt import record_exc as _record_exc   # failures-channel telemetry [EH F4]
 import time
 
 from config.app_config import cfg
@@ -13,81 +12,6 @@ from run.harness import run_pipeline_multi
 from host.assemble import assemble_cards
 from host.rebind_consumer import rebind_consumer
 from host.asset_lanes import resolve_assets
-
-
-def natural_compare_ids(prompt):
-    """NATURAL COMPARE auto-resolution [multi-asset gap fix]: a 'compare A and B' prompt that spells out 2+ SPECIFIC
-    full asset names ('GIC-01-N3-UPS-01 and GIC-02-N5-UPS-04') carries no picker asset_ids, so the single-asset resolver
-    sees both UPS tokens as one ambiguous set and dead-ends in the single picker (0 cards). This splits the prompt into
-    per-name sub-prompts and resolves EACH through the SAME 1b resolver (layer1b.compare.resolve_compare, concurrently);
-    when 2+ names pin CONFIDENTLY (exact unique meter, no picker) it returns those mfm_ids so the caller routes them
-    through build_response_multi — the identical author-once-per-class compare the picker's multi-select takes.
-
-    Returns [] (single-asset path unchanged) when: the prompt names <2 specific assets (a single full name, or bare
-    homonyms like 'UPS-01' that only match a class+unit token), OR any named asset stays AMBIGUOUS on its own sub-prompt
-    (that name must surface its OWN picker, not be auto-pinned to a wrong homonym). Gated by multi_asset.enabled. Purely
-    additive: the single-asset branch is byte-identical whenever this returns [].
-
-    FAIL-OPEN BOUNDARY: this is an OPTIONAL pre-flight enhancer that runs BEFORE build_response's protected layers —
-    any exception here (e.g. the registry has_data probe re-raising a :5433 outage) must NOT 500 the request. It
-    fail-opens to [] so the request proceeds down the single path, where the SAME outage is caught by the degrade gate
-    and served as the honest data_unavailable terminal (200 + reason), never a raw error page."""
-    if not bool(cfg("multi_asset.enabled", True)):
-        return []
-    # STAGE TELEMETRY [silent-bail fix]: every decision this gate makes is now attributable in the run log — a compare
-    # that silently degrades to single (rows<2 / ambiguous member / <2 confident) previously left NO trace, making a
-    # live mis-route a forensic dig through polluted AI logs. stderr keeps the fail-open line for exceptions.
-    def _tel(**kw):
-        try:
-            import sys
-            sys.stderr.write("[natural_compare] " + " ".join(f"{k}={v}" for k, v in kw.items())[:300] + "\n")
-        except Exception:
-            pass
-    try:
-        from layer1b.resolve.asset_candidates import asset_candidates
-        from layer1b.compare.detect import named_full_rows
-        cands = asset_candidates()                        # ONE probe shared by detection + every sub-resolve
-        rows = named_full_rows(prompt, cands)
-        if len(rows) < 2:
-            # BUS-SECTION COMPARE [sections]: 'compare pcc 1a and pcc 1b' — BOTH aliases are the SAME canonical panel
-            # (A/B are its bus sections), so detection honestly collapses to ONE row. When the prompt names >=2
-            # DIFFERENT sections of that one panel, the user is comparing SECTIONS: two lanes of the same panel, each
-            # fan-out filtered to its section's members (equipment.mfm.section). Deterministic — no AI resolution
-            # needed (the aliases already pin the panel).
-            # BUS-SECTION MENTIONS OF ONE PANEL ['compare pcc 1a and pcc 1b'] stay on the SINGLE page [user 2026-07-12:
-            # "2 sections should never be there"]: the panel page's cards are MEMBER-driven (both sections' bays are
-            # its members), so the honest render is ONE page over the union — the in-chart per-section overlay
-            # (per-section series, section-coloured members) is the roster-interpreter follow-up, not a page split.
-            if len(rows) == 1:
-                from layer1b.resolve.asset_resolve import _pcc_section_index
-                from layer1b.compare.discriminators import _norm
-                p = _norm(prompt)
-                panel_name = str(rows[0][1])
-                secs = sorted({sec for al, (pn, sec) in _pcc_section_index().items()
-                               if pn == panel_name and al in p})
-                if len(secs) >= 2:
-                    _tel(decision="single_page_section_union", panel=panel_name[:24], sections=secs)
-            if "compare" in str(prompt).lower():          # only narrate prompts that LOOK like compares (low noise)
-                _tel(decision="single", rows=len(rows), detected=[str(r[1])[:30] for r in rows])
-            return []
-        from layer1b.compare.resolve_names import resolve_compare
-        r = resolve_compare(prompt, cands)
-        confident = r.get("confident") or []
-        ambiguous = r.get("ambiguous") or []
-        # EVERY named asset must pin (no ambiguous name) AND 2+ confident — otherwise the honest answer is the single
-        # picker for the unresolved name, not a partial auto-compare that silently drops it.
-        if ambiguous or len(confident) < 2:
-            _tel(decision="single", rows=len(rows), confident=len(confident),
-                 ambiguous=[str(a)[:30] for a in ambiguous],
-                 hows=[f"{str(x.get('name'))[:24]}:{x.get('how')}" for x in (r.get("resolutions") or [])])
-            return []
-        _tel(decision="compare", rows=len(rows), confident=len(confident))
-        return confident
-    except Exception as e:
-        import sys
-        sys.stderr.write(f"[natural_compare] fail-open to single path ({type(e).__name__}: {str(e)[:120]})\n")
-        _record_exc("host.multi_asset.natural_compare", e)
-        return []
 
 
 def build_response_multi(prompt, asset_ids, date_window=None):

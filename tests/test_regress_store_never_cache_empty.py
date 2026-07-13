@@ -1,17 +1,17 @@
-"""tests/test_regress_store_never_cache_empty.py — pins the two cache-poison legs of audit fix 12 (2026-07-12):
+"""tests/test_regress_store_never_cache_empty.py — pins the cache-poison legs of audit fix 12 (2026-07-12):
 
   · host/payload_store: a DB-ERROR load of _skeleton_payload/_raw_default_payload must NOT be cached (pinning
     None demoted the card to the generic HonestBlank tier / lost the executor's shape oracle for the process
     life); the next call RETRIES and a successful read (row present OR genuinely absent) IS cached.
-  · layer1b/compare/detect._panel_alias_index: a mid-stream read failure must never PUBLISH the partial index
-    (the old code pinned it for the process life); the next call re-reads and self-heals.
+
+  (The former layer1b/compare/detect._panel_alias_index leg was retired with the lexical compare detector —
+  AI-first compare, 2026-07-14; the same never-publish-partial pattern still guards asset_resolve._pcc_alias_index.)
 
 Offline + deterministic — every leg monkeypatches `data.db_client.q` (the seam both modules import inside the
 function, so it binds at call time); no sockets. [audit_prodready TC-3]"""
 import json
 
 import host.payload_store as PS
-import layer1b.compare.detect as DT
 
 
 def _q_down(db, sql):
@@ -59,29 +59,3 @@ def test_raw_default_db_error_is_not_cached_and_retries(monkeypatch):
     out = PS._raw_default_payload(4242)
     assert out == {"title": "Card", "series": [1, 2]}
     assert PS._RAW_DEFAULT_CACHE[4242] == out
-
-
-# ── layer1b/compare/detect._panel_alias_index (publish-only-on-success) ──────────────────────────────────────────────
-
-def test_alias_index_partial_read_never_published_then_self_heals(monkeypatch):
-    monkeypatch.setattr(DT, "_ALIAS_IDX", {})
-
-    def q_partial(db, sql):                                      # generator: one good row, then the tunnel flaps
-        yield ("PCC-Panel-1", "pcc-1a")
-        raise RuntimeError("server closed the connection unexpectedly")
-
-    monkeypatch.setattr("data.db_client.q", q_partial)
-    assert DT._panel_alias_index() == {}                         # fail-open for THIS call...
-    assert DT._ALIAS_IDX == {}                                   # ...and the PARTIAL index was never published
-    rows = [("PCC-Panel-1", "pcc-1a"), ("PCC-Panel-1", "panel-1"), ("PCC-Panel-2", "panel-2a")]
-    calls = {"n": 0}
-
-    def q_ok(db, sql):
-        calls["n"] += 1
-        return rows
-
-    monkeypatch.setattr("data.db_client.q", q_ok)
-    idx = DT._panel_alias_index()                                # DB back → the next call re-reads (self-heals)
-    assert idx[DT._norm("PCC-Panel-1")] == ["pcc-1a", "panel-1"]
-    assert idx[DT._norm("PCC-Panel-2")] == ["panel-2a"]
-    assert DT._panel_alias_index() == idx and calls["n"] == 1    # the FULL read published once → cached

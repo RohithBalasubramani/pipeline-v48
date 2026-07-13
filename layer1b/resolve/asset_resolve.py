@@ -271,6 +271,21 @@ def resolve_asset(prompt, asset_id_override=None, cands=None):
     # list (the ambiguous branch below). Homonym recall/precision is an AI-GROUNDING concern (candidate context + the
     # asset_system.md confident-vs-ambiguous contract), never a lexical override. colliding_rows/uniquely_named are no
     # longer consulted here. [AI-first: no deterministic list to the end user]
+    # ★ AI COMPARE SET [AI-first compare — the lexical detector is DELETED]: the model confidently named 2+ DISTINCT
+    # renderable assets, so IT decided this is a compare. The answer schema always returned `names` as a LIST; the old
+    # deterministic `named_full_rows` substring detector (which missed elided lists like 'pcc 1 and 2' — the "2" never
+    # sat next to "pcc") is gone. Surface every distinct pick as `compare_ids` so the host short-circuits to the author-
+    # once-per-class multi assembler. `asset`=picks[0] stays the primary pin, so a single-asset consumer of the outcome
+    # (or a host that ignores compare_ids) is byte-identical and still renders ONE real panel — never a crash.
+    if confident:
+        _distinct, _seen = [], set()
+        for p in picks:
+            if not _is_ghost(p) and p[0] not in _seen:
+                _seen.add(p[0]); _distinct.append(p)
+        if len(_distinct) >= 2:
+            return _finish({"asset": confident_pin(_distinct[0], cands), "how": "AI", "candidates": [],
+                            "compare_ids": [p[0] for p in _distinct]})
+
     if confident and picks and not _is_ghost(picks[0]):             # the model confidently pinned a RENDERABLE asset...
         asset = confident_pin(picks[0], cands)
         # ...has data? render. else NO-DATA (carrying onward-pick alternatives so the picker is never a dead end).

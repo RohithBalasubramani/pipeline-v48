@@ -61,6 +61,15 @@ from host.notes import window_from_preset as _window_from_preset   # noqa: E402,
 def build_response(prompt, asset_id=None, date_window=None):
     t0 = time.time()
     out = run_pipeline(prompt, asset_id=asset_id)
+    # ★ AI COMPARE HANDOFF [AI-first compare]: 1b's resolver confidently named 2+ distinct assets and run_pipeline
+    # short-circuited before Layer 2 (out["compare_ids"]). Route to the author-once-per-class multi assembler — the SAME
+    # path the multi-select picker takes — so a typed 'compare pcc 1 and 2' renders per-asset groups. A single-asset run
+    # never carries compare_ids, so this branch never fires on the single path (byte-identical). asset_id (a picker
+    # single-repick) pins via pinned_skip → no compare_ids → single, as before.
+    _cids = [i for i in (out.get("compare_ids") or []) if i is not None]
+    if len(_cids) >= 2:
+        from host.multi_asset import build_response_multi
+        return build_response_multi(prompt, _cids, date_window=date_window)
     l1a = out.get("layer1a") or {}
     l1b = out.get("layer1b") or {}
     val = out.get("validation") or {}
@@ -390,16 +399,12 @@ def handle_run(req):
                 _stamp_trace_id(resp)                     # BEFORE the dump — same OBS-4 join as the dashboard leg
                 _dump_response(resp)
                 return 200, resp
-            # NATURAL COMPARE [multi-asset gap fix]: a fresh 'compare A and B' prompt naming 2+ SPECIFIC full asset
-            # names carries no picker ids, so the single-asset resolver would dead-end in the single picker. Split +
-            # resolve EACH name through the SAME 1b resolver; if 2+ pin confidently, promote to the picker's compare
-            # path (build_response_multi) with those ids. Only reached for a FRESH prompt (no asset_id/asset_ids from
-            # the FE picker) — a homonym or single name returns [] and the single-asset path stays byte-identical.
-            from host.multi_asset import natural_compare_ids
-            _nat_ids = natural_compare_ids(prompt)
-            if _nat_ids:
-                asset_ids = _nat_ids
-                multi = True
+            # NATURAL COMPARE [AI-first, 2026-07-14]: the OLD deterministic natural_compare_ids pre-flight (lexical
+            # named_full_rows substring detection) is DELETED — it missed elided lists ('pcc 1 and 2' → the "2" never
+            # sat next to "pcc") that the AI resolver reads correctly. A fresh 'compare A and B' prompt is now detected
+            # INSIDE build_response: the 1b AI resolver names 2+ distinct assets, run_pipeline short-circuits before
+            # Layer 2 with out["compare_ids"], and build_response hands off to build_response_multi. Zero extra LLM call,
+            # single path byte-identical. The picker's explicit asset_ids (below) still routes multi directly.
         if multi:
             from host.multi_asset import build_response_multi
             resp = build_response_multi(prompt, asset_ids, date_window=date_window)

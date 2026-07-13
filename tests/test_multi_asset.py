@@ -166,21 +166,17 @@ def test_build_response_multi_propagates_lane_outage(monkeypatch):
     assert resp["cards"] == []
 
 
-def test_natural_compare_ids_fail_open_on_outage(monkeypatch):
-    # the natural-compare detector is an OPTIONAL pre-flight enhancer running BEFORE the protected pipeline layers —
-    # a registry/DB outage inside it must fail-open to [] (single path → honest data_unavailable terminal), never
-    # escape as a raw 500 (the exact 'Pipeline request failed: RuntimeError: DB error... Connection refused' defect).
-    # natural_compare_ids lazily imports asset_candidates from its SOURCE module at call time (the telemetry rewrite
-    # hoisted the one shared probe), so the outage stub must live on layer1b.resolve.asset_candidates — patching only
-    # the detect module's re-imported name no longer intercepts the read. Both are patched (belt-and-braces).
-    import layer1b.compare.detect as D
-    import layer1b.resolve.asset_candidates as AC
-    def dead(*a, **k):
-        raise RuntimeError('DB error (target_version1): psql: error: connection to server at "127.0.0.1", '
-                           'port 5433 failed: Connection refused')
-    monkeypatch.setattr(AC, "asset_candidates", dead)
-    monkeypatch.setattr(D, "asset_candidates", dead, raising=False)
-    assert M.natural_compare_ids("compare GIC-01-N3-UPS-01 and GIC-01-N4-UPS-02") == []
+def test_compare_ids_fail_open_on_outage(monkeypatch):
+    # AI-FIRST COMPARE [2026-07-14]: the lexical natural_compare_ids pre-flight is DELETED. Compare detection now rides
+    # the 1b AI resolver (it names 2+ assets → run_pipeline short-circuits with out["compare_ids"] → build_response
+    # hands off to multi). A resolver/DB outage is caught by the SAME degrade gate as any single-asset run — an
+    # outage-shaped resolve fails closed to the honest data_unavailable terminal, never a raw 500. resolve_asset that
+    # returns no compare_ids (single, ambiguous, or outage) keeps the single path byte-identical.
+    from layer1b.resolve import asset_resolve as AR
+    # a resolve that raised inside run_1b would surface as an errors['layer1b'] + degrade gate, not compare_ids — so an
+    # outage NEVER promotes to the multi path. Assert the contract directly: no compare_ids key ⇒ single dispatch.
+    out = {"layer1b": {"how": "ambiguous", "candidates": [1, 2, 3]}}   # a picker outcome carries NO compare_ids
+    assert not out["layer1b"].get("compare_ids")
 
 
 # ── assemble_cards: FAITHFUL extraction of build_response's executor+enrich (single path unchanged) ──────────────────

@@ -165,7 +165,6 @@ def host_offline(monkeypatch, knowledge_offline):
 
     monkeypatch.setattr(HS, "build_response", fake_build_response)
     monkeypatch.setattr(HS, "_dump_response", lambda resp: None)
-    monkeypatch.setattr(MA, "natural_compare_ids", lambda prompt: [])
     monkeypatch.setattr(MA, "build_response_multi",
                         lambda *a, **k: (_ for _ in ()).throw(AssertionError("multi-asset path must not run")))
     monkeypatch.setattr(OS, "stage", lambda *a, **k: None)

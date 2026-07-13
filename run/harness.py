@@ -287,6 +287,20 @@ def _run_pipeline_inner(prompt, *, asset_id=None, db=None, run_id=None, layer1a=
               how=l1b.get("how"), class_prior=l1b.get("class_prior"), class_mismatch=l1b.get("class_mismatch"),
               contract_problems=l1b.get("contract_problems") or [])
 
+    # ★ AI COMPARE SHORT-CIRCUIT [AI-first compare]: 1b's resolver confidently named 2+ DISTINCT assets (l1b.compare_ids)
+    # — a MULTI-asset compare, not a single render. Return BEFORE the single-asset granularity-reconcile / validate /
+    # Layer-2 emit (a ~20s emit on picks[0] alone would be wasted; the multi assembler authors ONCE PER CLASS). The host
+    # reads out["compare_ids"] and routes to build_response_multi, reusing nothing single. A single-asset run never
+    # carries compare_ids → byte-identical single path. Never on a shared-template lane (already inside a multi run).
+    if out["layer1b"] is not None and not _shared_template:
+        _cids = [i for i in (l1b.get("compare_ids") or []) if i is not None]
+        if len(_cids) >= 2:
+            out["compare_ids"] = _cids
+            stage(run_id, "1b_compare", n=len(_cids), ids=_cids)
+            record_notes(run_id, out["notes"])
+            _replay_pipeline_out(out)
+            return out
+
     if out["layer1a"] is not None and out["layer1b"] is not None:
         # GRANULARITY RECONCILE (post-resolution safety-net): 1a routed the shell from prompt TEXT, blind to the asset's
         # has_feeders; if the routed page's granularity contradicts the resolved asset (single meter on a panel-aggregate

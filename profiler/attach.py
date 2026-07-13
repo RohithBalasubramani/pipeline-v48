@@ -127,10 +127,9 @@ def install():
     harness = importlib.import_module("run.harness")          # binds run_1a/run_1b/run_2_all/run_validate wrappers
     _wrap(harness, "run_pipeline", "pipeline_total", set_current=True)
 
-    multi = importlib.import_module("host.multi_asset")       # binds assemble/resolve wrappers
-    _wrap(multi, "natural_compare_ids", "asset_resolution", set_current=True,
-          meta_fn=lambda a, kw: {"note": "natural_compare"})
-
+    importlib.import_module("host.multi_asset")               # binds assemble/resolve wrappers (compare detection is
+    # AI-first now: the 1b resolver names 2+ assets → run_pipeline short-circuits → build_response hands off to multi;
+    # the old lexical natural_compare_ids pre-flight span is gone [AI-first compare, 2026-07-14]).
     server = importlib.import_module("host.server")           # binds run_pipeline + fill_one_card wrappers
     return server
 

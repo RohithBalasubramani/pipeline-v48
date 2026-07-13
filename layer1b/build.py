@@ -42,6 +42,11 @@ def _run_1b(prompt, asset_id=None):
     if asset:
         basket = expand_basket_with_siblings(basket, asset)
     out = build_layer1b_output(resolved, basket)
+    # AI COMPARE SET [AI-first compare]: carry the resolver's compare_ids (2+ distinct assets the model named) onto the
+    # 1b output — build_layer1b_output rebuilds a fixed-key dict, so this additive field would otherwise be dropped and
+    # run_pipeline's compare short-circuit would never see it. Present only for a real compare; absent = single (no-op).
+    if resolved.get("compare_ids"):
+        out["compare_ids"] = resolved["compare_ids"]
     # CONTRACT TELEMETRY (annotate-only, never blocks — verdicts are telemetry): surface integrity violations
     # ('ambiguous but no candidate_list', 'resolved asset but empty column_basket') in the output + failure log
     # instead of shipping them unnoticed. [hardening: unused validator wired]
