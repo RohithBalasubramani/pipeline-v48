@@ -147,18 +147,22 @@ def _sub_period(text, label):
 
 
 def _fill_period_labels(payload, label):
-    """Fill EMPTY `<subtree>.period.label` leaves with the operative window label ('Today' / 'Last 7 Days') — the
-    CMD_V2 in-card title is `pres.titlePrefix + connector + period.label`, and the seed-strip resets that label to ''
-    as a data key, so the card header rendered 'Current Distribution at ' (dangling). CHROME ONLY, never a reading:
-    only an empty/None label is filled; a REAL selected-bucket label the executor wrote stays untouched. In-place,
-    fail-open."""
+    """Set `<subtree>.period.label` to the operative window label ('Today' / 'Last 7 Days') — the CMD_V2 in-card title
+    is `pres.titlePrefix + connector + period.label`, so this label IS the time period the header shows, and the host
+    (which knows the window) OWNS it. Fills an empty label (the seed-strip resets it to ''), AND overwrites a label the
+    AI wrongly authored as the SECTION-COMPARE string (a ' vs ' heading like '1A vs 1B' — period.label is the TIME
+    window, not the comparison; the host title already prepends '· 1A vs 1B', so an AI '1A vs 1B' here doubled it to
+    '… · 1A vs 1B at 1A vs 1B'). A REAL time label (a bucket the executor wrote) has no ' vs ' and is left untouched.
+    CHROME ONLY, never a reading. In-place, fail-open."""
+    def _is_authoritative(v):                                     # empty, or the AI's section-vs corruption
+        return v in ("", None) or (isinstance(v, str) and " vs " in v)
     try:
         stack = [payload]
         while stack:
             node = stack.pop()
             if isinstance(node, dict):
                 per = node.get("period")
-                if isinstance(per, dict) and "label" in per and (per.get("label") in ("", None)):
+                if isinstance(per, dict) and "label" in per and _is_authoritative(per.get("label")):
                     per["label"] = label
                 stack.extend(node.values())
             elif isinstance(node, list):
