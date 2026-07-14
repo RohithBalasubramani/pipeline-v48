@@ -8,10 +8,12 @@ Two kinds of pins:
     the prompt to 'comparepcc1aand1b' which contains 'pcc1a' but NOT 'pcc1b') pinned as xfail(strict=True): the
     T0-9 AI section emission flips these to pass; strict=True makes that flip loud.
 
-Offline: _pcc_section_index is monkeypatched to the real live shape (normalized-alias keys) — no DB, no LLM."""
+Offline: pcc_section_index is monkeypatched to the real live shape (normalized-alias keys) — no DB, no LLM.
+[T0-8] the detectors moved to layer1b/resolve/panel_sections.py (asset_resolve re-exports them byte-compatibly);
+this file patches + calls the new home."""
 import pytest
 
-import layer1b.resolve.asset_resolve as AR
+import layer1b.resolve.panel_sections as AR
 
 
 IDX = {
@@ -25,7 +27,7 @@ IDX = {
 
 @pytest.fixture(autouse=True)
 def _pin_index(monkeypatch):
-    monkeypatch.setattr(AR, "_pcc_section_index", lambda: dict(IDX))
+    monkeypatch.setattr(AR, "pcc_section_index", lambda: dict(IDX))
 
 
 # ── panel_section: the single-section stamp ─────────────────────────────────────────────────────────────────────────

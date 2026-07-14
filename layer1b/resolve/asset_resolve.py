@@ -23,7 +23,6 @@ from layer1b.resolve.pinned_skip import pinned_skip
 from layer1b.resolve.class_from_subject import class_from_subject, candidates_of_class
 from layer1b.resolve.confident_pin import confident_pin
 from layer1b.resolve.ambiguous_candidates import ambiguous_candidates
-from layer1b.resolve.member_scope import member_scope
 from layer1b.resolve.empty_fallback import empty_fallback
 from layer1b.resolve.answer_schema import asset_answer_schema
 from llm.transient_retry import retry_transient_result
@@ -47,43 +46,11 @@ def _is_ghost(row):
     return len(row) > 9 and not row[9]
 
 
-def _pcc_section_index():
-    """{normalized_alias: (canonical_panel_name, section)} for SECTIONED aliases only ('pcc-1b' → ('PCC-Panel-1','B')).
-    The A/B are the panel's BUS SECTIONS — one registry row, two member sets (equipment.mfm.section). {} fail-open."""
-    try:
-        from data.db_client import q
-        return {_norm(a): (pn, str(s).strip().upper())
-                for a, pn, s in q("cmd_catalog",
-                                  "SELECT alias, panel_name, section FROM pcc_panel_alias WHERE section IS NOT NULL")
-                if a and pn and s}
-    except Exception:
-        return {}
-
-
-def panel_section(prompt, panel_name):
-    """The BUS SECTION the PROMPT addresses for `panel_name` — 'A'/'B' when EXACTLY ONE of that panel's sectioned
-    aliases appears ('voltage for pcc-1b' → 'B'), None otherwise (unsectioned mention, or BOTH sections named — the
-    compare path handles the two-section case). Deterministic prompt-derived stamp, the member_scope pattern. [sections]"""
-    p = _norm(prompt)
-    if not p or not panel_name:
-        return None
-    found = set()
-    for al, (pn, sec) in _pcc_section_index().items():
-        if pn == panel_name and al in p:
-            found.add(sec)
-    return next(iter(found)) if len(found) == 1 else None
-
-
-def compare_sections(prompt, panel_name):
-    """The 2+ BUS SECTIONS the PROMPT compares for `panel_name` — sorted ['A','B'] when TWO OR MORE of that panel's
-    sectioned aliases appear ('compare pcc 1a and pcc 1b'), None otherwise. The deterministic trigger the Layer-2 user
-    message turns into the ★ BUS-SECTION COMPARE OVERLAY directive (the AI authors the per-section split; this stamp
-    only states the FACT that the prompt is a section compare). [sections overlay]"""
-    p = _norm(prompt)
-    if not p or not panel_name:
-        return None
-    found = {sec for al, (pn, sec) in _pcc_section_index().items() if pn == panel_name and al in p}
-    return sorted(found) if len(found) >= 2 else None
+# BUS-SECTION facts + the ONE stamping site moved to layer1b/resolve/panel_sections.py [T0-8, atomic-structure].
+# Byte-compat re-exports: _alias_rescue + external readers keep their names; the STAMPING now goes through
+# panel_sections.stamp_section_facts (the pinned path and _finish used to duplicate it inline).
+from layer1b.resolve.panel_sections import (  # noqa: E402,F401
+    pcc_section_index as _pcc_section_index, panel_section, compare_sections, stamp_section_facts)
 
 
 def _pcc_alias_index():
@@ -117,15 +84,7 @@ def resolve_asset(prompt, asset_id_override=None, cands=None):
         # the pinned path returns BEFORE _finish, so stamp the PANEL READING DIRECTION here too — the ORIGINAL prompt
         # ('incomer PCC-1A') still drives member_scope on the picker-repick, so a picked panel honors incomer vs
         # outgoing instead of silently defaulting to outgoing. [panel_overview — pinned-path parity]
-        _pa = pinned.get("asset")
-        if isinstance(_pa, dict):
-            _pa["member_scope"] = member_scope(prompt)
-            _sec = panel_section(prompt, _pa.get("name"))
-            if _sec:
-                _pa["section"] = _sec                       # bus-section view: 'pcc-1b' rolls SECTION B members only
-            _cmp = compare_sections(prompt, _pa.get("name"))
-            if _cmp:
-                _pa["compare_sections"] = _cmp              # section COMPARE fact → the L2 overlay directive [sections]
+        stamp_section_facts(pinned.get("asset"), prompt)    # AI-free pinned path: detector-only stamps [sections]
         return pinned
 
     # CLASS PRIOR: infer the equipment class from the prompt subject/metric and narrow the listing shown to the AI, so
@@ -202,18 +161,10 @@ def resolve_asset(prompt, asset_id_override=None, cands=None):
         outcome["class_prior"] = prior
         outcome["llm_failed"] = llm_failed
         outcome["class_mismatch"] = class_mismatch(prior, outcome.get("asset"), outcome.get("candidates"))
-        # PANEL READING DIRECTION [panel_overview]: stamp the prompt's incomer-vs-outgoing choice on the resolved asset
-        # so the Layer-2 PANEL MEMBERS facts + the panel-aggregate fill read ONE decision. Default 'outgoing' (the fed
-        # feeders/bays) — the single-asset render is byte-identical (the flag is consulted only for has_feeders panels).
-        asset = outcome.get("asset")
-        if isinstance(asset, dict):
-            asset["member_scope"] = member_scope(prompt)
-            _sec = panel_section(prompt, asset.get("name"))
-            if _sec:
-                asset["section"] = _sec                     # bus-section view: 'pcc-1b' rolls SECTION B members only
-            _cmp = compare_sections(prompt, asset.get("name"))
-            if _cmp:
-                asset["compare_sections"] = _cmp            # section COMPARE fact → the L2 overlay directive [sections]
+        # PANEL READING DIRECTION + BUS-SECTION facts [panel_overview/sections]: ONE stamping site
+        # (panel_sections.stamp_section_facts) — member_scope + section + compare_sections; the pinned path calls the
+        # same helper (parity by construction). Default 'outgoing'; single-asset render byte-identical.
+        stamp_section_facts(outcome.get("asset"), prompt)
         return outcome
 
     # listing has NO id column: the model must reason over name/class/load_group only, never registry ids. The
