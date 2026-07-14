@@ -44,11 +44,37 @@ def test_electrical_quantities_never_match():
 
 
 def test_vocab_is_db_driven_with_code_default(monkeypatch):
-    monkeypatch.setattr(ng, "cfg", _cfg_returning({"validate.event_semantic_tokens": ["_burst"]}))
+    """The token vocab AND the event-name pattern are INDEPENDENTLY DB-tunable: with the vocab overridden to
+    ['_burst'] alone, 'sag_event_active' would still hit the pattern channel (_event_active$) -- so the pattern
+    row is ALSO overridden to an inert regex, proving each channel answers only to its own row."""
+    monkeypatch.setattr(ng, "cfg", _cfg_returning({"validate.event_semantic_tokens": ["_burst"],
+                                                   "validation.event_name_pattern": r"_no_such_suffix$"}))
     assert event_semantic_tokens() == ["_burst"]
     assert is_event_semantic("sag_burst") and not is_event_semantic("sag_event_active")
-    monkeypatch.setattr(ng, "cfg", _cfg_returning({}))             # no row → code default
+    monkeypatch.setattr(ng, "cfg", _cfg_returning({}))             # no row -> code default
     assert event_semantic_tokens() == list(ng.DEFAULT_EVENT_TOKENS)
+
+
+def test_event_name_pattern_fact_channel(monkeypatch):
+    """The basket dictionary's own event-name rule (config.validation.EVENT_NAME_PATTERN, DB row
+    validation.event_name_pattern) is a SEPARATE signal from the token vocab: 'thd_compliance_ieee519' carries
+    NO vocab token (_event_/_count/_active/_flag) yet is a 0/1 fact flag -- the pattern channel catches it."""
+    monkeypatch.setattr(ng, "cfg", _cfg_returning({}))             # no DB rows -> code defaults for BOTH channels
+    assert is_event_semantic("thd_compliance_ieee519")             # pattern-only hit (absent from the token vocab)
+    monkeypatch.setattr(ng, "cfg", _cfg_returning({"validate.event_semantic_tokens": ["_burst"]}))
+    assert is_event_semantic("thd_compliance_ieee519")             # survives a token-vocab override -- independent channel
+    monkeypatch.setattr(ng, "cfg", _cfg_returning({}))
+    for col in ("voltage_avg", "active_power_total_kw"):           # electrical never matches EITHER channel
+        assert not is_event_semantic(col, dtype="float64"), col
+
+
+def test_malformed_pattern_row_skips_channel_never_widens(monkeypatch):
+    """A fat-fingered regex row (re.error) skips the pattern channel for that call -- never a crash, never a
+    widened gate; the token channel keeps working untouched."""
+    monkeypatch.setattr(ng, "cfg", _cfg_returning({"validation.event_name_pattern": "(_unclosed"}))
+    assert not is_event_semantic("voltage_avg", dtype="float64")   # gate stays shut on electrical
+    assert not is_event_semantic("thd_compliance_ieee519")         # pattern channel skipped, token vocab has no hit
+    assert is_event_semantic("sag_event_active")                   # token channel unaffected
 
 
 def test_malformed_vocab_row_never_widens_gate(monkeypatch):

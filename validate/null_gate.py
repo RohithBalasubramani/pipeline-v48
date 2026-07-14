@@ -16,13 +16,22 @@ TWO DB-DRIVEN KNOBS (cmd_catalog.app_config via cfg(); seed: db/seed_validate_nu
       NULL = 'no event' ≡ 0, so null-rate sparsity is NORMAL (verdict pass with an informational reason) and the
       'no value in latest row' warn does not apply (a null latest row means 'no event now').
 
+THIRD SIGNAL (T1-4): the basket dictionary's OWN event-name rule -- config.validation.EVENT_NAME_PATTERN (DB row
+validation.event_name_pattern; the same regex layer1b/basket/describe.py stamps kind='event' with) is consulted
+BEFORE the token loop, so a column the dictionary already calls an event fact (thd_compliance_ieee519, *_status)
+gets the same NULL='no event' semantics here without duplicating names into the token vocab. The two channels are
+independently DB-tunable; a malformed pattern row (re.error) skips the channel -- it never widens or crashes the gate.
+
 COERCION BOUNDARY (fence): validate/ applies the null≡0 semantics ONLY to its own verdict statistics
 (coerce_event_nulls below). The actual read-path NULL→0 fill belongs to the EXECUTOR, outside this fence — the
 hook would go in ems_exec/data/neuract.py (the latest/window/bucket readers around _num) and/or
 ems_exec/executor/recipe.py (per-leaf binding), keyed by is_event_semantic(). Electrical quantities are NEVER
 coerced anywhere — a null voltage is NOT 0 V (honest-blank per leaf, as today).
 """
+import re
+
 from config.app_config import cfg
+from config.validation import EVENT_NAME_PATTERN as DEFAULT_EVENT_NAME_PATTERN
 
 _MODES = ("fail", "warn", "off")
 DEFAULT_MODE = "warn"
@@ -50,14 +59,32 @@ def event_semantic_tokens():
     return toks or list(DEFAULT_EVENT_TOKENS)
 
 
+def event_name_rx():
+    """The basket dictionary's event-name rule, compiled: DB row validation.event_name_pattern, else the
+    config.validation.EVENT_NAME_PATTERN default (the SAME rule layer1b/basket/describe.py classifies kind='event'
+    with; one fact, one home). Guarded honest-degrade, mirroring event_semantic_tokens(): a blank/None row falls
+    back to the default pattern; a MALFORMED row (re.error) returns None and the pattern channel is simply skipped
+    for that call -- a fat-fingered regex must never widen the gate onto electrical columns nor crash the verdict."""
+    pat = str(cfg("validation.event_name_pattern", DEFAULT_EVENT_NAME_PATTERN) or "").strip()
+    pat = pat or str(DEFAULT_EVENT_NAME_PATTERN)
+    try:
+        return re.compile(pat)
+    except re.error:
+        return None
+
+
 def is_event_semantic(column, dtype=None):
-    """EVENT/COUNTER/BOOLEAN semantics for a column: NULL means 'no event' (≡ 0), NOT missing data.
-    Signals: the DB-driven name-token vocab (trailing-'_' token → substring, else suffix) OR a boolean dtype.
-    STRICTLY name/dtype semantics — an electrical quantity (voltage/current/power/energy) never matches
-    (verified against the live neuract information_schema: only *_event_*, *_count, *_flag, *_active and
-    boolean status/breaker columns hit)."""
+    """EVENT/COUNTER/BOOLEAN semantics for a column: NULL means 'no event' (== 0), NOT missing data.
+    Signals: the basket dictionary's event-name regex (validation.event_name_pattern -- the rule that already
+    stamps kind='event' at describe time), OR the DB-driven name-token vocab (trailing-'_' token -> substring,
+    else suffix), OR a boolean dtype. STRICTLY name/dtype semantics -- an electrical quantity
+    (voltage/current/power/energy) never matches (verified against the live neuract information_schema: only
+    *_event_*, *_count, *_flag, *_active, *_status, *_compliance_ieee519 and boolean status/breaker columns hit)."""
     name = str(column or "").lower()
     if str(dtype or "").lower().startswith("bool"):
+        return True
+    rx = event_name_rx()
+    if rx is not None and rx.search(name):
         return True
     for t in event_semantic_tokens():
         if (t in name) if t.endswith("_") else name.endswith(t):
