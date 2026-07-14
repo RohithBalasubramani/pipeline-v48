@@ -94,7 +94,7 @@ def _preflight_reroute(out, prompt, db, run_id):
         out["errors"]["preflight_reroute"] = _fmt_exc(e)
 
 
-def _reflect_loop(out, prompt, db, run_id, no_reroute=False):
+def _reflect_loop(out, prompt, db, run_id, no_reroute=False, lane_salt=""):
     """Layer 2; on HARD emit failures (exception/timeout/non-conforming envelope), re-route 1a ONCE with feedback and
     re-run. Saves the first pass's best-effort/substitution notes (loop1) + a persistent-gap note (loop2). Layer 2 is
     the LAST pipeline stage — the per-card DATA fill runs at the HOST via ems_exec.run_card (NO Layer 3).
@@ -109,9 +109,15 @@ def _reflect_loop(out, prompt, db, run_id, no_reroute=False):
       'any_gap'      — legacy behavior (honest answerability-none gaps re-route too); DB-tunable rollback, no code edit.
 
     `no_reroute` (a no_data asset): STILL run Layer 2 to emit the per-leaf-null skeleton, but NEVER re-route — the asset
-    has no data on ANY page, so a re-route only thrashes. The gapped cards honest-blank per-leaf on the requested page."""
+    has no data on ANY page, so a re-route only thrashes. The gapped cards honest-blank per-leaf on the requested page.
+
+    `lane_salt` [multi-lane attribution]: the loop-attempt rid is derived from the PROMPT alone, so two CONCURRENT
+    class lanes (run_pipeline_multi with multi_asset.lane_concurrency on) that both reflect would compute the SAME
+    rid and cross-write ai_<rid>.jsonl / pipeline_<rid>.jsonl + clobber the ai_log run id. Each lane passes its class
+    salt ("class:<cls>:"); the single path passes nothing, so its loop rids are byte-identical to before. The loop
+    rid is telemetry-only — out["run_id"] and record_notes keep the attempt-1 id."""
     for attempt in range(1, _MAX_ATTEMPTS + 1):
-        rid = run_id if attempt == 1 else make_run_id(prompt, salt=f"loop{attempt}")
+        rid = run_id if attempt == 1 else make_run_id(prompt, salt=f"{lane_salt}loop{attempt}")
         if attempt > 1:
             ai_log.set_run_id(rid)
         try:
@@ -190,16 +196,20 @@ def _reflect_loop(out, prompt, db, run_id, no_reroute=False):
             stage(rid, "reflect", loop=attempt, gaps=len(gaps), unresolved=True)  # host still fills best-effort layout
 
 
-def run_pipeline(prompt, *, asset_id=None, db=None, run_id=None, layer1a=None) -> "PipelineResult":
+def run_pipeline(prompt, *, asset_id=None, db=None, run_id=None, layer1a=None, lane_salt="") -> "PipelineResult":
     """OBS boundary — a direct call (CLI / test / sweep) with no active trace mints its OWN trace (kind='cli') and
     closes it on return; under the host the middleware already opened the trace and this is a pass-through. Either
-    way the (deterministic, prompt-hash) run_id binds onto the trace so legacy logs join obs_traces.run_ids."""
+    way the (deterministic, prompt-hash) run_id binds onto the trace so legacy logs join obs_traces.run_ids.
+    `lane_salt` rides down to the reflect loop's per-attempt rid (multi-lane attribution; "" = single path,
+    byte-identical rids)."""
     from obs import trace as obs_trace
     if obs_trace.current() is not None:
-        return _run_pipeline_inner(prompt, asset_id=asset_id, db=db, run_id=run_id, layer1a=layer1a)
+        return _run_pipeline_inner(prompt, asset_id=asset_id, db=db, run_id=run_id, layer1a=layer1a,
+                                   lane_salt=lane_salt)
     obs_trace.new_trace(kind="cli", prompt=prompt, asset_id=asset_id)
     try:
-        out = _run_pipeline_inner(prompt, asset_id=asset_id, db=db, run_id=run_id, layer1a=layer1a)
+        out = _run_pipeline_inner(prompt, asset_id=asset_id, db=db, run_id=run_id, layer1a=layer1a,
+                                  lane_salt=lane_salt)
     except Exception as e:
         try:
             t = obs_trace.current()
@@ -225,7 +235,7 @@ def run_pipeline(prompt, *, asset_id=None, db=None, run_id=None, layer1a=None) -
     return out
 
 
-def _run_pipeline_inner(prompt, *, asset_id=None, db=None, run_id=None, layer1a=None):
+def _run_pipeline_inner(prompt, *, asset_id=None, db=None, run_id=None, layer1a=None, lane_salt=""):
     from obs import trace as obs_trace
     db = db or CMD_CATALOG
     run_id = run_id or make_run_id(prompt)
@@ -374,7 +384,8 @@ def _run_pipeline_inner(prompt, *, asset_id=None, db=None, run_id=None, layer1a=
         # exists to find a page this asset's data CAN answer) is pointless: there is no data on any page. Suppress the
         # re-route for a no_data asset so it lands on the requested page's honest empty skeleton instead of thrashing.
         if asset_pinned and os.environ.get("V48_SKIP_LAYER2") != "1":
-            _reflect_loop(out, prompt, db, run_id, no_reroute=(out["asset_no_data"] or _shared_template))
+            _reflect_loop(out, prompt, db, run_id, no_reroute=(out["asset_no_data"] or _shared_template),
+                          lane_salt=lane_salt)
             # POST-SETTLE PAYLOAD REFRESH [report-staleness, annotate-only]: swaps can change the FINAL card set after
             # the pre-L2 report scored the 1a selection — re-score payload supply-vs-demand keyed by final render id.
             if out.get("layer2") and out.get("validation"):
@@ -400,6 +411,18 @@ def _run_pipeline_inner(prompt, *, asset_id=None, db=None, run_id=None, layer1a=
     return out
 
 
+def _run_lane(prompt, cls, members, db, shared_1a):
+    """ONE class lane of a multi-asset compare — exactly the historical per-class run_pipeline call, factored so the
+    phase-2 fan-out (sequential or run_parallel, per multi_asset.lane_concurrency) runs the identical code. The class
+    salt names the lane's run_id AND rides to the reflect loop (lane_salt) so two concurrently-reflecting lanes can
+    never share a loop-attempt rid."""
+    rep = members[0] or {}
+    return run_pipeline(prompt, asset_id=rep.get("mfm_id"), db=db,
+                        run_id=make_run_id(prompt, salt=f"class:{cls}"),
+                        layer1a=(copy.deepcopy(shared_1a) if shared_1a is not None else None),
+                        lane_salt=f"class:{cls}:")
+
+
 def run_pipeline_multi(prompt, assets, *, db=None):
     """MULTI-ASSET COMPARE [author-once-per-class]: resolve N assets → N groups of cards in ONE run. 1a routes the
     template ONCE (the first class establishes it; every later class LOCKS to it via the layer1a injection); Layer 2
@@ -419,15 +442,36 @@ def run_pipeline_multi(prompt, assets, *, db=None):
     by_class = {}
     for a in (assets or []):
         by_class.setdefault((a or {}).get("class") or "?", []).append(a)
-    groups, shared_1a = [], None
-    for cls, members in by_class.items():
-        rep = members[0] or {}
-        lane = run_pipeline(prompt, asset_id=rep.get("mfm_id"), db=db,
-                            run_id=make_run_id(prompt, salt=f"class:{cls}"),
-                            layer1a=(copy.deepcopy(shared_1a) if shared_1a is not None else None))
-        if shared_1a is None:
-            shared_1a = lane.get("layer1a")                     # the FIRST class ROUTES the template; the rest lock to it
-        groups.append({"class": cls, "lane": lane, "assets": members})
+    items = list(by_class.items())                              # insertion order == first-seen class order (groups order)
+    lanes, shared_1a = {}, None
+    # PHASE 1 — sequential UNTIL a lane yields the shared template (normally the first; a data_unavailable/1a-error
+    # lane may return layer1a=None → keep going sequentially, exactly the historical `if shared_1a is None` rule).
+    i = 0
+    while i < len(items) and shared_1a is None:
+        cls, members = items[i]
+        lanes[cls] = _run_lane(prompt, cls, members, db, shared_1a=None)
+        shared_1a = lanes[cls].get("layer1a")                   # the FIRST class ROUTES the template; the rest lock to it
+        i += 1
+    # PHASE 2 — every remaining lane injects deepcopy(shared_1a): independent of each other, so they may run
+    # CONCURRENTLY when the DB knob multi_asset.lane_concurrency allows (0/1 = sequential, byte-identical call
+    # sequence). run_parallel copies contextvars per lane (obs trace/span + ai_log rid isolation) and captures a
+    # lane's exception as its value — re-raised FIRST-IN-ORDER below so the 500 behavior matches the serial loop.
+    # ENABLE llm.global_concurrency BEFORE this knob: each lane fans layer2.emit_concurrency emits at vLLM, and
+    # unbounded lane×emit concurrency is the documented timeout→honest-blank contention class [2026-07-06].
+    rest = items[i:]
+    lane_cc = int(cfg("multi_asset.lane_concurrency", 0) or 0)
+    if lane_cc > 1 and len(rest) > 1:
+        res = run_parallel({cls: (lambda c=cls, m=members_: _run_lane(prompt, c, m, db, shared_1a=shared_1a))
+                            for cls, members_ in rest}, max_workers=lane_cc)
+        for cls, _members in rest:
+            r = res[cls]
+            if isinstance(r, Exception):
+                raise r
+            lanes[cls] = r
+    else:
+        for cls, members_ in rest:
+            lanes[cls] = _run_lane(prompt, cls, members_, db, shared_1a=shared_1a)
+    groups = [{"class": cls, "lane": lanes[cls], "assets": members} for cls, members in items]
     result = {"layer1a": shared_1a, "run_id": run_id, "groups": groups}
     if _own_trace:
         try:

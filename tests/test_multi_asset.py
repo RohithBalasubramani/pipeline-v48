@@ -69,7 +69,7 @@ def _fake_lane(page="energy-power", cards=(1, 2)):
 def test_multi_same_class_authors_layer2_once(monkeypatch):
     calls = []
 
-    def fake_run_pipeline(prompt, *, asset_id=None, db=None, run_id=None, layer1a=None):
+    def fake_run_pipeline(prompt, *, asset_id=None, db=None, run_id=None, layer1a=None, **kw):
         calls.append({"asset_id": asset_id, "layer1a_injected": layer1a is not None})
         return _fake_lane()
 
@@ -87,7 +87,7 @@ def test_multi_same_class_authors_layer2_once(monkeypatch):
 def test_multi_cross_class_authors_once_per_class_and_shares_1a(monkeypatch):
     calls = []
 
-    def fake_run_pipeline(prompt, *, asset_id=None, db=None, run_id=None, layer1a=None):
+    def fake_run_pipeline(prompt, *, asset_id=None, db=None, run_id=None, layer1a=None, **kw):
         calls.append({"asset_id": asset_id, "layer1a_injected": layer1a is not None})
         return _fake_lane()
 

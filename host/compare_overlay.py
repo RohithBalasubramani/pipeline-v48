@@ -115,7 +115,8 @@ def _merge_panels(sub, per, toks):
     its comparand (`section`=tok, id namespaced) + stamp sectionCompare. The Sec-column table + SectionRadar consume it."""
     merged = []
     for tok in toks:
-        for p in ((per[tok].get("period") or {}).get("panels") or []):
+        _pp = per[tok].get("period")                          # a comparand whose period is a string label → no panels
+        for p in ((_pp.get("panels") if isinstance(_pp, dict) else None) or []):
             if isinstance(p, dict):
                 merged.append({**p, "section": tok, "id": "%s::%s" % (tok, p.get("id"))})
     sub.setdefault("period", {})["panels"] = merged
@@ -204,8 +205,9 @@ def merge_overlay(entries, tokens):
         per = {tok: ((card.get("payload") or {}).get(sk) or {}) for tok, card in entries}
         if isinstance(sub.get("stats"), dict):
             _merge_stats(sub, per, tokens); merged_any = True
-        if isinstance((sub.get("period") or {}).get("panels"), list):
-            _merge_panels(sub, per, tokens); merged_any = True
+        _period = sub.get("period")                            # a scalar card's period is a STRING label, not a dict —
+        if isinstance(_period, dict) and isinstance(_period.get("panels"), list):   # guard like the stats/points sibs
+            _merge_panels(sub, per, tokens); merged_any = True  # (was `(sub.get("period") or {}).get(...)` → crashed on str)
         if isinstance(sub.get("points"), list):
             _merge_points(sub, per, tokens); merged_any = True
     if not merged_any:
