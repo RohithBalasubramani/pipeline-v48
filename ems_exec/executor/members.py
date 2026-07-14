@@ -91,9 +91,20 @@ def resolve(mfm_id, section_token=None):
 
 
 def _meter_row(mfm_id):
-    """The member's registry row ({type_code, load_group, …}) or {} (honest-degrade on a stale id / registry outage)."""
+    """The member's registry row ({type_code, load_group, …}) or {} (honest-degrade on a stale id / registry outage).
+
+    T2.1-1 [flag roster.member_registry_facts, default off]: the historical `from registries import neuract` import
+    referenced a package renamed to data.neuract_live — it raised every call, so this returned {} for the process
+    life and every member's `type`/`load_group` was None. That silently killed the FACT-keyed roster matchers
+    (match.types / match.load_groups in recipes 5/16/17 — e.g. card-16's `ups` series, keyed ONLY on types, matched
+    nothing and rendered empty) and forced everything onto name_contains. Flag ON restores the real facts via the
+    renamed door; OFF keeps the dead-{} behavior so adoption is a measured, reversible G-DIFF (sections/legends and
+    the type-keyed series regroup once real facts flow)."""
     try:
-        from registries import neuract as _reg
+        from config.app_config import flag_on
+        if not flag_on("roster.member_registry_facts"):
+            return {}
+        from data.neuract_live import meters as _reg        # the renamed door (meter_by returns type_code/load_group)
         return _reg.meter_by(mfm_id) or {}
     except Exception:
         return {}

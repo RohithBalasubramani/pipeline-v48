@@ -106,13 +106,18 @@ def _registry_mfm_id(asset):
     None (run_special then honest-degrades to empty widgets). Never raises."""
     if not isinstance(asset, dict):
         return None
+    # T2.1-1 [flag roster.member_registry_facts]: the name/table -> lt_mfm.id bridge used a package renamed to
+    # data.neuract_live, so it raised and always fell through to asset.mfm_id. Restore it behind the same flag; OFF
+    # keeps the mfm_id fallback (byte-identical — 1b already carries the canonical id in the common case).
     try:
-        from registries import neuract as _reg
-        for key in (asset.get("name"), asset.get("table")):
-            if key:
-                m = _reg.meter_by(key)
-                if m and m.get("id") is not None:
-                    return m.get("id")
+        from config.app_config import flag_on
+        if flag_on("roster.member_registry_facts"):
+            from data.neuract_live import meters as _reg
+            for key in (asset.get("name"), asset.get("table")):
+                if key:
+                    m = _reg.meter_by(key)
+                    if m and m.get("id") is not None:
+                        return m.get("id")
     except Exception:
         pass
     return asset.get("mfm_id") or asset.get("id")
