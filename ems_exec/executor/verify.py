@@ -70,6 +70,21 @@ def _polarity_of_token(*tokens):
     return None
 
 
+def _quantity_polarity(quantity):
+    """The POLARITY carried by a QUANTITY-CLASS string under the registry prefix convention ('active-energy-mvah' ->
+    active, bare 'reactive' -> reactive); None when the string is absent or its family carries no polarity ('energy',
+    'power', 'load-factor-percent', voltage/current/pf/...). A FACT read on the classification string itself -- never
+    a substring scan, so 'active-energy-mvah' is ACTIVE despite its embedded 'mvah' unit fragment (an apparent needle
+    to the token scanner)."""
+    if not quantity:
+        return None
+    q = str(quantity).lower()
+    for pol in ("reactive", "apparent", "active"):
+        if q == pol or q.startswith(pol + "-"):
+            return pol
+    return None
+
+
 def _fn_output_polarity(fn_key):
     """The POLARITY of what a library fn MEASURES, from the registry's _QUANTITY family ('active-energy-kwh' → active).
     None when the fn is unclassified or its family carries no polarity (voltage/current/pf/etc.)."""
@@ -77,13 +92,9 @@ def _fn_output_polarity(fn_key):
         return None
     try:
         from ems_exec.derivations import registry as _reg
-        fam = (_reg._QUANTITY.get(fn_key) or "")
+        return _quantity_polarity(_reg._QUANTITY.get(fn_key))
     except Exception:
         return None
-    for pol in ("reactive", "apparent", "active"):
-        if fam.startswith(pol + "-"):
-            return pol
-    return None
 
 
 def _polarity_conflict(field, fn_key):
@@ -97,9 +108,18 @@ def _polarity_conflict(field, fn_key):
     measures ACTIVE energy in MWh, so feeding it into the slot side falsely flagged an active leaf as apparent and
     blanked a real 27.8 MWh (card 72, the fix that over-swung). The metric == fn is self-referential — it can't be a
     mislabel signal against itself. A metric that DIFFERS from the fn (a real reactive-slot ← active-fn mislabel) still
-    contributes, so the genuine Family-G fab (windowEnergyKwh → a Reactive/MVARh slot) is still caught by unit+label."""
+    contributes, so the genuine Family-G fab (windowEnergyKwh → a Reactive/MVARh slot) is still caught by unit+label.
+
+    FACT FIRST: when the field carries an emit-declared quantity CLASS (stamped deterministically by
+    layer2/emit/slot_catalog.py), its registry-convention prefix IS the slot polarity -- read it as a fact via
+    _quantity_polarity before any substring scan, so a quantity like 'active-energy-mvah' classifies ACTIVE instead of
+    the apparent its 'mvah' fragment token-matches. The substring scan stays as the fallback for quantity-less fields
+    (and field['quantity'] stays in that fallback blob: mid-string polarities like 'peak-apparent-power-kva' carry no
+    classifying prefix but a real polarity token). The conflict contract is unchanged -- blank only when BOTH sides
+    classified and different."""
     metric = field.get("metric")
     metric_signal = None if (metric and fn_key and str(metric) == str(fn_key)) else metric
-    slot_pol = _polarity_of_token(field.get("unit"), field.get("label"), field.get("quantity"), metric_signal)
+    slot_pol = _quantity_polarity(field.get("quantity")) or _polarity_of_token(
+        field.get("unit"), field.get("label"), field.get("quantity"), metric_signal)
     fn_pol = _fn_output_polarity(fn_key)
     return bool(slot_pol and fn_pol and slot_pol != fn_pol)
