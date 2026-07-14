@@ -9,6 +9,7 @@ from __future__ import annotations
 import copy
 
 from ems_exec.executor import bindings as _bindings
+from ems_exec.executor.match_bounds import contains_bounded, enabled, unique_bounded_match
 from ems_exec.executor.roster_paths import _targets
 from ems_exec.executor.roster_template import _default_at, _default_list_at, _merge_template, _merge_templates
 from ems_exec.executor.roster_eval import _select, _context_vals
@@ -175,8 +176,17 @@ def _node_role(node, by_slug, panel_slugs, marker_kinds):
     mr = _match_slug(label, by_slug) or _match_slug(nid, by_slug)
     if mr is not None:
         return "member", mr
+    hardened = enabled()
     for s in (_bindings.slugify(label), _bindings.slugify(nid)):
-        if s and any(s in p or p in s for p in panel_slugs):
+        if not s:
+            continue
+        # T2.1-2: bounded containment BOTH directions so 'pcc-panel-1' no longer swallows 'pcc-panel-10' (a foreign
+        # panel node). Flag off keeps the raw 's in p or p in s' containment verbatim.
+        if hardened:
+            hit = any(contains_bounded(p, s) or contains_bounded(s, p) for p in panel_slugs)
+        else:
+            hit = any(s in p or p in s for p in panel_slugs)
+        if hit:
             return "trunk", None
     if str(node.get("kind") or "").strip().lower() in marker_kinds:
         return "trunk", None
@@ -189,6 +199,10 @@ def _match_slug(label, by_slug):
         return None
     if s in by_slug:
         return by_slug[s]
+    if enabled():
+        # T2.1-2: the bidirectional substring loop collides gic-2 <-> gic-20; unique_bounded_match accepts only a
+        # boundary-clean, UNAMBIGUOUS containment (else None). Flag off keeps the legacy loop below verbatim.
+        return unique_bounded_match(s, by_slug)
     for k, v in by_slug.items():
         if k and (k in s or s in k):
             return v

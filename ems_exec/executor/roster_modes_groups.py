@@ -9,6 +9,7 @@ import copy
 
 from ems_exec.executor import bindings as _bindings
 from ems_exec.executor import reducers as _reducers
+from ems_exec.executor.match_bounds import enabled, prefix_bounded
 from ems_exec.executor.roster_paths import _targets
 from ems_exec.executor.roster_template import _seedfree, _default_at, _default_list_at, _merge_template, _merge_templates
 from ems_exec.executor.roster_eval import (
@@ -176,6 +177,7 @@ def _match_def(member, defs):
     mtype = str(member.get("type") or "").strip().lower()
     lg = str(member.get("load_group") or "").strip().lower()
     name = str(member.get("name") or "").strip().lower()
+    hardened = enabled()
     for d in defs:
         if role and role in {str(x).lower() for x in (d.get("roles") or [])}:
             return d
@@ -183,7 +185,11 @@ def _match_def(member, defs):
             return d
         if lg and lg in {str(x).lower() for x in (d.get("load_groups") or [])}:
             return d
-        if name and any(name.startswith(str(p).lower()) for p in (d.get("name_prefixes") or [])):
+        # T2.1-2: name_prefixes is already left-anchored (startswith); when hardened, also require a right boundary
+        # after the prefix (uniform with contains_bounded) so 'gic-2' no longer prefixes 'gic-20'. Flag off = verbatim.
+        prefixes = d.get("name_prefixes") or []
+        if name and (any(prefix_bounded(name, str(p).lower()) for p in prefixes) if hardened
+                     else any(name.startswith(str(p).lower()) for p in prefixes)):
             return d
     return None
 

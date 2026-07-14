@@ -10,6 +10,7 @@ import copy
 
 from ems_exec.executor import bindings as _bindings
 from ems_exec.executor import members as _members
+from ems_exec.executor.match_bounds import contains_bounded, enabled
 from ems_exec.executor.roster_paths import _targets
 from ems_exec.executor.roster_template import _default_list_at, _merge_template, _merge_templates
 from ems_exec.executor.roster_eval import _select, _series_pairs, _slot_window
@@ -266,7 +267,13 @@ def _member_match(member, match):
                 return True
         except Exception:
             pass
-    if any(sub and str(sub).strip().lower() in hay for sub in (match.get("name_contains") or [])):
+    # T2.1-2: the hay keeps underscores (NOT slugified), so raw 'gic_2' in 'gic_20_n3_ups' collides two sites; the
+    # bounded form requires a separator/edge on both sides. Flag off keeps the legacy raw substring verbatim.
+    ncs = [str(sub).strip().lower() for sub in (match.get("name_contains") or []) if sub]
+    if enabled():
+        if any(contains_bounded(hay, sub) for sub in ncs):
+            return True
+    elif any(sub in hay for sub in ncs):
         return True
     return False
 

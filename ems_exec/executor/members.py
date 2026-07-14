@@ -16,6 +16,7 @@ from __future__ import annotations
 
 from ems_exec.data import neuract as _nx
 from layer1b.resolve.member_scope import INCOMER
+from ems_exec.executor.match_bounds import contains_bounded, enabled
 from ems_exec.renderers import _agg
 # ENERGY-REGISTER pick_mover HOME moved to executor/energy_registers.py (monoliths F7, 2026-07-12) — the
 # register-pair map + mover selection is a DATASET convention, not a panel-membership concern (fill.py and
@@ -267,7 +268,14 @@ def _spec_match(member, match):
                 return True
         except Exception:
             pass
-    if any(sub and str(sub).strip().lower() in hay for sub in (match.get("name_contains") or [])):
+    # T2.1-2: same collision + fix as roster_modes_series._member_match — the hay keeps underscores, so raw 'gic_2' in
+    # 'gic_20_n3_ups' folds two sites; bounded containment needs a separator/edge on both sides. Flag off = legacy raw
+    # substring verbatim (byte-identical). The asymmetric no-key contract above (None/{} → True) is untouched.
+    ncs = [str(sub).strip().lower() for sub in (match.get("name_contains") or []) if sub]
+    if enabled():
+        if any(contains_bounded(hay, sub) for sub in ncs):
+            return True
+    elif any(sub in hay for sub in ncs):
         return True
     return False
 
