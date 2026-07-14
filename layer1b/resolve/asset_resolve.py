@@ -46,6 +46,16 @@ def _is_ghost(row):
     return len(row) > 9 and not row[9]
 
 
+def _full_listing_on():
+    """resolver.full_listing [T0-7]: show the model the FULL registry instead of the class-prior-narrowed subset.
+    Never raises; absent row / DB outage → off (byte-identical legacy narrowing)."""
+    try:
+        from config.app_config import flag_on
+        return flag_on("resolver.full_listing")
+    except Exception:
+        return False
+
+
 # BUS-SECTION facts + the ONE stamping site moved to layer1b/resolve/panel_sections.py [T0-8, atomic-structure].
 # Byte-compat re-exports: _alias_rescue + external readers keep their names; the STAMPING now goes through
 # panel_sections.stamp_section_facts (the pinned path and _finish used to duplicate it inline).
@@ -90,8 +100,13 @@ def resolve_asset(prompt, asset_id_override=None, cands=None):
     # CLASS PRIOR: infer the equipment class from the prompt subject/metric and narrow the listing shown to the AI, so
     # a bare/implied class with no unit number is resolved within the right class instead of across all 310 rows. The
     # prior only NARROWS (fail-open to the full list; None on multi-class ambiguity) — see class_from_subject. [RN-06]
+    # FULL LISTING [T0-7, flag resolver.full_listing — AI-first]: the keyword prior can MIS-narrow ('temperature in
+    # the transformer room' hides non-Transformer rows the model would pick correctly from the full list). Flag on →
+    # the model sees EVERY candidate; the prior is KEPT for class_mismatch telemetry + the class-narrowed
+    # empty-fallback picker (_class_rows iterates _narrowed, never the widened listing). Flag off → byte-identical.
     prior = class_from_subject(prompt)
-    listed = candidates_of_class(cands, prior)
+    _narrowed = candidates_of_class(cands, prior)
+    listed = cands if _full_listing_on() else _narrowed
 
     # NAME -> registry row (deterministic). by_norm carries ALL rows for a normalized key, so a name that collides
     # across rows surfaces as ambiguous rather than an arbitrary pick. Resolution maps against the FULL registry (not
@@ -126,8 +141,9 @@ def resolve_asset(prompt, asset_id_override=None, cands=None):
         #                                                               NOT a collision; only DISTINCT rows are ambiguous
 
     def _class_rows():
-        """The prior-class listing, data-bearing first (dead-meter-honest picker default)."""
-        return [c for c in listed if c[6]] or listed
+        """The prior-class listing, data-bearing first (dead-meter-honest picker default). Reads _narrowed, NOT
+        `listed` — under resolver.full_listing the empty-fallback picker must stay class-narrowed [T0-7]."""
+        return [c for c in _narrowed if c[6]] or _narrowed
 
     def _alias_rescue(outcome):
         """★ ALIAS-DICTIONARY RESCUE [sections]: the model returned AMBIGUOUS between PCC panels, but every sectioned
