@@ -51,21 +51,41 @@ def is_dataless(answerability):
     return _feas.FORCE_SWAP_ON_DATALESS and answerability in _feas.DATALESS_ANSWERABILITY
 
 
-def enforce(decision, *, verdict, pool, already_chosen=None, answerability=None):
+def enforce(decision, *, verdict, pool, already_chosen=None, answerability=None, ai_nomination=None):
     """Override `decision` when the CURRENT card cannot render REAL DATA — EITHER the static catalog verdict is
     unrenderable (config.feasibility.UNRENDERABLE_VERDICTS) OR the AI declared it dataless for THIS asset
     (answerability='none', the DATALESS-swap knob). Returns (decision, forced_kept_unrenderable:bool).
 
     `pool` = the slot's swap_candidates (list of {card_id,title,...}), already render_real-only + closest-first.
     `already_chosen` = final render ids claimed by other slots — skipped, so a forced swap never duplicates a card
-    another slot already swapped to [META-04]. Non-mutating on the input; returns a fresh dict. When there is NO
-    unclaimed candidate (a whole-page data dead-end) it KEEPS the card honestly (never fabricates)."""
+    another slot already swapped to [META-04]. `ai_nomination` = the AI's OWN raw swap_to_id (captured pre-normalization
+    in decide.gate): a pure per-asset DATALESS force-swap may honor it (T1-12 knob swap.dataless_nomination) when it is a
+    valid, unclaimed pool candidate. Non-mutating on the input; returns a fresh dict. When there is NO unclaimed
+    candidate (a whole-page data dead-end) it KEEPS the card honestly (never fabricates)."""
     d = dict(decision or {})
     _dataless = is_dataless(answerability) and not is_unrenderable(verdict)   # pure per-asset dataless (not a catalog verdict)
     if not (is_unrenderable(verdict) or is_dataless(answerability)):
         return d, False                       # render_real / static_chrome / unknown + fillable → leave AI decision intact
     # UNRENDERABLE: a selected card that can't render must be force-swapped to a renderable alternative.
     taken = {int(x) for x in (already_chosen or set())}
+    # T1-12 DATALESS AI-NOMINATION [DB knob swap.dataless_nomination, DEFAULT OFF] — pure per-asset DATALESS branch ONLY
+    # (NOT a static-unrenderable verdict, where the card KIND cannot render at all): when the knob is on and the AI's
+    # own swap target is a valid, unclaimed pool candidate, honor it INSTEAD of the closest-size loop (the AI knows the
+    # story angle better than size distance does). Off / off-pool / already-claimed → fall through unchanged.
+    if _dataless and _feas.DATALESS_NOMINATION:
+        try:
+            nom = int(ai_nomination)
+        except (TypeError, ValueError):
+            nom = None
+        if nom is not None and nom not in taken:
+            by_id = {int(t["card_id"]): t for t in (pool or []) if t and t.get("card_id") is not None}
+            tgt = by_id.get(nom)
+            if tgt is not None:
+                d.update(action="swap", origin="swapped",
+                         swap_to_id=nom, swap_to_title=tgt.get("title"),
+                         forced_renderable=True, forced_dataless=_dataless, nominated=True,
+                         ai_confidence=d.get("confidence"), confidence=_forced_confidence())
+                return d, False
     for tgt in pool or []:                    # closest-first (pool is ordered by size distance); skip claimed targets
         if int(tgt["card_id"]) in taken:
             continue

@@ -122,6 +122,67 @@ def test_b_forced_swap_wins_settle_collision_against_stylistic_swap():
     assert outputs[11]["swap_decision"].get("settled_revert") is True
 
 
+# ── (b') T1-12 DATALESS AI-NOMINATION (flag swap.dataless_nomination, default off) ────────────────
+_NOM_POOL = [{"card_id": 99, "title": "closest"}, {"card_id": 98, "title": "second"}]
+
+
+def _enable_nomination(monkeypatch):
+    """Flip the DATALESS_NOMINATION lazy knob on for one test (restored on teardown)."""
+    monkeypatch.setattr(feas_cfg, "DATALESS_NOMINATION", True, raising=False)
+
+
+def test_bprime_flag_off_ignores_nomination_closest_size_wins():
+    # DEFAULT OFF: a pure-dataless force-swap ignores the AI nomination and takes the closest-size candidate (99),
+    # byte-identical to the pre-T1-12 behavior. answerability='none' + a renderable current verdict = pure dataless.
+    d = gate_force_renderable.enforce({"action": "keep", "confidence": 0.3}, verdict="render_real", pool=_NOM_POOL,
+                                      already_chosen=set(), answerability="none", ai_nomination=98)
+    assert d[0]["swap_to_id"] == 99 and "nominated" not in d[0]
+
+
+def test_bprime_nomination_valid_in_pool_wins(monkeypatch):
+    _enable_nomination(monkeypatch)
+    d, kept = gate_force_renderable.enforce({"action": "keep", "confidence": 0.3}, verdict="render_real",
+                                            pool=_NOM_POOL, already_chosen=set(), answerability="none", ai_nomination=98)
+    assert d["swap_to_id"] == 98 and d["nominated"] is True and d["forced_renderable"] is True
+    assert d["action"] == "swap" and d["origin"] == "swapped" and kept is False
+    assert d["forced_dataless"] is True                                        # per-asset dataless marker rides through
+    assert d["confidence"] == gate_force_renderable.FORCED_SWAP_CONFIDENCE     # mandatory settle priority
+    assert d["ai_confidence"] == 0.3                                           # AI's own value kept for audit
+
+
+def test_bprime_nomination_off_pool_falls_back(monkeypatch):
+    _enable_nomination(monkeypatch)
+    d, _ = gate_force_renderable.enforce({"action": "keep"}, verdict="render_real", pool=_NOM_POOL,
+                                         already_chosen=set(), answerability="none", ai_nomination=1234)
+    assert d["swap_to_id"] == 99 and "nominated" not in d                      # off-pool → closest-size fallback
+
+
+def test_bprime_nomination_taken_falls_back(monkeypatch):
+    _enable_nomination(monkeypatch)
+    d, _ = gate_force_renderable.enforce({"action": "keep"}, verdict="render_real", pool=_NOM_POOL,
+                                         already_chosen={98}, answerability="none", ai_nomination=98)
+    assert d["swap_to_id"] == 99 and "nominated" not in d                      # nominated target claimed → fallback
+
+
+def test_bprime_static_unrenderable_ignores_nomination(monkeypatch):
+    _enable_nomination(monkeypatch)
+    # a STATIC-unrenderable verdict (drop) is NOT the pure-dataless branch — the card KIND cannot render, so the
+    # nomination is never consulted even with the knob on: the deterministic closest-size loop wins (99).
+    d, _ = gate_force_renderable.enforce({"action": "keep"}, verdict="drop", pool=_NOM_POOL,
+                                         already_chosen=set(), answerability="none", ai_nomination=98)
+    assert d["swap_to_id"] == 99 and "nominated" not in d
+
+
+def test_bprime_nomination_via_swap_gate_captures_pre_normalization(monkeypatch):
+    # end-to-end through decide.gate: even a LOW-confidence AI swap (the gate chain would normalize it to KEEP) has its
+    # raw swap_to_id captured pre-normalization and honored by the dataless nomination.
+    _enable_nomination(monkeypatch)
+    d = swap_gate({"action": "swap", "swap_to_id": 98, "confidence": 0.1, "criterion": "x"},
+                  pool_ids=[99, 98], template_card_ids=[7], already_chosen=set(), page_card_ids=[5, 7],
+                  current_card_id=5, current_verdict="render_real", pool=_NOM_POOL, answerability="none")
+    assert d["swap_to_id"] == 98 and d.get("nominated") is True
+
+
 # ── (e) already_chosen dedup — gate, forced pick, settle post-pass ───────────────────────────────
 def test_e_gate_rejects_already_chosen_target():
     d = swap_gate(_swap(to=99), **{**_BASE, "already_chosen": {99}})

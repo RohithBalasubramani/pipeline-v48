@@ -396,11 +396,34 @@ def _run_card_inner(run_id, card_id, l1a, l1b, *, already_chosen=None, shared_ct
     # keeps when the whole page is a data dead-end). Same robust extraction as _finalize (top-level OR nested envelope).
     _di = raw.get("data_instructions") if isinstance(raw.get("data_instructions"), dict) else {}
     _answer = raw.get("answerability") or _di.get("answerability")
+    # T1-11 criterion<->story gate reads the card's own analytical angle (analytical_story + page_story, both in the
+    # card_input story block) — a swap criterion must name a word of it. Blank when off (byte-identical path).
+    _story_text = " ".join(x for x in (ci["story"].get("analytical_story"), ci["story"].get("page_story")) if x)
     swap = swap_gate(raw.get("swap_decision") or {"action": "keep"},
                      pool_ids=[c["card_id"] for c in ci["swap_candidates"]],
                      template_card_ids=ci["story"]["template_card_ids"], already_chosen=already_chosen,
                      page_card_ids=_page_card_ids(ci["page_key"]), current_card_id=card_id,
-                     current_verdict=_current_verdict, pool=ci["swap_candidates"], answerability=_answer)
+                     current_verdict=_current_verdict, pool=ci["swap_candidates"], answerability=_answer,
+                     story=_story_text)
+
+    # T1-11 CRITERION<->STORY CORRECTIVE RE-EMIT: the criterion<->story gate is the ONLY gate that leaves a corrective
+    # reason (swap['gate_reject']). A swap the AI wanted but whose criterion named no word of THIS card's story angle
+    # gets ONE re-emit with that exact feedback, then a re-gate. A second rejection stays a safe KEEP (the gate's
+    # normalize-to-keep already ran; we pop gate_reject so it never loops). Bounded by llm.gate_retry; telemetry rides
+    # swap['_criterion_retry']. Kept BEFORE the swap-target re-emit so a corrected swap still gets its target re-emit.
+    from config.app_config import cfg as _cfg
+    if swap.get("gate_reject") and int(_cfg("llm.gate_retry", 1)) > 0:
+        raw = emit(ci, feedback=[swap["gate_reject"]])
+        _di = raw.get("data_instructions") if isinstance(raw.get("data_instructions"), dict) else {}
+        _answer = raw.get("answerability") or _di.get("answerability")
+        swap = swap_gate(raw.get("swap_decision") or {"action": "keep"},
+                         pool_ids=[c["card_id"] for c in ci["swap_candidates"]],
+                         template_card_ids=ci["story"]["template_card_ids"], already_chosen=already_chosen,
+                         page_card_ids=_page_card_ids(ci["page_key"]), current_card_id=card_id,
+                         current_verdict=_current_verdict, pool=ci["swap_candidates"], answerability=_answer,
+                         story=_story_text)
+        swap.pop("gate_reject", None)
+        swap["_criterion_retry"] = True
 
     # SWAP-TARGET RE-EMIT: the first emit authored the payload for `card_id`'s shape; the FINAL card is the swap
     # target, which has a DIFFERENT shape. Re-run the emit for the target (it inherits the slot's story) so the

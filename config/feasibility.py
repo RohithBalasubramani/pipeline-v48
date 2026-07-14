@@ -7,7 +7,7 @@ card_feasibility.verdict vocabulary (per card_id, read in layer2/catalog/feasibi
     drop           — cannot render                          -> UNRENDERABLE
     no_data        — no data to render                      -> UNRENDERABLE
 """
-from config.app_config import cfg
+from config.app_config import cfg, flag_on
 
 # LAZY module attributes (PEP 562): each access re-reads cfg(), so a DB row edit + app_config.reload() reaches
 # consumers without a process restart (import-time binding pinned the boot-time value for the process life).
@@ -17,6 +17,10 @@ _LAZY = {
     "DATALESS_ANSWERABILITY": lambda: tuple(cfg("feasibility.dataless_answerability", ["none"])),
     "FORCE_SWAP_ON_DATALESS": lambda: (str(cfg("feasibility.force_swap_on_dataless", "on")).strip().lower()
                                        not in ("off", "", "0", "false", "no", "none")),
+    # T1-12 DATALESS AI-NOMINATION (DB knob swap.dataless_nomination, DEFAULT OFF): when on, a pure per-asset DATALESS
+    # force-swap honors the AI's OWN swap target (if it is a valid, unclaimed pool candidate) instead of the closest-
+    # size default. Off = byte-identical closest-size behavior.
+    "DATALESS_NOMINATION": lambda: flag_on("swap.dataless_nomination", False),
     "TEMPLATE_MAX_UNRENDERABLE_FRAC": lambda: cfg("feasibility.template_max_unrenderable_frac", 0.40),
 }
 

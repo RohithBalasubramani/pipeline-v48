@@ -388,6 +388,17 @@ def _build(card_in, *, oversize=False):
         if _mm else
         "author exact_metadata (byte-identical default, morph per story) + data_instructions (resolved recipe, real "
         "basket columns). JSON:")
-    parts += ["", "Decide keep/swap (rules 1-3 + interdependency + confidence>=0.9 + named criterion), then MORPH-EMIT:",
-              _closing]
+    _swap_directive = "Decide keep/swap (rules 1-3 + interdependency + confidence>=0.9 + named criterion), then MORPH-EMIT:"
+    # T1-12 DATALESS AI-NOMINATION clause — appended ONLY when the DB knob swap.dataless_nomination is on; off = the
+    # directive bytes are IDENTICAL to the legacy prompt (the shared cacheable prefix is untouched).
+    try:
+        from config import feasibility as _feas_cfg
+        if _feas_cfg.DATALESS_NOMINATION:
+            _swap_directive += (" If THIS card is WHOLLY unfillable for this asset (answerability=\"none\"), you MAY "
+                                "name a SWAP CANDIDATE above (its exact card_id) as swap_to_id — a fillable, same-size "
+                                "card that best serves this story angle — and the render-gate will honor your "
+                                "nomination instead of the closest-size default.")
+    except Exception:
+        pass
+    parts += ["", _swap_directive, _closing]
     return "\n".join(parts)
