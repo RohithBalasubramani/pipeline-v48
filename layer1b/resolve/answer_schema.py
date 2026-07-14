@@ -30,12 +30,33 @@ ASSET_ANSWER_SCHEMA = {
     "required": ["confident"],
 }
 
+# T0-9 [resolver.section_ai]: an OPTIONAL bus-section emission the model may add — 'A'/'B' for a single-section view,
+# 'both' for a section compare ('compare pcc 1a and 1b'), 'none' otherwise. Added to the properties ONLY when the flag
+# is on; `required` stays ['confident'] (a REQUIRED key was PROVEN to bias the ambiguous shape — see the docstring), so
+# every taught answer shape still validates. layer1b/resolve/panel_sections.stamp_section_facts VALIDATES the emission
+# against the pcc_panel_alias facts and falls back to the substring detector on a miss (AI decides; deterministic
+# validates + falls back). Property order after `candidates`, matching the emit contract.
+_SECTION_PROP = {"section": {"type": "string", "enum": ["A", "B", "both", "none"]}}
+
+
 def asset_answer_schema():
     """ASSET_ANSWER_SCHEMA when llm.guided_json.asset_resolve is on, else None (default: off / absent row / DB down —
-    call_qwen then builds today's byte-identical json_object request). Never raises, never blocks import."""
+    call_qwen then builds today's byte-identical json_object request). When resolver.section_ai is ALSO on, the schema
+    gains the optional `section` enum. Never raises, never blocks import. Identity of the base object is preserved when
+    section_ai is off (test_item17 pins `is`)."""
     try:
         from config.app_config import flag_on
         on = flag_on("llm.guided_json.asset_resolve")   # THE boolean-knob vocabulary (D6)
     except Exception:
         on = False
-    return ASSET_ANSWER_SCHEMA if on else None
+    if not on:
+        return None
+    try:
+        from config.app_config import flag_on as _f
+        if _f("resolver.section_ai"):
+            return {"type": "object",
+                    "properties": {**ASSET_ANSWER_SCHEMA["properties"], **_SECTION_PROP},
+                    "required": ASSET_ANSWER_SCHEMA["required"]}
+    except Exception:
+        pass
+    return ASSET_ANSWER_SCHEMA

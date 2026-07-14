@@ -56,6 +56,20 @@ def _full_listing_on():
         return False
 
 
+def _section_ai_on():
+    """resolver.section_ai [T0-9]: the model emits `section` ('A'/'B'/'both'/'none') and panel_sections validates it
+    against pcc_panel_alias facts (fixing the elided 'compare pcc 1a and 1b' the substring detector misses). Never
+    raises; off → byte-identical (schema + prompt clause + parse all collapse; the substring detector stays)."""
+    try:
+        from config.app_config import flag_on
+        return flag_on("resolver.section_ai")
+    except Exception:
+        return False
+
+
+_SECTION_NORMALIZE = {"a": "A", "b": "B", "both": "both", "none": "none"}
+
+
 # BUS-SECTION facts + the ONE stamping site moved to layer1b/resolve/panel_sections.py [T0-8, atomic-structure].
 # Byte-compat re-exports: _alias_rescue + external readers keep their names; the STAMPING now goes through
 # panel_sections.stamp_section_facts (the pinned path and _finish used to duplicate it inline).
@@ -179,8 +193,9 @@ def resolve_asset(prompt, asset_id_override=None, cands=None):
         outcome["class_mismatch"] = class_mismatch(prior, outcome.get("asset"), outcome.get("candidates"))
         # PANEL READING DIRECTION + BUS-SECTION facts [panel_overview/sections]: ONE stamping site
         # (panel_sections.stamp_section_facts) — member_scope + section + compare_sections; the pinned path calls the
-        # same helper (parity by construction). Default 'outgoing'; single-asset render byte-identical.
-        stamp_section_facts(outcome.get("asset"), prompt)
+        # same helper (parity by construction). `_ai_section` (a closure var set after the resolve call; None when
+        # resolver.section_ai is off / llm_failed / pinned) is VALIDATED against the alias facts inside the helper.
+        stamp_section_facts(outcome.get("asset"), prompt, ai_section=_ai_section)
         return outcome
 
     # listing has NO id column: the model must reason over name/class/load_group only, never registry ids. The
@@ -192,6 +207,8 @@ def resolve_asset(prompt, asset_id_override=None, cands=None):
     # the LIVE class vocabulary is injected verbatim so the prompt's class rule can never drift from the registry
     classes_present = ", ".join(sorted({c[5] for c in cands if c[5]}))
     system = _load_prompt("asset_system.md")
+    if _section_ai_on():                                  # T0-9: teach the optional `section` key (flag off → byte-identical)
+        system = system + "\n" + _load_prompt("asset_section_clause.md")
     user = (f"CANDIDATES (name<TAB>class<TAB>load_group<TAB>flag<TAB>aka):\n{listing}\n\n"
             f"CLASSES PRESENT IN THE REGISTRY: {classes_present}\n"
             f"PROMPT: {prompt!r}\nJSON:")
@@ -218,6 +235,11 @@ def resolve_asset(prompt, asset_id_override=None, cands=None):
                          json_schema=asset_answer_schema(), on_error="marker")
 
     res, llm_failed = retry_transient_result(_call)
+    # T0-9: the model's optional bus-section emission (None unless resolver.section_ai + a clean answer). Normalized to
+    # the panel_sections vocabulary; validated against the alias facts inside stamp_section_facts (called by _finish).
+    _ai_section = None
+    if not llm_failed and _section_ai_on():
+        _ai_section = _SECTION_NORMALIZE.get(str((res or {}).get("section") or "").strip().lower())
 
     if llm_failed:
         # the model was NEVER HEARD (transport/parse failure twice) — honest degrade to the browse picker (class-
