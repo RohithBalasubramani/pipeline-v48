@@ -206,8 +206,23 @@ class Handler(BaseHTTPRequestHandler):
 
     def _send(self, code, obj):
         body = json.dumps(obj).encode("utf-8")
+        # gzip the JSON when the client advertises it (browsers always do, and auto-decompress) — the DECODED bytes are
+        # byte-identical; this is a pure transport shrink (~8-11x on these payloads, 490KB worst-case responses). Small
+        # bodies and clients that don't send Accept-Encoding: gzip get exactly today's uncompressed bytes. [latency S9]
+        enc = None
+        try:
+            accept = (self.headers.get("Accept-Encoding") or "") if self.headers else ""
+        except Exception:
+            accept = ""
+        if len(body) >= 1024 and "gzip" in accept.lower():
+            import gzip as _gz
+            body = _gz.compress(body, 6)
+            enc = "gzip"
         self.send_response(code)
         self.send_header("Content-Type", "application/json")
+        if enc:
+            self.send_header("Content-Encoding", enc)
+            self.send_header("Vary", "Accept-Encoding")
         self.send_header("Content-Length", str(len(body)))
         self.send_header("Access-Control-Allow-Origin", "*")
         self.send_header("Access-Control-Allow-Headers", "Content-Type, X-V48-Token")  # token header must be preflight-allowed once api.token is enabled

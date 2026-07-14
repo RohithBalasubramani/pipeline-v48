@@ -201,7 +201,10 @@ def _field_value(field, asset_table, present_cols, *, latest_row, ratings, windo
         if hit:
             return dv
     raw = (latest_row or {}).get(col)
-    if raw is None:
+    if raw is None and col not in (latest_row or {}):
+        # Re-read ONLY when the column was NOT in the batched latest_row (kind excluded it / empty raw_cols). When it
+        # WAS batched, latest() already padded it to a key, so a None here is a genuine NULL in the latest row and the
+        # single-column re-read provably returns the SAME None [EXEC-11] — byte-identical, one fewer tunnel query.
         raw = _nx.latest(asset_table, [col]).get(col)
     return _verify(raw, quantity=quantity)
 

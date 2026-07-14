@@ -49,28 +49,40 @@ def _conn():
     return psycopg2.connect(**_dsn.conn_kwargs())
 
 
-def _tables(cur, schema):
+def _tables(cur, schema, ts_col):
+    """Every BASE TABLE in the schema that carries the timestamp column — i.e. every table a hot-path read can
+    ORDER BY / filter on the ts expression. Broadened from the original gic_* prefix (2026-07-14 latency pass): the
+    non-gic timeseries tables (dg_*, pqm_transformer_*, pcc_panel_*, air_compressor_*, *_feedbacks) hit the same
+    ::timestamptz seq-scan wall and were left un-indexed. A table without `ts_col` is not a timeseries meter and is
+    excluded (no ORDER BY there to accelerate). `CREATE INDEX ... IF NOT EXISTS` makes re-runs skip the already-built
+    indexes, so this is safe to run repeatedly."""
     cur.execute(
-        "SELECT table_name FROM information_schema.tables "
-        "WHERE table_schema=%s AND table_name LIKE 'gic\\_%%' ORDER BY table_name", (schema,))
+        "SELECT c.table_name FROM information_schema.columns c "
+        "JOIN information_schema.tables t "
+        "  ON t.table_schema=c.table_schema AND t.table_name=c.table_name AND t.table_type='BASE TABLE' "
+        "WHERE c.table_schema=%s AND c.column_name=%s ORDER BY c.table_name", (schema, ts_col))
     return [r[0] for r in cur.fetchall()]
 
 
 def _uniform(cur, schema, table, ts_col):
-    """(ok, note): safe-to-index iff timestamp_utc carries ONE trailing timezone OFFSET over a bounded sample — that is
-    the precondition for a deterministic (IMMUTABLE-safe) ::timestamptz parse. Fractional-second LENGTH may vary (audit
-    F18: lengths 32 vs 35) and is IRRELEVANT here — the ts_imm() index parses to timestamptz, so text length never
-    affects ordering (unlike a raw-text ORDER BY, which would need uniform length). Gate on offset only."""
-    q = (f'SELECT count(DISTINCT right("{ts_col}", 6)), count(*) '
-         f'FROM (SELECT "{ts_col}" FROM {schema}."{table}" '
-         f'WHERE "{ts_col}" IS NOT NULL LIMIT 5000) s')
-    cur.execute(q)
-    offs, n = cur.fetchone()
+    """(ok, note): safe-to-index iff EVERY sampled timestamp carries an EXPLICIT tz offset (`+HH:MM` / `-HH:MM` / `Z`).
+    THAT — not a single SHARED offset — is the real precondition for a deterministic, session-TimeZone-independent
+    `text::timestamptz` parse, which is what makes neuract.ts_imm() legitimately IMMUTABLE and its expression index
+    correct. A meter whose writer switched offset mid-life (e.g. +00:00 -> +05:30: the dg_* tables) is STILL safe —
+    each value is self-describing, so ts_imm orders by absolute instant and the index stays valid (the earlier
+    'one distinct offset' gate false-skipped these; corrected 2026-07-14 latency pass, verified 0 offset-less rows).
+    Only a value with NO offset (its parse would depend on the TimeZone GUC, breaking the IMMUTABLE contract) is unsafe.
+    Fractional-second length may vary and is irrelevant — the index parses to timestamptz, so length never affects order."""
+    cur.execute(
+        f'SELECT count(*), count(*) FILTER (WHERE right("{ts_col}", 6) !~ %s AND right("{ts_col}", 1) <> %s) '
+        f'FROM (SELECT "{ts_col}" FROM {schema}."{table}" WHERE "{ts_col}" IS NOT NULL LIMIT 5000) s',
+        (r'^[+-][0-9][0-9]:[0-9][0-9]$', 'Z'))
+    n, no_off = cur.fetchone()
     if not n:
         return False, "no rows sampled"
-    if offs == 1:
-        return True, "uniform offset"
-    return False, f"non-uniform (distinct_offset={offs}) — mixed timezone offsets; verify before indexing"
+    if no_off == 0:
+        return True, "every sampled value carries an explicit offset"
+    return False, f"{no_off}/{n} sampled values lack an explicit tz offset — ::timestamptz parse is GUC-dependent, unsafe to index"
 
 
 def main():
@@ -84,7 +96,7 @@ def main():
     conn = _conn()
     conn.autocommit = True   # CREATE INDEX CONCURRENTLY cannot run inside a transaction block
     cur = conn.cursor()
-    tables = _tables(cur, schema)
+    tables = _tables(cur, schema, ts_col)
 
     ddl = [_WRAPPER.format(schema=schema)]
     skipped = []

@@ -1,0 +1,89 @@
+{
+ "tag": "baseline",
+ "solo": [
+  {
+   "id": 4468,
+   "card_id": 5,
+   "sec": 17.22,
+   "chars": 9500,
+   "cps": 551.8
+  },
+  {
+   "id": 2503,
+   "card_id": 5,
+   "sec": 16.11,
+   "chars": 9497,
+   "cps": 589.4
+  },
+  {
+   "id": 2331,
+   "card_id": 5,
+   "sec": 15.23,
+   "chars": 8967,
+   "cps": 588.7
+  }
+ ],
+ "cc4": [
+  {
+   "id": 4468,
+   "card_id": 5,
+   "sec": 27.61,
+   "chars": 9957,
+   "cps": 360.7
+  },
+  {
+   "id": 2503,
+   "card_id": 5,
+   "sec": 69.9,
+   "chars": 19860,
+   "cps": 284.1
+  },
+  {
+   "id": 2331,
+   "card_id": 5,
+   "sec": 24.38,
+   "chars": 9227,
+   "cps": 378.5
+  },
+  {
+   "id": 4420,
+   "card_id": 5,
+   "sec": 29.12,
+   "chars": 9384,
+   "cps": 322.2
+  },
+  {
+   "id": 4578,
+   "card_id": 5,
+   "sec": 27.9,
+   "chars": 9147,
+   "cps": 327.8
+  },
+  {
+   "id": 4368,
+   "card_id": 5,
+   "sec": 21.93,
+   "chars": 7932,
+   "cps": 361.7
+  },
+  {
+   "id": 4743,
+   "card_id": 5,
+   "sec": 98.71,
+   "chars": 36006,
+   "cps": 364.8
+  },
+  {
+   "id": 2614,
+   "card_id": 5,
+   "sec": 68.33,
+   "chars": 29311,
+   "cps": 429.0
+  }
+ ],
+ "solo_server_toks": 147.1,
+ "cc4_wall": 127.8,
+ "cc4_server_toks": 298.7,
+ "solo_med_cps": 588.7,
+ "cc4_med_cps": 361.7
+}

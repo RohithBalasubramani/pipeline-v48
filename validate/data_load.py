@@ -4,6 +4,7 @@
 import pandas as pd
 
 from config.databases import DATA_DB, CONSUMER_SCHEMA, DATA_TS_CAST
+from config.neuract_dsn import ts_order_expr
 from config.validation import TIME_COLUMN, PROBE_ROWS
 from data.db_client import pg_connect                                # routed connection (tunnel 5433), not local socket
 from layer1b.basket.col_dict import real_table_cols
@@ -37,7 +38,7 @@ def _load_asset_frame_raw(table, columns, *, limit=PROBE_ROWS):
         return pd.DataFrame(), [], False
     quoted = ", ".join(f'"{c}"' for c in sel)
     qual = f'{CONSUMER_SCHEMA}."{table}"'                           # schema-qualified (search_path-free)
-    sql = (f'SELECT {quoted} FROM {qual} ORDER BY "{TIME_COLUMN}"{DATA_TS_CAST} DESC LIMIT {int(limit)}'
+    sql = (f'SELECT {quoted} FROM {qual} ORDER BY {ts_order_expr(TIME_COLUMN)} DESC LIMIT {int(limit)}'
            if ordered else f'SELECT {quoted} FROM {qual} LIMIT {int(limit)}')
     conn = pg_connect(DATA_DB)                                      # → 5433 tunnel where the neuract gic tables live
     try:

@@ -12,6 +12,7 @@ data.lt_panels can consume the probes without importing a layer — the groundin
 """
 from data.db_client import q, pg_bool
 from config.databases import DATA_DB, DATA_SCHEMA, DATA_TS_COL, DATA_TS_CAST
+from config.neuract_dsn import ts_order_expr
 from config.validation import PLUMBING_COLUMNS as _PLUMBING   # ONE shared home with col_dict._SKIP (was drifting)
 from data.outage import is_outage_error
 from data.ttl_cache import TTLCache
@@ -20,7 +21,36 @@ from data.ttl_cache import TTLCache
 # instead of poisoning the long-running server until restart [poison-permanent-fix]
 _CACHE = TTLCache()
 _VAL_CACHE = TTLCache()
+_EXIST_CACHE = TTLCache()
 VALUE_MIN = 3                                          # >= this many non-null metric columns ⇒ a renderable meter
+
+
+def existing_tables(tables):
+    """Subset of `tables` that physically exist in the live schema (ONE cached information_schema read).
+
+    Registry drift is real (plant lt_mfm names ≠ schema: the gic_15 *_sch and gic_30 blocks — entry-level
+    validation 2026-07-12, console_validation/sql.md): a ghost table used to fail its WHOLE probe chunk, and the
+    fail-open then marked all ~40 co-batched tables data-bearing — a fabricated has_data=True for never-wired
+    meters. Filtering here makes ghosts honestly read 0/no-data while real tables get real probes.
+    Outage → raise (I2, same as the probes); introspection hiccup → fail-open to NO filtering (never drop real
+    assets on a guard error); empty result never cached."""
+    tables = [t for t in tables if t]
+    if not tables:
+        return []
+    allset = _EXIST_CACHE["__all__"] if "__all__" in _EXIST_CACHE else None
+    if allset is None:
+        try:
+            rows = q(DATA_DB, "SELECT table_name FROM information_schema.tables "
+                              f"WHERE table_schema = '{DATA_SCHEMA}'")
+            allset = {r[0] for r in rows}
+        except Exception as e:
+            if is_outage_error(e):
+                raise
+            return tables
+        if not allset:
+            return tables
+        _EXIST_CACHE["__all__"] = allset
+    return [t for t in tables if t in allset]
 
 
 def value_counts(tables, chunk=40):
@@ -33,14 +63,15 @@ def value_counts(tables, chunk=40):
     if key in _VAL_CACHE:
         return _VAL_CACHE[key]
     excl = ",".join(f"'{c}'" for c in _PLUMBING)
-    counts = {t: 0 for t in tables}
-    for i in range(0, len(tables), chunk):
-        part = tables[i:i + chunk]
+    counts = {t: 0 for t in tables}                    # ghosts (registry drift) stay 0 = honestly not data-bearing
+    real = existing_tables(tables)
+    for i in range(0, len(real), chunk):
+        part = real[i:i + chunk]
         try:
             union = " UNION ALL ".join(
                 f"""SELECT '{t}'::text AS tbl, (SELECT count(*) FROM jsonb_each(x.r) e
                        WHERE e.value <> 'null'::jsonb AND e.key NOT IN ({excl})) AS n
-                    FROM (SELECT to_jsonb(s) AS r FROM {DATA_SCHEMA}."{t}" s ORDER BY "{DATA_TS_COL}"{DATA_TS_CAST} DESC LIMIT 1) x"""
+                    FROM (SELECT to_jsonb(s) AS r FROM {DATA_SCHEMA}."{t}" s ORDER BY {ts_order_expr(DATA_TS_COL)} DESC LIMIT 1) x"""
                 for t in part)
             for r in q(DATA_DB, union):
                 counts[r[0]] = int(r[1])
@@ -75,8 +106,9 @@ def tables_with_data(tables, chunk=60):
     if key in _CACHE:
         return _CACHE[key]
     live = set()
-    for i in range(0, len(tables), chunk):
-        part = tables[i:i + chunk]
+    real = existing_tables(tables)                     # ghosts (registry drift) never probed → never "have data"
+    for i in range(0, len(real), chunk):
+        part = real[i:i + chunk]
         try:
             union = " UNION ALL ".join(
                 f"""SELECT '{t}'::text AS tbl, EXISTS(SELECT 1 FROM {DATA_SCHEMA}."{t}") AS has_data"""

@@ -58,6 +58,22 @@ def ts_index_fn():
     return str(cfg("neuract.ts_index_fn", "")).strip()
 
 
+def ts_order_expr(col=None):
+    """The knob-aware ORDER BY / time expression for a timestamp column — ONE source of truth for every read that must
+    hit the ts EXPRESSION INDEX [R3 / audit F1]. `col` is a bare column name (default: the configured ts_col); it is
+    double-quoted here. When neuract.ts_index_fn is set (e.g. 'ts_imm') returns the schema-qualified IMMUTABLE wrapper
+    `neuract.ts_imm("timestamp_utc")` so the expression MATCHES the index and the read is an index scan; otherwise the
+    raw cast `"timestamp_utc"::timestamptz`. The two are byte-identical in ordering (ts_imm(t) IS `SELECT t::timestamptz`),
+    so switching is a pure speed change — proved over the full registry (docs/latency_audit_20260714/prove_probe_neutral.py:
+    147 tables, 0 mismatches). This is the shared twin of ems_exec/data/neuract._tsexpr() for the q()-path probes
+    (value_probe, col_dict, validate) that don't go through the ems_exec neuract door."""
+    q = '"%s"' % (col or ts_col())
+    fn = ts_index_fn()
+    if fn:
+        return f'{schema()}.{fn}({q})'
+    return f'{q}{ts_cast()}'
+
+
 def dsn():
     """The full libpq DSN string (search_path pinned to the neuract schema). This is the user-locked target by default."""
     opts = quote(f"-csearch_path={schema()}", safe="")

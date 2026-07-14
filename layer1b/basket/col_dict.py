@@ -7,6 +7,7 @@ import json
 
 from data.db_client import q
 from config.databases import DATA_DB, CONSUMER_SCHEMA, DATA_TS_COL, DATA_TS_CAST
+from config.neuract_dsn import ts_order_expr
 from config.validation import PLUMBING_COLUMNS
 from layer1b.basket.describe import describe
 
@@ -36,7 +37,7 @@ def window_nonnull(table, n=None):
     Falls back to latest_nonnull semantics when the window read fails (never raises)."""
     from config.app_config import cfg
     n = int(n or cfg("layer1b.has_data_window_rows", 20))
-    ob = f'ORDER BY "{DATA_TS_COL}"{DATA_TS_CAST} DESC' if DATA_TS_COL in real_table_cols(table) else ""
+    ob = f'ORDER BY {ts_order_expr(DATA_TS_COL)} DESC' if DATA_TS_COL in real_table_cols(table) else ""
     try:
         rows = q(DATA_DB, f'SELECT to_jsonb(t) FROM (SELECT * FROM {CONSUMER_SCHEMA}."{table}" {ob} LIMIT {n}) t')
     except Exception:
@@ -58,7 +59,7 @@ def latest_nonnull(table):
     # timestamp_utc as ISO-8601 TEXT with MIXED tz offsets (+00:00 → +05:30 writer switch), and a text sort is
     # chronological only within one offset (the latent sibling of the stale-'ts' bug). Guard: only order if the
     # column exists on this table.
-    ob = f'ORDER BY "{DATA_TS_COL}"{DATA_TS_CAST} DESC' if DATA_TS_COL in real_table_cols(table) else ""
+    ob = f'ORDER BY {ts_order_expr(DATA_TS_COL)} DESC' if DATA_TS_COL in real_table_cols(table) else ""
     rows = q(DATA_DB, f'SELECT to_jsonb(t) FROM {CONSUMER_SCHEMA}."{table}" t {ob} LIMIT 1')
     if not rows or not rows[0] or not rows[0][0]:
         return set()
