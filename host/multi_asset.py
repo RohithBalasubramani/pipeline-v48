@@ -44,30 +44,75 @@ def build_response_multi(prompt, asset_ids, date_window=None):
         if _prompt_window:
             date_window = _prompt_window
 
-    from host.compare_overlay import comparand_token, merge_all
-    all_cards = []
-    tokens_by_id = {}                                        # tag id → short comparand label (P1/P2 …) for overlay merge
-    for group in groups:
-        lane = group.get("lane") or {}
+    from host.compare_overlay import merge_all, unique_comparand_tokens
+
+    def _fill_one(lane, asset):
+        """EXACTLY the historical per-asset loop body minus tag/extend (the order-sensitive parts stay serial below):
+        rebind the class recipe at THIS asset's meter, fill from its own neuract table, attach the B1 disclosures."""
         recipe = lane.get("layer2") or {}                    # the class recipe (authored ONCE for this class)
-        for asset in (group.get("assets") or []):
-            lane_i = {**lane, "layer2": rebind_consumer(recipe, asset)}   # point the recipe at THIS asset's meter
-            cards_i = assemble_cards(lane_i, asset, date_window)          # fill from THIS asset's own neuract table
-            _attach_l2_notes(cards_i, lane_i["layer2"])                   # B1 disclosures per card (same as single path)
-            # sectioned lanes share one mfm_id — the GROUPING id must still be distinct per lane [sections]
-            _tid = (f"{asset.get('mfm_id')}{asset.get('section')}" if asset.get("section") else asset.get("mfm_id"))
-            tag = {"id": _tid, "name": asset.get("name"), "class": asset.get("class")}
-            tokens_by_id[_tid] = comparand_token(asset.get("name"))
-            for c in cards_i:
-                c["asset"] = tag                                          # FE groups + labels by this (additive)
-            all_cards.extend(cards_i)
+        lane_i = {**lane, "layer2": rebind_consumer(recipe, asset)}       # point the recipe at THIS asset's meter
+        cards_i = assemble_cards(lane_i, asset, date_window)              # fill from THIS asset's own neuract table
+        _attach_l2_notes(cards_i, lane_i["layer2"])                       # B1 disclosures per card (same as single path)
+        return cards_i
+
+    def _mode_thunk():
+        from host.compare_mode import compare_mode           # call-time import → the monkeypatch seam stays live
+        return compare_mode(prompt)
+
+    # PER-ASSET FILL FAN-OUT [Stage A, DB knob multi_asset.fill_concurrency; 0/1 = the sequential loop, byte-identical]:
+    # fills are independent per asset (the recipe is rebind-deep-copied; reads ride the pooled neuract door), so they
+    # may run concurrently — but ORDER IS LOAD-BEARING (merge_all groups by first-seen order), so the thunks only
+    # COMPUTE; tagging + tokens_by_id + all_cards.extend happen in the serial reassembly loop below in the ORIGINAL
+    # (group, asset) order. A thunk exception re-raises FIRST-IN-ORDER (parity with the serial loop's in-place raise).
+    # The compare_mode LLM call rides the same fan-out ("__mode__", +1 worker so it never steals a fill slot) instead
+    # of serializing after the fills.
+    pairs = [(gi, group, ai, asset) for gi, group in enumerate(groups)
+             for ai, asset in enumerate(group.get("assets") or [])]
+    fill_cc = int(cfg("multi_asset.fill_concurrency", 0) or 0)
+    results = None
+    if fill_cc > 1 and len(pairs) > 1:
+        from run.parallel import run_parallel
+        thunks = {}
+        if len(assets) >= 2:
+            thunks["__mode__"] = _mode_thunk
+        for gi, group, ai, asset in pairs:
+            thunks[f"g{gi}a{ai}"] = (lambda L=(group.get("lane") or {}), A=asset: _fill_one(L, A))
+        results = run_parallel(thunks, max_workers=fill_cc + (1 if "__mode__" in thunks else 0))
+
+    all_cards = []
+    named = []                                               # (tag id, token name) in lane order -> collision-free tokens [H1]
+    for gi, group, ai, asset in pairs:                       # ORIGINAL group/asset order — load-bearing for merge_all
+        cards_i = (results[f"g{gi}a{ai}"] if results is not None
+                   else _fill_one(group.get("lane") or {}, asset))
+        if isinstance(cards_i, Exception):
+            raise cards_i                                    # first-in-order → the same 500 as the sequential loop
+        # sectioned lanes share one mfm_id — the GROUPING id must still be distinct per lane [sections]
+        _tid = (f"{asset.get('mfm_id')}{asset.get('section')}" if asset.get("section") else asset.get("mfm_id"))
+        tag = {"id": _tid, "name": asset.get("name"), "class": asset.get("class")}
+        # sectioned lanes: token from "<name> <section>" so two lanes of the SAME panel get distinct meaningful tokens
+        named.append((_tid, f"{asset.get('name')} {asset.get('section')}" if asset.get("section")
+                      else asset.get("name")))
+        for c in cards_i:
+            c["asset"] = tag                                              # FE groups + labels by this (additive)
+        all_cards.extend(cards_i)
+    # H1 FIX [T0-4]: comparand_token has no uniqueness guarantee ('PCC-Panel-1' and 'Pump-1' both -> 'P1') and
+    # merge_overlay keys per-comparand payloads by token, so same-token comparands would silently OVERWRITE each
+    # other in the merged overlay card. Build the tokens over the WHOLE comparand set instead -- collision-free,
+    # deterministic in lane order -- BEFORE merge_all. [host/compare_overlay.unique_comparand_tokens]
+    tokens_by_id = unique_comparand_tokens(named)            # tag id -> short comparand label (P1/Pu1 ...) for overlay merge
 
     # ★ COMPARE MODE [overlay vs groups] — the AI decides HOW to render a multi-comparand compare (host/compare_mode):
     #   overlay = merge the per-asset cards into ONE per-comparand set (each card shows every panel inline — the same
     #             section-overlay payload shape, N-generic); groups = keep the per-asset stacked dashboards (below).
     # Only >=2 comparands is a real compare. The merge is deterministic (host/compare_overlay); mode is fail-open overlay.
-    from host.compare_mode import compare_mode
-    mode = compare_mode(prompt) if len(assets) >= 2 else "groups"
+    if results is not None and "__mode__" in results:
+        _m = results["__mode__"]
+        if isinstance(_m, Exception):
+            raise _m                                         # parity: an escaped compare_mode exception propagates
+        mode = _m if len(assets) >= 2 else "groups"
+    else:
+        from host.compare_mode import compare_mode
+        mode = compare_mode(prompt) if len(assets) >= 2 else "groups"
     if mode == "overlay" and len(assets) >= 2:
         all_cards = merge_all(all_cards, tokens_by_id)
     _grouped = (mode == "groups")

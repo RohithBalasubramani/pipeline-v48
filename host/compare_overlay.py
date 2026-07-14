@@ -23,6 +23,56 @@ def comparand_token(name):
     return (s.split() or [s])[0][:6] or "?"
 
 
+def _wider_tokens(name):
+    """Progressively WIDER variants of comparand_token(name): the same token shape rebuilt with a LONGER alpha head
+    from the name (head[:2], head[:3], ...), so a de-collided token still reads as its asset ('Pump-1' -> 'Pu1',
+    'Pum1', 'Pump1'). Mirrors comparand_token's head extraction exactly; yields nothing when the head can't widen."""
+    s = str(name or "").strip()
+    m = re.search(r"(\d+)\s*$", s)
+    if m:
+        head = re.sub(r"[^A-Za-z]", "", s.split("-")[-2] if "-" in s and s.split("-")[-2][:1].isalpha() else s)
+        for w in range(2, len(head) + 1):
+            yield head[:1].upper() + head[1:w] + m.group(1)
+        return
+    word = (s.split() or [s])[0]
+    for w in range(7, len(word) + 1):                        # comparand_token took word[:6]; widen past it
+        yield word[:w]
+
+
+def _suffixes():
+    """'b', 'c', ..., 'z', 'bb', 'bc', ...: an inexhaustible tie-break stream for the pathological case where every
+    widened head is also taken (identical names). Starts at 'b' -- the first holder keeps the bare token."""
+    letters = "bcdefghijklmnopqrstuvwxyz"
+    pool = [""]
+    while True:
+        pool = [p + ch for p in pool for ch in letters]
+        for suf in pool:
+            yield suf
+
+
+def unique_comparand_tokens(named):
+    """H1 fix [T0-4, deterministic_audit_20260714]: comparand_token is a per-name heuristic with NO uniqueness
+    guarantee -- 'PCC-Panel-1' and 'Pump-1' both map to 'P1' -- and merge_overlay keys per-comparand payloads by
+    token (per = {tok: ...}), so two same-token comparands OVERWRITE each other: one comparand's data silently
+    vanishes from the merged overlay card. Uniqueness is a SET property, so it is enforced HERE where the whole
+    comparand set is known; comparand_token itself stays untouched (single-name callers keep the short label).
+
+    `named` = [(id, name), ...] in lane order; returns {id: token}, collision-free and deterministic in input
+    order: first pass comparand_token(name); the FIRST holder keeps its token, and a collider is rebuilt with a
+    WIDER alpha head from its OWN name ('Pump-1' beside 'PCC-Panel-1' becomes 'Pu1'); if every widening is also
+    taken (identical names), 'b', 'c', ... is appended."""
+    out, used = {}, set()
+    for cid, name in named:
+        tok = comparand_token(name)
+        if tok in used:
+            tok = next((c for c in _wider_tokens(name) if c not in used), tok)
+        if tok in used:                                      # widening exhausted -> first free letter suffix
+            tok = next(tok + suf for suf in _suffixes() if tok + suf not in used)
+        out[cid] = tok
+        used.add(tok)
+    return out
+
+
 def _tint(color, f):
     """`color` mixed toward white by factor f (per-comparand tone) — matches roster_pres_sections._tint."""
     try:
