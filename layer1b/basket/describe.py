@@ -16,6 +16,13 @@ differs from title_label(column_name) — today that is never, so the field ride
 display form on demand (they all fall back to the column name: reflect `label or column`, executor gaps
 `label or metric or col`, the L2 emit basket lines never read it). title_label() stays exported as the ONE derivation
 home. DB knob layer1b.basket.label_dedup (bool, default on) restores the old behavior with a row edit, no code change.
+
+COLUMN DICTIONARY [T1-9]: curated FACTS beat the regex/suffix convention. The DB row vocab.column_dictionary
+(json {lowercase column_name: {label/kind/unit}}, seed db/seed_column_dictionary.sql, default '{}') is consulted FIRST
+by unit()/kind()/describe(): a hit's declared fields are used VERBATIM, a miss (or a field the entry does not declare)
+falls through to the convention logic below unchanged. An odd column (vendor rename, mislabeling suffix, site-local
+naming) is fixed with ONE DB row per column, no code change. Fail-open: absent/malformed (non-dict) row or any read
+error -> {} = pure convention, byte-identical to pre-dictionary behavior.
 """
 import re
 
@@ -29,7 +36,21 @@ _UNITS = (("_kwh", "kWh"), ("_kvah", "kVAh"), ("_kvarh", "kVArh"),
           ("_deg", "°"))
 
 
+def _column_dictionary():
+    """Curated per-column FACTS from the DB row vocab.column_dictionary (json {lowercase column_name: {label/kind/
+    unit}}) -- consulted FIRST by unit()/kind()/describe(); curated FACTS beat the regex/suffix convention, one DB row
+    per odd column, no code change. Fail-open: absent/malformed (non-dict) row or any error -> {} (pure convention)."""
+    try:
+        d = cfg("vocab.column_dictionary", None)
+        return d if isinstance(d, dict) else {}
+    except Exception:
+        return {}
+
+
 def unit(col):
+    e = _column_dictionary().get(str(col).lower())
+    if isinstance(e, dict) and "unit" in e:
+        return e["unit"]            # curated FACT beats convention (verbatim)
     c = col.lower()
     if _EVENT.search(c):
         return ""                   # 0/1 flag — NEVER a physical unit (was 'A' for current_*_event_active)
@@ -48,6 +69,9 @@ def unit(col):
 
 
 def kind(col):
+    e = _column_dictionary().get(str(col).lower())
+    if isinstance(e, dict) and "kind" in e:
+        return e["kind"]            # curated FACT beats convention (verbatim)
     c = col.lower()
     if _EVENT.search(c):
         return "event"              # boolean flag — excluded from quantity families (not raw, not derived)
@@ -60,8 +84,13 @@ def title_label(col):
 
 
 def describe(col):
-    # item 21 label dedup (see docstring): emit the label ONLY when it differs from title_label(col). The dictionary
+    # item 21 label dedup (see docstring): emit the label ONLY when it differs from title_label(col). The derived
     # label today IS that trivial derivation — a pure repeat of the column name — so under the knob the field rides ''
-    # and consumers derive the display form on demand. A future CURATED label that differs must be emitted verbatim.
-    lbl = "" if bool(cfg("layer1b.basket.label_dedup", True)) else title_label(col)
+    # and consumers derive the display form on demand. A CURATED label (vocab.column_dictionary hit) is emitted
+    # verbatim -- it exists precisely because it differs by intent, so the dedup knob never blanks it.
+    e = _column_dictionary().get(str(col).lower())
+    if isinstance(e, dict) and "label" in e:
+        lbl = e["label"]            # curated FACT beats convention (verbatim, never deduped away)
+    else:
+        lbl = "" if bool(cfg("layer1b.basket.label_dedup", True)) else title_label(col)
     return [lbl, kind(col), unit(col)]
