@@ -64,8 +64,34 @@ def __getattr__(name):
     raise AttributeError(f"module 'config.metrics' has no attribute {name!r}")
 
 
+def _strict_on():
+    """The metrics.normalize_strict flag (DB knob, seed db/seed_metrics_normalize_strict.sql). Lazy import + fail-open
+    to OFF: a config/DB error must never change normalization behavior (off = legacy byte-identical). [T0-6]"""
+    try:
+        from config.app_config import flag_on
+        return flag_on("metrics.normalize_strict", False)
+    except Exception:
+        return False
+
+
+def _record_unresolved(m):
+    """metric_unresolved telemetry (obs.failures, keyed by the current ai_log run id) for a metric text that fell
+    through every matching tier. Telemetry ONLY - never raises, never gates the returned default. [T0-6]"""
+    try:
+        from obs import ai_log, failures
+        failures.record("metric_normalize", "metric_unresolved", detail=str(m)[:120],
+                        run_id=getattr(ai_log, "_RUN_ID", "default"))
+    except Exception:
+        pass
+
+
 def normalize_metric(raw):
-    """Map any 1a-returned metric to exactly one canonical keyword (never a phrase)."""
+    """Map any 1a-returned metric to exactly one canonical keyword (never a phrase).
+
+    Exact tiers always run: vocab word, then alias phrase. The two legacy SUBSTRING loops (vocab-word-in-phrase before
+    alias-key-in-phrase - the order-dependence that sends 'power factor trend' to 'power' instead of 'pf') run only
+    while metrics.normalize_strict is OFF (byte-identical legacy). Strict ON skips them: exact-only, fallthrough
+    returns the default. The terminal fall-through records metric_unresolved in BOTH modes (telemetry only). [T0-6]"""
     default, vocab, aliases = _LAZY["METRIC_DEFAULT"](), _LAZY["METRIC_VOCAB"](), _LAZY["METRIC_ALIASES"]()
     m = (raw or "").strip().lower()
     if not m:
@@ -74,13 +100,44 @@ def normalize_metric(raw):
         return m
     if m in aliases:
         return aliases[m]
-    for v in vocab:                  # a vocab word contained in the phrase
-        if v in m:
-            return v
-    for k, v in aliases.items():
-        if k in m:
-            return v
+    if not _strict_on():
+        for v in vocab:              # legacy: a vocab word contained in the phrase
+            if v in m:
+                return v
+        for k, v in aliases.items():  # legacy: an alias key contained in the phrase
+            if k in m:
+                return v
+    _record_unresolved(m)
     return default
+
+
+def metric_hint(text):
+    """WORD-BOUNDARY metric scan of free prompt text -> canonical vocab keyword, or None when nothing hits whole.
+
+    Aliases first, LONGEST key first ('total harmonic distortion' beats 'harmonic distortion' beats 'distortion'),
+    then bare vocab words - each matched with regex word boundaries on the stripped/lowered text, so 'empower the
+    team' does NOT hit 'power'. Pure scan, single concern: no default, no telemetry - normalize_metric owns the
+    fallback policy. [T0-6]"""
+    t = (text or "").strip().lower()
+    if not t:
+        return None
+    vocab, aliases = _LAZY["METRIC_VOCAB"](), _LAZY["METRIC_ALIASES"]()
+    for k in sorted(aliases, key=len, reverse=True):
+        if _re.search(r"\b" + _re.escape(k) + r"\b", t):
+            return aliases[k]
+    for v in vocab:
+        if _re.search(r"\b" + _re.escape(v) + r"\b", t):
+            return v
+    return None
+
+
+def prompt_metric_hint(prompt):
+    """The ONE-LINE prompt->metric hint for a free-text PROMPT caller (layer1b basket). Strict flag ON: word-boundary
+    metric_hint first (correct phrase precedence), falling back to normalize_metric (exact tiers, then default +
+    metric_unresolved telemetry). Flag OFF: byte-identical legacy normalize_metric(prompt). [T0-6]"""
+    if _strict_on():
+        return metric_hint(prompt) or normalize_metric(prompt)
+    return normalize_metric(prompt)
 
 
 # ── SLOT SEMANTICS + QUANTITY-FAMILY (emit-correctness E/G) ──────────────────────────────────────────────────────────

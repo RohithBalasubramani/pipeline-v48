@@ -4,7 +4,7 @@ from llm.prompt_load import load as _prompt_load
 
 from llm.client import call_qwen
 from config.app_config import cfg
-from config.metrics import normalize_metric
+from config.metrics import prompt_metric_hint
 from layer1b.basket.col_dict import col_dict, window_nonnull
 from layer1b.basket.avg_phase import phase_sources
 from llm.transient_retry import retry_transient_result
@@ -59,7 +59,7 @@ def build_basket(prompt, asset, intent="snapshot"):
         if ft:
             table = ft
             hasdata = window_nonnull(ft)
-    metric = normalize_metric(prompt)                       # rough prompt-derived hint (1b is parallel to 1a)
+    metric = prompt_metric_hint(prompt)                     # rough prompt-derived hint (1b is parallel to 1a) [T0-6]
     cols = col_dict(table)                                  # dictionary built from the REAL consumer (neuract / CONSUMER_SCHEMA) columns
     lines = "\n".join(f"{c[0]} | {c[1]} | {c[2]} | {c[3]} | {'Y' if c[0] in hasdata else 'N'}" for c in cols)
     system = _load_prompt("column_system.md")
