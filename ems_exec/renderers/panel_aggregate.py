@@ -206,7 +206,15 @@ def render(asset, card, ctx):
     if payload is None:
         return None                                       # no payload skeleton to fill → host falls back (run_special)
 
-    members, coverage = _members.resolve(mfm_id, section_token=_section_token)   # ([], honest_blank) on orphan/None
+    if _section and _section_token is None:
+        # A SECTION WAS ASKED but its token is not a real registry section (unknown panel number, ambiguous
+        # zero-variant — sections.token returned honest None): NEVER silently widen to the FULL panel — take the
+        # SAME honest-blank path an orphan/no-member panel takes (empty roster + honest coverage badge). The member
+        # resolve is never consulted without the section filter here. [T0-5]
+        from ems_exec.renderers import _agg
+        members, coverage = [], _agg.coverage_verdict(0, 0)
+    else:
+        members, coverage = _members.resolve(mfm_id, section_token=_section_token)   # ([], honest_blank) on orphan/None
 
     # orphan / no-member panel → honest-blank the data leaves (executor strip) + honest coverage badge, never fabricate.
     if not members:

@@ -1,11 +1,12 @@
-"""tests/test_sections_token_characterization.py — pins TODAY'S behavior of data/equipment/sections.py token()
-BEFORE the Tier-0 registry-validation change (deterministic_audit_20260714 L2-07 / T0-5).
+"""tests/test_sections_token_characterization.py — pins the behavior of data/equipment/sections.py token()
+across the Tier-0 registry-validation change (deterministic_audit_20260714 L2-07 / T0-5, now SHIPPED).
 
-Pins the CORRECT contract (numbered panel + A/B → '<n><S>'; no number / bad letter → None) AND the KNOWN defect
-shape: int() collapses leading-zero variants ('PCC-Panel-01' and 'PCC-Panel-1' both → '1A') and the synthesized
-token is never checked against the registry (a panel with no such section still gets a token → silently filters to
-zero members). T0-5 keeps the collapse-to-real-token behavior when the registry CONFIRMS it and returns None
-otherwise; the pins marked DEFECT here get updated in that commit."""
+Pins the CORRECT contract (numbered panel + A/B → '<n><S>'; no number / bad letter → None) plus the two former
+DEFECT shapes, updated to the new expectations: int()'s leading-zero collapse is kept ONLY when the registry
+CONFIRMS the collapsed token (unique hit), and a synthesized token with NO such section in equipment.mfm is now
+honest None instead of silently filtering the member roll-up to zero. The FIXED pins monkeypatch _section_map (no
+DB); the contract pins below run against whatever map is live — they hold on the real registry (1A/2B/4B are real
+tokens) AND door-dark (empty map → legacy synthesis), so they stay environment-independent."""
 import data.equipment.sections as SE
 
 
@@ -27,13 +28,15 @@ def test_bad_section_letter_is_none():
     assert SE.token("PCC-Panel-1", None) is None
 
 
-def test_DEFECT_leading_zero_collapse():
-    # int() strips the zero: two DIFFERENT panel spellings produce the SAME token — pinned as today's behavior;
-    # T0-5 keeps this ONLY when the registry proves '1A' is the real token (unique hit), else honest None.
+def test_FIXED_leading_zero_collapse(monkeypatch):
+    # FIXED (T0-5): int() still strips the zero, but ONLY because the registry proves '1A' is the real token
+    # (unique hit among the as-written + zero-stripped candidates) — no longer an unchecked collapse.
+    monkeypatch.setattr(SE, "_section_map", lambda: {"t1": "1A", "t2": "1B"})
     assert SE.token("PCC-Panel-01", "A") == "1A"
 
 
-def test_DEFECT_token_never_registry_checked():
-    # A panel number with NO such section in equipment.mfm still synthesizes a token today (silently filters the
-    # member roll-up to zero). T0-5 makes this return None (honest degrade) when the registry map is available.
-    assert SE.token("PCC-Panel-99", "A") == "99A"
+def test_FIXED_token_registry_checked(monkeypatch):
+    # FIXED (T0-5): a panel number with NO such section in equipment.mfm now returns honest None (was '99A' — a
+    # synthesized token that silently filtered the member roll-up to zero) when the registry map is available.
+    monkeypatch.setattr(SE, "_section_map", lambda: {"t1": "1A", "t2": "1B"})
+    assert SE.token("PCC-Panel-99", "A") is None
