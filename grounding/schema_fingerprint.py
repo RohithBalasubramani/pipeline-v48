@@ -41,6 +41,34 @@ _MARK_BREAKER = "bc_acb_on_fb"                        # feedbacks_35 only (SCADA
 _MARK_STD_POWER = "active_power_total_kw"             # p1_72 AND ng_se_jk_70 (standard MFM naming)
 _MARK_HARMONIC5 = "harmonic_5th_pct"                 # p1_72 only — ng/se/jk/sch tables lack it
 
+# the code-default mirror of the DB-editable marker row (db/seed_schema_fingerprint_markers.sql) -- the constants above
+# stay the single code home; this dict only names them for the json-row overlay.
+_MARKER_DEFAULTS = {
+    "ups_power": _MARK_UPS_POWER,
+    "ups_batt": _MARK_UPS_BATT,
+    "breaker": _MARK_BREAKER,
+    "std_power": _MARK_STD_POWER,
+    "harmonic5": _MARK_HARMONIC5,
+}
+
+
+def _markers():
+    """The marker-column dict {ups_power, ups_batt, breaker, std_power, harmonic5} the classifier discriminates by:
+    the DB-editable json row cfg('grounding.fingerprint_markers') when present and non-empty (a missing/blank key
+    inside the row falls back per-key to its code default), else dict(_MARKER_DEFAULTS). Fail-open: any read/parse
+    error serves the defaults -- never raises. NOTE: fingerprint() caches per table for the process life (and cfg()
+    caches app_config on first success), so editing the marker row needs a process restart to take effect -- exactly
+    the same deploy semantics as editing the constants today."""
+    try:
+        from config.app_config import cfg
+        m = cfg("grounding.fingerprint_markers", None)
+        if isinstance(m, dict) and m:
+            return {k: str(m.get(k) or v) for k, v in _MARKER_DEFAULTS.items()}
+    except Exception:
+        pass
+    return dict(_MARKER_DEFAULTS)
+
+
 _CACHE: dict[str, str] = {}
 
 
@@ -79,13 +107,15 @@ def fingerprint(table):
 
 
 def _classify(cols):
-    """Pure column-set → fingerprint (extracted so a caller with a column set already in hand can reuse it)."""
-    if _MARK_UPS_POWER in cols or _MARK_UPS_BATT in cols:
+    """Pure column-set -> fingerprint (extracted so a caller with a column set already in hand can reuse it).
+    Discriminates by _markers() -- DB row grounding.fingerprint_markers, else the _MARK_* code defaults."""
+    mk = _markers()
+    if mk["ups_power"] in cols or mk["ups_batt"] in cols:
         return TM_UPS_56
-    if _MARK_BREAKER in cols:
+    if mk["breaker"] in cols:
         return FEEDBACKS_35
-    if _MARK_STD_POWER in cols:
-        return P1_72 if _MARK_HARMONIC5 in cols else NG_SE_JK_70
+    if mk["std_power"] in cols:
+        return P1_72 if mk["harmonic5"] in cols else NG_SE_JK_70
     return SCH_STUB
 
 
