@@ -98,12 +98,33 @@ def _name_class(table):
     return "Load"
 
 
+# module-level throttle: table names whose name-needle fallback already recorded telemetry, so a hot table records ONCE
+# per process (never floods the failure log). Cleared only by process restart. [T1-8]
+_NAME_CLASS_NOTED = set()
+
+
 def _class_of(r):
-    """asset_type.code (authoritative) → trusted lt_mfm_type.code → name-pattern fallback. [AUDIT-3 class order]"""
+    """asset_type.code (authoritative) -> trusted lt_mfm_type.code -> name-needle LAST-RESORT fallback. [AUDIT-3 class
+    order]. The name-needle tier is meant to be a DEAD third tier: reaching it means NEITHER the asset_type.code NOR the
+    lt_mfm_type.code registry class fact resolved a class for this row, i.e. the canonical class facts are missing/stale
+    and should be backfilled (the future registry class-column sync -- OUT of this commit's scope). When the fallback
+    actually fires we record a throttled obs.failures 'name_class_fallback' note so that backfill can be targeted; the
+    class VALUE returned is byte-identical to before -- telemetry only, NEVER a behavior change (guarded, never raises).
+    """
     a_map, m_map = _class_code_maps()
-    return (a_map.get(r.get("asset_type_code") or "")
-            or m_map.get(r.get("mfm_type_code") or "")
-            or _name_class(r.get("table")))
+    cls = a_map.get(r.get("asset_type_code") or "") or m_map.get(r.get("mfm_type_code") or "")
+    if cls:
+        return cls
+    table = r.get("table")
+    cls = _name_class(table)                                     # last-resort tier (never None; "Load" when no needle)
+    if cls is not None and table not in _NAME_CLASS_NOTED:       # record the miss ONCE per table, then move on
+        _NAME_CLASS_NOTED.add(table)
+        try:
+            from obs.failures import record
+            record("asset_candidates", "name_class_fallback", detail=f"{table}->{cls}")
+        except Exception:
+            pass                                                 # telemetry is best-effort: never raise, never re-route
+    return cls
 
 
 def _alias_map():
