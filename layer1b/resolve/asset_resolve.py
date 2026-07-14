@@ -77,14 +77,53 @@ def _member_direction_ai_on():
         return False
 
 
+def _alias_reprompt_on():
+    """resolver.alias_reprompt [T2.3-2]: on an all-panel-ambiguous outcome whose spelled aliases uniquely name ONE
+    panel, RE-ASK the model with the dictionary fact injected so IT owns the pin (the deterministic alias-dictionary
+    pin stays as the reproducibility floor). Never raises; off → the deterministic pin, byte-identical."""
+    try:
+        from config.app_config import flag_on
+        return flag_on("resolver.alias_reprompt")
+    except Exception:
+        return False
+
+
 _SECTION_NORMALIZE = {"a": "A", "b": "B", "both": "both", "none": "none"}
+
+
+def _alias_reask(system, user, panel_name, spelled, resolve_name, cands):
+    """T2.3-2 re-ask: re-run the resolver with the pcc_panel_alias dictionary FACT appended, so the MODEL owns the
+    pin. Returns a confident outcome (how='alias-fact-ai') ONLY when the re-answer confidently resolves to
+    `panel_name` (the fact check); anything else → None (caller uses the deterministic floor). Never raises."""
+    try:
+        fact = (f"\n\nDICTIONARY FACT: the panel aliases spelled in the prompt "
+                f"({', '.join(sorted(str(s) for s in spelled))}) ALL name {panel_name} — they are its BUS SECTIONS "
+                f"(ONE panel), NOT different panels. Resolve the SINGLE panel {panel_name}.")
+        user2 = (user[:-len("JSON:")] + fact + "\nJSON:") if str(user).endswith("JSON:") else str(user) + fact
+
+        def _recall():
+            return call_qwen(system, user2, stage="asset_resolve",
+                             json_schema=asset_answer_schema(), on_error="marker")
+
+        res2, failed2 = retry_transient_result(_recall)
+        if failed2 or not (res2 or {}).get("confident"):
+            return None
+        picks2 = [r for r in (resolve_name(n) for n in (res2.get("names") or [])) if r]
+        if picks2 and picks2[0][1] == panel_name and not _is_ghost(picks2[0]):
+            asset = confident_pin(picks2[0], cands)
+            return no_data_outcome(asset, cands) or {"asset": asset, "how": "alias-fact-ai",
+                                                     "candidates": [], "alias_reprompt": "confirmed"}
+    except Exception:
+        pass
+    return None
 
 
 # BUS-SECTION facts + the ONE stamping site moved to layer1b/resolve/panel_sections.py [T0-8, atomic-structure].
 # Byte-compat re-exports: _alias_rescue + external readers keep their names; the STAMPING now goes through
 # panel_sections.stamp_section_facts (the pinned path and _finish used to duplicate it inline).
 from layer1b.resolve.panel_sections import (  # noqa: E402,F401
-    pcc_section_index as _pcc_section_index, panel_section, compare_sections, stamp_section_facts)
+    pcc_section_index as _pcc_section_index, panel_section, compare_sections, stamp_section_facts,
+    alias_in as _alias_in)
 
 
 def _pcc_alias_index():
@@ -184,14 +223,27 @@ def resolve_asset(prompt, asset_id_override=None, cands=None):
             if not cands_out or any(str(c.get("class") or "").strip().lower() != "panel" for c in cands_out):
                 return outcome
             p = _norm(prompt)
-            hit = {pn for al, (pn, _sec) in _pcc_section_index().items() if al in p}
+            hit = {pn for al, (pn, _sec) in _pcc_section_index().items() if _alias_in(p, al)}   # digit-boundary [T2.3-1]
+            spelled = {al for al, (_pn, _sec) in _pcc_section_index().items() if _alias_in(p, al)}
             if len(hit) != 1:
                 return outcome
-            row = by_name.get(next(iter(hit)))
+            pn = next(iter(hit))
+            row = by_name.get(pn)
             if row is None or _is_ghost(row):
                 return outcome
+            # T2.3-2 [resolver.alias_reprompt]: hand the dictionary FACT back to the model so IT owns the pin (AI
+            # decides; the deterministic alias-dictionary pin below is the reproducibility floor). One extra resolver
+            # call ONLY on this rare ambiguous+unique-dictionary-hit path; a re-answer that does not confirm the panel
+            # falls to the deterministic pin.
+            if _alias_reprompt_on():
+                confirmed = _alias_reask(system, user, pn, spelled, resolve_name, cands)
+                if confirmed is not None:
+                    return confirmed
             asset = confident_pin(row, cands)
-            return no_data_outcome(asset, cands) or {"asset": asset, "how": "alias-dictionary", "candidates": []}
+            out = no_data_outcome(asset, cands) or {"asset": asset, "how": "alias-dictionary", "candidates": []}
+            if _alias_reprompt_on():
+                out["alias_reprompt"] = "fallback"
+            return out
         except Exception:
             return outcome
 

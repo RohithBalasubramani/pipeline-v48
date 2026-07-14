@@ -16,6 +16,26 @@ from layer1b.normalize import norm as _norm  # the ONE asset-name match key (D9)
 from layer1b.resolve.member_scope import member_scope
 
 
+def alias_in(p, al):
+    """Digit-boundary alias containment on the collapsed match key `p` (norm strips all separators) [T2.3-1]. A raw
+    `al in p` matched an alias inside a longer digit run — 'pcc1' hit inside 'pcc10', 'pcc 1' inside 'pcc 10' — the
+    same substring-collision shape as the compare/sankey bugs. Here an alias whose FIRST or LAST char is a digit only
+    counts when the adjacent prompt char is NOT another digit; a letter-terminated alias ('pcc1a') still matches
+    normally ('pcc1a' in 'comparepcc1aand1b' — the char after is 'a', not a digit). Byte-identical on the live alias
+    set (panels 1-4, no prefix collisions); it only diverges the day a 'PCC-10' exists — exactly the guard's purpose."""
+    if not al or not p:
+        return False
+    i = p.find(al)
+    n = len(al)
+    while i != -1:
+        pre = p[i - 1] if i else ""
+        post = p[i + n] if i + n < len(p) else ""
+        if not (al[-1].isdigit() and post.isdigit()) and not (al[0].isdigit() and pre.isdigit()):
+            return True
+        i = p.find(al, i + 1)
+    return False
+
+
 def pcc_section_index():
     """{normalized_alias: (canonical_panel_name, section)} for SECTIONED aliases only ('pcc-1b' → ('PCC-Panel-1','B')).
     The A/B are the panel's BUS SECTIONS — one registry row, two member sets (equipment.mfm.section). {} fail-open."""
@@ -38,7 +58,7 @@ def panel_section(prompt, panel_name):
         return None
     found = set()
     for al, (pn, sec) in pcc_section_index().items():
-        if pn == panel_name and al in p:
+        if pn == panel_name and alias_in(p, al):
             found.add(sec)
     return next(iter(found)) if len(found) == 1 else None
 
@@ -51,7 +71,7 @@ def compare_sections(prompt, panel_name):
     p = _norm(prompt)
     if not p or not panel_name:
         return None
-    found = {sec for al, (pn, sec) in pcc_section_index().items() if pn == panel_name and al in p}
+    found = {sec for al, (pn, sec) in pcc_section_index().items() if pn == panel_name and alias_in(p, al)}
     return sorted(found) if len(found) >= 2 else None
 
 
