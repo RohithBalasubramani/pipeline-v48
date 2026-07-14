@@ -9,6 +9,12 @@ import math
 
 from ._coerce import f as _f
 
+try:
+    from config.failopen import cfg_safe as _cfg   # THE guarded cfg reader (D3)
+except Exception:                                  # pure-fn module must import even without config on sys.path
+    def _cfg(key, default):
+        return default
+
 
 def pf_angle_deg(ctx):
     """Displacement angle φ = acos(power_factor) in degrees — the exact PF identity. real_exact. ctx: {row} (latest)."""
@@ -70,9 +76,21 @@ def _split_windows(series):
     return rows[:mid], rows[mid:]
 
 
+def _thd_trend_deadband_pct():
+    """The +/-% deadband inside which thd_trend_label calls the window 'Flat' -- the DB-editable app_config row
+    pq.thd_trend_deadband_pct (db/seed_pq_thd_deadband.sql), code default 2.0. Same fail-open pattern as
+    _ithd_limit_pct: a missing row / unreadable DB / garbage value serves the code default. Never raises."""
+    try:
+        v = _f(_cfg("pq.thd_trend_deadband_pct", 2.0))
+        return float(v) if v is not None else 2.0
+    except Exception:
+        return 2.0
+
+
 def thd_trend_label(ctx):
-    """I-THD direction over the window: mean(recent) vs mean(prior) → 'Rising'|'Falling'|'Flat' (±2% deadband).
-    real_approx (windowed statistic). ctx: {series:[rows with thd_current_*_pct, ts]}."""
+    """I-THD direction over the window: mean(recent) vs mean(prior) -> 'Rising'|'Falling'|'Flat' (+/- deadband,
+    DB-editable pq.thd_trend_deadband_pct, default 2%). real_approx (windowed statistic).
+    ctx: {series:[rows with thd_current_*_pct, ts]}."""
     prior, recent = _split_windows(ctx.get("series"))
     if not prior or not recent:
         return None
@@ -83,7 +101,8 @@ def thd_trend_label(ctx):
     dp = (sum(q) / len(q)) - (sum(p) / len(p))
     base = (sum(p) / len(p)) or 1.0
     pct = dp / base * 100.0
-    return "Rising" if pct > 2 else "Falling" if pct < -2 else "Flat"
+    band = _thd_trend_deadband_pct()
+    return "Rising" if pct > band else "Falling" if pct < -band else "Flat"
 
 
 def thd_trend_rate_pct_per_hour(ctx):
