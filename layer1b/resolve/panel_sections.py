@@ -60,7 +60,7 @@ def _sections_of(panel_name):
     return {sec for _al, (pn, sec) in pcc_section_index().items() if pn == panel_name}
 
 
-def stamp_section_facts(asset, prompt, ai_section=None):
+def stamp_section_facts(asset, prompt, ai_section=None, ai_member_direction=None):
     """Mutate a RESOLVED-asset dict with the prompt facts every consumer reads: member_scope (incomer/outgoing),
     section ('A'/'B' single-section view), compare_sections (['A','B'] section compare). The ONE stamping site
     (pinned path + _finish both call here).
@@ -69,10 +69,21 @@ def stamp_section_facts(asset, prompt, ai_section=None):
     path where no LLM ran). VALIDATE-then-trust: a fact-valid emission wins (the AI read the meaning); anything
     invalid/absent falls back to the substring detector (the deterministic floor). 'none' still runs the detector —
     an explicit AI no-section must not suppress a detector hit silently (disagreement = telemetry, detector wins on
-    'none' because a spelled alias is a FACT in the prompt)."""
+    'none' because a spelled alias is a FACT in the prompt).
+
+    `ai_member_direction` [T1-10] — the model's reading-side emission ('incomer'/'outgoing'; None off/pinned). Enum-
+    clamped by the caller; wins over the keyword scan when present, with the scan kept as the validator/fallback and
+    a disagreement recorded (member_direction_disagree telemetry). ONE stamped `member_scope` value — both the emit
+    facts (panel_members_block) and the executor fill (members.role_filter_for) read it (dual-consumer parity)."""
     if not isinstance(asset, dict):
         return
-    asset["member_scope"] = member_scope(prompt)
+    kw_dir = member_scope(prompt)
+    if ai_member_direction in ("incomer", "outgoing"):
+        asset["member_scope"] = ai_member_direction
+        if ai_member_direction != kw_dir:
+            _note_dir_mismatch(ai_member_direction, kw_dir, asset.get("name"))
+    else:
+        asset["member_scope"] = kw_dir
     det_sec = panel_section(prompt, asset.get("name"))
     det_cmp = compare_sections(prompt, asset.get("name"))
     sec, cmp_ = det_sec, det_cmp
@@ -97,5 +108,15 @@ def _note_mismatch(ai_section, det_sec, det_cmp, panel_name):
         from obs.failures import record
         record("asset_resolve", "section_ai_mismatch",
                detail=f"ai={ai_section} detector={det_sec or det_cmp} panel={str(panel_name)[:40]}")
+    except Exception:
+        pass
+
+
+def _note_dir_mismatch(ai_dir, kw_dir, panel_name):
+    """AI-vs-keyword-scan reading-side disagreement telemetry (the enum-valid AI value was kept). [T1-10]"""
+    try:
+        from obs.failures import record
+        record("asset_resolve", "member_direction_disagree",
+               detail=f"ai={ai_dir} keyword={kw_dir} panel={str(panel_name)[:40]}")
     except Exception:
         pass

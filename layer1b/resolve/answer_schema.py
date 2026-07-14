@@ -37,13 +37,18 @@ ASSET_ANSWER_SCHEMA = {
 # against the pcc_panel_alias facts and falls back to the substring detector on a miss (AI decides; deterministic
 # validates + falls back). Property order after `candidates`, matching the emit contract.
 _SECTION_PROP = {"section": {"type": "string", "enum": ["A", "B", "both", "none"]}}
+# T1-10 [resolver.member_direction_ai]: an OPTIONAL panel reading-side emission — 'incomer' (supply/upstream) vs
+# 'outgoing' (the fed feeders/bays, the default). Added to the properties ONLY when the flag is on; validated by the
+# enum clamp + the keyword scan fallback in _finish (AI decides; deterministic validates + falls back).
+_MEMBER_DIR_PROP = {"member_direction": {"type": "string", "enum": ["incomer", "outgoing"]}}
 
 
 def asset_answer_schema():
     """ASSET_ANSWER_SCHEMA when llm.guided_json.asset_resolve is on, else None (default: off / absent row / DB down —
-    call_qwen then builds today's byte-identical json_object request). When resolver.section_ai is ALSO on, the schema
-    gains the optional `section` enum. Never raises, never blocks import. Identity of the base object is preserved when
-    section_ai is off (test_item17 pins `is`)."""
+    call_qwen then builds today's byte-identical json_object request). When resolver.section_ai and/or
+    resolver.member_direction_ai are ALSO on, the schema gains those optional enums (`required` stays ['confident']).
+    Never raises, never blocks import. Identity of the base object is preserved when both extras are off (test_item17
+    pins `is`)."""
     try:
         from config.app_config import flag_on
         on = flag_on("llm.guided_json.asset_resolve")   # THE boolean-knob vocabulary (D6)
@@ -51,12 +56,17 @@ def asset_answer_schema():
         on = False
     if not on:
         return None
+    extra = {}
     try:
         from config.app_config import flag_on as _f
         if _f("resolver.section_ai"):
-            return {"type": "object",
-                    "properties": {**ASSET_ANSWER_SCHEMA["properties"], **_SECTION_PROP},
-                    "required": ASSET_ANSWER_SCHEMA["required"]}
+            extra.update(_SECTION_PROP)
+        if _f("resolver.member_direction_ai"):
+            extra.update(_MEMBER_DIR_PROP)
     except Exception:
-        pass
-    return ASSET_ANSWER_SCHEMA
+        extra = {}
+    if not extra:
+        return ASSET_ANSWER_SCHEMA                       # identity preserved (both extras off)
+    return {"type": "object",
+            "properties": {**ASSET_ANSWER_SCHEMA["properties"], **extra},
+            "required": ASSET_ANSWER_SCHEMA["required"]}

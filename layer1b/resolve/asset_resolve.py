@@ -67,6 +67,16 @@ def _section_ai_on():
         return False
 
 
+def _member_direction_ai_on():
+    """resolver.member_direction_ai [T1-10]: the model emits `member_direction` (incomer/outgoing) in its existing
+    call; enum-clamped + validated against the keyword scan fallback. Never raises; off → byte-identical."""
+    try:
+        from config.app_config import flag_on
+        return flag_on("resolver.member_direction_ai")
+    except Exception:
+        return False
+
+
 _SECTION_NORMALIZE = {"a": "A", "b": "B", "both": "both", "none": "none"}
 
 
@@ -193,9 +203,10 @@ def resolve_asset(prompt, asset_id_override=None, cands=None):
         outcome["class_mismatch"] = class_mismatch(prior, outcome.get("asset"), outcome.get("candidates"))
         # PANEL READING DIRECTION + BUS-SECTION facts [panel_overview/sections]: ONE stamping site
         # (panel_sections.stamp_section_facts) — member_scope + section + compare_sections; the pinned path calls the
-        # same helper (parity by construction). `_ai_section` (a closure var set after the resolve call; None when
-        # resolver.section_ai is off / llm_failed / pinned) is VALIDATED against the alias facts inside the helper.
-        stamp_section_facts(outcome.get("asset"), prompt, ai_section=_ai_section)
+        # same helper (parity by construction). `_ai_section`/`_ai_member_direction` (closure vars set after the
+        # resolve call; None when the flag is off / llm_failed / pinned) are VALIDATED inside the helper.
+        stamp_section_facts(outcome.get("asset"), prompt, ai_section=_ai_section,
+                            ai_member_direction=_ai_member_direction)
         return outcome
 
     # listing has NO id column: the model must reason over name/class/load_group only, never registry ids. The
@@ -209,6 +220,8 @@ def resolve_asset(prompt, asset_id_override=None, cands=None):
     system = _load_prompt("asset_system.md")
     if _section_ai_on():                                  # T0-9: teach the optional `section` key (flag off → byte-identical)
         system = system + "\n" + _load_prompt("asset_section_clause.md")
+    if _member_direction_ai_on():                         # T1-10: teach the optional `member_direction` key
+        system = system + "\n" + _load_prompt("asset_member_direction.md")
     user = (f"CANDIDATES (name<TAB>class<TAB>load_group<TAB>flag<TAB>aka):\n{listing}\n\n"
             f"CLASSES PRESENT IN THE REGISTRY: {classes_present}\n"
             f"PROMPT: {prompt!r}\nJSON:")
@@ -235,11 +248,16 @@ def resolve_asset(prompt, asset_id_override=None, cands=None):
                          json_schema=asset_answer_schema(), on_error="marker")
 
     res, llm_failed = retry_transient_result(_call)
-    # T0-9: the model's optional bus-section emission (None unless resolver.section_ai + a clean answer). Normalized to
-    # the panel_sections vocabulary; validated against the alias facts inside stamp_section_facts (called by _finish).
+    # T0-9/T1-10: the model's optional bus-section + reading-side emissions (None unless the flag + a clean answer).
+    # Normalized to the panel_sections vocabulary; validated against the alias facts / clamped to the enum inside
+    # stamp_section_facts (called by _finish). Closure vars — set here (after the resolve call), read there.
     _ai_section = None
+    _ai_member_direction = None
     if not llm_failed and _section_ai_on():
         _ai_section = _SECTION_NORMALIZE.get(str((res or {}).get("section") or "").strip().lower())
+    if not llm_failed and _member_direction_ai_on():
+        _v = str((res or {}).get("member_direction") or "").strip().lower()
+        _ai_member_direction = _v if _v in ("incomer", "outgoing") else None
 
     if llm_failed:
         # the model was NEVER HEARD (transport/parse failure twice) — honest degrade to the browse picker (class-

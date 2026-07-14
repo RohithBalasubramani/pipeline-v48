@@ -1,0 +1,4 @@
+PANEL READING SIDE (optional key) — when the asset you resolved is a PANEL (class Panel) and the prompt names which side of the panel to read, ALSO return a "member_direction" key:
+- "incomer" — the SUPPLY side: incoming / upstream / source / feed-in ('incomer PCC-1A', 'what feeds PCC-1A', 'PCC-1 supply side', 'upstream of panel 2').
+- "outgoing" — the FED side: the outgoing feeders / bays this panel serves ('PCC-1A outgoing feeders', 'loads on panel 1', 'what PCC-1 feeds'). This is the DEFAULT when the prompt names no side.
+Omit the key for non-panels or when the prompt names no reading side. The "member_direction" picks which member SIDE of the ONE resolved panel to read — it is NOT a class and never changes the "names" you return (an 'incomer PCC-1A' prompt still resolves to the PCC-1A PANEL, never an Incomer-class meter).
