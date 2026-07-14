@@ -249,8 +249,13 @@ def resolve_asset(prompt, asset_id_override=None, cands=None):
         for p in picks:
             if not _is_ghost(p) and p[0] not in _seen:
                 _seen.add(p[0]); _distinct.append(p)
-        if len(_distinct) >= 2:
-            return _finish({"asset": confident_pin(_distinct[0], cands), "how": "AI", "candidates": [],
+        # PRIMARY PIN MUST BE DATA-BEARING [no_data-gate parity — property P1]: how='AI' promises a renderable,
+        # data-bearing asset to every single-asset consumer of the outcome. A dark comparand stays IN compare_ids
+        # (its lane honest-blanks per-leaf in the multi assembler), but it can never be the primary; all-dark →
+        # fall through to the single-pick path below, whose no_data_outcome handles it honestly.
+        _primary = next((p for p in _distinct if p[6]), None)
+        if len(_distinct) >= 2 and _primary is not None:
+            return _finish({"asset": confident_pin(_primary, cands), "how": "AI", "candidates": [],
                             "compare_ids": [p[0] for p in _distinct]})
 
     if confident and picks and not _is_ghost(picks[0]):             # the model confidently pinned a RENDERABLE asset...
