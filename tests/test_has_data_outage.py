@@ -47,3 +47,46 @@ def test_non_outage_error_keeps_fail_open(monkeypatch):
     counts = H.value_counts(_fresh(["t_ghost", "t_real"]))
     assert counts == {"t_ghost": H.VALUE_MIN, "t_real": H.VALUE_MIN}   # kept data-bearing (historical fail-open)
     assert H.tables_with_data(_fresh(["t_ghost2"])) == {"t_ghost2"}
+
+
+# --- TYPE-first triage (data/outage.py is_outage_exc): the exception TYPE decides, no fingerprint dependence ------
+
+def test_psycopg2_operational_error_with_novel_wording_is_outage(monkeypatch):
+    psycopg2 = pytest.importorskip("psycopg2")
+    def dead_q(db, sql):
+        raise psycopg2.OperationalError("SSL SYSCALL something brand new")   # wording matches NO fingerprint
+    monkeypatch.setattr(H, "q", dead_q)
+    with pytest.raises(psycopg2.OperationalError, match="brand new"):
+        H.value_counts(_fresh(["t_typed_a", "t_typed_b"]))
+    with pytest.raises(psycopg2.OperationalError, match="brand new"):
+        H.tables_with_data(_fresh(["t_typed_c"]))
+
+
+def test_connection_refused_error_type_is_outage(monkeypatch):
+    def dead_q(db, sql):
+        raise ConnectionRefusedError("totally unfingerprinted wording")     # ConnectionError subclass => outage by type
+    monkeypatch.setattr(H, "q", dead_q)
+    with pytest.raises(ConnectionRefusedError):
+        H.value_counts(_fresh(["t_connref_a"]))
+    with pytest.raises(ConnectionRefusedError):
+        H.tables_with_data(_fresh(["t_connref_b"]))
+
+
+def test_file_not_found_stays_non_outage_fail_open(monkeypatch):
+    # FileNotFoundError is an OSError subclass but a LOGIC bug -- must keep the historical fail-open, never
+    # be absorbed as an honest outage (the bare-OSError trap is_outage_exc's docstring forbids).
+    def dead_q(db, sql):
+        raise FileNotFoundError("psql binary vanished")
+    monkeypatch.setattr(H, "q", dead_q)
+    counts = H.value_counts(_fresh(["t_fnf_a", "t_fnf_b"]))
+    assert counts == {"t_fnf_a": H.VALUE_MIN, "t_fnf_b": H.VALUE_MIN}
+    assert H.tables_with_data(_fresh(["t_fnf_c"])) == {"t_fnf_c"}
+
+
+def test_runtime_relation_missing_stays_non_outage_fail_open(monkeypatch):
+    def bad_table_q(db, sql):
+        raise RuntimeError("relation does not exist")
+    monkeypatch.setattr(H, "q", bad_table_q)
+    counts = H.value_counts(_fresh(["t_rel_a"]))
+    assert counts == {"t_rel_a": H.VALUE_MIN}
+    assert H.tables_with_data(_fresh(["t_rel_b"])) == {"t_rel_b"}

@@ -14,7 +14,7 @@ from data.db_client import q, pg_bool
 from config.databases import DATA_DB, DATA_SCHEMA, DATA_TS_COL, DATA_TS_CAST
 from config.neuract_dsn import ts_order_expr
 from config.validation import PLUMBING_COLUMNS as _PLUMBING   # ONE shared home with col_dict._SKIP (was drifting)
-from data.outage import is_outage_error
+from data.outage import is_outage_exc
 from data.ttl_cache import TTLCache
 
 # TTL-expiring so a transient :5433 flap that lands a stale has-data set self-heals within cache.resolution_ttl_s
@@ -44,7 +44,7 @@ def existing_tables(tables):
                               f"WHERE table_schema = '{DATA_SCHEMA}'")
             allset = {r[0] for r in rows}
         except Exception as e:
-            if is_outage_error(e):
+            if is_outage_exc(e):
                 raise
             return tables
         if not allset:
@@ -81,7 +81,7 @@ def value_counts(tables, chunk=40):
             # signals (→ ambiguous picker) instead of the honest data_unavailable terminal. Re-raise so run_1b's
             # layer-exception reaches the degrade gate. A NON-outage error (bad table, SQL logic) keeps the
             # fail-open: one bad chunk must not drop real assets.
-            if is_outage_error(e):
+            if is_outage_exc(e):
                 raise
             import sys
             sys.stderr.write(f"[value_counts] chunk failed ({str(e)[:80]}) — keeping {len(part)} assets\n")
@@ -118,7 +118,7 @@ def tables_with_data(tables, chunk=60):
         except Exception as e:
             # same outage-vs-bad-chunk split as value_counts (see above): connection failure → honest raise; a bad
             # table name keeps the fail-open so one ghost table can't drop the whole chunk's real assets.
-            if is_outage_error(e):
+            if is_outage_exc(e):
                 raise
             import sys
             sys.stderr.write(f"[has_data] chunk failed ({str(e)[:80]}) — keeping {len(part)} assets\n")

@@ -33,3 +33,25 @@ def is_outage_error(detail):
         return False
     d = str(detail).lower()
     return any(fp in d for fp in _OUTAGE_FINGERPRINTS)
+
+
+def is_outage_exc(e):
+    """True iff an IN-PROCESS exception OBJECT is a LIVE-DATA-SOURCE outage. TYPE-first triage: connection/timeout
+    types are outages by construction, no matter how novel the message wording; then falls back to the fingerprint
+    match on str(e) for outages that surface as generic exception types (e.g. a RuntimeError wrapping psql stderr).
+
+    Deliberately NOT a bare `isinstance(e, OSError)`: FileNotFoundError and PermissionError are OSError subclasses but
+    are LOGIC bugs (missing file, bad perms) -- absorbing them as honest "no data" is exactly the silent fabrication
+    this module forbids. Only the connection/timeout branches of the OSError tree count.
+
+    Serialized boundaries (run/degrade_gate.py and anything reading a stored detail STRING) must keep using
+    is_outage_error -- this triage only applies while the exception object is still in hand."""
+    if isinstance(e, (ConnectionError, TimeoutError)):
+        return True
+    try:
+        import psycopg2
+        if isinstance(e, psycopg2.OperationalError):
+            return True
+    except ImportError:
+        pass
+    return is_outage_error(str(e))
