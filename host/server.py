@@ -159,7 +159,8 @@ def _dump_response(resp):
     pipe costs is the wire copy). Keyed by run_id (matches pipeline_<run_id>.jsonl / ai_<run_id>.jsonl). Never raises."""
     try:
         rid = (resp or {}).get("run_id") or "default"
-        d = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "outputs", "logs")
+        from obs.paths import logs_dir                       # the ONE writer-dir door (V48_OBS_DIR-aware) [audit 03]
+        d = logs_dir()
         os.makedirs(d, exist_ok=True)
         with open(os.path.join(d, f"response_{rid}.json"), "w") as f:
             json.dump(resp, f)

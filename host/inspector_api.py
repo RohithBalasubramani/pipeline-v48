@@ -9,7 +9,11 @@ import glob
 import json
 import os
 
-_LOGS = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "outputs", "logs")
+from obs.paths import logs_dir as _paths_logs_dir   # in-process reader: follows the writer door
+
+
+def _logs():
+    return _paths_logs_dir()
 
 
 def _jsonable(x):
@@ -24,7 +28,7 @@ def _jsonable(x):
 
 
 def _events_from_jsonl(trace_id):
-    p = os.path.join(_LOGS, f"trace_{trace_id}.jsonl")
+    p = os.path.join(_logs(), f"trace_{trace_id}.jsonl")
     if not os.path.isfile(p):
         return []
     out = []
@@ -102,7 +106,7 @@ def traces(n=50):
             return _jsonable([{**r, "source": "pg"} for r in rows])
     except Exception:
         pass
-    files = sorted(glob.glob(os.path.join(_LOGS, "trace_*.jsonl")), key=os.path.getmtime, reverse=True)[:n]
+    files = sorted(glob.glob(os.path.join(_logs(), "trace_*.jsonl")), key=os.path.getmtime, reverse=True)[:n]
     out = []
     for p in files:
         tid = os.path.basename(p)[len("trace_"):-len(".jsonl")]

@@ -42,7 +42,8 @@ def test_ai_log_installed_and_logs():
     assert urllib.request.urlopen.__name__ == "_logged"  # monkeypatch active
     ai_log.set_run_id("pytest_log")
     client.call_qwen("Reply ONLY JSON.", 'Return {"a":1}. JSON:')
-    p = os.path.join(ai_log._OUT, "ai_pytest_log.jsonl")
+    from obs.paths import logs_dir
+    p = os.path.join(logs_dir(), "ai_pytest_log.jsonl")
     assert os.path.exists(p)
     rec = json.loads(open(p).read().strip().splitlines()[-1])
     assert ":8200" in rec["url"] and rec["request"] and rec["response"]

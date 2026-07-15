@@ -17,7 +17,7 @@ from urllib.parse import urlsplit
 
 _RUN_ID_VAR = contextvars.ContextVar("obs_ai_log_run_id", default=None)   # per-request/context binding [OBS-1]
 _RUN_ID_LEGACY = "default"                                                # process-global fallback (plain threads)
-_OUT = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "outputs", "logs")
+from obs.paths import logs_dir as _logs_dir     # the ONE writer-dir door (V48_OBS_DIR-aware) [audit 03]
 _orig = urllib.request.urlopen
 
 try:
@@ -86,7 +86,7 @@ def _logged(req, *a, **kw):
         if _MATCH not in url:
             return resp
         data = resp.read()
-        os.makedirs(_OUT, exist_ok=True)
+        os.makedirs(_logs_dir(), exist_ok=True)
         rid = run_id()                                         # resolve ONCE — record and filename must agree
         rec = {"ts": datetime.now().isoformat(), "run_id": rid, "url": url}
         try:
@@ -97,7 +97,7 @@ def _logged(req, *a, **kw):
             rec["response"] = json.loads(data)
         except Exception:
             rec["response"] = None
-        with open(os.path.join(_OUT, f"ai_{rid}.jsonl"), "a") as f:
+        with open(os.path.join(_logs_dir(), f"ai_{rid}.jsonl"), "a") as f:
             f.write(json.dumps(rec) + "\n")
         return _Tee(data)
     except Exception:

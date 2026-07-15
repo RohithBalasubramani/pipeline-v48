@@ -10,11 +10,11 @@ import os
 
 from obs.stage import _failure_signal, stage
 
-_LOGS = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "outputs", "logs")
+from obs.paths import logs_dir as _logs_dir   # writers resolve through the door — tests must read the same dir
 
 
 def _read_failures(run_id):
-    p = os.path.join(_LOGS, f"failures_{run_id}.jsonl")
+    p = os.path.join(_logs_dir(), f"failures_{run_id}.jsonl")
     if not os.path.isfile(p):
         return []
     with open(p) as f:
@@ -22,7 +22,7 @@ def _read_failures(run_id):
 
 
 def _cleanup(run_id):
-    p = os.path.join(_LOGS, f"failures_{run_id}.jsonl")
+    p = os.path.join(_logs_dir(), f"failures_{run_id}.jsonl")
     if os.path.isfile(p):
         os.remove(p)
 
@@ -60,7 +60,7 @@ def test_stage_fans_out_failures(capsys):
     finally:
         _cleanup(rid)
         # stage() also appends pipeline_<rid>.jsonl — remove the test artifact
-        p = os.path.join(_LOGS, f"pipeline_{rid}.jsonl")
+        p = os.path.join(_logs_dir(), f"pipeline_{rid}.jsonl")
         if os.path.isfile(p):
             os.remove(p)
 

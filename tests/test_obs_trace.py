@@ -29,8 +29,7 @@ def _fresh_context(monkeypatch):
 
 
 def _events_for(trace_id):
-    p = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
-                     "outputs", "logs", f"trace_{trace_id}.jsonl")
+    p = os.path.join(__import__("obs.paths", fromlist=["logs_dir"]).logs_dir(), f"trace_{trace_id}.jsonl")
     if not os.path.isfile(p):
         return []
     with open(p) as f:
@@ -38,8 +37,7 @@ def _events_for(trace_id):
 
 
 def _cleanup(trace_id):
-    p = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
-                     "outputs", "logs", f"trace_{trace_id}.jsonl")
+    p = os.path.join(__import__("obs.paths", fromlist=["logs_dir"]).logs_dir(), f"trace_{trace_id}.jsonl")
     if os.path.isfile(p):
         os.remove(p)
 
@@ -190,8 +188,7 @@ def test_legacy_stage_forwards_into_trace_and_binds_run_id():
     assert e["kind"] == "legacy" and e["outputs"]["pinned"] is True
     assert "r_test123" in t["run_ids"]
     trace.end_trace(); _cleanup(t["trace_id"])
-    p = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
-                     "outputs", "logs", "pipeline_r_test123.jsonl")
+    p = os.path.join(__import__("obs.paths", fromlist=["logs_dir"]).logs_dir(), "pipeline_r_test123.jsonl")
     if os.path.isfile(p):
         os.remove(p)
 

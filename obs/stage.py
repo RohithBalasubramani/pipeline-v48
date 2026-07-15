@@ -6,15 +6,16 @@ import os
 import sys
 import time
 
-_DIR = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "outputs", "logs")
+from obs.paths import logs_dir as _logs_dir     # the ONE writer-dir door (V48_OBS_DIR-aware) [audit 03]
 
 
 def stage(run_id, name, **fields):
     parts = "  ".join(f"{k}={v}" for k, v in fields.items())
     print(f"  [{run_id}] {name:<11} {parts}", file=sys.stderr, flush=True)
     try:
-        os.makedirs(_DIR, exist_ok=True)
-        with open(os.path.join(_DIR, f"pipeline_{run_id}.jsonl"), "a") as f:
+        _d = _logs_dir()
+        os.makedirs(_d, exist_ok=True)
+        with open(os.path.join(_d, f"pipeline_{run_id}.jsonl"), "a") as f:
             f.write(json.dumps({"ts": time.time(), "stage": name, **fields}) + "\n")
     except Exception:
         pass

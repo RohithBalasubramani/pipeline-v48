@@ -1,8 +1,16 @@
 import os
 import sys
+import tempfile
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, ROOT)
+
+# STRUCTURAL OBS ISOLATION [audit 2026-07-14, 03]: point every telemetry WRITER (obs/paths.py door) at a session
+# tmpdir BEFORE any obs import, so pytest telemetry — including harness-minted real-shaped rids and subprocesses,
+# which inherit env — never lands in the prod outputs/logs sink the admin console serves. setdefault lets an
+# orchestrator pre-pin a dir; the OS tmp reaper owns cleanup.
+_OBS_TMP = os.environ.setdefault("V48_OBS_DIR", tempfile.mkdtemp(prefix="v48-obs-pytest-"))
+os.environ.setdefault("V48_OBS_NOTES_DIR", os.path.join(_OBS_TMP, "notes"))
 
 # `layer2` is ALSO a package at the grandparent backend/layer2/, and pytest prepends `backend` to
 # sys.path[0] — shadowing our package. While ROOT is first here, pin `layer2` -> pipeline_v48/layer2
@@ -38,8 +46,20 @@ def _reset_config_caches():
     """Determinism: config.app_config.cfg + config.vocab.vocab are lru_cache'd process-wide. A test that monkeypatches
     a row/vocab (or the underlying loader) leaves the cache dirty for the NEXT test — which is why
     test_slot_catalog_series passed alone but failed in the full run (a prior test had poisoned the vocab cache). Clear
-    both caches before AND after every test so ordering never changes an outcome."""
+    both caches before AND after every test so ordering never changes an outcome.
+
+    ALSO re-pin the obs run id per test: run/harness.py overwrites it with r_<sha1(prompt)> during any
+    pipeline-exercising test and nothing reset it, so every LATER test's failure/ai records leaked into that
+    real-shaped failures_r_*.jsonl — ~24% of the admin console's "real failures" were pytest artifacts
+    (over_budget/no_json/truncated/transport were 100% test noise; console_validation/failures.md 2026-07-12)."""
     from config import app_config as _ac, vocab as _vc
+    from data import value_probe as _vp
     _ac._load.cache_clear(); _vc.vocab.cache_clear()
+    # value_probe's module-level TTL caches (incl. the schema-existence set) outlive a test (TTL 120s) — a stubbed
+    # q() that answered the information_schema probe would filter the NEXT test's fake tables. Same isolation rule.
+    _vp._CACHE.clear(); _vp._VAL_CACHE.clear(); _vp._EXIST_CACHE.clear()
+    _ai.set_run_id("pytest")
     yield
     _ac._load.cache_clear(); _vc.vocab.cache_clear()
+    _vp._CACHE.clear(); _vp._VAL_CACHE.clear(); _vp._EXIST_CACHE.clear()
+    _ai.set_run_id("pytest")

@@ -14,7 +14,8 @@ import pytest
 
 from obs import bus, llm_tap, span, trace
 
-_LOGS = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "outputs", "logs")
+from obs.paths import logs_dir as _paths_logs_dir
+_LOGS = _paths_logs_dir()   # writers resolve through the door
 
 
 @pytest.fixture(autouse=True)

@@ -69,7 +69,8 @@ def card_lifecycle(trace_id, card_id):
 
 
 def _trace_from_jsonl(trace_id):
-    p = os.path.join(_ROOT, "outputs", "logs", f"trace_{trace_id}.jsonl")
+    from obs.paths import logs_dir
+    p = os.path.join(logs_dir(), f"trace_{trace_id}.jsonl")
     if not os.path.exists(p):
         return []
     out = []

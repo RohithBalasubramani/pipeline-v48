@@ -9,7 +9,7 @@ import time
 
 import obs.ai_log as _ai_log
 
-_OUT = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "outputs", "logs")
+from obs.paths import logs_dir as _logs_dir     # the ONE writer-dir door (V48_OBS_DIR-aware) [audit 03]
 _ENABLED = os.environ.get("V48_SQL_TRACE", "1") != "0"
 
 
@@ -31,8 +31,8 @@ def record(db, sql, params=None, rows=None, ms=None, err=None):
             rec["params"] = [str(p) for p in (params if isinstance(params, (list, tuple)) else [params])]
         if err:
             rec["err"] = str(err)[:200]
-        os.makedirs(_OUT, exist_ok=True)
-        with open(os.path.join(_OUT, f"sql_{rid}.jsonl"), "a") as f:
+        os.makedirs(_logs_dir(), exist_ok=True)
+        with open(os.path.join(_logs_dir(), f"sql_{rid}.jsonl"), "a") as f:
             f.write(json.dumps(rec) + "\n")
     except Exception:
         pass
