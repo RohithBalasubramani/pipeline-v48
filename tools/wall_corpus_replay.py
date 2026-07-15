@@ -68,7 +68,7 @@ _DEFAULT_GLOBS = ["outputs/_log_archive/**/ai_r_*.jsonl", "outputs/logs/ai_r_*.j
 
 # ── corpus parsing ────────────────────────────────────────────────────────────────────────────────────────────────
 _SCHEMA_HDR = re.compile(r"^\s*\((column(?: \| [a-z_]+)+)\)\s*$", re.M)
-_RUN_HDR = re.compile(r"^RUN:\s*(\S+)\s+CARD:\s*(\S+)\s+PAGE:\s*(\S+)")
+_RUN_HDR = re.compile(r"^(?:RUN:\s*(\S+)\s+)?CARD:\s*(\S+)\s+PAGE:\s*(\S+)")  # both header generations: legacy RUN:-prefixed + Stage-4 stable "CARD: ... PAGE: ..." [emit.prompt_stability]
 _GROUP_HDR = re.compile(r"^GROUP CARD:\s*(true|false)", re.M)
 _HANDLING = re.compile(r"handling_class:\s*([\w-]+)")
 _ROSTER_SPEC = re.compile(r"^\s*roster_spec \(VERBATIM.*?\):\s*(\{.*\})\s*$", re.M)
@@ -90,7 +90,7 @@ def _emit_user_message(rec):
         um = [m for m in msgs if m.get("role") == "user"][-1]["content"]
     except (KeyError, IndexError, TypeError):
         return None
-    if isinstance(um, str) and um.startswith("RUN: ") and "DB SCHEMA" in um and "CARD:" in um.splitlines()[0]:
+    if isinstance(um, str) and um.startswith(("RUN: ", "CARD: ")) and "DB SCHEMA" in um and "CARD:" in um.splitlines()[0]:
         return um
     return None
 

@@ -26,3 +26,12 @@ def roster_diff():
 def morph_shape():
     """Stage 2: data-tier shape collapse of the shown skeleton (morph-map cards only)."""
     return _on("emit.diet.morph_shape")
+
+
+def prompt_stability():
+    """Stage 4 [emit.prompt_stability='v1']: deterministic prompt bytes — freshness timestamps bucketed to the HOUR
+    (nanosecond `last=` stamps at ~char 1080 busted every byte-repeat) + the per-run RUN: prefix dropped from the
+    user message (the run id lives in ai_log/obs, the model never needs it). Identical card+context within an hour
+    → byte-identical prompt → pinned-seed determinism actually holds run-to-run, and the Stage-5 recipe cache can
+    key on the prompt bytes. off = today's exact bytes."""
+    return str(cfg("emit.prompt_stability", "off") or "off").strip().lower() in ("v1", "on", "1", "true")

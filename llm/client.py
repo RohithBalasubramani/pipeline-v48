@@ -214,6 +214,17 @@ def _call_qwen_raw(system, user, *, timeout=None, stage=None, schema=None, json_
                "response_format": ("json_schema" if schema else "json_object"), "timeout_s": tmo}
     if max_tokens > 0:
         _params["max_tokens"] = max_tokens
+    # EXACT-MATCH RESPONSE CACHE [Stage 5, llm/response_cache — flag llm.response_cache, default off]: identical
+    # prompts at temp0/seed42 measurably return DIFFERENT completions under concurrent batching (obs 5507 vs 5513),
+    # so the cache both skips the decode AND imposes the run-to-run determinism the serving stack cannot. A hit is
+    # the raw parsed envelope — the caller's full gate chain re-runs on it; only clean parse-successes are stored.
+    from llm import response_cache as _rcache
+    _ck = (_rcache.key_for(stage, config.MODEL, seed, temperature, schema, system, user)
+           if _rcache.enabled(stage, temperature, seed) else None)
+    if _ck is not None:
+        _cached = _rcache.lookup(_ck, stage=stage)
+        if _cached is not None:
+            return _cached
     attempt_user = user
     err_kind, err_detail = "parse", ""
     for attempt in range(parse_retries + 1):
@@ -260,6 +271,8 @@ def _call_qwen_raw(system, user, *, timeout=None, stage=None, schema=None, json_
         else:
             obj, err_kind, err_detail = _extract_json(content)   # THE shared parse [EH F7, corpus-parity-proven]
             if err_kind is None:
+                if _ck is not None:
+                    _rcache.store(_ck, stage, config.MODEL, obj)   # clean parse only — error paths never reach here
                 return obj
         # DETERMINISTIC failure → fail fast, once [A3]: retrying a truncation only re-truncates on a longer prompt.
         if err_kind in no_retry:

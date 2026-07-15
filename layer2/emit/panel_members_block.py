@@ -37,7 +37,13 @@ def _member_last_ts(table):
     try:
         from ems_exec.data import neuract as _nx
         ts = _nx.latest_ts(table)
-        return str(ts) if ts else None
+        if not ts:
+            return None
+        from layer2.emit.diet import prompt_stability as _stab
+        if _stab():
+            from layer2.emit.asset_facts import bucket_ts
+            return str(bucket_ts(str(ts)))                    # hour-bucketed member fact → byte-stable prompts [Stage 4]
+        return str(ts)
     except Exception:
         return None
 

@@ -7,11 +7,11 @@
 -- Rollback: set the row back to 'off' + reload. Run: psql -h localhost -p 5432 -U postgres -d cmd_catalog -f db/seed_emit_diet.sql
 
 INSERT INTO app_config (key, value, data_type, section, note) VALUES
-  ('emit.diet.roster', 'off', 'flag', 'emit',
+  ('emit.diet.roster', 'off', 'text', 'emit',
    'Stage 1 roster-DIFF output contract: the model emits ONLY changed roster bindings (omitted slots backfill '
    'verbatim via gate_roster — layer2/gates/roster.py) + the code-owned envelope scaffold note. off = legacy '
    'full-retype wording, byte-identical. Evidence: obs row 1372 (110-entry retype, ALL rejected, recipe shipped).'),
-  ('emit.diet.morph_shape', 'off', 'flag', 'emit',
+  ('emit.diet.morph_shape', 'off', 'text', 'emit',
    'Stage 2 Mechanism-A root fix: collapse the shown skeleton''s DATA-tier subtrees to <<DATA: N element(s)>> '
    'markers (morph-map cards only) + the concrete NEVER-MORPH violation example. off = full skeleton shown, '
    'byte-identical. Evidence: obs row 4485 (14,614-token zero-filled harmonic-grid morphs, all producer-rejected).')

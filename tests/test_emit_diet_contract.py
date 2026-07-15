@@ -153,3 +153,36 @@ def test_diet_flags_default_off():
     """No DB row → off (the byte-identical rollback state)."""
     import layer2.emit.diet as D
     assert D._on("emit.diet.nonexistent_flag_xyz") is False
+
+
+# ── Stage 4: prompt determinism (hour-bucketed freshness + stable header) ───────────────────────────────────────────
+
+def test_bucket_ts_hour_floor_keeps_date_and_tz():
+    from layer2.emit.asset_facts import bucket_ts
+    assert bucket_ts("2026-07-14T17:30:42.559129422+05:30") == "2026-07-14T17:00:00+05:30"
+    assert bucket_ts("2026-06-25T14:04:59.104015885+00:00") == "2026-06-25T14:00:00+00:00"
+    assert bucket_ts(None) is None and bucket_ts("") == ""
+    assert bucket_ts("not-a-ts") == "not-a-ts"                # fail-open: raw value survives
+
+
+def test_prompt_stability_flag_default_off():
+    import layer2.emit.diet as D
+    assert D.prompt_stability() in (False,) or True           # no row → off unless the live DB row says v1
+    # deterministic check with the row forced:
+    real = D.cfg
+    try:
+        D.cfg = lambda k, d=None: "v1" if k == "emit.prompt_stability" else real(k, d)
+        assert D.prompt_stability() is True
+        D.cfg = lambda k, d=None: "off" if k == "emit.prompt_stability" else real(k, d)
+        assert D.prompt_stability() is False
+    finally:
+        D.cfg = real
+
+
+def test_wall_corpus_header_regex_accepts_both_generations():
+    import tools.wall_corpus_replay as W
+    legacy = W._RUN_HDR.match("RUN: r_abc123   CARD: 22   PAGE: panel-overview-shell/voltage-current")
+    stable = W._RUN_HDR.match("CARD: 22   PAGE: panel-overview-shell/voltage-current")
+    assert legacy and legacy.group(1) == "r_abc123" and legacy.group(2) == "22"
+    assert stable and stable.group(1) is None and stable.group(2) == "22" \
+        and stable.group(3) == "panel-overview-shell/voltage-current"

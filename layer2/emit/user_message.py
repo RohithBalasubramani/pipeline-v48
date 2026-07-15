@@ -199,8 +199,14 @@ def _build(card_in, *, oversize=False):
         slot_catalog, slot_summaries = _compact_catalog(slot_catalog, int(_cfg2("emit.oversize_sibling_exemplars", 3)))
         basket_cap = int(_cfg2("emit.oversize_basket_cap", 40))
 
+    # HEADER LINE [Stage 4, emit.prompt_stability]: the per-run RUN: prefix was the FIRST cache-busting byte (char 7)
+    # of every user message — the model never needs the run id (it rides ai_log/obs). Stable mode drops it; the
+    # CARD/PAGE facts stay. tools/wall_corpus_replay.py accepts both header generations.
+    from layer2.emit.diet import prompt_stability as _stab2
+    _hdr = (f"CARD: {card_in['card_id']}   PAGE: {card_in['page_key']}" if _stab2()
+            else f"RUN: {card_in['run_id']}   CARD: {card_in['card_id']}   PAGE: {card_in['page_key']}")
     parts = [
-        f"RUN: {card_in['run_id']}   CARD: {card_in['card_id']}   PAGE: {card_in['page_key']}",
+        _hdr,
         f"GROUP CARD: {str(card_in['is_group_card']).lower()}   GROUP: {card_in.get('group_id') or 'none'}",
         "",
         f"PAGE STORY (Layer 1a): {s.get('page_story')}",

@@ -17,6 +17,21 @@ def _fmt(v):
     return "—" if v in (None, "", "NULL") else str(v)
 
 
+def bucket_ts(v):
+    """The timestamp fact bucketed to the HOUR [Stage 4, emit.prompt_stability]: nanosecond-precision `last=` stamps
+    changed EVERY run (~char 1080 of the user prompt), so identical prompts never byte-repeated — killing pinned-seed
+    reproducibility and any prompt-keyed reuse. The fact stays honest ('the logged window, to the hour'); the date and
+    the day-granular age text are unchanged by construction. Unparsable/absent → the raw value (fail-open)."""
+    if v in (None, "", "NULL"):
+        return v
+    try:
+        from datetime import datetime
+        dt = datetime.fromisoformat(str(v))
+        return dt.replace(minute=0, second=0, microsecond=0).isoformat()
+    except Exception:
+        return v
+
+
 def nameplate_line(asset):
     """One NAMEPLATE fact line for the resolved asset (its neuract table), or '' (no asset/table/outage).
     Values come from config.nameplates (per-asset asset_nameplate row + the derived rating field-set); a missing
@@ -62,6 +77,9 @@ def data_window_line(asset, basket=None):
             age = f" (last sample is {max(0, (now - last_dt).days)}d old)"
         except Exception:
             pass
+        from layer2.emit.diet import prompt_stability as _stab
+        if _stab():
+            first, last = bucket_ts(first), bucket_ts(last)   # hour-bucketed facts → byte-stable prompts [Stage 4]
         return (f"DATA WINDOW (table {table}'s real logged rows): first={_fmt(first)} last={_fmt(last)}{age} — "
                 f"★ anchor every range/window to LAST, not wall-clock 'today': on a lagging/static dataset a "
                 f"wall-clock 'today' window is EMPTY and every leaf blanks. Declare the range the story needs; "
