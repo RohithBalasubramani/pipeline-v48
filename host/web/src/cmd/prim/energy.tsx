@@ -135,13 +135,28 @@ function EnergyFlowDiagram13({ payload }: { payload: any }) {
           style={{ background: CHART_COLORS.cream50 ?? undefined, border: `1px dashed ${CHART_COLORS.cream400}` }}>
           <KpiBlock caption={kpis.sourceInputCaption} value={kpis.sourceInputKwh} unit={kpis.unit} align="left" />
           <div className="min-w-0 flex-1">
-            <EfficiencyBand
-              efficiencyPct={fin(kpis.efficiencyPct) ?? 0}
-              lossKw={fin(kpis.lossKwh) ?? 0}
-              lossPct={fin(kpis.lossPct) ?? 0}
-              labels={{ efficiency: band.efficiencyLabel, loss: band.lossLabel, lostSuffix: band.lostSuffix }}
-              colors={{ fillPrimary: band.fillPrimary, fillLoss: band.fillLoss }}
-              lossUnit={band.lossUnit} pctUnit={band.pctUnit} />
+            {(() => {
+              // Efficiency/loss render ONLY when the source↔feeder pairing is physically plausible (0–100%). A blank
+              // source gives 0 % (fabricated) and an under-metered / HT-vs-LV source gives >100 % (impossible: feeder
+              // output cannot exceed source input). Either way the honest answer is "—", not a made-up number.
+              const eff = fin(kpis.efficiencyPct);
+              if (eff == null || eff < 0 || eff > 100) {
+                return (
+                  <div className="text-center text-[13px]" style={{ color: CHART_COLORS.slate500 ?? undefined }}>
+                    {String(band.efficiencyLabel ?? "Efficiency")} — · {String(band.lossLabel ?? "Loss")} —
+                  </div>
+                );
+              }
+              return (
+                <EfficiencyBand
+                  efficiencyPct={eff}
+                  lossKw={fin(kpis.lossKwh) ?? 0}
+                  lossPct={fin(kpis.lossPct) ?? 0}
+                  labels={{ efficiency: band.efficiencyLabel, loss: band.lossLabel, lostSuffix: band.lostSuffix }}
+                  colors={{ fillPrimary: band.fillPrimary, fillLoss: band.fillLoss }}
+                  lossUnit={band.lossUnit} pctUnit={band.pctUnit} />
+              );
+            })()}
           </div>
           <KpiBlock caption={kpis.feederOutputCaption} value={kpis.feederOutputKwh} unit={kpis.unit} align="right" />
         </div>
