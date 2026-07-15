@@ -199,9 +199,10 @@ def _system(card_in=None):
             out = out[:b] + out[e + len(_ROSTER_END) + 1:]
     # EMIT-DIET VARIANT SELECT [Stage 1+2 flags]: diet wordings live as ON/OFF marker blocks in the contract files;
     # each flag off = the pre-marker bytes exactly (goldens pin it).
-    from layer2.emit.diet import roster_diff as _diet_roster, morph_shape as _diet_shape
+    from layer2.emit.diet import roster_diff as _diet_roster, morph_shape as _diet_shape, fields_slim as _diet_fields
     out = _variant(out, "DIET_ROSTER", _diet_roster())
     out = _variant(out, "DIET_MORPH_SHAPE", _diet_shape() and _mm)
+    out = _variant(out, "DIET_FIELDS", _diet_fields())
     if _LIB_PLACEHOLDER in out:
         out = out.replace(_LIB_PLACEHOLDER, _recovery_library_block(card_in))
     # MORPH-MAP OUTPUT-ENVELOPE ACTIVATION [live-activation of the morphs path]: the metadata contract is morphs-only,

@@ -96,6 +96,15 @@ def _finalize_inner(ci, raw, swap, *, reemit_of=None):
     _nested_note = di.pop("data_note", None) if isinstance(di, dict) else None
     _declared_answer = raw.get("answerability") or _nested_answer
     _declared_note = raw.get("data_note") or _nested_note
+    # FIELD BACKFILL [emit diet Stage 6, flag emit.diet.fields]: complete slim fields[] emissions from the slot
+    # catalog + basket dictionary BEFORE the unit-compat override and the gates see them (only-absent keys; a full
+    # retype passes through byte-identically — layer2/resolve/field_backfill.py). Fail-open telemetry [EH F3].
+    try:
+        from layer2.resolve.field_backfill import apply as _field_backfill
+        di = _field_backfill(di, basket, dp)
+    except Exception as _fb_e:
+        from ems_exec.executor import degrade as _fb_degrade
+        _fb_degrade.note("field_backfill", _fb_e, card_id=ci.get("card_id"))
     # NORMALIZATION TELEMETRY [silent-normalization defect]: override notes ride di._normalized (visible in traces /
     # sweeps — hallucination counts feed the prompt-steer loop) and NEVER gate conforms — per-leaf degradation.
     di, ov_notes = override_columns(di, basket, data_note=raw.get("data_note"), applied_morphs=applied,

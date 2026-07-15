@@ -70,11 +70,23 @@ A RESOLVED recipe — one resolved field per data slot, plus the fill envelope. 
   - LIVE knobs: window_seconds (rolling reach, e.g. 30), interval_seconds (cadence, e.g. 2), sample_count (depth, e.g. 12); set range/start/end/sampling = null.
   - DATE-WINDOW knobs (THE DATE NAVIGATION SEAM): range = today | yesterday | last-7-days | this-month | custom-range (the DEFAULT window; the frontend OVERRIDES it on date change); start/end = ISO or bare YYYY-MM-DD, ONLY when range=custom-range; sampling = hourly | 2hour | shift | day | week (bucket width suits the range: today→hourly/2hour/shift; week→day; month→week); set window_seconds/interval_seconds/sample_count = null.
   - metrics — the measured quantities this card's history needs (kw, kvar, pf, voltage, current, iUnbalance, …), grounded in the card + the prompt metric. selection — the initial selected entity/section/bucket (or null). Leave a knob at its control default unless the prompt narrows it; null the OTHER family's knobs.
+<!--DIET_FIELDS:OFF:BEGIN-->
 - fields[] — one resolved field per data slot, each:
     { slot, kind(raw|bucketed|time|derived|const|text|event), role(series|kpi|column|line|cell|tile|row|spoke),
       metric, column, label, unit, agg(avg|last|sum|count|derived), source(live|test-db|const|$ctx),
       value?(const only), base_columns?/sql_fragment?/nameplate_refs?(derived only), edge?(event only),
       sampling?(bucketed only), filters_table, has_data }
+<!--DIET_FIELDS:OFF:END-->
+<!--DIET_FIELDS:ON:BEGIN-->
+- fields[] — one resolved field per data slot. REQUIRED keys only (the pipeline backfills display context
+  deterministically from the slot catalog + the column dictionary — the SAME truth shown to you):
+    { slot, kind(raw|bucketed|time|derived|const|text|event), column,
+      value + metric (const only), fn + base_columns + target_column (derived only), edge (event only),
+      sampling (bucketed only), source ($ctx fields only — everything else is inferred: const→const, column→live) }
+  OMIT role/label/unit/agg/has_data/filters_table — they backfill from the slot's own ctx + the bound column's
+  dictionary entry. Emit `metric`/`unit`/`label` ONLY when a declared R7 proxy needs the display to say something
+  DIFFERENT from the bound column's own dictionary truth.
+<!--DIET_FIELDS:ON:END-->
   `kind` is WHAT the field is; `source` is WHERE its data lives (set per R13, never by kind). `source` is the closed set live | test-db | $ctx | const — nothing else; 'const' only on a kind=const literal (or omitted there); a measured field is live/test-db/$ctx; 'derived' is a KIND, never a source.
   Per kind:
   - raw → a scalar latest value: `column` = a real basket column for this field's metric, COPIED VERBATIM (exact spelling/case); agg avg/last/sum.

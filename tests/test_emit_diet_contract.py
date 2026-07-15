@@ -186,3 +186,81 @@ def test_wall_corpus_header_regex_accepts_both_generations():
     assert legacy and legacy.group(1) == "r_abc123" and legacy.group(2) == "22"
     assert stable and stable.group(1) is None and stable.group(2) == "22" \
         and stable.group(3) == "panel-overview-shell/voltage-current"
+
+
+# ── Stage 6: fields[] slim + deterministic backfill ─────────────────────────────────────────────────────────────────
+
+_SLIM_KEYS = {"slot", "kind", "column", "value", "metric", "fn", "base_columns", "target_column",
+              "sql_fragment", "nameplate_refs", "edge", "sampling", "source"}
+
+
+def _slim(f):
+    """The slim form of a full field record: only the decision keys the Stage-6 contract requires."""
+    out = {k: v for k, v in f.items() if k in _SLIM_KEYS}
+    kind = str(f.get("kind") or "raw").lower()
+    if kind != "const":
+        out.pop("metric", None)                                # metric backfills from the bound column
+    if out.get("source") in ("live", "test-db", "const"):
+        out.pop("source", None)                                # inferred; only $ctx must be emitted
+    return out
+
+
+def test_fields_slim_backfill_restores_dictionary_truth_card43(monkeypatch):
+    """Strip the card-43 fixture's 64 full field records to the slim contract, backfill, and check every
+    gate-relevant key is restored: source always; metric == bound column; unit restored WHEREVER the basket
+    dictionary knows the column's unit (the fixture's basket is reconstructed FROM the original emission, so
+    unit values agree by construction); role functionally equivalent for the series router."""
+    import layer2.emit.diet as D
+    monkeypatch.setattr(D, "cfg", lambda k, d=None: "on" if k == "emit.diet.fields" else d)
+    from layer2.resolve.field_backfill import apply as backfill
+
+    fx = _fixture("card43_fields_retype")
+    resp = json.loads(fx["response"])
+    full = [f for f in (resp.get("data_instructions") or {}).get("fields") or [] if isinstance(f, dict)]
+    assert len(full) >= 30, "fixture no longer carries the fields retype"
+    # basket reconstructed from the emission's own (column, unit, label) — the dictionary the model was shown
+    basket = {"columns": [{"column": f["column"], "unit": f.get("unit"), "label": f.get("label")}
+                          for f in full if f.get("column")]}
+    slim = {"fields": [_slim(dict(f)) for f in full]}
+    slim_bytes = len(json.dumps(slim))                         # the EMISSION size — captured before backfill mutates in place
+    out = backfill(slim, basket, dp=None)                      # dp None → label falls back to the basket label
+
+    by_slot_full = {f.get("slot"): f for f in full}
+    for f in out["fields"]:
+        orig = by_slot_full.get(f.get("slot")) or {}
+        kind = str(f.get("kind") or "raw").lower()
+        assert f.get("source"), f"source must always backfill ({f.get('slot')})"
+        if orig.get("source") in ("live", "test-db"):
+            assert f["source"] == "live" or f["source"] == orig["source"]
+        if kind not in ("const", "time", "text") and f.get("column"):
+            assert f.get("metric"), f"metric must backfill for {f.get('slot')}"
+        if orig.get("unit") and f.get("column"):
+            assert f.get("unit") == orig.get("unit"), f"unit must restore dictionary truth ({f.get('slot')})"
+        # series-router functional equivalence: role=='series' iff it was series-shaped
+        if orig.get("role") == "series" and kind in ("bucketed", "time"):
+            assert f.get("role") == "series"
+    # the slim emission is smaller than the retype. NOTE the honest calibration: card 43 is time/derived-heavy
+    # (30 time + 31 derived records, already terse) so slim sheds ~30% here; the ~65% shed applies to the
+    # raw/bucketed KPI-shaped fields (metric/label/unit/agg-carrying) that dominate most cards.
+    assert slim_bytes < 0.8 * len(json.dumps({"fields": full}))   # 0.61 measured on this time/derived-heavy card
+
+
+def test_fields_backfill_only_touches_absent_keys(monkeypatch):
+    import layer2.emit.diet as D
+    monkeypatch.setattr(D, "cfg", lambda k, d=None: "on" if k == "emit.diet.fields" else d)
+    from layer2.resolve.field_backfill import apply as backfill
+    f = {"slot": "s", "kind": "raw", "column": "c1", "unit": "", "label": "MyLabel", "metric": "proxy_metric"}
+    out = backfill({"fields": [f]}, {"columns": [{"column": "c1", "unit": "kW", "label": "DictLabel"}]}, None)
+    g = out["fields"][0]
+    assert g["unit"] == "" and g["label"] == "MyLabel" and g["metric"] == "proxy_metric", \
+        "present keys (even empty-string) are the model's own choice — NEVER overwritten"
+    assert g["source"] == "live" and g["role"] == "kpi" and g["agg"] == "last"
+
+
+def test_fields_backfill_flag_off_is_noop(monkeypatch):
+    import layer2.emit.diet as D
+    monkeypatch.setattr(D, "cfg", lambda k, d=None: "off" if k.startswith("emit.diet") else d)
+    from layer2.resolve.field_backfill import apply as backfill
+    di = {"fields": [{"slot": "s", "kind": "raw", "column": "c1"}]}
+    out = backfill(di, {"columns": [{"column": "c1", "unit": "kW"}]}, None)
+    assert out["fields"][0] == {"slot": "s", "kind": "raw", "column": "c1"}, "flag off = byte-identical no-op"

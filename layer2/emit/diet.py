@@ -28,6 +28,12 @@ def morph_shape():
     return _on("emit.diet.morph_shape")
 
 
+def fields_slim():
+    """Stage 6 [emit.diet.fields]: slim fields[] contract (model emits only decisions; label/unit/metric/role/agg
+    backfill deterministically from the slot catalog + basket dictionary — layer2/resolve/field_backfill.py)."""
+    return _on("emit.diet.fields")
+
+
 def prompt_stability():
     """Stage 4 [emit.prompt_stability='v1']: deterministic prompt bytes — freshness timestamps bucketed to the HOUR
     (nanosecond `last=` stamps at ~char 1080 busted every byte-repeat) + the per-run RUN: prefix dropped from the
