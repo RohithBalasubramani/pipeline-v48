@@ -5,6 +5,7 @@ Recoverable from compat because it KEPT voltage_avg + kpi_voltage_deviation_pct 
 nominal). [best-possible-recovery: cards 37/44]"""
 from __future__ import annotations
 
+import math
 
 from ._coerce import f as _f
 
@@ -17,8 +18,52 @@ def _cfg(key, default):
         return default
 
 
+def _nameplate_first_on():
+    """derivation.nameplate_nominal_first [default off]: prefer the NAMEPLATE nominal (the real voltage level) over the
+    measured-deviation recovery when computing the L-N nominal / statutory band. Fail-open to OFF (byte-identical)."""
+    try:
+        from config.app_config import flag_on
+        return flag_on("derivation.nameplate_nominal_first", False)
+    except Exception:
+        return False
+
+
+def _nameplate_nominal_ln(ctx):
+    """The per-phase L-N nominal from the NAMEPLATE FACT (asset_nameplate.nominal_voltage_ll ÷ √3) — the ground-truth
+    voltage level, independent of the meter's configured deviation reference. None when the ctx carries no resolvable
+    asset_table or the asset has no nameplate nominal. Fail-open at every hop (no raise).
+
+    This is the AUTHORITY over the deviation-recovery heuristic below: a meter that logs kpi_voltage_deviation_pct
+    against a 240 V default while actually reading an 11 kV feeder reports ~2605 % deviation, so the recovery inverts
+    to 240 V — NOT the 6351 V the nameplate states (11000 L-L ÷ √3). The band drawn over 240 V would sit far below the
+    real ~6500 V samples = a permanent fake violation. The nameplate value is the correct nominal at any voltage level."""
+    try:
+        table = (ctx.get("asset_table") or ctx.get("table") or ctx.get("name")
+                 or (ctx.get("row") or {}).get("asset_table"))
+        if not table:
+            return None
+        from config import nameplates as _np
+        ll = _np.nominal_voltage_ll(table)
+        if ll in (None, "", "NULL"):
+            return None
+        ll = float(ll)
+        return ll / math.sqrt(3) if ll > 0 else None
+    except Exception:
+        return None
+
+
 def nominal_voltage_ln(ctx):
-    """L-N nominal = measured avg ÷ (1 + deviation%). 239.2 / (1 + (-0.15)/100) ≈ 240 V L-N (415 L-L). real_exact."""
+    """L-N nominal for the asset. real_exact.
+
+    NAMEPLATE-FIRST [derivation.nameplate_nominal_first, default off]: the nameplate nominal (nominal_voltage_ll ÷ √3 —
+    the real voltage level) is the authority; the measured-avg-÷-(1+deviation%) recovery is the fallback for assets with
+    no nameplate. Off = the recovery alone (byte-identical). The recovery (239.2 / (1 + (-0.15)/100) ≈ 240 V L-N for a
+    415 L-L feeder) returns the METER-CONFIGURED nominal, which is wrong for a meter logging deviation vs a 240 V default
+    while reading an 11 kV feeder (→ 240 V, not the nameplate's 6351 V)."""
+    if _nameplate_first_on():
+        nom = _nameplate_nominal_ln(ctx)
+        if nom is not None:
+            return nom
     row = ctx.get("row") or {}
     v, dev = row.get("voltage_avg"), row.get("kpi_voltage_deviation_pct")
     try:

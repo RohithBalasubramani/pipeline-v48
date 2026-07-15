@@ -107,6 +107,14 @@ def run_card(exact_metadata, data_instructions, asset_table, *, db_link=None, wi
         mfm_id = consumer.get("mfm_id") if consumer.get("mfm_id") is not None else binding.get("asset_id")
     ctx = build_ctx(asset_table, db_link=db_link, window=window, mfm_id=mfm_id, asset_name=asset_name,
                     card_id=card_id, window_explicit=window_explicit, sampling=sampling)
+    # CANONICAL CONTRACT SLOTS [fill.canonical_slots, default off]: deterministically COMPLETE the voltage-monitor
+    # contract slots the L2 emit left unbound (phase legend, avg/max/min rail, statutory ±band) — never overrides an
+    # AI bind. Fail-open + flag-gated inside inject(), so this is a no-op when off or on a non-voltage card.
+    try:
+        from ems_exec.executor import canonical_slots as _canon
+        data_instructions = _canon.inject(exact_metadata, data_instructions, asset_table)
+    except Exception:
+        pass
     try:
         out = _fill.fill(exact_metadata, data_instructions, ctx, default_payload=default_payload,
                          shape_ref=shape_ref)

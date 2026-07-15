@@ -1,0 +1,111 @@
+"""tests/test_canonical_slots.py — canonical voltage-monitor contract-slot completion (ems_exec/executor/canonical_slots).
+
+Pins: flag-off byte-identity; unbound legend/metric slots backfill from the slot's own label; AI binds are NEVER
+overridden; the statutory ±band injects only when both threshold value slots are unbound + a band is recoverable;
+non-voltage cards (Current Monitor) are untouched; honest-degrade on a missing band."""
+from unittest.mock import patch
+
+from ems_exec.executor import canonical_slots as C
+
+
+def _skeleton():
+    """A Voltage Monitor Panel skeleton (subset) — legend/metrics/thresholds slots + a Voltage y-axis."""
+    return {"data": {
+        "yAxisLabel": "Voltage",
+        "series": [{"color": "#1"}, {"color": "#2"}, {"color": "#3"}],
+        "legendItems": [{"label": "B-Phase", "value": 0}, {"label": "R-Phase", "value": 0},
+                        {"label": "Y-Phase", "value": 0}],
+        "metrics": [{"label": "Average", "value": 0}, {"label": "Max", "value": 0}, {"label": "Min", "value": 0}],
+        "thresholds": [{"label": "", "value": 0}, {"label": "", "value": 0}],
+    }}
+
+
+def _slots(di):
+    return {f["slot"]: f for f in (di.get("fields") or [])}
+
+
+def _band_ok(asset):
+    return {"min": 5716.0, "max": 6986.0, "nominal": 6351.0}
+
+
+# ── flag off = byte-identical ────────────────────────────────────────────────────────────────────────────────────────
+
+def test_flag_off_is_noop():
+    di = {"fields": [{"slot": "data.metrics[0].value", "kind": "raw", "column": "voltage_avg"}]}
+    with patch.object(C, "_on", lambda: False):
+        out = C.inject(_skeleton(), di, "gic_x")
+    assert out is di                                                    # same object, untouched
+
+
+# ── legend / metrics backfill (unbound only) ─────────────────────────────────────────────────────────────────────────
+
+def test_backfills_unbound_legend_and_metrics_by_label():
+    di = {"fields": []}
+    with patch.object(C, "_on", lambda: True), patch.object(C, "_statutory_band", _band_ok):
+        out = C.inject(_skeleton(), di, "gic_x")
+    s = _slots(out)
+    assert s["data.legendItems[0].value"]["column"] == "voltage_b_n"    # B-Phase
+    assert s["data.legendItems[1].value"]["column"] == "voltage_r_n"    # R-Phase
+    assert s["data.legendItems[2].value"]["column"] == "voltage_y_n"    # Y-Phase
+    assert s["data.metrics[0].value"]["column"] == "voltage_avg"
+    assert s["data.metrics[1].value"]["column"] == "voltage_max"
+    assert s["data.metrics[2].value"]["column"] == "voltage_min"
+    assert all(f.get("_canonical") for f in out["fields"])              # every injected field is flagged canonical
+
+
+def test_never_overrides_an_ai_bind():
+    # the AI bound legendItems[0] to a DIFFERENT column (a deliberate override) — canonical must leave it alone
+    di = {"fields": [{"slot": "data.legendItems[0].value", "kind": "raw", "column": "voltage_ry"}]}
+    with patch.object(C, "_on", lambda: True), patch.object(C, "_statutory_band", _band_ok):
+        out = C.inject(_skeleton(), di, "gic_x")
+    binds = [f for f in out["fields"] if f["slot"] == "data.legendItems[0].value"]
+    assert len(binds) == 1 and binds[0]["column"] == "voltage_ry"       # untouched, not duplicated
+
+
+# ── statutory band → shaded region ───────────────────────────────────────────────────────────────────────────────────
+
+def test_band_injected_as_const_value_and_label():
+    di = {"fields": []}
+    with patch.object(C, "_on", lambda: True), patch.object(C, "_statutory_band", _band_ok):
+        out = C.inject(_skeleton(), di, "gic_x")
+    s = _slots(out)
+    assert s["data.thresholds[0].value"]["value"] == 6986.0            # max = band top
+    assert s["data.thresholds[1].value"]["value"] == 5716.0            # min = band bottom
+    assert s["data.thresholds[0].label"]["value"] == "Max - 6986V"
+    assert s["data.thresholds[1].label"]["value"] == "Min - 5716V"
+
+
+def test_band_not_injected_when_ai_already_bound_thresholds():
+    di = {"fields": [{"slot": "data.thresholds[0].value", "kind": "raw", "column": "voltage_avg"},
+                     {"slot": "data.thresholds[1].value", "kind": "raw", "column": "voltage_avg"}]}
+    with patch.object(C, "_on", lambda: True), patch.object(C, "_statutory_band", _band_ok):
+        out = C.inject(_skeleton(), di, "gic_x")
+    consts = [f for f in out["fields"] if f["slot"].startswith("data.thresholds") and f["kind"] == "const"]
+    assert consts == []                                                # AI band preserved, no const overlay
+
+
+def test_no_band_recovered_is_honest_blank():
+    di = {"fields": []}
+    with patch.object(C, "_on", lambda: True), patch.object(C, "_statutory_band", lambda a: None):
+        out = C.inject(_skeleton(), di, "gic_x")
+    assert not any(f["slot"].startswith("data.thresholds") for f in out["fields"])   # no fabricated band
+
+
+# ── scope guard: non-voltage card untouched ──────────────────────────────────────────────────────────────────────────
+
+def test_current_monitor_untouched():
+    cur = {"data": {"yAxisLabel": "Current",
+                    "legendItems": [{"label": "R-Phase", "value": 0}],
+                    "thresholds": [{"label": "", "value": 0}, {"label": "", "value": 0}]}}
+    di = {"fields": []}
+    with patch.object(C, "_on", lambda: True), patch.object(C, "_statutory_band", _band_ok):
+        out = C.inject(cur, di, "gic_x")
+    assert out is di                                                    # not a voltage card → no-op
+
+
+def test_voltage_card_detected_by_bound_column_when_axis_absent():
+    sk = {"data": {"legendItems": [{"label": "B-Phase", "value": 0}], "thresholds": []}}
+    di = {"fields": [{"slot": "data.series[0].data", "kind": "bucketed", "column": "voltage_r_n"}]}
+    with patch.object(C, "_on", lambda: True), patch.object(C, "_statutory_band", _band_ok):
+        out = C.inject(sk, di, "gic_x")
+    assert _slots(out)["data.legendItems[0].value"]["column"] == "voltage_b_n"
