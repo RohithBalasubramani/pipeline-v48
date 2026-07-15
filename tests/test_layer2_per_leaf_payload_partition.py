@@ -146,8 +146,27 @@ def test_empty_fields_required_card_still_fails_end_to_end(monkeypatch):
     assert "fields is empty" in (out["failure"] or {}).get("detail", "")
 
 
-# ── (4) an llm_err card → STILL fails (transport failure, never partitioned) ─────────────────────────────────────────
-def test_llm_error_card_still_fails(monkeypatch):
+# ── (4) an llm_err card → CONFORMING SKELETON (infra family; audit 04 F1/F6) ────────────────────────────────────────
+def test_llm_error_card_degrades_to_conforming_skeleton(monkeypatch):
+    """The INFRA family (llm timeout/transport) no longer hard-fails the card: it ships a conforming skeleton —
+    real component, per-leaf 'emit_failed' reasons — so no hard_fail count and no wasted page reroute. The
+    telemetry keeps the whole story (_emit_failed carries the classified failure)."""
+    out = _run(monkeypatch, {"payload_shape": "x", "orientation": "v", "fields": []}, llm_error="timeout")
+    assert out["conforms"] is True
+    assert out["failure"] is None
+    assert out["answerability"] == "partial" and out["gap"] is False
+    ef = out.get("_emit_failed") or {}
+    assert ef.get("stage") == "llm" and "timeout" in (ef.get("reason") or ""), ef
+    gaps = (out.get("data_instructions") or {}).get("_emit_gaps") or []
+    assert gaps and all(g.get("cause") == "emit_failed" for g in gaps)   # per-leaf reasons, restamped
+    # the exec-side skip predicate (host/exec_cards) must accept this card: no exception, real metadata
+    assert "exception" not in out and out.get("exact_metadata") is not None
+
+
+def test_llm_error_rollback_knob_off_restores_conforms_false(monkeypatch):
+    """The pre-2026-07-15 contract, byte-preserved under layer2.emit_failed_skeleton=off (the rollback lane)."""
+    import layer2.emit_failed as EF
+    monkeypatch.setattr(EF, "enabled", lambda: False)
     out = _run(monkeypatch, {"payload_shape": "x", "orientation": "v", "fields": []}, llm_error="timeout")
     assert out["conforms"] is False
     f = out["failure"] or {}

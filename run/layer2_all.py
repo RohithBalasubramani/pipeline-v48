@@ -92,5 +92,8 @@ def _run_2_all_inner(run_id, l1a, l1b):
               answerability=o.get("answerability"), gap=o.get("gap"), note=o.get("data_note"),
               keys=list((o.get("exact_metadata") or {}).keys())[:4],
               endpoint=((o.get("data_instructions") or {}).get("consumer") or {}).get("endpoint"),
-              fail=(o.get("exception") or (o.get("failure") or {}).get("reason")))
+              fail=(o.get("exception") or (o.get("failure") or {}).get("reason")),
+              # NEW field name, deliberately NOT fail= — a degraded infra skeleton is telemetry, not a card_fail
+              # mirror; its per-leaf sentences already ride the reason channel [audit 04 F1]
+              emit_failed=((o.get("_emit_failed") or {}).get("reason")))
     return out

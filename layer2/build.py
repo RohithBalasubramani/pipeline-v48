@@ -359,8 +359,17 @@ def run_card(run_id, card_id, l1a, l1b, *, already_chosen=None, shared_ctx_ref=N
     metadata_resolution child spans all attribute to it."""
     from obs.span import stage_span
     with stage_span("layer2_card_ai.card", card_id=card_id) as sp:
-        out = _run_card_inner(run_id, card_id, l1a, l1b, already_chosen=already_chosen,
-                              shared_ctx_ref=shared_ctx_ref)
+        try:
+            out = _run_card_inner(run_id, card_id, l1a, l1b, already_chosen=already_chosen,
+                                  shared_ctx_ref=shared_ctx_ref)
+        except Exception as e:
+            # INFRA-FAMILY DEGRADE [audit 04 F1]: a per-card exception used to blank ALL leaves (conforms=False →
+            # hard_fail) AND burn a wasted page reroute. Degrade to a CONFORMING skeleton with per-leaf
+            # 'emit_failed' reasons instead; knob off / skeleton-build failure re-raises to the _err lane.
+            from layer2 import emit_failed as _ef
+            if not _ef.enabled():
+                raise
+            out = _ef.skeleton_for_exception(run_id, card_id, l1a, l1b, e, shared_ctx_ref=shared_ctx_ref)
         sw = out.get("swap_decision") or {}
         sp.set_outputs(swap=sw.get("action"), swap_to=sw.get("swap_to_id"), origin=sw.get("origin"),
                        conforms=out.get("conforms"), answerability=out.get("answerability"),
@@ -472,10 +481,13 @@ def _finalize_with_gate_retry(ci, raw, swap, *, reemit_of=None):
     bounded transport retry)."""
     out = _finalize(ci, raw, swap, reemit_of=reemit_of)
     from config.app_config import cfg as _cfg
+    from layer2 import emit_failed as _ef
     retries = max(0, int(_cfg("llm.gate_retry", 1)))
     f = out.get("failure") or {}
     if out.get("conforms") or not retries or f.get("stage") != "emit" or not f.get("detail"):
-        return out
+        # llm-stage failures land here (never re-prompted) — the INFRA family degrades to a conforming skeleton
+        # with per-leaf emit_failed reasons instead of a hard_fail + page reroute [audit 04 F1/F6]
+        return _ef.degrade(out, ci)
     feedback = [s for s in (f.get("detail") or "").split("; ") if s]
     raw2 = emit(ci, feedback=feedback)
     out2 = _finalize(ci, raw2, swap, reemit_of=reemit_of)
@@ -483,4 +495,4 @@ def _finalize_with_gate_retry(ci, raw, swap, *, reemit_of=None):
         out2["_gate_retry"] = "retried_fixed"
         return out2
     out["_gate_retry"] = "retried_not_fixed"
-    return out
+    return _ef.degrade(out, ci)
