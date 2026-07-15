@@ -78,66 +78,128 @@ def _statutory_band(asset_table):
         return None
 
 
-def inject(exact_metadata, data_instructions, asset_table):
-    """Return data_instructions extended with the canonical voltage-monitor binds for any UNBOUND contract slot. A COPY
-    is returned (the caller's dict is never mutated); the input is returned unchanged when the flag is off, the skeleton
-    is not a voltage-monitor shape, or nothing is missing. Fail-open: any error → the original data_instructions."""
+# ── F7 aggregate-from-phases ─────────────────────────────────────────────────────────────────────────────────────────
+# A meter's OWN aggregate register (avg / unbalance) can be present-but-ALL-NULL (HT CT wiring) while the per-phase
+# magnitudes are fully live. The aggregate IS the arithmetic mean / (max−min)/mean of the measured phases — real data,
+# not a fabricated stand-in. Map: dead aggregate column -> (phase derivation fn, the component columns it needs).
+_AGG_FROM_PHASES = {
+    "current_avg":           ("phaseCurrentAvg",          ["current_r", "current_y", "current_b"]),
+    "current_unbalance_pct": ("phaseCurrentUnbalancePct", ["current_r", "current_y", "current_b"]),
+    "voltage_avg":           ("phaseVoltageAvg",          ["voltage_r_n", "voltage_y_n", "voltage_b_n"]),
+    "voltage_unbalance_pct": ("phaseVoltageUnbalancePct", ["voltage_r_n", "voltage_y_n", "voltage_b_n"]),
+}
+
+
+def _agg_on():
+    """fill.derive_aggregate_from_phases [F7, default off]: when a raw field is bound to an aggregate column that is NULL
+    on this meter but its per-phase components ARE present, swap the bind to the phase-derivation. Fail-open to OFF."""
     try:
-        if not _on() or not isinstance(exact_metadata, dict):
-            return data_instructions
-        data = exact_metadata.get("data")
-        if not isinstance(data, dict):
-            return data_instructions
+        from config.app_config import flag_on
+        return flag_on("fill.derive_aggregate_from_phases", False)
+    except Exception:
+        return False
+
+
+def _swap_aggregate_from_phases(fields, asset_table):
+    """Rewrite in place any raw field bound to a dead (all-NULL-on-this-meter) aggregate column whose per-phase
+    components are present → a derived phase-aggregate. Fact-gated: reads ONE latest row; a swap fires ONLY when the
+    aggregate is null AND every component is non-null (else the field is left exactly as the emit bound it → honest-blank
+    stays honest). Returns the number of fields swapped."""
+    try:
+        cand = [f for f in fields if isinstance(f, dict) and (f.get("kind") or "raw").lower() == "raw"
+                and f.get("column") in _AGG_FROM_PHASES]
+        if not cand:
+            return 0
+        from ems_exec.data import neuract as _nx
+        need = set()
+        for f in cand:
+            _fn, comps = _AGG_FROM_PHASES[f["column"]]
+            need.add(f["column"]); need.update(comps)
+        row = _nx.latest(asset_table, sorted(need)) if asset_table else {}
+        n = 0
+        for f in cand:
+            col = f["column"]
+            fn, comps = _AGG_FROM_PHASES[col]
+            if row.get(col) is None and all(row.get(c) is not None for c in comps):
+                f["kind"] = "derived"
+                f["fn"] = fn
+                f["column"] = None            # the derived path reads the phase columns from ctx, not a single column
+                f["_canonical"] = "agg_from_phases"
+                n += 1
+        return n
+    except Exception:
+        return 0
+
+
+def _voltage_canonical_add(data, di, asset_table):
+    """The UNBOUND voltage-monitor contract binds to APPEND (phase legend, avg/max/min rail, statutory ±band). [] when
+    the card isn't a voltage-monitor shape or nothing is missing. Never touches an AI-bound slot."""
+    fields = [f for f in (di.get("fields") or []) if isinstance(f, dict)]
+    bound = {str(f.get("slot") or "") for f in fields}
+    bound_cols = [f.get("column") for f in fields if f.get("column")]
+    if not _is_voltage_card(data, bound_cols):
+        return []
+    add = []
+
+    def _raw(slot, col):
+        if col and slot not in bound:
+            add.append({"slot": slot, "kind": "raw", "column": col, "metric": col,
+                        "source": "live", "_canonical": True})
+
+    legend = data.get("legendItems")
+    if isinstance(legend, list):
+        for i, item in enumerate(legend):
+            if isinstance(item, dict):
+                _raw(f"data.legendItems[{i}].value", _phase_col_for(item.get("label")))
+    metrics = data.get("metrics")
+    if isinstance(metrics, list):
+        for i, item in enumerate(metrics):
+            if isinstance(item, dict):
+                _raw(f"data.metrics[{i}].value", _metric_col_for(item.get("label")))
+
+    thr = data.get("thresholds")
+    if (isinstance(thr, list) and len(thr) >= 2
+            and "data.thresholds[0].value" not in bound and "data.thresholds[1].value" not in bound):
+        band = _statutory_band(asset_table)
+        if band and band.get("max") is not None and band.get("min") is not None:
+            hi, lo = band["max"], band["min"]
+            add += [
+                {"slot": "data.thresholds[0].value", "kind": "const", "value": hi, "_canonical": True},
+                {"slot": "data.thresholds[1].value", "kind": "const", "value": lo, "_canonical": True},
+            ]
+            if "data.thresholds[0].label" not in bound:
+                add.append({"slot": "data.thresholds[0].label", "kind": "const",
+                            "value": f"Max - {hi:g}V", "_canonical": True})
+            if "data.thresholds[1].label" not in bound:
+                add.append({"slot": "data.thresholds[1].label", "kind": "const",
+                            "value": f"Min - {lo:g}V", "_canonical": True})
+    return add
+
+
+def inject(exact_metadata, data_instructions, asset_table):
+    """Return data_instructions with the deterministic contract-fill passes applied. A COPY is returned only when a pass
+    actually changes something (the caller's dict is never mutated); otherwise the input is returned unchanged. Each pass
+    is independently flag-gated; fail-open on any error → the original data_instructions.
+
+    Passes: (1) fill.canonical_slots — voltage-monitor legend/metrics/band fill of UNBOUND slots; (2)
+    fill.derive_aggregate_from_phases [F7] — swap a raw field bound to a dead aggregate column to a phase-derivation."""
+    try:
         di = data_instructions if isinstance(data_instructions, dict) else {}
-        fields = [f for f in (di.get("fields") or []) if isinstance(f, dict)]
-        bound = {str(f.get("slot") or "") for f in fields}
-        bound_cols = [f.get("column") for f in fields if f.get("column")]
-        if not _is_voltage_card(data, bound_cols):
-            return data_instructions
+        out = None                                   # lazily deep-copied on the first real mutation
 
-        add = []
+        # PASS 1 — voltage-card canonical fill (append unbound contract binds)
+        if _on() and isinstance(exact_metadata, dict) and isinstance(exact_metadata.get("data"), dict):
+            add = _voltage_canonical_add(exact_metadata["data"], di, asset_table)
+            if add:
+                out = copy.deepcopy(di) if di else {"fields": []}
+                out["fields"] = list(out.get("fields") or []) + add
 
-        def _raw(slot, col):
-            if col and slot not in bound:
-                add.append({"slot": slot, "kind": "raw", "column": col, "metric": col,
-                            "source": "live", "_canonical": True})
+        # PASS 2 — aggregate-from-phases swap (rewrite dead-aggregate binds; any card type)
+        if _agg_on():
+            probe = out if out is not None else (copy.deepcopy(di) if di else {"fields": []})
+            if _swap_aggregate_from_phases(probe.get("fields") or [], asset_table):
+                out = probe
 
-        # E1 — phase legend + metrics rail: bind each UNBOUND value slot from the slot's OWN label.
-        legend = data.get("legendItems")
-        if isinstance(legend, list):
-            for i, item in enumerate(legend):
-                if isinstance(item, dict):
-                    _raw(f"data.legendItems[{i}].value", _phase_col_for(item.get("label")))
-        metrics = data.get("metrics")
-        if isinstance(metrics, list):
-            for i, item in enumerate(metrics):
-                if isinstance(item, dict):
-                    _raw(f"data.metrics[{i}].value", _metric_col_for(item.get("label")))
-
-        # E2 — statutory ±band → the shaded region. Only when BOTH threshold value slots are unbound (never half a band)
-        # and the asset has a recoverable band (honest-blank otherwise). value + label injected as consts so the drawn
-        # band and its reference-line labels are consistent (the label also gives PhaseMonitorChart a unique React key).
-        thr = data.get("thresholds")
-        if (isinstance(thr, list) and len(thr) >= 2
-                and "data.thresholds[0].value" not in bound and "data.thresholds[1].value" not in bound):
-            band = _statutory_band(asset_table)
-            if band and band.get("max") is not None and band.get("min") is not None:
-                hi, lo = band["max"], band["min"]
-                add += [
-                    {"slot": "data.thresholds[0].value", "kind": "const", "value": hi, "_canonical": True},
-                    {"slot": "data.thresholds[1].value", "kind": "const", "value": lo, "_canonical": True},
-                ]
-                if "data.thresholds[0].label" not in bound:
-                    add.append({"slot": "data.thresholds[0].label", "kind": "const",
-                                "value": f"Max - {hi:g}V", "_canonical": True})
-                if "data.thresholds[1].label" not in bound:
-                    add.append({"slot": "data.thresholds[1].label", "kind": "const",
-                                "value": f"Min - {lo:g}V", "_canonical": True})
-
-        if not add:
-            return data_instructions
-        out = copy.deepcopy(di) if di else {"fields": []}
-        out["fields"] = list(out.get("fields") or []) + add
-        return out
+        return out if out is not None else data_instructions
     except Exception:
         return data_instructions

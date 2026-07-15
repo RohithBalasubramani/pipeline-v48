@@ -109,3 +109,52 @@ def test_voltage_card_detected_by_bound_column_when_axis_absent():
     with patch.object(C, "_on", lambda: True), patch.object(C, "_statutory_band", _band_ok):
         out = C.inject(sk, di, "gic_x")
     assert _slots(out)["data.legendItems[0].value"]["column"] == "voltage_b_n"
+
+
+# ── F7: aggregate-from-phases swap ───────────────────────────────────────────────────────────────────────────────────
+
+def _patch_latest(row):
+    import ems_exec.data.neuract as NX
+    return patch.object(NX, "latest", lambda table, cols: {c: row.get(c) for c in cols})
+
+
+def test_f7_flag_off_no_swap():
+    di = {"fields": [{"slot": "data.metrics[2].value", "kind": "raw", "column": "current_avg"}]}
+    with patch.object(C, "_on", lambda: False), patch.object(C, "_agg_on", lambda: False):
+        out = C.inject({"data": {}}, di, "gic_x")
+    assert out is di
+
+
+def test_f7_swaps_dead_aggregate_to_phase_derivation():
+    di = {"fields": [{"slot": "data.metrics[2].value", "kind": "raw", "column": "current_avg", "metric": "current_avg"}]}
+    row = {"current_avg": None, "current_r": 45.0, "current_y": 46.0, "current_b": 44.0}
+    with patch.object(C, "_on", lambda: False), patch.object(C, "_agg_on", lambda: True), _patch_latest(row):
+        out = C.inject({"data": {"yAxisLabel": "Amps"}}, di, "gic_x")
+    f = _slots(out)["data.metrics[2].value"]
+    assert f["kind"] == "derived" and f["fn"] == "phaseCurrentAvg" and f["column"] is None
+    assert f["_canonical"] == "agg_from_phases"
+
+
+def test_f7_live_aggregate_is_left_alone():
+    # current_avg has a real value on this meter → keep the meter's own register, do NOT swap
+    di = {"fields": [{"slot": "data.metrics[2].value", "kind": "raw", "column": "current_avg"}]}
+    row = {"current_avg": 45.3, "current_r": 45.0, "current_y": 46.0, "current_b": 44.0}
+    with patch.object(C, "_on", lambda: False), patch.object(C, "_agg_on", lambda: True), _patch_latest(row):
+        out = C.inject({"data": {}}, di, "gic_x")
+    assert out is di                                              # nothing changed
+
+
+def test_f7_components_absent_stays_honest_blank():
+    di = {"fields": [{"slot": "data.metrics[2].value", "kind": "raw", "column": "current_avg"}]}
+    row = {"current_avg": None, "current_r": None, "current_y": None, "current_b": None}
+    with patch.object(C, "_on", lambda: False), patch.object(C, "_agg_on", lambda: True), _patch_latest(row):
+        out = C.inject({"data": {}}, di, "gic_x")
+    assert out is di                                              # no components → no swap, honest-blank preserved
+
+
+def test_f7_derivations_compute_mean_and_unbalance():
+    from ems_exec.derivations import current as CUR
+    ctx = {"row": {"current_r": 45.0, "current_y": 46.0, "current_b": 44.0}}
+    assert CUR.phase_current_avg(ctx) == 45.0
+    assert CUR.phase_current_unbalance_pct(ctx) == round((46.0 - 44.0) / 45.0 * 100, 1)
+    assert CUR.phase_current_avg({"row": {}}) is None

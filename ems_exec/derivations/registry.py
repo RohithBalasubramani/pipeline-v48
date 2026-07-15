@@ -83,6 +83,13 @@ _COMPAT = {
     # none-reaudit flips — recoverable on compat via electrical identity / windowed statistic:
     "neutralCurrent":         _d(current.neutral_current, ["current_r", "current_y", "current_b"], "real_approx", "T2_identity"),
     "neutralToPhaseRatioPct": _d(current.neutral_to_phase_ratio_pct, ["current_r", "current_y", "current_b", "current_avg"], "real_approx", "T2_identity"),
+    # AGGREGATE-FROM-PHASES [F7]: the meter's own avg/unbalance register is present-but-ALL-NULL (HT CT wiring) while the
+    # per-phase magnitudes are live — the aggregate is the arithmetic mean / (max-min)/mean of the measured phases, real
+    # (not a fabricated stand-in). Fired by canonical_slots when the bound aggregate column is null + components present.
+    "phaseCurrentAvg":          _d(current.phase_current_avg, ["current_r", "current_y", "current_b"], "real_exact", "T2_identity"),
+    "phaseCurrentUnbalancePct": _d(current.phase_current_unbalance_pct, ["current_r", "current_y", "current_b"], "real_exact", "T3_statistical"),
+    "phaseVoltageAvg":          _d(voltage.phase_voltage_avg, ["voltage_r_n", "voltage_y_n", "voltage_b_n"], "real_exact", "T2_identity"),
+    "phaseVoltageUnbalancePct": _d(voltage.phase_voltage_unbalance_pct, ["voltage_r_n", "voltage_y_n", "voltage_b_n"], "real_exact", "T3_statistical"),
     "pfAngleDeg":             _d(power_quality.pf_angle_deg, ["power_factor_total"], "real_exact", "T2_identity"),
     # ROW-DRIVEN (fn=None): formulas are derivation_binding.expression rows; python bodies deleted after live parity.
     "truePf":                 _d(None, ["active_power_total_kw", "apparent_power_total_kva"], "real_exact", "T2_identity"),

@@ -153,6 +153,28 @@ def worst_phase_spread(ctx):
     return round(worst, 2) if worst is not None else None
 
 
+def _phase_ln(ctx):
+    row = ctx.get("row") or {}
+    return [v for v in (_f(row.get("voltage_r_n")), _f(row.get("voltage_y_n")), _f(row.get("voltage_b_n"))) if v is not None]
+
+
+def phase_voltage_avg(ctx):
+    """Mean of the present per-phase L-N voltages (voltage_r_n/y_n/b_n) — the REAL average when the meter's own
+    voltage_avg register is dead/all-null. real_exact (arithmetic mean of measured phases). None when no phase present."""
+    vals = _phase_ln(ctx)
+    return round(sum(vals) / len(vals), 1) if vals else None
+
+
+def phase_voltage_unbalance_pct(ctx):
+    """Voltage unbalance % = (max − min) ÷ mean × 100 over the present per-phase L-N voltages — real unbalance when the
+    meter's voltage_unbalance_pct register is dead. real_exact. None when fewer than two phases present or mean 0."""
+    vals = _phase_ln(ctx)
+    if len(vals) < 2:
+        return None
+    m = sum(vals) / len(vals)
+    return round((max(vals) - min(vals)) / m * 100.0, 1) if m else None
+
+
 def voltage_history_domain(ctx):
     """Chart Y-domain + expected band for a voltage-history card, computed over the observed L-N phase series in compat
     (voltage_r_n / voltage_y_n / voltage_b_n or voltage_avg). real_exact — buildChartDomain over real samples."""

@@ -33,3 +33,26 @@ def neutral_to_phase_ratio_pct(ctx):
     if i_n is None or avg is None or avg <= 0:
         return None
     return round(i_n / avg * 100.0, 1)
+
+
+def _phases(ctx):
+    row = ctx.get("row") or {}
+    return [v for v in (_f(row.get("current_r")), _f(row.get("current_y")), _f(row.get("current_b"))) if v is not None]
+
+
+def phase_current_avg(ctx):
+    """Mean of the present per-phase currents (current_r/y/b) — the REAL average when the meter's own current_avg
+    register is dead/all-null (HT CT wiring: current_avg present-but-NULL while the phase magnitudes are live). Not
+    fabrication — it is the arithmetic mean of measured phases. real_exact. None when no phase is present."""
+    vals = _phases(ctx)
+    return round(sum(vals) / len(vals), 1) if vals else None
+
+
+def phase_current_unbalance_pct(ctx):
+    """Current unbalance % = (max − min) ÷ mean × 100 over the present per-phase currents — the real unbalance when the
+    meter's current_unbalance_pct register is dead. real_exact. None when fewer than two phases are present or mean 0."""
+    vals = _phases(ctx)
+    if len(vals) < 2:
+        return None
+    m = sum(vals) / len(vals)
+    return round((max(vals) - min(vals)) / m * 100.0, 1) if m else None
