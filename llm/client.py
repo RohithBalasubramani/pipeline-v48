@@ -34,6 +34,7 @@ near-tie route can flip UNDER SWEEP LOAD while it stays stable in isolation ('dg
 Pinning `seed` fixes the RNG/tie-break so the SAME prompt always yields the SAME completion regardless of what else
 is in the batch. Both knobs are DB-driven (app_config llm.seed / llm.temperature) with a code-default fallback, so
 they are tunable without a code edit and never block import."""
+from llm.parse import strip_think as _strip_think, extract_json as _extract_json   # the ONE reply parse (EH F7)
 import json
 import re
 import threading
@@ -67,10 +68,15 @@ def _timeout_for(stage, explicit):
 
 
 def _record(kind, stage, detail=""):
-    """Failure telemetry — obs.failures, keyed by the current ai_log run id. Never raises (telemetry only)."""
+    """Failure telemetry — obs.failures, keyed by the current ai_log run id. Never raises (telemetry only).
+    card_id rides the decision contextvar the emit path already sets (llm_tap.set_decision at layer2/emit) —
+    call_qwen clears it in its finally AFTER _fail runs, so it is live here. Without it every llm failure
+    record had card_id=null and a timeout could not be attributed to a card [audit 05 F6]."""
     try:
-        from obs import failures, ai_log
-        failures.record("llm", kind, detail=f"stage={stage or '-'} {detail}"[:280],
+        from obs import failures, ai_log, llm_tap
+        d = llm_tap.current_decision() or {}
+        failures.record("llm", kind, card_id=d.get("card_id"),
+                        detail=f"stage={stage or '-'} {detail}",     # recorder owns truncation (head+tail)
                         run_id=getattr(ai_log, "_RUN_ID", "default"))
     except Exception:
         pass
@@ -234,21 +240,16 @@ def _call_qwen_raw(system, user, *, timeout=None, stage=None, schema=None, json_
         llm_tap.record(stage=stage, system=system, user=attempt_user, response_text=content,
                        usage=(reply or {}).get("usage"), latency_s=time.time() - _t0, finish_reason=finish,
                        attempt=attempt, model=config.MODEL, params=_params)
-        txt = re.sub(r"<think>.*?</think>", "", content, flags=re.DOTALL)
+        txt = _strip_think(content)   # THE shared strip [EH F7 — corpus-parity-proven vs the old paired-only sub]
         # TRUNCATION FIRST [A3]: finish=length means the completion hit the token ceiling — even a reply that parses
         # as balanced JSON is suspect (a nested object can close early), so classify BEFORE any parse-success return.
         if finish == "length":
             err_kind = "truncated"
             err_detail = f"finish_reason=length (completion hit max_tokens; prompt≈{est_tok} tok)"
         else:
-            m = re.search(r"\{.*\}", txt, re.DOTALL)
-            if m:
-                try:
-                    return json.loads(m.group(0))
-                except Exception as e:
-                    err_kind, err_detail = "parse", f"invalid JSON: {e}"
-            else:
-                err_kind, err_detail = "no_json", "no JSON object in the reply"
+            obj, err_kind, err_detail = _extract_json(content)   # THE shared parse [EH F7, corpus-parity-proven]
+            if err_kind is None:
+                return obj
         # DETERMINISTIC failure → fail fast, once [A3]: retrying a truncation only re-truncates on a longer prompt.
         if err_kind in no_retry:
             break

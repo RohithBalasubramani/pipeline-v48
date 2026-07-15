@@ -37,7 +37,7 @@ def _tell_failures(cause, sentence):
     raises, always returns the sentence unchanged."""
     try:
         from obs import ai_log, failures
-        failures.record("reason", cause, detail=str(sentence)[:280],
+        failures.record("reason", cause, detail=str(sentence),      # recorder owns truncation (head+tail)
                         run_id=getattr(ai_log, "_RUN_ID", "default"))
     except Exception:
         pass

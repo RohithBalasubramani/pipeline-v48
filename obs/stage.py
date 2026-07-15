@@ -41,7 +41,7 @@ def stage(run_id, name, **fields):
         if sig is not None:
             from obs.failures import record as _record
             _record(name, sig[0], card_id=fields.get("card", fields.get("id")),
-                    detail=str(sig[1] or "")[:280], run_id=run_id or "default")
+                    detail=str(sig[1] or ""), run_id=run_id or "default")   # recorder owns truncation (head+tail)
     except Exception:
         pass
 

@@ -14,6 +14,13 @@ from obs.paths import logs_dir as _logs_dir
 _REAL_RID_RE = re.compile(r"^r_[0-9a-f]{10}$")
 
 
+def _clip(detail):
+    """HEAD+TAIL truncation [audit 01 F5]: a pandas/psql error PREFIXES the failing SQL, so a front-only [:300]
+    chopped the actual cause off every long-SQL record. Keep the head (context) AND the tail (the cause)."""
+    d = str(detail)
+    return d if len(d) <= 300 else d[:120] + " … " + d[-160:]
+
+
 def record(stage, reason, *, card_id=None, group_id=None, detail="", run_id="default"):
     if "PYTEST_CURRENT_TEST" in os.environ and _REAL_RID_RE.match(str(run_id)):
         run_id = f"t_{run_id}"
@@ -21,7 +28,7 @@ def record(stage, reason, *, card_id=None, group_id=None, detail="", run_id="def
     os.makedirs(out, exist_ok=True)
     rec = {
         "ts": datetime.now().isoformat(), "run_id": run_id, "stage": stage,
-        "card_id": card_id, "group_id": group_id, "reason": reason, "detail": str(detail)[:300],
+        "card_id": card_id, "group_id": group_id, "reason": reason, "detail": _clip(detail),
     }
     with open(os.path.join(out, f"failures_{run_id}.jsonl"), "a") as f:
         f.write(json.dumps(rec) + "\n")
