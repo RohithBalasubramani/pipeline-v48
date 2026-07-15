@@ -128,6 +128,9 @@ def test_failures_search_finds_detail_substring():
     # dev-noise runs are excluded from the global report; search the rows door directly
     rows = failures_report._rows(RID)
     assert any("needle-xyz" in (r["detail"] or "") for r in rows)
+    # pins this fixture OUT of the pytest-artifact quarantine forever: a stage=l2_emit llm failure is REAL
+    llm_row = next(r for r in rows if r["stage"] == "llm")
+    assert failures_report.classify(llm_row) == "real"
 
 
 def test_window_params_inclusive_to_day():

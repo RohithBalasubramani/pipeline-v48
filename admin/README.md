@@ -55,7 +55,11 @@ GET  /admin/api/run/<run_id>/response → the raw persisted response doc
 GET  /admin/api/explorer?from&to      → {ok, stages:[StageAgg], pages:[PageAgg], assets:[AssetAgg]}
 GET  /admin/api/coverage?from&to&page_key → {ok, totals, by_page, by_day, honest_blanks}
 GET  /admin/api/latency?from&to       → {ok, stages:[StageLat], by_day, slowest:[RunSummary]}
-GET  /admin/api/failures?from&to&reason&stage&q&limit → {ok, total, by_reason, by_stage, recent}
+GET  /admin/api/failures?from&to&reason&stage&q&limit → {ok, total, by_reason, by_stage, recent,
+       blank_reasons: {total, by_reason, recent},          # per-leaf honest-blank telemetry (stage=='reason')
+       honest_gaps:  {total, by_day, recent},              # per-card answerability gaps (valid terminals)
+       quarantined:  {total, by_reason},                   # frozen pre-2026-07-12T17:00 pytest artifacts (rows hidden)
+       dedup: {layer_exception_twins, fill_gap_mirrors}}   # historical write-twin rows excluded from aggregates
 GET  /admin/api/ai-usage?from&to      → {ok, totals, by_day, by_stage, by_model, heaviest}
 GET  /admin/api/sql?from&to&run_id&q&source&slow_ms&limit → {ok, total, by_source, slowest, recent}
 GET  /admin/api/assets-log?from&to&how&q → {ok, by_how, events}
@@ -63,7 +67,7 @@ GET  /admin/api/validation?from&to    → {ok, runs:[ValidationRow], sessions:[S
 GET  /admin/api/search/prompts?q&from&to → {ok, runs:[RunSummary]}
 GET  /admin/api/search/errors?q&from&to&reason&stage → {ok, total, hits}
 POST /admin/api/replay {prompt, asset_id?, asset_ids?, date_window?} → {ok, replay_id, run_id}
-GET  /admin/api/replays               → {ok, replays:[ReplayRow]}
+GET  /admin/api/replays               → {ok, replays:[ReplayRow], traces:[TraceRow], traces_total}
 ```
 
 `RunSummary` = {run_id, ts (ISO, last activity), prompt, page_key, page_title, asset, asset_class,
