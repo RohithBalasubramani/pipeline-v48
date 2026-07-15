@@ -1,0 +1,22 @@
+-- db/fix_card12_story_seed.sql — DOCUMENTATION of the card-12 story seed (EXECUTED 2026-07-16 via psycopg2).
+--
+-- DEFECT: card 12 (Energy Input & Distribution) had NO harvested story in card_payloads — only a 56-byte synthetic
+-- stub (story_id='kpi12_main', payload={"kpi":{"pf":null,"title":"Peak kW","value":null}}). With no rail.vm skeleton
+-- to clone chrome from, the roster interpreter rendered the card with every label blank ('Total supplied'/'Total
+-- consumed'/section headers/'All' all showed em-dash).
+--
+-- FIX (fleet-audited first: 59 mapped stories checked, card 12 was the ONLY missing/stub row): seeded the TRUE story
+-- 'ems-panel-overview-energy-distribution-cards--energy-input-distribution' from the energy-flow-diagram SIBLING row —
+-- CMD_V2 EnergyDistributionCards.stories.tsx binds the IDENTICAL energyDistributionStoryFixtures.viewModel to BOTH
+-- stories (card 12 as rail.vm, card 13 as flow.vm), so payload12 = {variant, rail: payload13.flow} byte-faithfully.
+-- key_roles renamed flow->rail; match metadata from payload_db/enrich/mappings.json (high confidence, verified).
+-- The kpi12_main stub was DELETED. scripts/build_stripped_payloads.py re-run (payload_stripped is derived) — verified:
+-- chrome labels retained, every data leaf zeroed (no seed leak), only card-12 + 5 stale PQ rows changed.
+--
+-- The executed statement shape (values sourced live from the sibling row — see the commit body):
+--   INSERT INTO card_payloads (story_id, ..., payload, payload_keys, card_id, is_subcard, ...)
+--   SELECT 'ems-panel-overview-energy-distribution-cards--energy-input-distribution', ...,
+--          jsonb_build_object('variant', payload->'variant', 'rail', payload->'flow'), '{variant,rail}', 12, false, ...
+--   FROM card_payloads WHERE story_id='ems-panel-overview-energy-distribution-cards--energy-flow-diagram';
+--   DELETE FROM card_payloads WHERE story_id='kpi12_main';
+-- Rollback: db/rollback_card12_story_seed.sql
