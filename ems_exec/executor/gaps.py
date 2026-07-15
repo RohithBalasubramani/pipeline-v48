@@ -92,8 +92,8 @@ def _gap_sentence(cause, params):
     """The human sentence for a cause — the editable cmd_catalog.reason_template row (config.reason_templates). On a
     DB outage fall back to the machine cause key itself (the channel is never empty, never fabricated)."""
     try:
-        from config.reason_templates import reason as _reason
-        return _reason(cause, **params)
+        from config.reason_templates import sentence as _pure   # PURE — gap_sink writes survivors
+        return _pure(cause, **params)
     except Exception:
         return cause
 
@@ -171,6 +171,16 @@ def _attach_unbound_gaps(out, sources, gaps):
         if _norm(tuple(_toks(path))) in explained:
             continue
         v = _leaf_at(out, path)
+
+        def _name(raw, p2):
+            # degenerate element labels ('(', '—', '') made unreadable metric names in 983 sink rows [audit 10] —
+            # require at least one alphanumeric, else fall back to the slot's semantic label / last path token
+            s = str(raw or "").strip()
+            if any(c.isalnum() for c in s):
+                return s
+            from config.metrics import slot_semantic_label
+            return slot_semantic_label(p2) or (_toks(p2)[-1] if _toks(p2) else p2)
+
         blanks = []                                             # (record_path, display_name)
         if isinstance(v, list) and v and all(isinstance(e, dict) for e in v):
             vk = _element_value_key(v[0])
@@ -179,7 +189,7 @@ def _attach_unbound_gaps(out, sources, gaps):
                     if isinstance(el, dict) and _blank_val(el.get(vk)):
                         p2 = f"{path}[{i}].{vk}"
                         if _norm(tuple(_toks(p2))) not in explained:
-                            blanks.append((p2, el.get("label") or el.get("id") or p2))
+                            blanks.append((p2, _name(el.get("label") or el.get("id"), p2)))
         elif _blank_val(v):
             blanks.append((path, _toks(path)[-1] if _toks(path) else path))
         for p2, name in blanks:

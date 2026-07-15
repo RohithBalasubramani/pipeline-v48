@@ -30,8 +30,8 @@ def _cap():
 
 def _sentence(cause, metric):
     try:
-        from config.reason_templates import reason as _reason
-        return _reason(cause, metric=metric)
+        from config.reason_templates import sentence as _pure   # PURE — the sink write happens once per
+        return _pure(cause, metric=metric)                       # SURVIVING gap (obs/gap_sink), never per point
     except Exception:
         return cause
 

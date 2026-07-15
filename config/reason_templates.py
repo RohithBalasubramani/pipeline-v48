@@ -13,20 +13,32 @@ def template(cause):
     return rows[0][0] if rows else None
 
 
-def reason(cause, **kw):
-    """The filled human sentence for `cause` (missing {placeholders} left literal, never raises). Falls back to the
-    cause key itself when no template exists so the channel is never empty."""
+def sentence(cause, **kw):
+    """The filled human sentence for `cause` — PURE (no telemetry side effect). Missing {placeholders} left
+    literal, never raises; falls back to the cause key itself when no template exists.
+
+    Gap-record PRODUCERS (reconcile_slots, executor gaps/roster_gaps/fab_guards/xaxis) call THIS: their records
+    were written to the failures sink at construction — before executor fill / prune / dedup / caps — so filled
+    leaves and capped roster floods still counted (~50x inflation on roster pages, ~10% filled-downstream false
+    positives) [audit 2026-07-14, 10/11]. The sink write for gap records now happens once per SURVIVING record
+    at the serve boundary (obs/gap_sink.py). Event-level callers keep reason() below."""
     t = template(cause)
     if t is None:
-        return _tell_failures(cause, cause)
+        return cause
     try:
-        return _tell_failures(cause, t.format(**kw))
+        return t.format(**kw)
     except (KeyError, IndexError):
         # leave any unresolved placeholder literal rather than crash the reason channel
         out = t
         for k, v in kw.items():
             out = out.replace("{" + k + "}", str(v))
-        return _tell_failures(cause, out)
+        return out
+
+
+def reason(cause, **kw):
+    """sentence() + the failures-sink mirror — for EVENT-level callers (degrade gate, empty_fallback, swap
+    settle, asset_3d, enrich…) whose every sentence IS a real served event. Behavior unchanged."""
+    return _tell_failures(cause, sentence(cause, **kw))
 
 
 def _tell_failures(cause, sentence):

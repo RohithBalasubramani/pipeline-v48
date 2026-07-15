@@ -82,8 +82,8 @@ def _reason(cause, metric, **kw):
     Extra kwargs pass through to the template — null_column_reading's {column} placeholder rendered LITERALLY in
     every served sentence because the column never reached the formatter [audit 2026-07-14, 11 F4]."""
     try:
-        from config.reason_templates import reason as _r
-        return _r(cause, metric=metric, **kw)
+        from config.reason_templates import sentence as _s   # PURE — gap_sink writes survivors at serve
+        return _s(cause, metric=metric, **kw)
     except Exception:
         return cause
 

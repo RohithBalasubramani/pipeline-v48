@@ -54,11 +54,18 @@ def _reconcile_slots(di, dp_payload, basket, *, fields_optional=False, data_note
         di["_slot_issues"] = issues
     if unbound:
         note = str(data_note or "").strip()
+        # CAP [audit 10 F3]: this was the one UNCAPPED gap producer — a fully-uncovered card dumped its whole slot
+        # catalog. Same knob the executor's completion scan honors (reasons.max_unbound_records, default 60).
+        try:
+            from config.app_config import cfg
+            _cap = int(cfg("reasons.max_unbound_records", 60))
+        except Exception:
+            _cap = 60
         gaps = []
-        for s in unbound:
+        for s in unbound[:max(1, _cap)]:
             try:
-                from config.reason_templates import reason as _reason
-                sentence = _reason("unbound_by_emit", metric=s)
+                from config.reason_templates import sentence as _sentence   # PURE — gap_sink writes survivors
+                sentence = _sentence("unbound_by_emit", metric=s)
             except Exception:
                 sentence = "unbound_by_emit"
             if note:

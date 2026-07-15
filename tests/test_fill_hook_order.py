@@ -52,6 +52,9 @@ def test_fill_fires_every_hook_in_documented_order(monkeypatch):
     monkeypatch.setattr(freshness, "apply", lambda out, t: (calls.append("freshness"), out)[1])
     monkeypatch.setattr(trend_badge, "apply", lambda out: (calls.append("trend_badge"), out)[1])
 
+    from obs import gap_sink
+    monkeypatch.setattr(gap_sink, "record_gaps", lambda gaps, run_id=None: calls.append("gap_sink"))
+
     payload = {"kpis": [{"value": 0.0}]}
     di = {"fields": [{"slot": "kpis[0].value", "kind": "raw", "source": "live", "column": "p_kw"}]}
     out = F.fill(payload, di, {"asset_table": "t1"},
@@ -61,4 +64,4 @@ def test_fill_fires_every_hook_in_documented_order(monkeypatch):
     assert calls == ["roster.prepare_ctx", "restore_arrays", "placeholder_null",
                      "roster.run_roster", "roster_gaps.collect",
                      "yscale", "norm_series", "xaxis", "view_select", "display",
-                     "freshness", "trend_badge", "prune_gaps", "attach_gaps"], calls
+                     "freshness", "trend_badge", "prune_gaps", "attach_gaps", "gap_sink"], calls

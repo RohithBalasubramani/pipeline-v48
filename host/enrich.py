@@ -105,6 +105,7 @@ def _merge_emit_gaps(gaps, emit_gaps, payload):
             return s[5:] if s.startswith("data.") else s
 
         seen = {_norm(g.get("slot")) for g in out if isinstance(g, dict)}
+        appended = []
         for g in emit_gaps:
             if not isinstance(g, dict) or _norm(g.get("slot")) in seen:
                 continue
@@ -118,6 +119,13 @@ def _merge_emit_gaps(gaps, emit_gaps, payload):
                 continue                                     # the leaf filled real → the emit-time reason is stale
             seen.add(_norm(slot))
             out.append(g)
+            appended.append(g)
+        # SINK WRITE POINT #2 [audit 10]: emit-gap SURVIVORS only — L2's reconcile used to write these at
+        # construction, before the executor filled displayValue/yscale/timestamps (~10% false positives never
+        # retracted). Covers special-renderer cards and the zero-skeleton path too. Fail-open telemetry.
+        if appended:
+            from obs import gap_sink
+            gap_sink.record_gaps(appended)
     except Exception:
         pass
     return out or None

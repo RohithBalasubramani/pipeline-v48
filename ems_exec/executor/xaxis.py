@@ -137,8 +137,8 @@ def _label(ms, tz, fmt):
 
 def _gap(slot):
     try:
-        from config.reason_templates import reason as _reason
-        sentence = _reason("unbound_by_emit", metric=slot)
+        from config.reason_templates import sentence as _pure   # PURE — gap_sink writes survivors
+        sentence = _pure("unbound_by_emit", metric=slot)
     except Exception:
         sentence = "unbound_by_emit"
     return {"slot": slot, "cause": "unbound_by_emit", "metric": slot, "column": None, "fn": None, "reason": sentence}

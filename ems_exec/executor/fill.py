@@ -604,6 +604,14 @@ def fill(payload, data_instructions, ctx, default_payload=None, shape_ref=None):
             _attach_unbound_gaps(out, (payload, default_payload), gaps)
         except Exception as e:
             _degrade.note("gaps_reconcile", e)   # telemetry-only; fail-open contract unchanged [EH F3]
+        # SINK WRITE POINT [audit 10/11]: gaps here IS what the host serves as render.gaps for this card — write
+        # the failures-sink rows once per SURVIVING record (producers build sentences PURE; per-construction
+        # writes counted filled/capped records: ~4.5x served truth on unbound, ~50x on roster floods).
+        try:
+            from obs import gap_sink
+            gap_sink.record_gaps(gaps)
+        except Exception as e:
+            _degrade.note("gap_sink", e)         # telemetry-only; fail-open contract unchanged [EH F3]
 
     # attach the honest-gap reason channel LAST (after roster may replace `out`) — telemetry the host pops (pop_gaps)
     if gaps and isinstance(out, dict):
