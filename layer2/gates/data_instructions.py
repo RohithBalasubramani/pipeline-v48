@@ -1,7 +1,33 @@
 """layer2/gates/data_instructions.py — gate_data_instructions: the fields[] structural gate (every field a real
 basket column / const / $ctx)."""
+import re as _re
+
 from layer2.gates.basket import _bindable, _col_issue
 from layer2.gates.honest_blank import enforce_honest_blank
+
+
+def _slot_leaf_key(slot):
+    m = _re.findall(r"[A-Za-z_][A-Za-z0-9_]*", str(slot or ""))
+    return m[-1] if m else ""
+
+
+def _time_axis_slot(key):
+    """Is this leaf key a designated TIME AXIS (legal target for a kind='time' atom)? Authority = the CLASS-1
+    exemption vocabulary (fab_guards.time_axis_suffixes/exact + vocab.time_axis_keys) — the SAME list the post-fill
+    epoch guard honors — plus the slot-catalog structural net ('timestamp'/…StartMs/…EndMs) and the '…points'
+    cursor family the prompt licenses. Emit mis-declared kind=time onto value/Y-scale leaves and the series-time
+    fill wrote epoch-ms bucket axes there (the whole epoch_ms_leak class) [audit 2026-07-14, 13 F1]."""
+    k = (key or "").lower()
+    if k.endswith("points"):
+        return True
+    try:
+        from ems_exec.executor.fab_guards.knobs import _is_time_axis_key as _fg
+        if _fg(k):
+            return True
+    except Exception:
+        pass
+    from layer2.emit.slot_catalog import _is_time_axis_key as _sc
+    return _sc(k)
 
 def gate_data_instructions(data_instructions, basket, *, is_group_card=False, fields_optional=False,
                            answerability=None, exact_metadata=None):
@@ -15,6 +41,7 @@ def gate_data_instructions(data_instructions, basket, *, is_group_card=False, fi
         data_instructions["_honest_blanked"] = existing + _hb
     real, failed = _bindable(basket)
     issues = []
+    _time_drops = []                                   # mis-targeted kind=time fields to remove (never epoch-fill)
     fields = data_instructions.get("fields") or []
     if not fields:
         # A pure-chrome / special-renderer card (handling_class in app_config gates.fields_optional_classes: nav_index
@@ -55,6 +82,15 @@ def gate_data_instructions(data_instructions, basket, *, is_group_card=False, fi
         # column' — the cards 56/59 class). A timestamp-ish column it may still carry ('ts') is the executor's
         # compat net, not a basket column — nothing to police.
         if kind == "time":
+            # TIME-ATOM TARGET GATE [audit 13 F1, epoch_ms_leak front door]: a kind=time atom may bind ONLY a
+            # designated time-axis leaf — on a value/scale/marker slot the executor's series-time fill would write
+            # an epoch-ms bucket axis there (CLASS-1 then blanks it, but the front door should refuse). fields[-
+            # prefixed issue → the per-leaf partition (conforms stays True); the field is DROPPED so the executor
+            # can never epoch-fill the leaf; the completion scan gives it its per-leaf reason.
+            if not _time_axis_slot(_slot_leaf_key(f.get("slot"))):
+                issues.append(f"fields[{i}] kind=time on a non-time-axis slot {f.get('slot')!r} — a value/scale/"
+                              f"marker leaf is never a time axis; field dropped, leaf honest-blanks")
+                _time_drops.append(i)
             continue
         if src == "$ctx":
             if not is_group_card:
@@ -88,4 +124,6 @@ def gate_data_instructions(data_instructions, basket, *, is_group_card=False, fi
             issues.append(f"fields[{i}] kind={kind} missing a resolved column")
         if kind == "event" and not f.get("edge"):
             issues.append(f"fields[{i}] kind=event without edge")
+    for i in reversed(_time_drops):                    # drop AFTER the loop (stable indices in the issue texts)
+        del fields[i]
     return (not issues), issues
