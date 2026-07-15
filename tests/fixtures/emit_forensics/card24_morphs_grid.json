@@ -1,0 +1,409 @@
+{
+ "card_id": 24,
+ "clamped": false,
+ "error_kind": null,
+ "finish_reason": "stop",
+ "obs_id": 4485,
+ "payload_stripped": {
+  "timeline": {
+   "focus": "iThd",
+   "limits": {
+    "iThdLimit": 0.0,
+    "neutralLimitA": 0.0,
+    "truePfFloor": 0.0,
+    "truePfTarget": 0.0,
+    "vThdLimit": 0.0
+   },
+   "periods": [
+    {
+     "label": "",
+     "panels": [
+      {
+       "driver": "",
+       "driverKey": "",
+       "h3": 0.0,
+       "h5": 0.0,
+       "h7": 0.0,
+       "iThd": 0.0,
+       "iThdPk": 0.0,
+       "id": "ups-01",
+       "kFactor": 0.0,
+       "kw": 0.0,
+       "neutralA": 0.0,
+       "panel": "UPS-01",
+       "pf": 0.0,
+       "pfGap": 0.0,
+       "status": "",
+       "table": "",
+       "truePf": 0.0,
+       "vThd": 0.0
+      },
+      {
+       "driver": "",
+       "driverKey": "",
+       "h3": 0.0,
+       "h5": 0.0,
+       "h7": 0.0,
+       "iThd": 0.0,
+       "iThdPk": 0.0,
+       "id": "ups-02",
+       "kFactor": 0.0,
+       "kw": 0.0,
+       "neutralA": 0.0,
+       "panel": "UPS-02",
+       "pf": 0.0,
+       "pfGap": 0.0,
+       "status": "",
+       "table": "",
+       "truePf": 0.0,
+       "vThd": 0.0
+      },
+      {
+       "driver": "",
+       "driverKey": "",
+       "h3": 0.0,
+       "h5": 0.0,
+       "h7": 0.0,
+       "iThd": 0.0,
+       "iThdPk": 0.0,
+       "id": "ups-03",
+       "kFactor": 0.0,
+       "kw": 0.0,
+       "neutralA": 0.0,
+       "panel": "UPS-03",
+       "pf": 0.0,
+       "pfGap": 0.0,
+       "status": "",
+       "table": "",
+       "truePf": 0.0,
+       "vThd": 0.0
+      },
+      {
+       "driver": "",
+       "driverKey": "",
+       "h3": 0.0,
+       "h5": 0.0,
+       "h7": 0.0,
+       "iThd": 0.0,
+       "iThdPk": 0.0,
+       "id": "ups-04",
+       "kFactor": 0.0,
+       "kw": 0.0,
+       "neutralA": 0.0,
+       "panel": "UPS-04",
+       "pf": 0.0,
+       "pfGap": 0.0,
+       "status": "",
+       "table": "",
+       "truePf": 0.0,
+       "vThd": 0.0
+      },
+      {
+       "driver": "",
+       "driverKey": "",
+       "h3": 0.0,
+       "h5": 0.0,
+       "h7": 0.0,
+       "iThd": 0.0,
+       "iThdPk": 0.0,
+       "id": "ups-05",
+       "kFactor": 0.0,
+       "kw": 0.0,
+       "neutralA": 0.0,
+       "panel": "UPS-05",
+       "pf": 0.0,
+       "pfGap": 0.0,
+       "status": "",
+       "table": "",
+       "truePf": 0.0,
+       "vThd": 0.0
+      },
+      {
+       "driver": "",
+       "driverKey": "",
+       "h3": 0.0,
+       "h5": 0.0,
+       "h7": 0.0,
+       "iThd": 0.0,
+       "iThdPk": 0.0,
+       "id": "ups-06",
+       "kFactor": 0.0,
+       "kw": 0.0,
+       "neutralA": 0.0,
+       "panel": "UPS-06",
+       "pf": 0.0,
+       "pfGap": 0.0,
+       "status": "",
+       "table": "",
+       "truePf": 0.0,
+       "vThd": 0.0
+      },
+      {
+       "driver": "",
+       "driverKey": "",
+       "h3": 0.0,
+       "h5": 0.0,
+       "h7": 0.0,
+       "iThd": 0.0,
+       "iThdPk": 0.0,
+       "id": "bpdb-01",
+       "kFactor": 0.0,
+       "kw": 0.0,
+       "neutralA": 0.0,
+       "panel": "BPDB-01",
+       "pf": 0.0,
+       "pfGap": 0.0,
+       "status": "",
+       "table": "",
+       "truePf": 0.0,
+       "vThd": 0.0
+      },
+      {
+       "driver": "",
+       "driverKey": "",
+       "h3": 0.0,
+       "h5": 0.0,
+       "h7": 0.0,
+       "iThd": 0.0,
+       "iThdPk": 0.0,
+       "id": "bpdb-02",
+       "kFactor": 0.0,
+       "kw": 0.0,
+       "neutralA": 0.0,
+       "panel": "BPDB-02",
+       "pf": 0.0,
+       "pfGap": 0.0,
+       "status": "",
+       "table": "",
+       "truePf": 0.0,
+       "vThd": 0.0
+      },
+      {
+       "driver": "",
+       "driverKey": "",
+       "h3": 0.0,
+       "h5": 0.0,
+       "h7": 0.0,
+       "iThd": 0.0,
+       "iThdPk": 0.0,
+       "id": "hhf-01",
+       "kFactor": 0.0,
+       "kw": 0.0,
+       "neutralA": 0.0,
+       "panel": "HHF-01",
+       "pf": 0.0,
+       "pfGap": 0.0,
+       "status": "",
+       "table": "",
+       "truePf": 0.0,
+       "vThd": 0.0
+      },
+      {
+       "driver": "",
+       "driverKey": "",
+       "h3": 0.0,
+       "h5": 0.0,
+       "h7": 0.0,
+       "iThd": 0.0,
+       "iThdPk": 0.0,
+       "id": "hhf-02",
+       "kFactor": 0.0,
+       "kw": 0.0,
+       "neutralA": 0.0,
+       "panel": "HHF-02",
+       "pf": 0.0,
+       "pfGap": 0.0,
+       "status": "",
+       "table": "",
+       "truePf": 0.0,
+       "vThd": 0.0
+      }
+     ]
+    }
+   ],
+   "pres": {
+    "cardTitle": "Harmonics & PQ Timeline",
+    "dimOpacity": {
+     "line": 0.4,
+     "stack": 0.35
+    },
+    "leftAxisLabel": "No. of Events",
+    "lineOrder": [
+     "worstI",
+     "worstV"
+    ],
+    "lineSeries": [
+     {
+      "color": "#c13b38",
+      "key": "worstI",
+      "label": "Worst I-THD",
+      "unit": "%",
+      "unitStyle": "space"
+     },
+     {
+      "color": "#bc9e44",
+      "key": "worstV",
+      "label": "Worst V-THD",
+      "unit": "%",
+      "unitStyle": "space"
+     }
+    ],
+    "rightAxis": {
+     "label": "Percentage",
+     "unit": "%",
+     "unitStyle": "paren"
+    },
+    "showLegend": false,
+    "stackOrder": [
+     "iThd",
+     "vThd",
+     "pfGap",
+     "neutral"
+    ],
+    "stackSeries": [
+     {
+      "color": "#c13b38",
+      "key": "iThd",
+      "label": "I-THD"
+     },
+     {
+      "color": "#d6b85c",
+      "key": "vThd",
+      "label": "V-THD"
+     },
+     {
+      "color": "#6488a3",
+      "key": "pfGap",
+      "label": "PF gap"
+     },
+     {
+      "color": "#7e6ea1",
+      "key": "neutral",
+      "label": "Neutral"
+     }
+    ]
+   },
+   "selectedLabel": "Now"
+  },
+  "variant": "baseline"
+ },
+ "response": "{\n\"morphs\": {\n\"timeline.pres.cardTitle\": \"Harmonics & PQ Timeline\",\n\"timeline.pres.lineOrder\": [\n\"worstI\",\n\"worstV\"\n],\n\"timeline.pres.lineSeries\": [\n{\n\"key\": \"worstI\",\n\"unit\": \"%\",\n\"color\": \"#c13b38\",\n\"label\": \"Worst I-THD\",\n\"unitStyle\": \"space\"\n},\n{\n\"key\": \"worstV\",\n\"unit\": \"%\",\n\"color\": \"#bc9e44\",\n\"label\": \"Worst V-THD\",\n\"unitStyle\": \"space\"\n}\n],\n\"timeline.pres.stackOrder\": [\n\"iThd\",\n\"vThd\",\n\"pfGap\",\n\"neutral\"\n],\n\"timeline.pres.stackSeries\": [\n{\n\"key\": \"iThd\",\n\"color\": \"#c13b38\",\n\"label\": \"I-THD\"\n},\n{\n\"key\": \"vThd\",\n\"color\": \"#d6b85c\",\n\"label\": \"V-THD\"\n},\n{\n\"key\": \"pfGap\",\n\"color\": \"#6488a3\",\n\"label\": \"PF gap\"\n},\n{\n\"key\": \"neutral\",\n\"color\": \"#7e6ea1\",\n\"label\": \"Neutral\"\n}\n],\n\"timeline.pres.leftAxisLabel\": \"No. of Events\",\n\"timeline.pres.rightAxis\": {\n\"unit\": \"%\",\n\"label\": \"Percentage\",\n\"unitStyle\": \"paren\"\n},\n\"timeline.pres.dimOpacity\": {\n\"line\": 0.4,\n\"stack\": 0.35\n},\n\"timeline.pres.showLegend\": false,\n\"timeline.focus\": \"iThd\",\n\"timeline.limits.iThdLimit\": 0.0,\n\"timeline.limits.vThdLimit\": 0.0,\n\"timeline.limits.truePfFloor\": 0.0,\n\"timeline.limits.truePfTarget\": 0.0,\n\"timeline.limits.neutralLimitA\": 0.0,\n\"timeline.periods[0].panels\": [\n{\n\"h3\": 0.0,\n\"h5\": 0.0,\n\"h7\": 0.0,\n\"id\": \"ups-01\",\n\"kw\": 0.0,\n\"pf\": 0.0,\n\"iThd\": 0.0,\n\"vThd\": 0.0,\n\"panel\": \"UPS-01\",\n\"pfGap\": 0.0,\n\"table\": \"\",\n\"driver\": \"\",\n\"iThdPk\": 0.0,\n\"status\": \"\",\n\"truePf\": 0.0,\n\"kFactor\": 0.0,\n\"neutralA\": 0.0,\n\"driverKey\": \"\"\n},\n{\n\"h3\": 0.0,\n\"h5\": 0.0,\n\"h7\": 0.0,\n\"id\": \"ups-02\",\n\"kw\": 0.0,\n\"pf\": 0.0,\n\"iThd\": 0.0,\n\"vThd\": 0.0,\n\"panel\": \"UPS-02\",\n\"pfGap\": 0.0,\n\"table\": \"\",\n\"driver\": \"\",\n\"iThdPk\": 0.0,\n\"status\": \"\",\n\"truePf\": 0.0,\n\"kFactor\": 0.0,\n\"neutralA\": 0.0,\n\"driverKey\": \"\"\n},\n{\n\"h3\": 0.0,\n\"h5\": 0.0,\n\"h7\": 0.0,\n\"id\": \"ups-03\",\n\"kw\": 0.0,\n\"pf\": 0.0,\n\"iThd\": 0.0,\n\"vThd\": 0.0,\n\"panel\": \"UPS-03\",\n\"pfGap\": 0.0,\n\"table\": \"\",\n\"driver\": \"\",\n\"iThdPk\": 0.0,\n\"status\": \"\",\n\"truePf\": 0.0,\n\"kFactor\": 0.0,\n\"neutralA\": 0.0,\n\"driverKey\": \"\"\n},\n{\n\"h3\": 0.0,\n\"h5\": 0.0,\n\"h7\": 0.0,\n\"id\": \"ups-04\",\n\"kw\": 0.0,\n\"pf\": 0.0,\n\"iThd\": 0.0,\n\"vThd\": 0.0,\n\"panel\": \"UPS-04\",\n\"pfGap\": 0.0,\n\"table\": \"\",\n\"driver\": \"\",\n\"iThdPk\": 0.0,\n\"status\": \"\",\n\"truePf\": 0.0,\n\"kFactor\": 0.0,\n\"neutralA\": 0.0,\n\"driverKey\": \"\"\n},\n{\n\"h3\": 0.0,\n\"h5\": 0.0,\n\"h7\": 0.0,\n\"id\": \"ups-05\",\n\"kw\": 0.0,\n\"pf\": 0.0,\n\"iThd\": 0.0,\n\"vThd\": 0.0,\n\"panel\": \"UPS-05\",\n\"pfGap\": 0.0,\n\"table\": \"\",\n\"driver\": \"\",\n\"iThdPk\": 0.0,\n\"status\": \"\",\n\"truePf\": 0.0,\n\"kFactor\": 0.0,\n\"neutralA\": 0.0,\n\"driverKey\": \"\"\n},\n{\n\"h3\": 0.0,\n\"h5\": 0.0,\n\"h7\": 0.0,\n\"id\": \"ups-06\",\n\"kw\": 0.0,\n\"pf\": 0.0,\n\"iThd\": 0.0,\n\"vThd\": 0.0,\n\"panel\": \"UPS-06\",\n\"pfGap\": 0.0,\n\"table\": \"\",\n\"driver\": \"\",\n\"iThdPk\": 0.0,\n\"status\": \"\",\n\"truePf\": 0.0,\n\"kFactor\": 0.0,\n\"neutralA\": 0.0,\n\"driverKey\": \"\"\n},\n{\n\"h3\": 0.0,\n\"h5\": 0.0,\n\"h7\": 0.0,\n\"id\": \"bpdb-01\",\n\"kw\": 0.0,\n\"pf\": 0.0,\n\"iThd\": 0.0,\n\"vThd\": 0.0,\n\"panel\": \"BPDB-01\",\n\"pfGap\": 0.0,\n\"table\": \"\",\n\"driver\": \"\",\n\"iThdPk\": 0.0,\n\"status\": \"\",\n\"truePf\": 0.0,\n\"kFactor\": 0.0,\n\"neutralA\": 0.0,\n\"driverKey\": \"\"\n},\n{\n\"h3\": 0.0,\n\"h5\": 0.0,\n\"h7\": 0.0,\n\"id\": \"bpdb-02\",\n\"kw\": 0.0,\n\"pf\": 0.0,\n\"iThd\": 0.0,\n\"vThd\": 0.0,\n\"panel\": \"BPDB-02\",\n\"pfGap\": 0.0,\n\"table\": \"\",\n\"driver\": \"\",\n\"iThdPk\": 0.0,\n\"status\": \"\",\n\"truePf\": 0.0,\n\"kFactor\": 0.0,\n\"neutralA\": 0.0,\n\"driverKey\": \"\"\n},\n{\n\"h3\": 0.0,\n\"h5\": 0.0,\n\"h7\": 0.0,\n\"id\": \"hhf-01\",\n\"kw\": 0.0,\n\"pf\": 0.0,\n\"iThd\": 0.0,\n\"vThd\": 0.0,\n\"panel\": \"HHF-01\",\n\"pfGap\": 0.0,\n\"table\": \"\",\n\"driver\": \"\",\n\"iThdPk\": 0.0,\n\"status\": \"\",\n\"truePf\": 0.0,\n\"kFactor\": 0.0,\n\"neutralA\": 0.0,\n\"driverKey\": \"\"\n},\n{\n\"h3\": 0.0,\n\"h5\": 0.0,\n\"h7\": 0.0,\n\"id\": \"hhf-02\",\n\"kw\": 0.0,\n\"pf\": 0.0,\n\"iThd\": 0.0,\n\"vThd\": 0.0,\n\"panel\": \"HHF-02\",\n\"pfGap\": 0.0,\n\"table\": \"\",\n\"driver\": \"\",\n\"iThdPk\": 0.0,\n\"status\": \"\",\n\"truePf\": 0.0,\n\"kFactor\": 0.0,\n\"neutralA\": 0.0,\n\"driverKey\": \"\"\n}\n],\n\"timeline.periods[1].panels\": [\n{\n\"h3\": 0.0,\n\"h5\": 0.0,\n\"h7\": 0.0,\n\"id\": \"ups-01\",\n\"kw\": 0.0,\n\"pf\": 0.0,\n\"iThd\": 0.0,\n\"vThd\": 0.0,\n\"panel\": \"UPS-01\",\n\"pfGap\": 0.0,\n\"table\": \"\",\n\"driver\": \"\",\n\"iThdPk\": 0.0,\n\"status\": \"\",\n\"truePf\": 0.0,\n\"kFactor\": 0.0,\n\"neutralA\": 0.0,\n\"driverKey\": \"\"\n},\n{\n\"h3\": 0.0,\n\"h5\": 0.0,\n\"h7\": 0.0,\n\"id\": \"ups-02\",\n\"kw\": 0.0,\n\"pf\": 0.0,\n\"iThd\": 0.0,\n\"vThd\": 0.0,\n\"panel\": \"UPS-02\",\n\"pfGap\": 0.0,\n\"table\": \"\",\n\"driver\": \"\",\n\"iThdPk\": 0.0,\n\"status\": \"\",\n\"truePf\": 0.0,\n\"kFactor\": 0.0,\n\"neutralA\": 0.0,\n\"driverKey\": \"\"\n},\n{\n\"h3\": 0.0,\n\"h5\": 0.0,\n\"h7\": 0.0,\n\"id\": \"ups-03\",\n\"kw\": 0.0,\n\"pf\": 0.0,\n\"iThd\": 0.0,\n\"vThd\": 0.0,\n\"panel\": \"UPS-03\",\n\"pfGap\": 0.0,\n\"table\": \"\",\n\"driver\": \"\",\n\"iThdPk\": 0.0,\n\"status\": \"\",\n\"truePf\": 0.0,\n\"kFactor\": 0.0,\n\"neutralA\": 0.0,\n\"driverKey\": \"\"\n},\n{\n\"h3\": 0.0,\n\"h5\": 0.0,\n\"h7\": 0.0,\n\"id\": \"ups-04\",\n\"kw\": 0.0,\n\"pf\": 0.0,\n\"iThd\": 0.0,\n\"vThd\": 0.0,\n\"panel\": \"UPS-04\",\n\"pfGap\": 0.0,\n\"table\": \"\",\n\"driver\": \"\",\n\"iThdPk\": 0.0,\n\"status\": \"\",\n\"truePf\": 0.0,\n\"kFactor\": 0.0,\n\"neutralA\": 0.0,\n\"driverKey\": \"\"\n},\n{\n\"h3\": 0.0,\n\"h5\": 0.0,\n\"h7\": 0.0,\n\"id\": \"ups-05\",\n\"kw\": 0.0,\n\"pf\": 0.0,\n\"iThd\": 0.0,\n\"vThd\": 0.0,\n\"panel\": \"UPS-05\",\n\"pfGap\": 0.0,\n\"table\": \"\",\n\"driver\": \"\",\n\"iThdPk\": 0.0,\n\"status\": \"\",\n\"truePf\": 0.0,\n\"kFactor\": 0.0,\n\"neutralA\": 0.0,\n\"driverKey\": \"\"\n},\n{\n\"h3\": 0.0,\n\"h5\": 0.0,\n\"h7\": 0.0,\n\"id\": \"ups-06\",\n\"kw\": 0.0,\n\"pf\": 0.0,\n\"iThd\": 0.0,\n\"vThd\": 0.0,\n\"panel\": \"UPS-06\",\n\"pfGap\": 0.0,\n\"table\": \"\",\n\"driver\": \"\",\n\"iThdPk\": 0.0,\n\"status\": \"\",\n\"truePf\": 0.0,\n\"kFactor\": 0.0,\n\"neutralA\": 0.0,\n\"driverKey\": \"\"\n},\n{\n\"h3\": 0.0,\n\"h5\": 0.0,\n\"h7\": 0.0,\n\"id\": \"bpdb-01\",\n\"kw\": 0.0,\n\"pf\": 0.0,\n\"iThd\": 0.0,\n\"vThd\": 0.0,\n\"panel\": \"BPDB-01\",\n\"pfGap\": 0.0,\n\"table\": \"\",\n\"driver\": \"\",\n\"iThdPk\": 0.0,\n\"status\": \"\",\n\"truePf\": 0.0,\n\"kFactor\": 0.0,\n\"neutralA\": 0.0,\n\"driverKey\": \"\"\n},\n{\n\"h3\": 0.0,\n\"h5\": 0.0,\n\"h7\": 0.0,\n\"id\": \"bpdb-02\",\n\"kw\": 0.0,\n\"pf\": 0.0,\n\"iThd\": 0.0,\n\"vThd\": 0.0,\n\"panel\": \"BPDB-02\",\n\"pfGap\": 0.0,\n\"table\": \"\",\n\"driver\": \"\",\n\"iThdPk\": 0.0,\n\"status\": \"\",\n\"truePf\": 0.0,\n\"kFactor\": 0.0,\n\"neutralA\": 0.0,\n\"driverKey\": \"\"\n},\n{\n\"h3\": 0.0,\n\"h5\": 0.0,\n\"h7\": 0.0,\n\"id\": \"hhf-01\",\n\"kw\": 0.0,\n\"pf\": 0.0,\n\"iThd\": 0.0,\n\"vThd\": 0.0,\n\"panel\": \"HHF-01\",\n\"pfGap\": 0.0,\n\"table\": \"\",\n\"driver\": \"\",\n\"iThdPk\": 0.0,\n\"status\": \"\",\n\"truePf\": 0.0,\n\"kFactor\": 0.0,\n\"neutralA\": 0.0,\n\"driverKey\": \"\"\n},\n{\n\"h3\": 0.0,\n\"h5\": 0.0,\n\"h7\": 0.0,\n\"id\": \"hhf-02\",\n\"kw\": 0.0,\n\"pf\": 0.0,\n\"iThd\": 0.0,\n\"vThd\": 0.0,\n\"panel\": \"HHF-02\",\n\"pfGap\": 0.0,\n\"table\": \"\",\n\"driver\": \"\",\n\"iThdPk\": 0.0,\n\"status\": \"\",\n\"truePf\": 0.0,\n\"kFactor\": 0.0,\n\"neutralA\": 0.0,\n\"driverKey\": \"\"\n}\n],\n\"timeline.periods[2].panels\": [\n{\n\"h3\": 0.0,\n\"h5\": 0.0,\n\"h7\": 0.0,\n\"id\": \"ups-01\",\n\"kw\": 0.0,\n\"pf\": 0.0,\n\"iThd\": 0.0,\n\"vThd\": 0.0,\n\"panel\": \"UPS-01\",\n\"pfGap\": 0.0,\n\"table\": \"\",\n\"driver\": \"\",\n\"iThdPk\": 0.0,\n\"status\": \"\",\n\"truePf\": 0.0,\n\"kFactor\": 0.0,\n\"neutralA\": 0.0,\n\"driverKey\": \"\"\n},\n{\n\"h3\": 0.0,\n\"h5\": 0.0,\n\"h7\": 0.0,\n\"id\": \"ups-02\",\n\"kw\": 0.0,\n\"pf\": 0.0,\n\"iThd\": 0.0,\n\"vThd\": 0.0,\n\"panel\": \"UPS-02\",\n\"pfGap\": 0.0,\n\"table\": \"\",\n\"driver\": \"\",\n\"iThdPk\": 0.0,\n\"status\": \"\",\n\"truePf\": 0.0,\n\"kFactor\": 0.0,\n\"neutralA\": 0.0,\n\"driverKey\": \"\"\n},\n{\n\"h3\": 0.0,\n\"h5\": 0.0,\n\"h7\": 0.0,\n\"id\": \"ups-03\",\n\"kw\": 0.0,\n\"pf\": 0.0,\n\"iThd\": 0.0,\n\"vThd\": 0.0,\n\"panel\": \"UPS-03\",\n\"pfGap\": 0.0,\n\"table\": \"\",\n\"driver\": \"\",\n\"iThdPk\": 0.0,\n\"status\": \"\",\n\"truePf\": 0.0,\n\"kFactor\": 0.0,\n\"neutralA\": 0.0,\n\"driverKey\": \"\"\n},\n{\n\"h3\": 0.0,\n\"h5\": 0.0,\n\"h7\": 0.0,\n\"id\": \"ups-04\",\n\"kw\": 0.0,\n\"pf\": 0.0,\n\"iThd\": 0.0,\n\"vThd\": 0.0,\n\"panel\": \"UPS-04\",\n\"pfGap\": 0.0,\n\"table\": \"\",\n\"driver\": \"\",\n\"iThdPk\": 0.0,\n\"status\": \"\",\n\"truePf\": 0.0,\n\"kFactor\": 0.0,\n\"neutralA\": 0.0,\n\"driverKey\": \"\"\n},\n{\n\"h3\": 0.0,\n\"h5\": 0.0,\n\"h7\": 0.0,\n\"id\": \"ups-05\",\n\"kw\": 0.0,\n\"pf\": 0.0,\n\"iThd\": 0.0,\n\"vThd\": 0.0,\n\"panel\": \"UPS-05\",\n\"pfGap\": 0.0,\n\"table\": \"\",\n\"driver\": \"\",\n\"iThdPk\": 0.0,\n\"status\": \"\",\n\"truePf\": 0.0,\n\"kFactor\": 0.0,\n\"neutralA\": 0.0,\n\"driverKey\": \"\"\n},\n{\n\"h3\": 0.0,\n\"h5\": 0.0,\n\"h7\": 0.0,\n\"id\": \"ups-06\",\n\"kw\": 0.0,\n\"pf\": 0.0,\n\"iThd\": 0.0,\n\"vThd\": 0.0,\n\"panel\": \"UPS-06\",\n\"pfGap\": 0.0,\n\"table\": \"\",\n\"driver\": \"\",\n\"iThdPk\": 0.0,\n\"status\": \"\",\n\"truePf\": 0.0,\n\"kFactor\": 0.0,\n\"neutralA\": 0.0,\n\"driverKey\": \"\"\n},\n{\n\"h3\": 0.0,\n\"h5\": 0.0,\n\"h7\": 0.0,\n\"id\": \"bpdb-01\",\n\"kw\": 0.0,\n\"pf\": 0.0,\n\"iThd\": 0.0,\n\"vThd\": 0.0,\n\"panel\": \"BPDB-01\",\n\"pfGap\": 0.0,\n\"table\": \"\",\n\"driver\": \"\",\n\"iThdPk\": 0.0,\n\"status\": \"\",\n\"truePf\": 0.0,\n\"kFactor\": 0.0,\n\"neutralA\": 0.0,\n\"driverKey\": \"\"\n},\n{\n\"h3\": 0.0,\n\"h5\": 0.0,\n\"h7\": 0.0,\n\"id\": \"bpdb-02\",\n\"kw\": 0.0,\n\"pf\": 0.0,\n\"iThd\": 0.0,\n\"vThd\": 0.0,\n\"panel\": \"BPDB-02\",\n\"pfGap\": 0.0,\n\"table\": \"\",\n\"driver\": \"\",\n\"iThdPk\": 0.0,\n\"status\": \"\",\n\"truePf\": 0.0,\n\"kFactor\": 0.0,\n\"neutralA\": 0.0,\n\"driverKey\": \"\"\n},\n{\n\"h3\": 0.0,\n\"h5\": 0.0,\n\"h7\": 0.0,\n\"id\": \"hhf-01\",\n\"kw\": 0.0,\n\"pf\": 0.0,\n\"iThd\": 0.0,\n\"vThd\": 0.0,\n\"panel\": \"HHF-01\",\n\"pfGap\": 0.0,\n\"table\": \"\",\n\"driver\": \"\",\n\"iThdPk\": 0.0,\n\"status\": \"\",\n\"truePf\": 0.0,\n\"kFactor\": 0.0,\n\"neutralA\": 0.0,\n\"driverKey\": \"\"\n},\n{\n\"h3\": 0.0,\n\"h5\": 0.0,\n\"h7\": 0.0,\n\"id\": \"hhf-02\",\n\"kw\": 0.0,\n\"pf\": 0.0,\n\"iThd\": 0.0,\n\"vThd\": 0.0,\n\"panel\": \"HHF-02\",\n\"pfGap\": 0.0,\n\"table\": \"\",\n\"driver\": \"\",\n\"iThdPk\": 0.0,\n\"status\": \"\",\n\"truePf\": 0.0,\n\"kFactor\": 0.0,\n\"neutralA\": 0.0,\n\"driverKey\": \"\"\n}\n],\n\"timeline.periods[3].panels\": [\n{\n\"h3\": 0.0,\n\"h5\": 0.0,\n\"h7\": 0.0,\n\"id\": \"ups-01\",\n\"kw\": 0.0,\n\"pf\": 0.0,\n\"iThd\": 0.0,\n\"vThd\": 0.0,\n\"panel\": \"UPS-01\",\n\"pfGap\": 0.0,\n\"table\": \"\",\n\"driver\": \"\",\n\"iThdPk\": 0.0,\n\"status\": \"\",\n\"truePf\": 0.0,\n\"kFactor\": 0.0,\n\"neutralA\": 0.0,\n\"driverKey\": \"\"\n},\n{\n\"h3\": 0.0,\n\"h5\": 0.0,\n\"h7\": 0.0,\n\"id\": \"ups-02\",\n\"kw\": 0.0,\n\"pf\": 0.0,\n\"iThd\": 0.0,\n\"vThd\": 0.0,\n\"panel\": \"UPS-02\",\n\"pfGap\": 0.0,\n\"table\": \"\",\n\"driver\": \"\",\n\"iThdPk\": 0.0,\n\"status\": \"\",\n\"truePf\": 0.0,\n\"kFactor\": 0.0,\n\"neutralA\": 0.0,\n\"driverKey\": \"\"\n},\n{\n\"h3\": 0.0,\n\"h5\": 0.0,\n\"h7\": 0.0,\n\"id\": \"ups-03\",\n\"kw\": 0.0,\n\"pf\": 0.0,\n\"iThd\": 0.0,\n\"vThd\": 0.0,\n\"panel\": \"UPS-03\",\n\"pfGap\": 0.0,\n\"table\": \"\",\n\"driver\": \"\",\n\"iThdPk\": 0.0,\n\"status\": \"\",\n\"truePf\": 0.0,\n\"kFactor\": 0.0,\n\"neutralA\": 0.0,\n\"driverKey\": \"\"\n},\n{\n\"h3\": 0.0,\n\"h5\": 0.0,\n\"h7\": 0.0,\n\"id\": \"ups-04\",\n\"kw\": 0.0,\n\"pf\": 0.0,\n\"iThd\": 0.0,\n\"vThd\": 0.0,\n\"panel\": \"UPS-04\",\n\"pfGap\": 0.0,\n\"table\": \"\",\n\"driver\": \"\",\n\"iThdPk\": 0.0,\n\"status\": \"\",\n\"truePf\": 0.0,\n\"kFactor\": 0.0,\n\"neutralA\": 0.0,\n\"driverKey\": \"\"\n},\n{\n\"h3\": 0.0,\n\"h5\": 0.0,\n\"h7\": 0.0,\n\"id\": \"ups-05\",\n\"kw\": 0.0,\n\"pf\": 0.0,\n\"iThd\": 0.0,\n\"vThd\": 0.0,\n\"panel\": \"UPS-05\",\n\"pfGap\": 0.0,\n\"table\": \"\",\n\"driver\": \"\",\n\"iThdPk\": 0.0,\n\"status\": \"\",\n\"truePf\": 0.0,\n\"kFactor\": 0.0,\n\"neutralA\": 0.0,\n\"driverKey\": \"\"\n},\n{\n\"h3\": 0.0,\n\"h5\": 0.0,\n\"h7\": 0.0,\n\"id\": \"ups-06\",\n\"kw\": 0.0,\n\"pf\": 0.0,\n\"iThd\": 0.0,\n\"vThd\": 0.0,\n\"panel\": \"UPS-06\",\n\"pfGap\": 0.0,\n\"table\": \"\",\n\"driver\": \"\",\n\"iThdPk\": 0.0,\n\"status\": \"\",\n\"truePf\": 0.0,\n\"kFactor\": 0.0,\n\"neutralA\": 0.0,\n\"driverKey\": \"\"\n},\n{\n\"h3\": 0.0,\n\"h5\": 0.0,\n\"h7\": 0.0,\n\"id\": \"bpdb-01\",\n\"kw\": 0.0,\n\"pf\": 0.0,\n\"iThd\": 0.0,\n\"vThd\": 0.0,\n\"panel\": \"BPDB-01\",\n\"pfGap\": 0.0,\n\"table\": \"\",\n\"driver\": \"\",\n\"iThdPk\": 0.0,\n\"status\": \"\",\n\"truePf\": 0.0,\n\"kFactor\": 0.0,\n\"neutralA\": 0.0,\n\"driverKey\": \"\"\n},\n{\n\"h3\": 0.0,\n\"h5\": 0.0,\n\"h7\": 0.0,\n\"id\": \"bpdb-02\",\n\"kw\": 0.0,\n\"pf\": 0.0,\n\"iThd\": 0.0,\n\"vThd\": 0.0,\n\"panel\": \"BPDB-02\",\n\"pfGap\": 0.0,\n\"table\": \"\",\n\"driver\": \"\",\n\"iThdPk\": 0.0,\n\"status\": \"\",\n\"truePf\": 0.0,\n\"kFactor\": 0.0,\n\"neutralA\": 0.0,\n\"driverKey\": \"\"\n},\n{\n\"h3\": 0.0,\n\"h5\": 0.0,\n\"h7\": 0.0,\n\"id\": \"hhf-01\",\n\"kw\": 0.0,\n\"pf\": 0.0,\n\"iThd\": 0.0,\n\"vThd\": 0.0,\n\"panel\": \"HHF-01\",\n\"pfGap\": 0.0,\n\"table\": \"\",\n\"driver\": \"\",\n\"iThdPk\": 0.0,\n\"status\": \"\",\n\"truePf\": 0.0,\n\"kFactor\": 0.0,\n\"neutralA\": 0.0,\n\"driverKey\": \"\"\n},\n{\n\"h3\": 0.0,\n\"h5\": 0.0,\n\"h7\": 0.0,\n\"id\": \"hhf-02\",\n\"kw\": 0.0,\n\"pf\": 0.0,\n\"iThd\": 0.0,\n\"vThd\": 0.0,\n\"panel\": \"HHF-02\",\n\"pfGap\": 0.0,\n\"table\": \"\",\n\"driver\": \"\",\n\"iThdPk\": 0.0,\n\"status\": \"\",\n\"truePf\": 0.0,\n\"kFactor\": 0.0,\n\"neutralA\": 0.0,\n\"driverKey\": \"\"\n}\n],\n\"timeline.periods[4].panels\": [\n{\n\"h3\": 0.0,\n\"h5\": 0.0,\n\"h7\": 0.0,\n\"id\": \"ups-01\",\n\"kw\": 0.0,\n\"pf\": 0.0,\n\"iThd\": 0.0,\n\"vThd\": 0.0,\n\"panel\": \"UPS-01\",\n\"pfGap\": 0.0,\n\"table\": \"\",\n\"driver\": \"\",\n\"iThdPk\": 0.0,\n\"status\": \"\",\n\"truePf\": 0.0,\n\"kFactor\": 0.0,\n\"neutralA\": 0.0,\n\"driverKey\": \"\"\n},\n{\n\"h3\": 0.0,\n\"h5\": 0.0,\n\"h7\": 0.0,\n\"id\": \"ups-02\",\n\"kw\": 0.0,\n\"pf\": 0.0,\n\"iThd\": 0.0,\n\"vThd\": 0.0,\n\"panel\": \"UPS-02\",\n\"pfGap\": 0.0,\n\"table\": \"\",\n\"driver\": \"\",\n\"iThdPk\": 0.0,\n\"status\": \"\",\n\"truePf\": 0.0,\n\"kFactor\": 0.0,\n\"neutralA\": 0.0,\n\"driverKey\": \"\"\n},\n{\n\"h3\": 0.0,\n\"h5\": 0.0,\n\"h7\": 0.0,\n\"id\": \"ups-03\",\n\"kw\": 0.0,\n\"pf\": 0.0,\n\"iThd\": 0.0,\n\"vThd\": 0.0,\n\"panel\": \"UPS-03\",\n\"pfGap\": 0.0,\n\"table\": \"\",\n\"driver\": \"\",\n\"iThdPk\": 0.0,\n\"status\": \"\",\n\"truePf\": 0.0,\n\"kFactor\": 0.0,\n\"neutralA\": 0.0,\n\"driverKey\": \"\"\n},\n{\n\"h3\": 0.0,\n\"h5\": 0.0,\n\"h7\": 0.0,\n\"id\": \"ups-04\",\n\"kw\": 0.0,\n\"pf\": 0.0,\n\"iThd\": 0.0,\n\"vThd\": 0.0,\n\"panel\": \"UPS-04\",\n\"pfGap\": 0.0,\n\"table\": \"\",\n\"driver\": \"\",\n\"iThdPk\": 0.0,\n\"status\": \"\",\n\"truePf\": 0.0,\n\"kFactor\": 0.0,\n\"neutralA\": 0.0,\n\"driverKey\": \"\"\n},\n{\n\"h3\": 0.0,\n\"h5\": 0.0,\n\"h7\": 0.0,\n\"id\": \"ups-05\",\n\"kw\": 0.0,\n\"pf\": 0.0,\n\"iThd\": 0.0,\n\"vThd\": 0.0,\n\"panel\": \"UPS-05\",\n\"pfGap\": 0.0,\n\"table\": \"\",\n\"driver\": \"\",\n\"iThdPk\": 0.0,\n\"status\": \"\",\n\"truePf\": 0.0,\n\"kFactor\": 0.0,\n\"neutralA\": 0.0,\n\"driverKey\": \"\"\n},\n{\n\"h3\": 0.0,\n\"h5\": 0.0,\n\"h7\": 0.0,\n\"id\": \"ups-06\",\n\"kw\": 0.0,\n\"pf\": 0.0,\n\"iThd\": 0.0,\n\"vThd\": 0.0,\n\"panel\": \"UPS-06\",\n\"pfGap\": 0.0,\n\"table\": \"\",\n\"driver\": \"\",\n\"iThdPk\": 0.0,\n\"status\": \"\",\n\"truePf\": 0.0,\n\"kFactor\": 0.0,\n\"neutralA\": 0.0,\n\"driverKey\": \"\"\n},\n{\n\"h3\": 0.0,\n\"h5\": 0.0,\n\"h7\": 0.0,\n\"id\": \"bpdb-01\",\n\"kw\": 0.0,\n\"pf\": 0.0,\n\"iThd\": 0.0,\n\"vThd\": 0.0,\n\"panel\": \"BPDB-01\",\n\"pfGap\": 0.0,\n\"table\": \"\",\n\"driver\": \"\",\n\"iThdPk\": 0.0,\n\"status\": \"\",\n\"truePf\": 0.0,\n\"kFactor\": 0.0,\n\"neutralA\": 0.0,\n\"driverKey\": \"\"\n},\n{\n\"h3\": 0.0,\n\"h5\": 0.0,\n\"h7\": 0.0,\n\"id\": \"bpdb-02\",\n\"kw\": 0.0,\n\"pf\": 0.0,\n\"iThd\": 0.0,\n\"vThd\": 0.0,\n\"panel\": \"BPDB-02\",\n\"pfGap\": 0.0,\n\"table\": \"\",\n\"driver\": \"\",\n\"iThdPk\": 0.0,\n\"status\": \"\",\n\"truePf\": 0.0,\n\"kFactor\": 0.0,\n\"neutralA\": 0.0,\n\"driverKey\": \"\"\n},\n{\n\"h3\": 0.0,\n\"h5\": 0.0,\n\"h7\": 0.0,\n\"id\": \"hhf-01\",\n\"kw\": 0.0,\n\"pf\": 0.0,\n\"iThd\": 0.0,\n\"vThd\": 0.0,\n\"panel\": \"HHF-01\",\n\"pfGap\": 0.0,\n\"table\": \"\",\n\"driver\": \"\",\n\"iThdPk\": 0.0,\n\"status\": \"\",\n\"truePf\": 0.0,\n\"kFactor\": 0.0,\n\"neutralA\": 0.0,\n\"driverKey\": \"\"\n},\n{\n\"h3\": 0.0,\n\"h5\": 0.0,\n\"h7\": 0.0,\n\"id\": \"hhf-02\",\n\"kw\": 0.0,\n\"pf\": 0.0,\n\"iThd\": 0.0,\n\"vThd\": 0.0,\n\"panel\": \"HHF-02\",\n\"pfGap\": 0.0,\n\"table\": \"\",\n\"driver\": \"\",\n\"iThdPk\": 0.0,\n\"status\": \"\",\n\"truePf\": 0.0,\n\"kFactor\": 0.0,\n\"neutralA\": 0.0,\n\"driverKey\": \"\"\n}\n],\n\"timeline.periods[5].panels\": [\n{\n\"h3\": 0.0,\n\"h5\": 0.0,\n\"h7\": 0.0,\n\"id\": \"ups-01\",\n\"kw\": 0.0,\n\"pf\": 0.0,\n\"iThd\": 0.0,\n\"vThd\": 0.0,\n\"panel\": \"UPS-01\",\n\"pfGap\": 0.0,\n\"table\": \"\",\n\"driver\": \"\",\n\"iThdPk\": 0.0,\n\"status\": \"\",\n\"truePf\": 0.0,\n\"kFactor\": 0.0,\n\"neutralA\": 0.0,\n\"driverKey\": \"\"\n},\n{\n\"h3\": 0.0,\n\"h5\": 0.0,\n\"h7\": 0.0,\n\"id\": \"ups-02\",\n\"kw\": 0.0,\n\"pf\": 0.0,\n\"iThd\": 0.0,\n\"vThd\": 0.0,\n\"panel\": \"UPS-02\",\n\"pfGap\": 0.0,\n\"table\": \"\",\n\"driver\": \"\",\n\"iThdPk\": 0.0,\n\"status\": \"\",\n\"truePf\": 0.0,\n\"kFactor\": 0.0,\n\"neutralA\": 0.0,\n\"driverKey\": \"\"\n},\n{\n\"h3\": 0.0,\n\"h5\": 0.0,\n\"h7\": 0.0,\n\"id\": \"ups-03\",\n\"kw\": 0.0,\n\"pf\": 0.0,\n\"iThd\": 0.0,\n\"vThd\": 0.0,\n\"panel\": \"UPS-03\",\n\"pfGap\": 0.0,\n\"table\": \"\",\n\"driver\": \"\",\n\"iThdPk\": 0.0,\n\"status\": \"\",\n\"truePf\": 0.0,\n\"kFactor\": 0.0,\n\"neutralA\": 0.0,\n\"driverKey\": \"\"\n},\n{\n\"h3\": 0.0,\n\"h5\": 0.0,\n\"h7\": 0.0,\n\"id\": \"ups-04\",\n\"kw\": 0.0,\n\"pf\": 0.0,\n\"iThd\": 0.0,\n\"vThd\": 0.0,\n\"panel\": \"UPS-04\",\n\"pfGap\": 0.0,\n\"table\": \"\",\n\"driver\": \"\",\n\"iThdPk\": 0.0,\n\"status\": \"\",\n\"truePf\": 0.0,\n\"kFactor\": 0.0,\n\"neutralA\": 0.0,\n\"driverKey\": \"\"\n},\n{\n\"h3\": 0.0,\n\"h5\": 0.0,\n\"h7\": 0.0,\n\"id\": \"ups-05\",\n\"kw\": 0.0,\n\"pf\": 0.0,\n\"iThd\": 0.0,\n\"vThd\": 0.0,\n\"panel\": \"UPS-05\",\n\"pfGap\": 0.0,\n\"table\": \"\",\n\"driver\": \"\",\n\"iThdPk\": 0.0,\n\"status\": \"\",\n\"truePf\": 0.0,\n\"kFactor\": 0.0,\n\"neutralA\": 0.0,\n\"driverKey\": \"\"\n},\n{\n\"h3\": 0.0,\n\"h5\": 0.0,\n\"h7\": 0.0,\n\"id\": \"ups-06\",\n\"kw\": 0.0,\n\"pf\": 0.0,\n\"iThd\": 0.0,\n\"vThd\": 0.0,\n\"panel\": \"UPS-06\",\n\"pfGap\": 0.0,\n\"table\": \"\",\n\"driver\": \"\",\n\"iThdPk\": 0.0,\n\"status\": \"\",\n\"truePf\": 0.0,\n\"kFactor\": 0.0,\n\"neutralA\": 0.0,\n\"driverKey\": \"\"\n},\n{\n\"h3\": 0.0,\n\"h5\": 0.0,\n\"h7\": 0.0,\n\"id\": \"bpdb-01\",\n\"kw\": 0.0,\n\"pf\": 0.0,\n\"iThd\": 0.0,\n\"vThd\": 0.0,\n\"panel\": \"BPDB-01\",\n\"pfGap\": 0.0,\n\"table\": \"\",\n\"driver\": \"\",\n\"iThdPk\": 0.0,\n\"status\": \"\",\n\"truePf\": 0.0,\n\"kFactor\": 0.0,\n\"neutralA\": 0.0,\n\"driverKey\": \"\"\n},\n{\n\"h3\": 0.0,\n\"h5\": 0.0,\n\"h7\": 0.0,\n\"id\": \"bpdb-02\",\n\"kw\": 0.0,\n\"pf\": 0.0,\n\"iThd\": 0.0,\n\"vThd\": 0.0,\n\"panel\": \"BPDB-02\",\n\"pfGap\": 0.0,\n\"table\": \"\",\n\"driver\": \"\",\n\"iThdPk\": 0.0,\n\"status\": \"\",\n\"truePf\": 0.0,\n\"kFactor\": 0.0,\n\"neutralA\": 0.0,\n\"driverKey\": \"\"\n},\n{\n\"h3\": 0.0,\n\"h5\": 0.0,\n\"h7\": 0.0,\n\"id\": \"hhf-01\",\n\"kw\": 0.0,\n\"pf\": 0.0,\n\"iThd\": 0.0,\n\"vThd\": 0.0,\n\"panel\": \"HHF-01\",\n\"pfGap\": 0.0,\n\"table\": \"\",\n\"driver\": \"\",\n\"iThdPk\": 0.0,\n\"status\": \"\",\n\"truePf\": 0.0,\n\"kFactor\": 0.0,\n\"neutralA\": 0.0,\n\"driverKey\": \"\"\n},\n{\n\"h3\": 0.0,\n\"h5\": 0.0,\n\"h7\": 0.0,\n\"id\": \"hhf-02\",\n\"kw\": 0.0,\n\"pf\": 0.0,\n\"iThd\": 0.0,\n\"vThd\": 0.0,\n\"panel\": \"HHF-02\",\n\"pfGap\": 0.0,\n\"table\": \"\",\n\"driver\": \"\",\n\"iThdPk\": 0.0,\n\"status\": \"\",\n\"truePf\": 0.0,\n\"kFactor\": 0.0,\n\"neutralA\": 0.0,\n\"driverKey\": \"\"\n}\n],\n\"timeline.periods[6].panels\": [\n{\n\"h3\": 0.0,\n\"h5\": 0.0,\n\"h7\": 0.0,\n\"id\": \"ups-01\",\n\"kw\": 0.0,\n\"pf\": 0.0,\n\"iThd\": 0.0,\n\"vThd\": 0.0,\n\"panel\": \"UPS-01\",\n\"pfGap\": 0.0,\n\"table\": \"\",\n\"driver\": \"\",\n\"iThdPk\": 0.0,\n\"status\": \"\",\n\"truePf\": 0.0,\n\"kFactor\": 0.0,\n\"neutralA\": 0.0,\n\"driverKey\": \"\"\n},\n{\n\"h3\": 0.0,\n\"h5\": 0.0,\n\"h7\": 0.0,\n\"id\": \"ups-02\",\n\"kw\": 0.0,\n\"pf\": 0.0,\n\"iThd\": 0.0,\n\"vThd\": 0.0,\n\"panel\": \"UPS-02\",\n\"pfGap\": 0.0,\n\"table\": \"\",\n\"driver\": \"\",\n\"iThdPk\": 0.0,\n\"status\": \"\",\n\"truePf\": 0.0,\n\"kFactor\": 0.0,\n\"neutralA\": 0.0,\n\"driverKey\": \"\"\n},\n{\n\"h3\": 0.0,\n\"h5\": 0.0,\n\"h7\": 0.0,\n\"id\": \"ups-03\",\n\"kw\": 0.0,\n\"pf\": 0.0,\n\"iThd\": 0.0,\n\"vThd\": 0.0,\n\"panel\": \"UPS-03\",\n\"pfGap\": 0.0,\n\"table\": \"\",\n\"driver\": \"\",\n\"iThdPk\": 0.0,\n\"status\": \"\",\n\"truePf\": 0.0,\n\"kFactor\": 0.0,\n\"neutralA\": 0.0,\n\"driverKey\": \"\"\n},\n{\n\"h3\": 0.0,\n\"h5\": 0.0,\n\"h7\": 0.0,\n\"id\": \"ups-04\",\n\"kw\": 0.0,\n\"pf\": 0.0,\n\"iThd\": 0.0,\n\"vThd\": 0.0,\n\"panel\": \"UPS-04\",\n\"pfGap\": 0.0,\n\"table\": \"\",\n\"driver\": \"\",\n\"iThdPk\": 0.0,\n\"status\": \"\",\n\"truePf\": 0.0,\n\"kFactor\": 0.0,\n\"neutralA\": 0.0,\n\"driverKey\": \"\"\n},\n{\n\"h3\": 0.0,\n\"h5\": 0.0,\n\"h7\": 0.0,\n\"id\": \"ups-05\",\n\"kw\": 0.0,\n\"pf\": 0.0,\n\"iThd\": 0.0,\n\"vThd\": 0.0,\n\"panel\": \"UPS-05\",\n\"pfGap\": 0.0,\n\"table\": \"\",\n\"driver\": \"\",\n\"iThdPk\": 0.0,\n\"status\": \"\",\n\"truePf\": 0.0,\n\"kFactor\": 0.0,\n\"neutralA\": 0.0,\n\"driverKey\": \"\"\n},\n{\n\"h3\": 0.0,\n\"h5\": 0.0,\n\"h7\": 0.0,\n\"id\": \"ups-06\",\n\"kw\": 0.0,\n\"pf\": 0.0,\n\"iThd\": 0.0,\n\"vThd\": 0.0,\n\"panel\": \"UPS-06\",\n\"pfGap\": 0.0,\n\"table\": \"\",\n\"driver\": \"\",\n\"iThdPk\": 0.0,\n\"status\": \"\",\n\"truePf\": 0.0,\n\"kFactor\": 0.0,\n\"neutralA\": 0.0,\n\"driverKey\": \"\"\n},\n{\n\"h3\": 0.0,\n\"h5\": 0.0,\n\"h7\": 0.0,\n\"id\": \"bpdb-01\",\n\"kw\": 0.0,\n\"pf\": 0.0,\n\"iThd\": 0.0,\n\"vThd\": 0.0,\n\"panel\": \"BPDB-01\",\n\"pfGap\": 0.0,\n\"table\": \"\",\n\"driver\": \"\",\n\"iThdPk\": 0.0,\n\"status\": \"\",\n\"truePf\": 0.0,\n\"kFactor\": 0.0,\n\"neutralA\": 0.0,\n\"driverKey\": \"\"\n},\n{\n\"h3\": 0.0,\n\"h5\": 0.0,\n\"h7\": 0.0,\n\"id\": \"bpdb-02\",\n\"kw\": 0.0,\n\"pf\": 0.0,\n\"iThd\": 0.0,\n\"vThd\": 0.0,\n\"panel\": \"BPDB-02\",\n\"pfGap\": 0.0,\n\"table\": \"\",\n\"driver\": \"\",\n\"iThdPk\": 0.0,\n\"status\": \"\",\n\"truePf\": 0.0,\n\"kFactor\": 0.0,\n\"neutralA\": 0.0,\n\"driverKey\": \"\"\n},\n{\n\"h3\": 0.0,\n\"h5\": 0.0,\n\"h7\": 0.0,\n\"id\": \"hhf-01\",\n\"kw\": 0.0,\n\"pf\": 0.0,\n\"iThd\": 0.0,\n\"vThd\": 0.0,\n\"panel\": \"HHF-01\",\n\"pfGap\": 0.0,\n\"table\": \"\",\n\"driver\": \"\",\n\"iThdPk\": 0.0,\n\"status\": \"\",\n\"truePf\": 0.0,\n\"kFactor\": 0.0,\n\"neutralA\": 0.0,\n\"driverKey\": \"\"\n},\n{\n\"h3\": 0.0,\n\"h5\": 0.0,\n\"h7\": 0.0,\n\"id\": \"hhf-02\",\n\"kw\": 0.0,\n\"pf\": 0.0,\n\"iThd\": 0.0,\n\"vThd\": 0.0,\n\"panel\": \"HHF-02\",\n\"pfGap\": 0.0,\n\"table\": \"\",\n\"driver\": \"\",\n\"iThdPk\": 0.0,\n\"status\": \"\",\n\"truePf\": 0.0,\n\"kFactor\": 0.0,\n\"neutralA\": 0.0,\n\"driverKey\": \"\"\n}\n],\n\"timeline.periods[7].panels\": [\n{\n\"h3\": 0.0,\n\"h5\": 0.0,\n\"h7\": 0.0,\n\"id\": \"ups-01\",\n\"kw\": 0.0,\n\"pf\": 0.0,\n\"iThd\": 0.0,\n\"vThd\": 0.0,\n\"panel\": \"UPS-01\",\n\"pfGap\": 0.0,\n\"table\": \"\",\n\"driver\": \"\",\n\"iThdPk\": 0.0,\n\"status\": \"\",\n\"truePf\": 0.0,\n\"kFactor\": 0.0,\n\"neutralA\": 0.0,\n\"driverKey\": \"\"\n},\n{\n\"h3\": 0.0,\n\"h5\": 0.0,\n\"h7\": 0.0,\n\"id\": \"ups-02\",\n\"kw\": 0.0,\n\"pf\": 0.0,\n\"iThd\": 0.0,\n\"vThd\": 0.0,\n\"panel\": \"UPS-02\",\n\"pfGap\": 0.0,\n\"table\": \"\",\n\"driver\": \"\",\n\"iThdPk\": 0.0,\n\"status\": \"\",\n\"truePf\": 0.0,\n\"kFactor\": 0.0,\n\"neutralA\": 0.0,\n\"driverKey\": \"\"\n},\n{\n\"h3\": 0.0,\n\"h5\": 0.0,\n\"h7\": 0.0,\n\"id\": \"ups-03\",\n\"kw\": 0.0,\n\"pf\": 0.0,\n\"iThd\": 0.0,\n\"vThd\": 0.0,\n\"panel\": \"UPS-03\",\n\"pfGap\": 0.0,\n\"table\": \"\",\n\"driver\": \"\",\n\"iThdPk\": 0.0,\n\"status\": \"\",\n\"truePf\": 0.0,\n\"kFactor\": 0.0,\n\"neutralA\": 0.0,\n\"driverKey\": \"\"\n},\n{\n\"h3\": 0.0,\n\"h5\": 0.0,\n\"h7\": 0.0,\n\"id\": \"ups-04\",\n\"kw\": 0.0,\n\"pf\": 0.0,\n\"iThd\": 0.0,\n\"vThd\": 0.0,\n\"panel\": \"UPS-04\",\n\"pfGap\": 0.0,\n\"table\": \"\",\n\"driver\": \"\",\n\"iThdPk\": 0.0,\n\"status\": \"\",\n\"truePf\": 0.0,\n\"kFactor\": 0.0,\n\"neutralA\": 0.0,\n\"driverKey\": \"\"\n},\n{\n\"h3\": 0.0,\n\"h5\": 0.0,\n\"h7\": 0.0,\n\"id\": \"ups-05\",\n\"kw\": 0.0,\n\"pf\": 0.0,\n\"iThd\": 0.0,\n\"vThd\": 0.0,\n\"panel\": \"UPS-05\",\n\"pfGap\": 0.0,\n\"table\": \"\",\n\"driver\": \"\",\n\"iThdPk\": 0.0,\n\"status\": \"\",\n\"truePf\": 0.0,\n\"kFactor\": 0.0,\n\"neutralA\": 0.0,\n\"driverKey\": \"\"\n},\n{\n\"h3\": 0.0,\n\"h5\": 0.0,\n\"h7\": 0.0,\n\"id\": \"ups-06\",\n\"kw\": 0.0,\n\"pf\": 0.0,\n\"iThd\": 0.0,\n\"vThd\": 0.0,\n\"panel\": \"UPS-06\",\n\"pfGap\": 0.0,\n\"table\": \"\",\n\"driver\": \"\",\n\"iThdPk\": 0.0,\n\"status\": \"\",\n\"truePf\": 0.0,\n\"kFactor\": 0.0,\n\"neutralA\": 0.0,\n\"driverKey\": \"\"\n},\n{\n\"h3\": 0.0,\n\"h5\": 0.0,\n\"h7\": 0.0,\n\"id\": \"bpdb-01\",\n\"kw\": 0.0,\n\"pf\": 0.0,\n\"iThd\": 0.0,\n\"vThd\": 0.0,\n\"panel\": \"BPDB-01\",\n\"pfGap\": 0.0,\n\"table\": \"\",\n\"driver\": \"\",\n\"iThdPk\": 0.0,\n\"status\": \"\",\n\"truePf\": 0.0,\n\"kFactor\": 0.0,\n\"neutralA\": 0.0,\n\"driverKey\": \"\"\n},\n{\n\"h3\": 0.0,\n\"h5\": 0.0,\n\"h7\": 0.0,\n\"id\": \"bpdb-02\",\n\"kw\": 0.0,\n\"pf\": 0.0,\n\"iThd\": 0.0,\n\"vThd\": 0.0,\n\"panel\": \"BPDB-02\",\n\"pfGap\": 0.0,\n\"table\": \"\",\n\"driver\": \"\",\n\"iThdPk\": 0.0,\n\"status\": \"\",\n\"truePf\": 0.0,\n\"kFactor\": 0.0,\n\"neutralA\": 0.0,\n\"driverKey\": \"\"\n},\n{\n\"h3\": 0.0,\n\"h5\": 0.0,\n\"h7\": 0.0,\n\"id\": \"hhf-01\",\n\"kw\": 0.0,\n\"pf\": 0.0,\n\"iThd\": 0.0,\n\"vThd\": 0.0,\n\"panel\": \"HHF-01\",\n\"pfGap\": 0.0,\n\"table\": \"\",\n\"driver\": \"\",\n\"iThdPk\": 0.0,\n\"status\": \"\",\n\"truePf\": 0.0,\n\"kFactor\": 0.0,\n\"neutralA\": 0.0,\n\"driverKey\": \"\"\n},\n{\n\"h3\": 0.0,\n\"h5\": 0.0,\n\"h7\": 0.0,\n\"id\": \"hhf-02\",\n\"kw\": 0.0,\n\"pf\": 0.0,\n\"iThd\": 0.0,\n\"vThd\": 0.0,\n\"panel\": \"HHF-02\",\n\"pfGap\": 0.0,\n\"table\": \"\",\n\"driver\": \"\",\n\"iThdPk\": 0.0,\n\"status\": \"\",\n\"truePf\": 0.0,\n\"kFactor\": 0.0,\n\"neutralA\": 0.0,\n\"driverKey\": \"\"\n}\n]\n},\n\"data_instructions\": {\n\"payload_shape\": \"flat_series\",\n\"orientation\": \"time\",\n\"entity_dim\": \"panel\",\n\"selection_dim\": \"time-bucket\",\n\"selection_role\": \"produces\",\n\"binding\": {\n\"asset_id\": \"PCC-Panel-1\",\n\"table\": \"pcc_panel_1_feedbacks\",\n\"ts_col\": \"timestamp\",\n\"panel_id\": null,\n\"nameplate_scope\": \"default\"\n},\n\"window\": {\n\"lookback\": \"this-month\",\n\"sampling\": \"hourly\",\n\"time_mode\": \"choice\"\n},\n\"fetch\": {\n\"endpoint\": \"power-quality-summary\",\n\"window_seconds\": null,\n\"interval_seconds\": null,\n\"sample_count\": null,\n\"range\": \"this-month\",\n\"start\": null,\n\"end\": null,\n\"sampling\": \"hourly\",\n\"metrics\": [\n\"thd_current_r_pct\",\n\"thd_current_y_pct\",\n\"thd_current_b_pct\",\n\"thd_voltage_r_pct\",\n\"thd_voltage_y_pct\",\n\"thd_voltage_b_pct\",\n\"sag_event_active\",\n\"swell_event_active\",\n\"neutral_stress_event_active\",\n\"power_factor_total\"\n],\n\"selection\": null\n},\n\"fields\": [],\n\"roster\": [\n{\n\"slot\": \"timeline.periods[*].panels[]\",\n\"scope\": \"members\",\n\"element\": {\n\"h3\": {\n\"b\": \"null\",\n\"why\": \"no 3rd-harmonic column on gic_*\"\n},\n\"h5\": {\n\"b\": \"col\",\n\"c\": \"harmonic_5th_pct\",\n\"r\": 2\n},\n\"h7\": {\n\"b\": \"col\",\n\"c\": \"harmonic_7th_pct\",\n\"r\": 2\n},\n\"id\": {\n\"a\": \"name\",\n\"b\": \"slug\"\n},\n\"kw\": {\n\"b\": \"col\",\n\"c\": \"active_power_total_kw\",\n\"q\": \"power\",\n\"r\": 2\n},\n\"pf\": {\n\"b\": \"prefer_abs\",\n\"r\": 3,\n\"cs\": [\n\"kpi_true_pf\",\n\"power_factor_total\"\n]\n},\n\"iThd\": {\n\"b\": \"phase_mean\",\n\"r\": 2,\n\"cs\": [\n\"thd_current_r_pct\",\n\"thd_current_y_pct\",\n\"thd_current_b_pct\"\n]\n},\n\"vThd\": {\n\"b\": \"phase_mean\",\n\"r\": 2,\n\"cs\": [\n\"thd_voltage_r_pct\",\n\"thd_voltage_y_pct\",\n\"thd_voltage_b_pct\"\n]\n},\n\"panel\": {\n\"a\": \"name\",\n\"b\": \"attr\"\n},\n\"pfGap\": {\n\"b\": \"col\",\n\"c\": \"pf_gap_vs_full_load\",\n\"r\": 2\n},\n\"table\": {\n\"a\": \"table\",\n\"b\": \"attr\"\n},\n\"driver\": {\n\"b\": \"null\",\n\"why\": \"diagnosis label is not a neuract column\"\n},\n\"iThdPk\": {\n\"b\": \"null\",\n\"why\": \"no peak-THD column on gic_*\"\n},\n\"status\": {\n\"b\": \"status\",\n\"vocab\": [\n\"success\",\n\"warning\",\n\"danger\"\n],\n\"policy\": \"pf_floors\"\n},\n\"truePf\": {\n\"b\": \"col\",\n\"c\": \"kpi_true_pf\",\n\"r\": 3\n},\n\"kFactor\": {\n\"b\": \"null\",\n\"why\": \"no k-factor column on gic_*\"\n},\n\"neutralA\": {\n\"b\": \"col\",\n\"c\": \"current_neutral\",\n\"r\": 1\n},\n\"driverKey\": {\n\"b\": \"null\",\n\"why\": \"diagnosis label is not a neuract column\"\n}\n},\n\"role_filter\": \"load\",\n\"reporting_only\": true\n}\n]\n},\n\"answerability\": \"partial\",\n\"data_note\": \"Showing per-panel THD and event counts from outgoing feeders; voltage THD (vThd) is not measured for this asset's feeders, so V-THD lines and panels are blank.\"\n}",
+ "roster_spec": {
+  "coverage_attach": "widgets._coverage",
+  "slots": [
+   {
+    "element": {
+     "driver": {
+      "b": "null",
+      "why": "diagnosis label is not a neuract column"
+     },
+     "driverKey": {
+      "b": "null",
+      "why": "diagnosis label is not a neuract column"
+     },
+     "h3": {
+      "b": "null",
+      "why": "no 3rd-harmonic column on gic_*"
+     },
+     "h5": {
+      "b": "col",
+      "c": "harmonic_5th_pct",
+      "r": 2
+     },
+     "h7": {
+      "b": "col",
+      "c": "harmonic_7th_pct",
+      "r": 2
+     },
+     "iThd": {
+      "b": "phase_mean",
+      "cs": [
+       "thd_current_r_pct",
+       "thd_current_y_pct",
+       "thd_current_b_pct"
+      ],
+      "r": 2
+     },
+     "iThdPk": {
+      "b": "null",
+      "why": "no peak-THD column on gic_*"
+     },
+     "id": {
+      "a": "name",
+      "b": "slug"
+     },
+     "kFactor": {
+      "b": "null",
+      "why": "no k-factor column on gic_*"
+     },
+     "kw": {
+      "b": "col",
+      "c": "active_power_total_kw",
+      "q": "power",
+      "r": 2
+     },
+     "neutralA": {
+      "b": "col",
+      "c": "current_neutral",
+      "r": 1
+     },
+     "panel": {
+      "a": "name",
+      "b": "attr"
+     },
+     "pf": {
+      "b": "prefer_abs",
+      "cs": [
+       "kpi_true_pf",
+       "power_factor_total"
+      ],
+      "r": 3
+     },
+     "pfGap": {
+      "b": "col",
+      "c": "pf_gap_vs_full_load",
+      "r": 2
+     },
+     "status": {
+      "b": "status",
+      "policy": "pf_floors",
+      "vocab": [
+       "success",
+       "warning",
+       "danger"
+      ]
+     },
+     "table": {
+      "a": "table",
+      "b": "attr"
+     },
+     "truePf": {
+      "b": "col",
+      "c": "kpi_true_pf",
+      "r": 3
+     },
+     "vThd": {
+      "b": "phase_mean",
+      "cs": [
+       "thd_voltage_r_pct",
+       "thd_voltage_y_pct",
+       "thd_voltage_b_pct"
+      ],
+      "r": 2
+     }
+    },
+    "mode": "elements",
+    "repeat": "snapshot_per_period",
+    "reporting_only": true,
+    "role_filter": "load",
+    "scope": "members",
+    "slot": "timeline.periods[*].panels[]"
+   }
+  ]
+ },
+ "tag": "card24_morphs_grid",
+ "tokens_completion": 14614,
+ "tokens_prompt": 28581,
+ "ts": "2026-07-13 16:44:27.642423+05:30",
+ "why": "Mechanism A: 14,614-tok emit, morphs = zero-filled periods[*].panels harmonic grid"
+}

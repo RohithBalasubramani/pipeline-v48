@@ -1,0 +1,385 @@
+{
+ "card_id": 42,
+ "clamped": false,
+ "error_kind": "timeout",
+ "finish_reason": null,
+ "obs_id": 5296,
+ "payload_stripped": {
+  "data": {
+   "actualLoad": [
+    {
+     "time": "",
+     "value": 0.0
+    },
+    {
+     "time": "",
+     "value": 0.0
+    },
+    {
+     "time": "",
+     "value": 0.0
+    },
+    {
+     "time": "",
+     "value": 0.0
+    },
+    {
+     "time": "",
+     "value": 0.0
+    },
+    {
+     "time": "",
+     "value": 0.0
+    },
+    {
+     "time": "",
+     "value": 0.0
+    },
+    {
+     "time": "",
+     "value": 0.0
+    },
+    {
+     "time": "",
+     "value": 0.0
+    },
+    {
+     "time": "",
+     "value": 0.0
+    },
+    {
+     "time": "",
+     "value": 0.0
+    },
+    {
+     "time": "",
+     "value": 0.0
+    },
+    {
+     "time": "",
+     "value": 0.0
+    },
+    {
+     "time": "",
+     "value": 0.0
+    },
+    {
+     "time": "",
+     "value": 0.0
+    },
+    {
+     "time": "",
+     "value": 0.0
+    },
+    {
+     "time": "",
+     "value": 0.0
+    },
+    {
+     "time": "",
+     "value": 0.0
+    },
+    {
+     "time": "",
+     "value": 0.0
+    },
+    {
+     "time": "",
+     "value": 0.0
+    },
+    {
+     "time": "",
+     "value": 0.0
+    },
+    {
+     "time": "",
+     "value": 0.0
+    },
+    {
+     "time": "",
+     "value": 0.0
+    }
+   ],
+   "anomalies": [],
+   "colors": {
+    "actual": "#4A7494",
+    "dip": "#D6EBF3",
+    "expected": "#D8A04D",
+    "maxThreshold": "#ef4444",
+    "rangeFill": "#D8A04D99",
+    "surge": "#C13A38"
+   },
+   "dipEvents": 0.0,
+   "expectedLoad": [
+    {
+     "time": "",
+     "value": 0.0
+    },
+    {
+     "time": "",
+     "value": 0.0
+    },
+    {
+     "time": "",
+     "value": 0.0
+    },
+    {
+     "time": "",
+     "value": 0.0
+    },
+    {
+     "time": "",
+     "value": 0.0
+    },
+    {
+     "time": "",
+     "value": 0.0
+    },
+    {
+     "time": "",
+     "value": 0.0
+    },
+    {
+     "time": "",
+     "value": 0.0
+    },
+    {
+     "time": "",
+     "value": 0.0
+    },
+    {
+     "time": "",
+     "value": 0.0
+    },
+    {
+     "time": "",
+     "value": 0.0
+    },
+    {
+     "time": "",
+     "value": 0.0
+    },
+    {
+     "time": "",
+     "value": 0.0
+    },
+    {
+     "time": "",
+     "value": 0.0
+    },
+    {
+     "time": "",
+     "value": 0.0
+    },
+    {
+     "time": "",
+     "value": 0.0
+    },
+    {
+     "time": "",
+     "value": 0.0
+    },
+    {
+     "time": "",
+     "value": 0.0
+    },
+    {
+     "time": "",
+     "value": 0.0
+    },
+    {
+     "time": "",
+     "value": 0.0
+    },
+    {
+     "time": "",
+     "value": 0.0
+    },
+    {
+     "time": "",
+     "value": 0.0
+    },
+    {
+     "time": "",
+     "value": 0.0
+    }
+   ],
+   "expectedRange": [
+    {
+     "max": 0.0,
+     "min": 0.0,
+     "time": ""
+    },
+    {
+     "max": 0.0,
+     "min": 0.0,
+     "time": ""
+    },
+    {
+     "max": 0.0,
+     "min": 0.0,
+     "time": ""
+    },
+    {
+     "max": 0.0,
+     "min": 0.0,
+     "time": ""
+    },
+    {
+     "max": 0.0,
+     "min": 0.0,
+     "time": ""
+    },
+    {
+     "max": 0.0,
+     "min": 0.0,
+     "time": ""
+    },
+    {
+     "max": 0.0,
+     "min": 0.0,
+     "time": ""
+    },
+    {
+     "max": 0.0,
+     "min": 0.0,
+     "time": ""
+    },
+    {
+     "max": 0.0,
+     "min": 0.0,
+     "time": ""
+    },
+    {
+     "max": 0.0,
+     "min": 0.0,
+     "time": ""
+    },
+    {
+     "max": 0.0,
+     "min": 0.0,
+     "time": ""
+    },
+    {
+     "max": 0.0,
+     "min": 0.0,
+     "time": ""
+    },
+    {
+     "max": 0.0,
+     "min": 0.0,
+     "time": ""
+    },
+    {
+     "max": 0.0,
+     "min": 0.0,
+     "time": ""
+    },
+    {
+     "max": 0.0,
+     "min": 0.0,
+     "time": ""
+    },
+    {
+     "max": 0.0,
+     "min": 0.0,
+     "time": ""
+    },
+    {
+     "max": 0.0,
+     "min": 0.0,
+     "time": ""
+    },
+    {
+     "max": 0.0,
+     "min": 0.0,
+     "time": ""
+    },
+    {
+     "max": 0.0,
+     "min": 0.0,
+     "time": ""
+    },
+    {
+     "max": 0.0,
+     "min": 0.0,
+     "time": ""
+    },
+    {
+     "max": 0.0,
+     "min": 0.0,
+     "time": ""
+    },
+    {
+     "max": 0.0,
+     "min": 0.0,
+     "time": ""
+    },
+    {
+     "max": 0.0,
+     "min": 0.0,
+     "time": ""
+    }
+   ],
+   "insight": "",
+   "labels": {
+    "aboveLabel": "Above",
+    "afterLabel": "After",
+    "beforeLabel": "Before",
+    "belowLabel": "Below",
+    "closeAriaLabel": "Close event details",
+    "deviationLabel": "Deviation",
+    "dipTypeLabel": "Dip Event",
+    "durationLabel": "Duration",
+    "durationUnit": "ms",
+    "eventFallbackText": "Event detail is not available for this anomaly.",
+    "eventStatLabel": "Event",
+    "expectedLabel": "Expected",
+    "legendActualLabel": "Actual Load",
+    "legendDipLabel": "Dip events",
+    "legendExpectedLabel": "Expected load",
+    "legendRangeLabel": "Expected Range",
+    "legendSurgeLabel": "Surge events",
+    "loadFactorLabel": "Load Factor",
+    "maxLabel": "Max",
+    "pctUnit": "%",
+    "peakLoadLabel": "Peak Load",
+    "presentAriaPrefix": "Present load ",
+    "presentLabel": "Present",
+    "surgeTypeLabel": "Surge Event",
+    "title": "Load Anomalies",
+    "tooltipDipLabel": "Dip event",
+    "tooltipSurgeLabel": "Surge event",
+    "yAxisUnit": "%"
+   },
+   "loadFactorPct": 0.0,
+   "maxThresholdPct": 0.0,
+   "period": "Today",
+   "periodOptions": [
+    "Today",
+    "Weekly",
+    "Monthly",
+    "Quarterly"
+   ],
+   "presentValuePct": 0.0,
+   "surgeEvents": 0.0,
+   "yMax": 0.0,
+   "yMin": 0.0
+  },
+  "focused": {
+   "Actual Load": false,
+   "Dip events": false,
+   "Expected Range": false,
+   "Expected load": false,
+   "Surge events": false
+  },
+  "variant": "baseline"
+ },
+ "response": null,
+ "roster_spec": null,
+ "tag": "card42_timeout",
+ "tokens_completion": null,
+ "tokens_prompt": null,
+ "ts": "2026-07-14 17:29:59.082464+05:30",
+ "why": "pure-concurrency timeout (error_kind=timeout, no completion)"
+}

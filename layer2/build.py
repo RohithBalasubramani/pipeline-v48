@@ -61,10 +61,18 @@ def _finalize(ci, raw, swap, *, reemit_of=None):
     with stage_span("metadata_resolution", card_id=ci.get("card_id"),
                     inputs={"reemit_of": reemit_of, "swap_action": (swap or {}).get("action")}) as sp:
         out = _finalize_inner(ci, raw, swap, reemit_of=reemit_of)
+        # EMIT-DIET TELEMETRY [forensics 2026-07-15]: how much of the completion was retype (roster/fields entry
+        # counts as EMITTED, before the gates normalize) + how often the model fabricated data-tier morphs — the
+        # dials the emit.diet.* flags are adopted against.
+        _di_raw = raw.get("data_instructions") if isinstance(raw, dict) else None
+        _di_raw = _di_raw if isinstance(_di_raw, dict) else {}
         sp.set_outputs(conforms=out.get("conforms"), answerability=out.get("answerability"), gap=out.get("gap"),
                        applied_morphs=len(out.get("_applied_morphs") or []),
                        undeclared_morphs=len(out.get("_undeclared_morphs") or []),
                        schema_issues=len(out.get("_schema_issues") or []),
+                       data_morph_rejects=out.get("_data_morph_rejects") or 0,
+                       roster_entries_emitted=len(_di_raw.get("roster") or []) if isinstance(_di_raw.get("roster"), list) else 0,
+                       fields_entries_emitted=len(_di_raw.get("fields") or []) if isinstance(_di_raw.get("fields"), list) else 0,
                        failure=(out.get("failure") or {}).get("reason"))
         if out.get("gap") or not out.get("conforms"):
             sp.set_degradation(gap=out.get("gap") or None, nonconforming=(not out.get("conforms")) or None,
@@ -326,6 +334,10 @@ def _finalize_inner(ci, raw, swap, *, reemit_of=None):
                                           "detail": "; ".join(failures[:6])},
         "_applied_morphs": applied,
         "_undeclared_morphs": _undeclared,      # [A1] authored-but-undeclared metadata changes produce() reverted (telemetry)
+        # MECHANISM-A TELEMETRY [emit forensics 2026-07-15]: rejected DATA-tier morphs never ship (producer guard) and
+        # never flip conforms — which made the 14K-token zero-filled-grid emissions (obs row 4485) INVISIBLE. Count the
+        # producer's data-leaf rejections so sweeps/spans chart the temptation while the diet flags burn it down.
+        "_data_morph_rejects": sum(1 for f in failures if "DATA leaf" in f and "metadata-only" in f),
         "_reemit_of": reemit_of,
         "_default_payload": _seedfree_default(dp),            # data-leaf paths + offline replay source for the DATA-fill (SEEDLESS)
     }

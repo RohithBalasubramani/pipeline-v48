@@ -1,0 +1,427 @@
+{
+ "card_id": 22,
+ "clamped": false,
+ "error_kind": null,
+ "finish_reason": "stop",
+ "obs_id": 1372,
+ "payload_stripped": {
+  "table": {
+   "mode": null,
+   "period": {
+    "label": "",
+    "panels": [
+     {
+      "amps": 0.0,
+      "cause": "",
+      "causeKey": "",
+      "current": 0.0,
+      "iUnbalance": 0.0,
+      "id": "ups-01",
+      "neutral": 0.0,
+      "neutralA": 0.0,
+      "panel": "UPS-01",
+      "sag": 0.0,
+      "status": "",
+      "swell": 0.0,
+      "table": "",
+      "vAvg": 0.0,
+      "vDeviation": 0.0,
+      "vMax": 0.0,
+      "vMin": 0.0
+     },
+     {
+      "amps": 0.0,
+      "cause": "",
+      "causeKey": "",
+      "current": 0.0,
+      "iUnbalance": 0.0,
+      "id": "ups-02",
+      "neutral": 0.0,
+      "neutralA": 0.0,
+      "panel": "UPS-02",
+      "sag": 0.0,
+      "status": "",
+      "swell": 0.0,
+      "table": "",
+      "vAvg": 0.0,
+      "vDeviation": 0.0,
+      "vMax": 0.0,
+      "vMin": 0.0
+     },
+     {
+      "amps": 0.0,
+      "cause": "",
+      "causeKey": "",
+      "current": 0.0,
+      "iUnbalance": 0.0,
+      "id": "ups-03",
+      "neutral": 0.0,
+      "neutralA": 0.0,
+      "panel": "UPS-03",
+      "sag": 0.0,
+      "status": "",
+      "swell": 0.0,
+      "table": "",
+      "vAvg": 0.0,
+      "vDeviation": 0.0,
+      "vMax": 0.0,
+      "vMin": 0.0
+     },
+     {
+      "amps": 0.0,
+      "cause": "",
+      "causeKey": "",
+      "current": 0.0,
+      "iUnbalance": 0.0,
+      "id": "ups-04",
+      "neutral": 0.0,
+      "neutralA": 0.0,
+      "panel": "UPS-04",
+      "sag": 0.0,
+      "status": "",
+      "swell": 0.0,
+      "table": "",
+      "vAvg": 0.0,
+      "vDeviation": 0.0,
+      "vMax": 0.0,
+      "vMin": 0.0
+     },
+     {
+      "amps": 0.0,
+      "cause": "",
+      "causeKey": "",
+      "current": 0.0,
+      "iUnbalance": 0.0,
+      "id": "ups-05",
+      "neutral": 0.0,
+      "neutralA": 0.0,
+      "panel": "UPS-05",
+      "sag": 0.0,
+      "status": "",
+      "swell": 0.0,
+      "table": "",
+      "vAvg": 0.0,
+      "vDeviation": 0.0,
+      "vMax": 0.0,
+      "vMin": 0.0
+     },
+     {
+      "amps": 0.0,
+      "cause": "",
+      "causeKey": "",
+      "current": 0.0,
+      "iUnbalance": 0.0,
+      "id": "ups-06",
+      "neutral": 0.0,
+      "neutralA": 0.0,
+      "panel": "UPS-06",
+      "sag": 0.0,
+      "status": "",
+      "swell": 0.0,
+      "table": "",
+      "vAvg": 0.0,
+      "vDeviation": 0.0,
+      "vMax": 0.0,
+      "vMin": 0.0
+     },
+     {
+      "amps": 0.0,
+      "cause": "",
+      "causeKey": "",
+      "current": 0.0,
+      "iUnbalance": 0.0,
+      "id": "bpdb-01",
+      "neutral": 0.0,
+      "neutralA": 0.0,
+      "panel": "BPDB-01",
+      "sag": 0.0,
+      "status": "",
+      "swell": 0.0,
+      "table": "",
+      "vAvg": 0.0,
+      "vDeviation": 0.0,
+      "vMax": 0.0,
+      "vMin": 0.0
+     },
+     {
+      "amps": 0.0,
+      "cause": "",
+      "causeKey": "",
+      "current": 0.0,
+      "iUnbalance": 0.0,
+      "id": "bpdb-02",
+      "neutral": 0.0,
+      "neutralA": 0.0,
+      "panel": "BPDB-02",
+      "sag": 0.0,
+      "status": "",
+      "swell": 0.0,
+      "table": "",
+      "vAvg": 0.0,
+      "vDeviation": 0.0,
+      "vMax": 0.0,
+      "vMin": 0.0
+     },
+     {
+      "amps": 0.0,
+      "cause": "",
+      "causeKey": "",
+      "current": 0.0,
+      "iUnbalance": 0.0,
+      "id": "hhf-01",
+      "neutral": 0.0,
+      "neutralA": 0.0,
+      "panel": "HHF-01",
+      "sag": 0.0,
+      "status": "",
+      "swell": 0.0,
+      "table": "",
+      "vAvg": 0.0,
+      "vDeviation": 0.0,
+      "vMax": 0.0,
+      "vMin": 0.0
+     },
+     {
+      "amps": 0.0,
+      "cause": "",
+      "causeKey": "",
+      "current": 0.0,
+      "iUnbalance": 0.0,
+      "id": "hhf-02",
+      "neutral": 0.0,
+      "neutralA": 0.0,
+      "panel": "HHF-02",
+      "sag": 0.0,
+      "status": "",
+      "swell": 0.0,
+      "table": "",
+      "vAvg": 0.0,
+      "vDeviation": 0.0,
+      "vMax": 0.0,
+      "vMin": 0.0
+     }
+    ]
+   },
+   "pres": {
+    "ariaLabel": "Other panels events",
+    "causeVocab": {
+     "capacitorStep": "light-load or capacitor step",
+     "inrushSag": "inrush sag with phase load shift",
+     "loadRedistribution": "phase load redistribution",
+     "neutralStress": "nonlinear load neutral stress",
+     "normal": "normal",
+     "upsInrush": "UPS inrush / bus dip",
+     "upstreamDip": "upstream voltage dip"
+    },
+    "columnOrder": [
+     "panel",
+     "events",
+     "voltage",
+     "vDeviation",
+     "current",
+     "iUnbalance",
+     "cause"
+    ],
+    "columns": [
+     {
+      "fit": {
+       "fit": true,
+       "fitMax": 280,
+       "fitMin": 120
+      },
+      "header": {
+       "label": "Panel Name"
+      },
+      "id": "panel"
+     },
+     {
+      "align": "center",
+      "header": {
+       "label": "Voltage",
+       "unit": "V"
+      },
+      "id": "voltage",
+      "unit": "V"
+     },
+     {
+      "align": "center",
+      "decimals": 1,
+      "header": {
+       "label": "V- Deviation"
+      },
+      "id": "vDeviation",
+      "percentUnit": "%"
+     },
+     {
+      "align": "center",
+      "header": {
+       "label": "Current",
+       "unit": "A"
+      },
+      "id": "current",
+      "unit": "A"
+     },
+     {
+      "align": "center",
+      "decimals": 1,
+      "header": {
+       "label": "I- Unbalance"
+      },
+      "id": "iUnbalance",
+      "percentUnit": "%"
+     },
+     {
+      "fit": {
+       "fit": true,
+       "fitMax": 200,
+       "fitMin": 110
+      },
+      "header": {
+       "label": "Causes"
+      },
+      "id": "cause"
+     }
+    ],
+    "eventColumn": {
+     "align": "center",
+     "descriptor": "event",
+     "shortByMode": {
+      "current": "Current",
+      "neutral": "Neutral",
+      "sag": "Sag",
+      "swell": "Swell"
+     }
+    },
+    "eventModeOrder": [
+     "sag",
+     "swell",
+     "current"
+    ],
+    "layout": {
+     "headerHeight": 28,
+     "maxRowHeight": 28,
+     "rowHeight": 20
+    },
+    "minWidth": 1240,
+    "palette": {
+     "rowHoverBg": "#fefefb",
+     "rowSelectedBg": "#f5e6c8",
+     "rowSelectedBorder": "#7a4e13",
+     "rowSelectedText": "#5e3a0d"
+    },
+    "panelLabelReplacements": [
+     {
+      "from": "-0",
+      "to": "-"
+     }
+    ],
+    "singleModeMinWidth": 900,
+    "titleConnector": " at ",
+    "titlePrefix": "Other Panels Event"
+   },
+   "selectedPanelId": "ups-01"
+  },
+  "variant": "baseline"
+ },
+ "response": "{\n\"card_id\": 22,\n\"$ctx\": null,\n\"render_slot\": \"panel-overview-shell/voltage-current\",\n\"analytical_story\": \"This card contextualizes PCC-Panel-1's performance by comparing its event count against other panels, helping to determine if the voltage and current issues are isolated or systemic.\",\n\"swap_decision\": {\n\"action\": \"keep\",\n\"origin\": \"kept\",\n\"swap_to_id\": null,\n\"swap_to_title\": null,\n\"confidence\": 1.0,\n\"criterion\": \"The card's role as a 'panel_aggregate' comparison table directly serves the story angle of comparing event counts across panels to determine if issues are isolated or systemic.\",\n\"reason\": \"The current card is a panel-aggregate table designed to show per-panel event counts (Sag, Swell, Current, Neutral) alongside voltage/current metrics. This is the exact structure needed to compare PCC-Panel-1's peers. Swap candidates are either trend charts (24, 69, 46, 16, 17) or a different ledger (26) that focuses on THD/PF rather than event counts. The current card is the most direct fit for the 'event count comparison' story.\",\n\"cascade\": []\n},\n\"morphs\": {\n\"table.period.panels[0].panel\": \"GIC-01-N3-UPS-01\",\n\"table.period.panels[0].id\": \"gic-01-n3-ups-01\",\n\"table.period.panels[1].panel\": \"GIC-01-N4-UPS-02\",\n\"table.period.panels[1].id\": \"gic-01-n4-ups-02\",\n\"table.period.panels[2].panel\": \"GIC-01-N5-UPS-03\",\n\"table.period.panels[2].id\": \"gic-01-n5-ups-03\",\n\"table.period.panels[3].panel\": \"GIC-01-N8-BPDB-01 For Lamination-01&02\",\n\"table.period.panels[3].id\": \"gic-01-n8-bpdb-01\",\n\"table.period.panels[4].panel\": \"GIC-02-N2-BPDB-02 For Lamination-03&04\",\n\"table.period.panels[4].id\": \"gic-02-n2-bpdb-02\",\n\"table.period.panels[5].panel\": \"GIC-02-N5-UPS-04\",\n\"table.period.panels[5].id\": \"gic-02-n5-ups-04\",\n\"table.period.panels[6].panel\": \"GIC-02-N6-UPS-05\",\n\"table.period.panels[6].id\": \"gic-02-n6-ups-05\",\n\"table.period.panels[7].panel\": \"GIC-02-N7-UPS-06\",\n\"table.period.panels[7].id\": \"gic-02-n7-ups-06\",\n\"table.period.panels[8].panel\": \"GIC-01-N9-Solar Incomer-1\",\n\"table.period.panels[8].id\": \"gic-01-n9-solar-incomer-1\",\n\"table.period.panels[9].panel\": \"GIC-02-N1-Solar Incomer-2\",\n\"table.period.panels[9].id\": \"gic-02-n1-solar-incomer-2\"\n},\n\"data_instructions\": {\n\"payload_shape\": \"TablePayload\",\n\"orientation\": \"entity\",\n\"entity_dim\": \"panel\",\n\"selection_dim\": \"node\",\n\"selection_role\": \"produces\",\n\"binding\": {\n\"asset_id\": \"PCC-Panel-1\",\n\"table\": \"pcc_panel_1_feedbacks\",\n\"ts_col\": \"timestamp\",\n\"panel_id\": null,\n\"nameplate_scope\": \"default\"\n},\n\"window\": {\n\"lookback\": \"today\",\n\"sampling\": \"hourly\",\n\"time_mode\": \"flexible\"\n},\n\"ems_backend\": {\n\"endpoint\": \"voltage-current\",\n\"window_seconds\": null,\n\"interval_seconds\": null,\n\"sample_count\": null,\n\"range\": \"today\",\n\"start\": null,\n\"end\": null,\n\"sampling\": \"hourly\",\n\"metrics\": [\n\"voltage\",\n\"current\",\n\"event_count\"\n],\n\"selection\": null\n},\n\"fields\": [],\n\"roster\": [\n{\n\"slot\": \"table.period.panels[0].sag\",\n\"scope\": \"members\",\n\"element\": {\n\"sag\": {\n\"b\": \"event\",\n\"c\": \"sag_event_active\"\n}\n}\n},\n{\n\"slot\": \"table.period.panels[0].amps\",\n\"scope\": \"members\",\n\"element\": {\n\"amps\": {\n\"b\": \"col\",\n\"c\": \"current_avg\"\n}\n}\n},\n{\n\"slot\": \"table.period.panels[0].vAvg\",\n\"scope\": \"members\",\n\"element\": {\n\"vAvg\": {\n\"b\": \"col\",\n\"c\": \"voltage_avg\"\n}\n}\n},\n{\n\"slot\": \"table.period.panels[0].vMax\",\n\"scope\": \"members\",\n\"element\": {\n\"vMax\": {\n\"b\": \"col\",\n\"c\": \"voltage_max\"\n}\n}\n},\n{\n\"slot\": \"table.period.panels[0].vMin\",\n\"scope\": \"members\",\n\"element\": {\n\"vMin\": {\n\"b\": \"col\",\n\"c\": \"voltage_min\"\n}\n}\n},\n{\n\"slot\": \"table.period.panels[0].swell\",\n\"scope\": \"members\",\n\"element\": {\n\"swell\": {\n\"b\": \"event\",\n\"c\": \"swell_event_active\"\n}\n}\n},\n{\n\"slot\": \"table.period.panels[0].current\",\n\"scope\": \"members\",\n\"element\": {\n\"current\": {\n\"b\": \"event\",\n\"c\": \"current_imbalance_event_active\"\n}\n}\n},\n{\n\"slot\": \"table.period.panels[0].neutral\",\n\"scope\": \"members\",\n\"element\": {\n\"neutral\": {\n\"b\": \"event\",\n\"c\": \"neutral_stress_event_active\"\n}\n}\n},\n{\n\"slot\": \"table.period.panels[0].neutralA\",\n\"scope\": \"members\",\n\"element\": {\n\"neutralA\": {\n\"b\": \"col\",\n\"c\": \"current_neutral\"\n}\n}\n},\n{\n\"slot\": \"table.period.panels[0].iUnbalance\",\n\"scope\": \"members\",\n\"element\": {\n\"iUnbalance\": {\n\"b\": \"col\",\n\"c\": \"current_unbalance_pct\"\n}\n}\n},\n{\n\"slot\": \"table.period.panels[0].vDeviation\",\n\"scope\": \"members\",\n\"element\": {\n\"vDeviation\": {\n\"b\": \"col\",\n\"c\": \"kpi_voltage_deviation_pct\"\n}\n}\n},\n{\n\"slot\": \"table.period.panels[1].sag\",\n\"scope\": \"members\",\n\"element\": {\n\"sag\": {\n\"b\": \"event\",\n\"c\": \"sag_event_active\"\n}\n}\n},\n{\n\"slot\": \"table.period.panels[1].amps\",\n\"scope\": \"members\",\n\"element\": {\n\"amps\": {\n\"b\": \"col\",\n\"c\": \"current_avg\"\n}\n}\n},\n{\n\"slot\": \"table.period.panels[1].vAvg\",\n\"scope\": \"members\",\n\"element\": {\n\"vAvg\": {\n\"b\": \"col\",\n\"c\": \"voltage_avg\"\n}\n}\n},\n{\n\"slot\": \"table.period.panels[1].vMax\",\n\"scope\": \"members\",\n\"element\": {\n\"vMax\": {\n\"b\": \"col\",\n\"c\": \"voltage_max\"\n}\n}\n},\n{\n\"slot\": \"table.period.panels[1].vMin\",\n\"scope\": \"members\",\n\"element\": {\n\"vMin\": {\n\"b\": \"col\",\n\"c\": \"voltage_min\"\n}\n}\n},\n{\n\"slot\": \"table.period.panels[1].swell\",\n\"scope\": \"members\",\n\"element\": {\n\"swell\": {\n\"b\": \"event\",\n\"c\": \"swell_event_active\"\n}\n}\n},\n{\n\"slot\": \"table.period.panels[1].current\",\n\"scope\": \"members\",\n\"element\": {\n\"current\": {\n\"b\": \"event\",\n\"c\": \"current_imbalance_event_active\"\n}\n}\n},\n{\n\"slot\": \"table.period.panels[1].neutral\",\n\"scope\": \"members\",\n\"element\": {\n\"neutral\": {\n\"b\": \"event\",\n\"c\": \"neutral_stress_event_active\"\n}\n}\n},\n{\n\"slot\": \"table.period.panels[1].neutralA\",\n\"scope\": \"members\",\n\"element\": {\n\"neutralA\": {\n\"b\": \"col\",\n\"c\": \"current_neutral\"\n}\n}\n},\n{\n\"slot\": \"table.period.panels[1].iUnbalance\",\n\"scope\": \"members\",\n\"element\": {\n\"iUnbalance\": {\n\"b\": \"col\",\n\"c\": \"current_unbalance_pct\"\n}\n}\n},\n{\n\"slot\": \"table.period.panels[1].vDeviation\",\n\"scope\": \"members\",\n\"element\": {\n\"vDeviation\": {\n\"b\": \"col\",\n\"c\": \"kpi_voltage_deviation_pct\"\n}\n}\n},\n{\n\"slot\": \"table.period.panels[2].sag\",\n\"scope\": \"members\",\n\"element\": {\n\"sag\": {\n\"b\": \"event\",\n\"c\": \"sag_event_active\"\n}\n}\n},\n{\n\"slot\": \"table.period.panels[2].amps\",\n\"scope\": \"members\",\n\"element\": {\n\"amps\": {\n\"b\": \"col\",\n\"c\": \"current_avg\"\n}\n}\n},\n{\n\"slot\": \"table.period.panels[2].vAvg\",\n\"scope\": \"members\",\n\"element\": {\n\"vAvg\": {\n\"b\": \"col\",\n\"c\": \"voltage_avg\"\n}\n}\n},\n{\n\"slot\": \"table.period.panels[2].vMax\",\n\"scope\": \"members\",\n\"element\": {\n\"vMax\": {\n\"b\": \"col\",\n\"c\": \"voltage_max\"\n}\n}\n},\n{\n\"slot\": \"table.period.panels[2].vMin\",\n\"scope\": \"members\",\n\"element\": {\n\"vMin\": {\n\"b\": \"col\",\n\"c\": \"voltage_min\"\n}\n}\n},\n{\n\"slot\": \"table.period.panels[2].swell\",\n\"scope\": \"members\",\n\"element\": {\n\"swell\": {\n\"b\": \"event\",\n\"c\": \"swell_event_active\"\n}\n}\n},\n{\n\"slot\": \"table.period.panels[2].current\",\n\"scope\": \"members\",\n\"element\": {\n\"current\": {\n\"b\": \"event\",\n\"c\": \"current_imbalance_event_active\"\n}\n}\n},\n{\n\"slot\": \"table.period.panels[2].neutral\",\n\"scope\": \"members\",\n\"element\": {\n\"neutral\": {\n\"b\": \"event\",\n\"c\": \"neutral_stress_event_active\"\n}\n}\n},\n{\n\"slot\": \"table.period.panels[2].neutralA\",\n\"scope\": \"members\",\n\"element\": {\n\"neutralA\": {\n\"b\": \"col\",\n\"c\": \"current_neutral\"\n}\n}\n},\n{\n\"slot\": \"table.period.panels[2].iUnbalance\",\n\"scope\": \"members\",\n\"element\": {\n\"iUnbalance\": {\n\"b\": \"col\",\n\"c\": \"current_unbalance_pct\"\n}\n}\n},\n{\n\"slot\": \"table.period.panels[2].vDeviation\",\n\"scope\": \"members\",\n\"element\": {\n\"vDeviation\": {\n\"b\": \"col\",\n\"c\": \"kpi_voltage_deviation_pct\"\n}\n}\n},\n{\n\"slot\": \"table.period.panels[3].sag\",\n\"scope\": \"members\",\n\"element\": {\n\"sag\": {\n\"b\": \"event\",\n\"c\": \"sag_event_active\"\n}\n}\n},\n{\n\"slot\": \"table.period.panels[3].amps\",\n\"scope\": \"members\",\n\"element\": {\n\"amps\": {\n\"b\": \"col\",\n\"c\": \"current_avg\"\n}\n}\n},\n{\n\"slot\": \"table.period.panels[3].vAvg\",\n\"scope\": \"members\",\n\"element\": {\n\"vAvg\": {\n\"b\": \"col\",\n\"c\": \"voltage_avg\"\n}\n}\n},\n{\n\"slot\": \"table.period.panels[3].vMax\",\n\"scope\": \"members\",\n\"element\": {\n\"vMax\": {\n\"b\": \"col\",\n\"c\": \"voltage_max\"\n}\n}\n},\n{\n\"slot\": \"table.period.panels[3].vMin\",\n\"scope\": \"members\",\n\"element\": {\n\"vMin\": {\n\"b\": \"col\",\n\"c\": \"voltage_min\"\n}\n}\n},\n{\n\"slot\": \"table.period.panels[3].swell\",\n\"scope\": \"members\",\n\"element\": {\n\"swell\": {\n\"b\": \"event\",\n\"c\": \"swell_event_active\"\n}\n}\n},\n{\n\"slot\": \"table.period.panels[3].current\",\n\"scope\": \"members\",\n\"element\": {\n\"current\": {\n\"b\": \"event\",\n\"c\": \"current_imbalance_event_active\"\n}\n}\n},\n{\n\"slot\": \"table.period.panels[3].neutral\",\n\"scope\": \"members\",\n\"element\": {\n\"neutral\": {\n\"b\": \"event\",\n\"c\": \"neutral_stress_event_active\"\n}\n}\n},\n{\n\"slot\": \"table.period.panels[3].neutralA\",\n\"scope\": \"members\",\n\"element\": {\n\"neutralA\": {\n\"b\": \"col\",\n\"c\": \"current_neutral\"\n}\n}\n},\n{\n\"slot\": \"table.period.panels[3].iUnbalance\",\n\"scope\": \"members\",\n\"element\": {\n\"iUnbalance\": {\n\"b\": \"col\",\n\"c\": \"current_unbalance_pct\"\n}\n}\n},\n{\n\"slot\": \"table.period.panels[3].vDeviation\",\n\"scope\": \"members\",\n\"element\": {\n\"vDeviation\": {\n\"b\": \"col\",\n\"c\": \"kpi_voltage_deviation_pct\"\n}\n}\n},\n{\n\"slot\": \"table.period.panels[4].sag\",\n\"scope\": \"members\",\n\"element\": {\n\"sag\": {\n\"b\": \"event\",\n\"c\": \"sag_event_active\"\n}\n}\n},\n{\n\"slot\": \"table.period.panels[4].amps\",\n\"scope\": \"members\",\n\"element\": {\n\"amps\": {\n\"b\": \"col\",\n\"c\": \"current_avg\"\n}\n}\n},\n{\n\"slot\": \"table.period.panels[4].vAvg\",\n\"scope\": \"members\",\n\"element\": {\n\"vAvg\": {\n\"b\": \"col\",\n\"c\": \"voltage_avg\"\n}\n}\n},\n{\n\"slot\": \"table.period.panels[4].vMax\",\n\"scope\": \"members\",\n\"element\": {\n\"vMax\": {\n\"b\": \"col\",\n\"c\": \"voltage_max\"\n}\n}\n},\n{\n\"slot\": \"table.period.panels[4].vMin\",\n\"scope\": \"members\",\n\"element\": {\n\"vMin\": {\n\"b\": \"col\",\n\"c\": \"voltage_min\"\n}\n}\n},\n{\n\"slot\": \"table.period.panels[4].swell\",\n\"scope\": \"members\",\n\"element\": {\n\"swell\": {\n\"b\": \"event\",\n\"c\": \"swell_event_active\"\n}\n}\n},\n{\n\"slot\": \"table.period.panels[4].current\",\n\"scope\": \"members\",\n\"element\": {\n\"current\": {\n\"b\": \"event\",\n\"c\": \"current_imbalance_event_active\"\n}\n}\n},\n{\n\"slot\": \"table.period.panels[4].neutral\",\n\"scope\": \"members\",\n\"element\": {\n\"neutral\": {\n\"b\": \"event\",\n\"c\": \"neutral_stress_event_active\"\n}\n}\n},\n{\n\"slot\": \"table.period.panels[4].neutralA\",\n\"scope\": \"members\",\n\"element\": {\n\"neutralA\": {\n\"b\": \"col\",\n\"c\": \"current_neutral\"\n}\n}\n},\n{\n\"slot\": \"table.period.panels[4].iUnbalance\",\n\"scope\": \"members\",\n\"element\": {\n\"iUnbalance\": {\n\"b\": \"col\",\n\"c\": \"current_unbalance_pct\"\n}\n}\n},\n{\n\"slot\": \"table.period.panels[4].vDeviation\",\n\"scope\": \"members\",\n\"element\": {\n\"vDeviation\": {\n\"b\": \"col\",\n\"c\": \"kpi_voltage_deviation_pct\"\n}\n}\n},\n{\n\"slot\": \"table.period.panels[5].sag\",\n\"scope\": \"members\",\n\"element\": {\n\"sag\": {\n\"b\": \"event\",\n\"c\": \"sag_event_active\"\n}\n}\n},\n{\n\"slot\": \"table.period.panels[5].amps\",\n\"scope\": \"members\",\n\"element\": {\n\"amps\": {\n\"b\": \"col\",\n\"c\": \"current_avg\"\n}\n}\n},\n{\n\"slot\": \"table.period.panels[5].vAvg\",\n\"scope\": \"members\",\n\"element\": {\n\"vAvg\": {\n\"b\": \"col\",\n\"c\": \"voltage_avg\"\n}\n}\n},\n{\n\"slot\": \"table.period.panels[5].vMax\",\n\"scope\": \"members\",\n\"element\": {\n\"vMax\": {\n\"b\": \"col\",\n\"c\": \"voltage_max\"\n}\n}\n},\n{\n\"slot\": \"table.period.panels[5].vMin\",\n\"scope\": \"members\",\n\"element\": {\n\"vMin\": {\n\"b\": \"col\",\n\"c\": \"voltage_min\"\n}\n}\n},\n{\n\"slot\": \"table.period.panels[5].swell\",\n\"scope\": \"members\",\n\"element\": {\n\"swell\": {\n\"b\": \"event\",\n\"c\": \"swell_event_active\"\n}\n}\n},\n{\n\"slot\": \"table.period.panels[5].current\",\n\"scope\": \"members\",\n\"element\": {\n\"current\": {\n\"b\": \"event\",\n\"c\": \"current_imbalance_event_active\"\n}\n}\n},\n{\n\"slot\": \"table.period.panels[5].neutral\",\n\"scope\": \"members\",\n\"element\": {\n\"neutral\": {\n\"b\": \"event\",\n\"c\": \"neutral_stress_event_active\"\n}\n}\n},\n{\n\"slot\": \"table.period.panels[5].neutralA\",\n\"scope\": \"members\",\n\"element\": {\n\"neutralA\": {\n\"b\": \"col\",\n\"c\": \"current_neutral\"\n}\n}\n},\n{\n\"slot\": \"table.period.panels[5].iUnbalance\",\n\"scope\": \"members\",\n\"element\": {\n\"iUnbalance\": {\n\"b\": \"col\",\n\"c\": \"current_unbalance_pct\"\n}\n}\n},\n{\n\"slot\": \"table.period.panels[5].vDeviation\",\n\"scope\": \"members\",\n\"element\": {\n\"vDeviation\": {\n\"b\": \"col\",\n\"c\": \"kpi_voltage_deviation_pct\"\n}\n}\n},\n{\n\"slot\": \"table.period.panels[6].sag\",\n\"scope\": \"members\",\n\"element\": {\n\"sag\": {\n\"b\": \"event\",\n\"c\": \"sag_event_active\"\n}\n}\n},\n{\n\"slot\": \"table.period.panels[6].amps\",\n\"scope\": \"members\",\n\"element\": {\n\"amps\": {\n\"b\": \"col\",\n\"c\": \"current_avg\"\n}\n}\n},\n{\n\"slot\": \"table.period.panels[6].vAvg\",\n\"scope\": \"members\",\n\"element\": {\n\"vAvg\": {\n\"b\": \"col\",\n\"c\": \"voltage_avg\"\n}\n}\n},\n{\n\"slot\": \"table.period.panels[6].vMax\",\n\"scope\": \"members\",\n\"element\": {\n\"vMax\": {\n\"b\": \"col\",\n\"c\": \"voltage_max\"\n}\n}\n},\n{\n\"slot\": \"table.period.panels[6].vMin\",\n\"scope\": \"members\",\n\"element\": {\n\"vMin\": {\n\"b\": \"col\",\n\"c\": \"voltage_min\"\n}\n}\n},\n{\n\"slot\": \"table.period.panels[6].swell\",\n\"scope\": \"members\",\n\"element\": {\n\"swell\": {\n\"b\": \"event\",\n\"c\": \"swell_event_active\"\n}\n}\n},\n{\n\"slot\": \"table.period.panels[6].current\",\n\"scope\": \"members\",\n\"element\": {\n\"current\": {\n\"b\": \"event\",\n\"c\": \"current_imbalance_event_active\"\n}\n}\n},\n{\n\"slot\": \"table.period.panels[6].neutral\",\n\"scope\": \"members\",\n\"element\": {\n\"neutral\": {\n\"b\": \"event\",\n\"c\": \"neutral_stress_event_active\"\n}\n}\n},\n{\n\"slot\": \"table.period.panels[6].neutralA\",\n\"scope\": \"members\",\n\"element\": {\n\"neutralA\": {\n\"b\": \"col\",\n\"c\": \"current_neutral\"\n}\n}\n},\n{\n\"slot\": \"table.period.panels[6].iUnbalance\",\n\"scope\": \"members\",\n\"element\": {\n\"iUnbalance\": {\n\"b\": \"col\",\n\"c\": \"current_unbalance_pct\"\n}\n}\n},\n{\n\"slot\": \"table.period.panels[6].vDeviation\",\n\"scope\": \"members\",\n\"element\": {\n\"vDeviation\": {\n\"b\": \"col\",\n\"c\": \"kpi_voltage_deviation_pct\"\n}\n}\n},\n{\n\"slot\": \"table.period.panels[7].sag\",\n\"scope\": \"members\",\n\"element\": {\n\"sag\": {\n\"b\": \"event\",\n\"c\": \"sag_event_active\"\n}\n}\n},\n{\n\"slot\": \"table.period.panels[7].amps\",\n\"scope\": \"members\",\n\"element\": {\n\"amps\": {\n\"b\": \"col\",\n\"c\": \"current_avg\"\n}\n}\n},\n{\n\"slot\": \"table.period.panels[7].vAvg\",\n\"scope\": \"members\",\n\"element\": {\n\"vAvg\": {\n\"b\": \"col\",\n\"c\": \"voltage_avg\"\n}\n}\n},\n{\n\"slot\": \"table.period.panels[7].vMax\",\n\"scope\": \"members\",\n\"element\": {\n\"vMax\": {\n\"b\": \"col\",\n\"c\": \"voltage_max\"\n}\n}\n},\n{\n\"slot\": \"table.period.panels[7].vMin\",\n\"scope\": \"members\",\n\"element\": {\n\"vMin\": {\n\"b\": \"col\",\n\"c\": \"voltage_min\"\n}\n}\n},\n{\n\"slot\": \"table.period.panels[7].swell\",\n\"scope\": \"members\",\n\"element\": {\n\"swell\": {\n\"b\": \"event\",\n\"c\": \"swell_event_active\"\n}\n}\n},\n{\n\"slot\": \"table.period.panels[7].current\",\n\"scope\": \"members\",\n\"element\": {\n\"current\": {\n\"b\": \"event\",\n\"c\": \"current_imbalance_event_active\"\n}\n}\n},\n{\n\"slot\": \"table.period.panels[7].neutral\",\n\"scope\": \"members\",\n\"element\": {\n\"neutral\": {\n\"b\": \"event\",\n\"c\": \"neutral_stress_event_active\"\n}\n}\n},\n{\n\"slot\": \"table.period.panels[7].neutralA\",\n\"scope\": \"members\",\n\"element\": {\n\"neutralA\": {\n\"b\": \"col\",\n\"c\": \"current_neutral\"\n}\n}\n},\n{\n\"slot\": \"table.period.panels[7].iUnbalance\",\n\"scope\": \"members\",\n\"element\": {\n\"iUnbalance\": {\n\"b\": \"col\",\n\"c\": \"current_unbalance_pct\"\n}\n}\n},\n{\n\"slot\": \"table.period.panels[7].vDeviation\",\n\"scope\": \"members\",\n\"element\": {\n\"vDeviation\": {\n\"b\": \"col\",\n\"c\": \"kpi_voltage_deviation_pct\"\n}\n}\n},\n{\n\"slot\": \"table.period.panels[8].sag\",\n\"scope\": \"members\",\n\"element\": {\n\"sag\": {\n\"b\": \"event\",\n\"c\": \"sag_event_active\"\n}\n}\n},\n{\n\"slot\": \"table.period.panels[8].amps\",\n\"scope\": \"members\",\n\"element\": {\n\"amps\": {\n\"b\": \"col\",\n\"c\": \"current_avg\"\n}\n}\n},\n{\n\"slot\": \"table.period.panels[8].vAvg\",\n\"scope\": \"members\",\n\"element\": {\n\"vAvg\": {\n\"b\": \"col\",\n\"c\": \"voltage_avg\"\n}\n}\n},\n{\n\"slot\": \"table.period.panels[8].vMax\",\n\"scope\": \"members\",\n\"element\": {\n\"vMax\": {\n\"b\": \"col\",\n\"c\": \"voltage_max\"\n}\n}\n},\n{\n\"slot\": \"table.period.panels[8].vMin\",\n\"scope\": \"members\",\n\"element\": {\n\"vMin\": {\n\"b\": \"col\",\n\"c\": \"voltage_min\"\n}\n}\n},\n{\n\"slot\": \"table.period.panels[8].swell\",\n\"scope\": \"members\",\n\"element\": {\n\"swell\": {\n\"b\": \"event\",\n\"c\": \"swell_event_active\"\n}\n}\n},\n{\n\"slot\": \"table.period.panels[8].current\",\n\"scope\": \"members\",\n\"element\": {\n\"current\": {\n\"b\": \"event\",\n\"c\": \"current_imbalance_event_active\"\n}\n}\n},\n{\n\"slot\": \"table.period.panels[8].neutral\",\n\"scope\": \"members\",\n\"element\": {\n\"neutral\": {\n\"b\": \"event\",\n\"c\": \"neutral_stress_event_active\"\n}\n}\n},\n{\n\"slot\": \"table.period.panels[8].neutralA\",\n\"scope\": \"members\",\n\"element\": {\n\"neutralA\": {\n\"b\": \"col\",\n\"c\": \"current_neutral\"\n}\n}\n},\n{\n\"slot\": \"table.period.panels[8].iUnbalance\",\n\"scope\": \"members\",\n\"element\": {\n\"iUnbalance\": {\n\"b\": \"col\",\n\"c\": \"current_unbalance_pct\"\n}\n}\n},\n{\n\"slot\": \"table.period.panels[8].vDeviation\",\n\"scope\": \"members\",\n\"element\": {\n\"vDeviation\": {\n\"b\": \"col\",\n\"c\": \"kpi_voltage_deviation_pct\"\n}\n}\n},\n{\n\"slot\": \"table.period.panels[9].sag\",\n\"scope\": \"members\",\n\"element\": {\n\"sag\": {\n\"b\": \"event\",\n\"c\": \"sag_event_active\"\n}\n}\n},\n{\n\"slot\": \"table.period.panels[9].amps\",\n\"scope\": \"members\",\n\"element\": {\n\"amps\": {\n\"b\": \"col\",\n\"c\": \"current_avg\"\n}\n}\n},\n{\n\"slot\": \"table.period.panels[9].vAvg\",\n\"scope\": \"members\",\n\"element\": {\n\"vAvg\": {\n\"b\": \"col\",\n\"c\": \"voltage_avg\"\n}\n}\n},\n{\n\"slot\": \"table.period.panels[9].vMax\",\n\"scope\": \"members\",\n\"element\": {\n\"vMax\": {\n\"b\": \"col\",\n\"c\": \"voltage_max\"\n}\n}\n},\n{\n\"slot\": \"table.period.panels[9].vMin\",\n\"scope\": \"members\",\n\"element\": {\n\"vMin\": {\n\"b\": \"col\",\n\"c\": \"voltage_min\"\n}\n}\n},\n{\n\"slot\": \"table.period.panels[9].swell\",\n\"scope\": \"members\",\n\"element\": {\n\"swell\": {\n\"b\": \"event\",\n\"c\": \"swell_event_active\"\n}\n}\n},\n{\n\"slot\": \"table.period.panels[9].current\",\n\"scope\": \"members\",\n\"element\": {\n\"current\": {\n\"b\": \"event\",\n\"c\": \"current_imbalance_event_active\"\n}\n}\n},\n{\n\"slot\": \"table.period.panels[9].neutral\",\n\"scope\": \"members\",\n\"element\": {\n\"neutral\": {\n\"b\": \"event\",\n\"c\": \"neutral_stress_event_active\"\n}\n}\n},\n{\n\"slot\": \"table.period.panels[9].neutralA\",\n\"scope\": \"members\",\n\"element\": {\n\"neutralA\": {\n\"b\": \"col\",\n\"c\": \"current_neutral\"\n}\n}\n},\n{\n\"slot\": \"table.period.panels[9].iUnbalance\",\n\"scope\": \"members\",\n\"element\": {\n\"iUnbalance\": {\n\"b\": \"col\",\n\"c\": \"current_unbalance_pct\"\n}\n}\n},\n{\n\"slot\": \"table.period.panels[9].vDeviation\",\n\"scope\": \"members\",\n\"element\": {\n\"vDeviation\": {\n\"b\": \"col\",\n\"c\": \"kpi_voltage_deviation_pct\"\n}\n}\n}\n]\n},\n\"answerability\": \"partial\",\n\"data_note\": \"Showing per-panel event counts and metrics for the 6 active outgoing feeders; 4 members (Solar Incomers, UPS-05/06) are dark and honest-blanked.\"\n}",
+ "roster_spec": {
+  "coverage_attach": "widgets._coverage",
+  "slots": [
+   {
+    "element": {
+     "amps": {
+      "b": "col",
+      "c": "current_avg",
+      "r": 1
+     },
+     "cause": {
+      "b": "const",
+      "v": ""
+     },
+     "causeKey": {
+      "b": "const",
+      "v": "normal"
+     },
+     "current": {
+      "b": "event",
+      "c": "current_imbalance_event_active"
+     },
+     "iUnbalance": {
+      "b": "col",
+      "c": "current_unbalance_pct",
+      "r": 1
+     },
+     "id": {
+      "a": "name",
+      "b": "slug"
+     },
+     "neutral": {
+      "b": "event",
+      "c": "neutral_stress_event_active"
+     },
+     "neutralA": {
+      "b": "col",
+      "c": "current_neutral",
+      "r": 1
+     },
+     "panel": {
+      "a": "name",
+      "b": "attr"
+     },
+     "sag": {
+      "b": "event",
+      "c": "sag_event_active"
+     },
+     "status": {
+      "b": "status",
+      "policy": "pf_floors",
+      "vocab": [
+       "success",
+       "warning",
+       "danger"
+      ]
+     },
+     "swell": {
+      "b": "event",
+      "c": "swell_event_active"
+     },
+     "table": {
+      "a": "table",
+      "b": "attr"
+     },
+     "vAvg": {
+      "b": "col",
+      "c": "voltage_avg",
+      "r": 1
+     },
+     "vDeviation": {
+      "b": "col",
+      "c": "kpi_voltage_deviation_pct",
+      "r": 2
+     },
+     "vMax": {
+      "b": "col",
+      "c": "voltage_max",
+      "r": 1
+     },
+     "vMin": {
+      "b": "col",
+      "c": "voltage_min",
+      "r": 1
+     }
+    },
+    "mode": "elements",
+    "range": "today",
+    "reporting_only": true,
+    "role_filter": "load",
+    "scope": "members",
+    "slot": "table.period.panels[]"
+   }
+  ]
+ },
+ "tag": "card22_roster_retype",
+ "tokens_completion": 7324,
+ "tokens_prompt": 26195,
+ "ts": "2026-07-12 04:09:43.868682+05:30",
+ "why": "Mechanism B: 7,324-tok emit, data_instructions.roster list[110] recipe retype"
+}

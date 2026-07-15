@@ -86,6 +86,11 @@ def record(*, stage=None, system=None, user=None, response_text=None, usage=None
             return
         now = time.time()
         mx = int(_cfg("obs.llm.max_prompt_bytes", 32768) or 32768)
+        # RESPONSE bound split from the prompt bound [emit forensics 2026-07-15]: an 11.7K-token completion is ~46K
+        # chars, so bounding responses with the 32K prompt cap silently truncated stored copies mid-JSON (obs row
+        # 4832 looked like a live truncation and cost a forensic detour). Code default falls back to the prompt
+        # bound (byte-identical until the obs.llm.max_response_bytes row lands; seed = 131072).
+        mxr = int(_cfg("obs.llm.max_response_bytes", 0) or 0) or mx
         mxd = int(_cfg("obs.llm.max_decision_bytes", 24576) or 24576)
         usage = usage or {}
         rec = {
@@ -96,7 +101,7 @@ def record(*, stage=None, system=None, user=None, response_text=None, usage=None
             "model": model,
             "prompt_system": redact.bound(system, mx) if system is not None else None,
             "prompt_user": redact.bound(user, mx) if user is not None else None,
-            "response": redact.bound(response_text, mx) if response_text is not None else None,
+            "response": redact.bound(response_text, mxr) if response_text is not None else None,
             "tokens_prompt": usage.get("prompt_tokens"),
             "tokens_completion": usage.get("completion_tokens"),
             "finish_reason": finish_reason,
