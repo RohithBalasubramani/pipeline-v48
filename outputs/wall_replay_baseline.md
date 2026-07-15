@@ -1,68 +1,60 @@
 # Wall corpus-replay baseline
 
-Generated 2026-07-06T22:12:15+00:00 by `tools/wall_corpus_replay.py` — gates sha 022c25569ebe6474, quantity_class sha c63f93745299b725.
+Generated 2026-07-15T10:55:44+00:00 by `tools/wall_corpus_replay.py` — gates sha 31619f526e73625e, quantity_class sha daf40d134a6a794c.
 
 **Acceptance standard:** all fabrications caught, zero legit binds harmed — diff per_rule + false_positive_suspects against this baseline after every wall change.
 
 ## Corpus
 
-- files: 609  ·  records: 16337  ·  L2 emit calls: 6939 (dupes 135)
-- emits replayed: 6101  ·  response unparseable (skipped): 8  ·  other skips: 695
+- files: 634  ·  records: 18002  ·  L2 emit calls: 7396 (dupes 6)
+- emits replayed: 283  ·  response unparseable (skipped): 3  ·  other skips: 7104
 - emits with a TRUNCATED prompt basket (rule-(i) blanks are replay artifacts there): 19
 
 ## Totals
 
-- fields seen: 44822  ·  fields blanked: 14584 (rate 0.3254)
-- suspected false positives: 1678 (of which 0 are truncated-basket replay artifacts)
+- fields seen: 2189  ·  fields blanked: 424 (rate 0.1937)
+- suspected false positives: 19 (of which 0 are truncated-basket replay artifacts)
 
 ## Per-rule blanks
 
 | rule | fields blanked | emits touched |
 |---|---|---|
-| rule_i_membership | 2120 | 386 |
-| rule_ii_reuse_smear | 212 | 57 |
-| rule_iii_quantity_wall | 5832 | 1939 |
-| rule_iiib_axis_coherence | 141 | 79 |
-| rule_iiic_expectation | 37 | 8 |
-| rule_iiid_boundary | 258 | 129 |
-| rule_iv_const_source | 4826 | 1766 |
-| rule_unmapped | 1158 | 905 |
+| rule_i_membership | 8 | 6 |
+| rule_iii_quantity_wall | 174 | 64 |
+| rule_iiib_axis_coherence | 41 | 22 |
+| rule_iiid_boundary | 4 | 2 |
+| rule_iv_const_source | 171 | 66 |
+| rule_unmapped | 26 | 15 |
 
 ## Gate issue classes (gate_data_instructions)
 
 | class | count |
 |---|---|
-| const_without_value | 51 |
-| derived_without_base_columns | 68 |
-| derived_without_fn | 233 |
 | event_without_edge | 1 |
-| fields_empty | 5 |
-| missing_column | 137 |
+| missing_column | 8 |
 
 ## Roster issue classes (gate_roster)
 
 | class | count |
 |---|---|
-| agg_differs_from_recipe | 15 |
-| bad_scope | 65 |
-| element_key_invented | 540 |
-| fixed_key_changed | 122 |
-| other | 6 |
-| roster_without_recipe | 23 |
-| slot_not_in_recipe | 948 |
+| agg_differs_from_recipe | 2 |
+| bad_scope | 14 |
+| element_key_invented | 48 |
+| fixed_key_changed | 7 |
+| slot_not_in_recipe | 249 |
 
 ## Bypass counts
 
 | bypass | count |
 |---|---|
-| ctx_fields | 26097 |
-| ctx_fields_blanked | 6483 |
-| ctx_fields_kept | 19614 |
-| ctx_fields_with_measured_bind | 20599 |
-| ctx_kept_with_offbasket_column | 2855 |
-| group_card_emits | 4781 |
-| group_card_fields | 34358 |
-| rule_i_exempt_fields | 32309 |
+| ctx_fields | 979 |
+| ctx_fields_blanked | 133 |
+| ctx_fields_kept | 846 |
+| ctx_fields_with_measured_bind | 787 |
+| ctx_kept_with_offbasket_column | 12 |
+| group_card_emits | 186 |
+| group_card_fields | 1476 |
+| rule_i_exempt_fields | 1196 |
 
 ## Suspected false positives (first 60 — full list in wall_replay_baseline.json)
 
@@ -70,66 +62,25 @@ A blanked bind whose column quantity MATCHES its slot's quantity (or a rule-(i) 
 
 | file:line | run | card | rule | slot | bind | slot_cls | src_cls | match | artifact |
 |---|---|---|---|---|---|---|---|---|---|
-| outputs/_log_archive/logs_pre3_20260705_203145/ai_r_1bc17049b9.jsonl:4 | r_f3b19721cb | 76 | rule_i_membership | timeline.points[*].hotspotC | col:hotspotC | temperature | temperature | same |  |
-| outputs/_log_archive/logs_pre3_20260705_203145/ai_r_1bc17049b9.jsonl:4 | r_f3b19721cb | 76 | rule_i_membership | timeline.points[*].oilC | col:oilC | temperature | temperature | same |  |
-| outputs/_log_archive/logs_pre3_20260705_203145/ai_r_1bc17049b9.jsonl:4 | r_f3b19721cb | 76 | rule_i_membership | timeline.points[*].windingC | col:windingC | temperature | temperature | same |  |
-| outputs/_log_archive/logs_pre3_20260705_203145/ai_r_1bc17049b9.jsonl:4 | r_f3b19721cb | 76 | rule_i_membership | timeline.legend[0].value | col:hotspotC | temperature | temperature | same |  |
-| outputs/_log_archive/logs_pre3_20260705_203145/ai_r_1bc17049b9.jsonl:4 | r_f3b19721cb | 76 | rule_i_membership | timeline.legend[1].value | col:oilC | temperature | temperature | same |  |
-| outputs/_log_archive/logs_pre3_20260705_203145/ai_r_1f97dfa47f.jsonl:9 | r_1f97dfa47f | 65 | rule_unmapped | chart.kpis[0].value | fn:loadFactorPct | percent | load-factor | compatible |  |
-| outputs/_log_archive/logs_pre3_20260705_203145/ai_r_1f97dfa47f.jsonl:9 | r_1f97dfa47f | 65 | rule_unmapped | chart.legend[0].value | fn:loadFactorPct | percent | load-factor | compatible |  |
-| outputs/_log_archive/logs_pre3_20260705_203145/ai_r_264fea76ed.jsonl:6 | r_264fea76ed | 41 | rule_iiid_boundary | data.hvInputKw | col:active_power_total_kw | power | power | same |  |
-| outputs/_log_archive/logs_pre3_20260705_203145/ai_r_264fea76ed.jsonl:6 | r_264fea76ed | 41 | rule_iiid_boundary | data.lvOutputKw | col:active_power_total_kw | power | power | same |  |
-| outputs/_log_archive/logs_pre3_20260705_203145/ai_r_32cbdcba77.jsonl:6 | r_d06f6da969 | 44 | rule_i_membership | history.data.stats[1].value | fn:voltageHistoryDomain | voltage | voltage | same |  |
-| outputs/_log_archive/logs_pre3_20260705_203145/ai_r_32cbdcba77.jsonl:6 | r_d06f6da969 | 44 | rule_i_membership | history.data.maxLine.label.value | fn:voltageStatutoryBand | voltage | voltage | same |  |
-| outputs/_log_archive/logs_pre3_20260705_203145/ai_r_32cbdcba77.jsonl:6 | r_d06f6da969 | 44 | rule_i_membership | history.data.minLine.label.value | fn:voltageStatutoryBand | voltage | voltage | same |  |
-| outputs/_log_archive/logs_pre3_20260705_203145/ai_r_44796d791a.jsonl:19 | r_44796d791a | 72 | rule_i_membership | energyReliability.cells[1].value | fn:reactiveEnergyTodayKvarh | energy | energy | same |  |
-| outputs/_log_archive/logs_pre3_20260705_203145/ai_r_44796d791a.jsonl:19 | r_44796d791a | 72 | rule_i_membership | energyReliability.reactiveMvarh | fn:reactiveEnergyTodayKvarh | energy | energy | same |  |
-| outputs/_log_archive/logs_pre3_20260705_203145/ai_r_44796d791a.jsonl:21 | r_44796d791a | 73 | rule_i_membership | data.series[1].values | col:reactive_energy_import_kvarh | energy | energy | same |  |
-| outputs/_log_archive/logs_pre3_20260705_203145/ai_r_44796d791a.jsonl:24 | r_e02e4237bf | 59 | rule_unmapped | composite.legend[1].value | col:frequency_hz | frequency | frequency | same |  |
-| outputs/_log_archive/logs_pre3_20260705_203145/ai_r_44796d791a.jsonl:24 | r_e02e4237bf | 59 | rule_unmapped | composite.points[*].bypassVoltageV | col:voltage_avg | voltage | voltage | same |  |
-| outputs/_log_archive/logs_pre3_20260705_203145/ai_r_44796d791a.jsonl:24 | r_e02e4237bf | 59 | rule_unmapped | composite.points[*].bypassFrequencyHz | col:frequency_hz | frequency | frequency | same |  |
-| outputs/_log_archive/logs_pre3_20260705_203145/ai_r_44796d791a.jsonl:24 | r_e02e4237bf | 59 | rule_unmapped | composite.kpiCells[1].value | col:voltage_avg | voltage | voltage | same |  |
-| outputs/_log_archive/logs_pre3_20260705_203145/ai_r_5991ad70df.jsonl:3 | r_5991ad70df | 41 | rule_iiid_boundary | data.hvInputKw | col:active_power_total_kw | power | power | same |  |
-| outputs/_log_archive/logs_pre3_20260705_203145/ai_r_5991ad70df.jsonl:3 | r_5991ad70df | 41 | rule_iiid_boundary | data.lvOutputKw | col:active_power_total_kw | power | power | same |  |
-| outputs/_log_archive/logs_pre3_20260705_203145/ai_r_5991ad70df.jsonl:4 | r_5991ad70df | 40 | rule_iiib_axis_coherence | data.demandYMin | fn:worstPeakKw | power | power | same |  |
-| outputs/_log_archive/logs_pre3_20260705_203145/ai_r_8cfd3d6cf1.jsonl:6 | r_8cfd3d6cf1 | 50 | rule_i_membership | batteryHealth.socPct | col:battery_soc | battery-charge | battery-charge | same |  |
-| outputs/_log_archive/logs_pre3_20260705_203145/ai_r_8cfd3d6cf1.jsonl:6 | r_8cfd3d6cf1 | 50 | rule_i_membership | batteryHealth.metrics[0].value | col:battery_temp | temperature | temperature | same |  |
-| outputs/_log_archive/logs_pre3_20260705_203145/ai_r_8cfd3d6cf1.jsonl:6 | r_8cfd3d6cf1 | 50 | rule_i_membership | batteryHealth.metrics[1].value | col:output_voltage | voltage | voltage | same |  |
-| outputs/_log_archive/logs_pre3_20260705_203145/ai_r_8cfd3d6cf1.jsonl:6 | r_8cfd3d6cf1 | 50 | rule_i_membership | batteryHealth.metrics[2].value | col:output_current | current | current | same |  |
-| outputs/_log_archive/logs_pre3_20260705_203145/ai_r_8cfd3d6cf1.jsonl:7 | r_8cfd3d6cf1 | 52 | rule_i_membership | backupReadiness.score | col:backup_readiness | readiness | readiness | same |  |
-| outputs/_log_archive/logs_pre3_20260705_203145/ai_r_8cfd3d6cf1.jsonl:7 | r_8cfd3d6cf1 | 52 | rule_i_membership | backupReadiness.deltaLabel | col:backup_readiness_delta | readiness | readiness | same |  |
-| outputs/_log_archive/logs_pre3_20260705_203145/ai_r_92a2bfb0ae.jsonl:57 | r_92a2bfb0ae | 43 | rule_i_membership | health.data.metrics[1].value | col:voltage_max_spread | voltage | deviation-spread | compatible |  |
-| outputs/_log_archive/logs_pre3_20260705_203145/ai_r_92a2bfb0ae.jsonl:70 | r_92a2bfb0ae | 43 | rule_i_membership | health.data.metrics[1].value | col:voltage_max_spread | voltage | deviation-spread | compatible |  |
-| outputs/_log_archive/logs_pre3_20260705_203145/ai_r_b57a82feb3.jsonl:4 | r_d7be9457fc | 56 | rule_unmapped | composite.points[*].bypassVoltageV | col:voltage_avg | voltage | voltage | same |  |
-| outputs/_log_archive/logs_pre3_20260705_203145/ai_r_b57a82feb3.jsonl:4 | r_d7be9457fc | 56 | rule_unmapped | composite.points[*].bypassFrequencyHz | col:frequency_hz | frequency | frequency | same |  |
-| outputs/_log_archive/logs_pre3_20260705_203145/ai_r_b57a82feb3.jsonl:4 | r_d7be9457fc | 56 | rule_unmapped | composite.kpiCells[1].value | col:voltage_avg | voltage | voltage | same |  |
-| outputs/_log_archive/logs_pre3_20260705_203145/ai_r_c7938ef357.jsonl:13 | r_e02e4237bf | 59 | rule_unmapped | composite.legend[1].value | col:frequency_hz | frequency | frequency | same |  |
-| outputs/_log_archive/logs_pre3_20260705_203145/ai_r_c7938ef357.jsonl:13 | r_e02e4237bf | 59 | rule_unmapped | composite.points[*].bypassVoltageV | col:voltage_avg | voltage | voltage | same |  |
-| outputs/_log_archive/logs_pre3_20260705_203145/ai_r_c7938ef357.jsonl:13 | r_e02e4237bf | 59 | rule_unmapped | composite.points[*].bypassFrequencyHz | col:frequency_hz | frequency | frequency | same |  |
-| outputs/_log_archive/logs_pre3_20260705_203145/ai_r_d06f6da969.jsonl:12 | r_bb525a5212 | 41 | rule_iiid_boundary | data.hvInputKw | col:active_power_total_kw | power | power | same |  |
-| outputs/_log_archive/logs_pre3_20260705_203145/ai_r_d06f6da969.jsonl:12 | r_bb525a5212 | 41 | rule_iiid_boundary | data.lvOutputKw | col:active_power_total_kw | power | power | same |  |
-| outputs/_log_archive/logs_pre3_20260705_203145/ai_r_d06f6da969.jsonl:21 | r_d06f6da969 | 79 | rule_i_membership | regulation.kpis[1].value | fn:loadFactorPct | percent | load-factor | compatible |  |
-| outputs/_log_archive/logs_pre3_20260705_203145/ai_r_d06f6da969.jsonl:21 | r_d06f6da969 | 79 | rule_i_membership | regulation.kpis[2].value | fn:loadFactorPct | percent | load-factor | compatible |  |
-| outputs/_log_archive/logs_pre3_20260705_203145/ai_r_d06f6da969.jsonl:21 | r_d06f6da969 | 79 | rule_i_membership | regulation.legend[0].value | col:voltage_avg | voltage | voltage | same |  |
-| outputs/_log_archive/logs_pre3_20260705_203145/ai_r_d06f6da969.jsonl:21 | r_d06f6da969 | 79 | rule_i_membership | regulation.points[*].voltageKv | col:voltage_avg | voltage | voltage | same |  |
-| outputs/_log_archive/logs_pre3_20260705_203145/ai_r_d7be9457fc.jsonl:7 | r_d7be9457fc | 56 | rule_unmapped | composite.points[*].bypassVoltageV | col:voltage_avg | voltage | voltage | same |  |
-| outputs/_log_archive/logs_pre3_20260705_203145/ai_r_d7be9457fc.jsonl:7 | r_d7be9457fc | 56 | rule_unmapped | composite.points[*].bypassFrequencyHz | col:frequency_hz | frequency | frequency | same |  |
-| outputs/_log_archive/logs_pre3_20260705_203145/ai_r_d836e61fd9.jsonl:11 | r_d836e61fd9 | 56 | rule_unmapped | composite.points[*].bypassVoltageV | col:voltage_ll_avg | voltage | voltage | same |  |
-| outputs/_log_archive/logs_pre3_20260705_203145/ai_r_d836e61fd9.jsonl:11 | r_d836e61fd9 | 56 | rule_unmapped | composite.points[*].bypassFrequencyHz | col:frequency_hz | frequency | frequency | same |  |
-| outputs/_log_archive/logs_pre3_20260705_203145/ai_r_d836e61fd9.jsonl:11 | r_d836e61fd9 | 56 | rule_unmapped | composite.kpiCells[1].value | col:voltage_ll_avg | voltage | voltage | same |  |
-| outputs/_log_archive/logs_pre3_20260705_203145/ai_r_f3b19721cb.jsonl:8 | r_f3b19721cb | 75 | rule_i_membership | lifeCapacity.deratedLoadKva | col:apparent_power_total_kva | power | power | same |  |
-| outputs/_log_archive/logs_pre_20260705_002155/ai_r_0152b3ceec.jsonl:5 | r_0152b3ceec | 43 | rule_i_membership | health.data.phases[0].value | col:voltage_r_n | voltage | voltage | same |  |
-| outputs/_log_archive/logs_pre_20260705_002155/ai_r_0152b3ceec.jsonl:5 | r_0152b3ceec | 43 | rule_i_membership | health.data.phases[1].value | col:voltage_y_n | voltage | voltage | same |  |
-| outputs/_log_archive/logs_pre_20260705_002155/ai_r_0152b3ceec.jsonl:5 | r_0152b3ceec | 43 | rule_i_membership | health.data.phases[2].value | col:voltage_b_n | voltage | voltage | same |  |
-| outputs/_log_archive/logs_pre_20260705_002155/ai_r_0152b3ceec.jsonl:5 | r_0152b3ceec | 43 | rule_i_membership | health.data.summary.value | col:voltage_avg | voltage | voltage | same |  |
-| outputs/_log_archive/logs_pre_20260705_002155/ai_r_05a80485bb.jsonl:11 | r_05a80485bb | 41 | rule_iiid_boundary | hvInputKw | col:active_power_total_kw | power | power | same |  |
-| outputs/_log_archive/logs_pre_20260705_002155/ai_r_05a80485bb.jsonl:11 | r_05a80485bb | 41 | rule_iiid_boundary | lvOutputKw | col:active_power_total_kw | power | power | same |  |
-| outputs/_log_archive/logs_pre_20260705_002155/ai_r_075d05bffb.jsonl:73 | r_075d05bffb | 12 | rule_i_membership | rail.vm.sources[0].utilizationPct | fn:loadFactorPct | percent | load-factor | compatible |  |
-| outputs/_log_archive/logs_pre_20260705_002155/ai_r_075d05bffb.jsonl:73 | r_075d05bffb | 12 | rule_i_membership | rail.vm.sources[1].utilizationPct | fn:loadFactorPct | percent | load-factor | compatible |  |
-| outputs/_log_archive/logs_pre_20260705_002155/ai_r_075d05bffb.jsonl:96 | r_bb525a5212 | 41 | rule_iiid_boundary | data.hvInputKw | col:active_power_total_kw | power | power | same |  |
-| outputs/_log_archive/logs_pre_20260705_002155/ai_r_075d05bffb.jsonl:96 | r_bb525a5212 | 41 | rule_iiid_boundary | data.lvOutputKw | col:active_power_total_kw | power | power | same |  |
-| outputs/_log_archive/logs_pre_20260705_002155/ai_r_075d05bffb.jsonl:105 | r_d06f6da969 | 79 | rule_i_membership | regulation.kpis[1].value | fn:loadFactorPct | percent | load-factor | compatible |  |
-| outputs/_log_archive/logs_pre_20260705_002155/ai_r_075d05bffb.jsonl:105 | r_d06f6da969 | 79 | rule_i_membership | regulation.kpis[2].value | fn:loadFactorPct | percent | load-factor | compatible |  |
+| outputs/logs/ai_r_1f97dfa47f.jsonl:9 | r_1f97dfa47f | 65 | rule_unmapped | chart.kpis[0].value | fn:loadFactorPct | percent | load-factor | compatible |  |
+| outputs/logs/ai_r_1f97dfa47f.jsonl:15 | r_1f97dfa47f | 65 | rule_unmapped | chart.kpis[0].value | fn:loadFactorPct | percent | load-factor | compatible |  |
+| outputs/logs/ai_r_44796d791a.jsonl:7 | r_44796d791a | 73 | rule_i_membership | data.series[1].values | col:reactive_energy_import_kvarh | energy | energy | same |  |
+| outputs/logs/ai_r_44796d791a.jsonl:33 | r_c7938ef357 | 69 | rule_unmapped | data.stats[2].value | col:kpi_voltage_deviation_pct | percent | deviation-spread | compatible |  |
+| outputs/logs/ai_r_92a2bfb0ae.jsonl:152 | r_92a2bfb0ae | 43 | rule_i_membership | health.data.metrics[1].value | col:voltage_max_spread | voltage | deviation-spread | compatible |  |
+| outputs/logs/ai_r_92a2bfb0ae.jsonl:163 | r_92a2bfb0ae | 46 | rule_unmapped | history.data.stats[2].value | fn:loadFactorPct | percent | load-factor | compatible |  |
+| outputs/logs/ai_r_99879f110d.jsonl:29 | r_1f97dfa47f | 65 | rule_unmapped | chart.kpis[0].value | fn:loadFactorPct | percent | load-factor | compatible |  |
+| outputs/logs/ai_r_99879f110d.jsonl:30 | r_bb525a5212 | 41 | rule_iiid_boundary | data.hvInputKw | col:active_power_total_kw | power | power | same |  |
+| outputs/logs/ai_r_99879f110d.jsonl:30 | r_bb525a5212 | 41 | rule_iiid_boundary | data.lvOutputKw | col:active_power_total_kw | power | power | same |  |
+| outputs/logs/ai_r_bb525a5212.jsonl:6 | r_bb525a5212 | 41 | rule_iiid_boundary | data.hvInputKw | col:active_power_total_kw | power | power | same |  |
+| outputs/logs/ai_r_bb525a5212.jsonl:6 | r_bb525a5212 | 41 | rule_iiid_boundary | data.lvOutputKw | col:active_power_total_kw | power | power | same |  |
+| outputs/logs/ai_r_bb525a5212.jsonl:7 | r_bb525a5212 | 40 | rule_iiib_axis_coherence | data.yMax | col:active_power_total_kw | power | power | same |  |
+| outputs/logs/ai_r_bb525a5212.jsonl:7 | r_bb525a5212 | 40 | rule_iiib_axis_coherence | data.yMin | col:active_power_total_kw | power | power | same |  |
+| outputs/logs/ai_r_bb525a5212.jsonl:7 | r_bb525a5212 | 40 | rule_iiib_axis_coherence | data.demandYMax | col:active_power_total_kw | power | power | same |  |
+| outputs/logs/ai_r_bb525a5212.jsonl:7 | r_bb525a5212 | 40 | rule_iiib_axis_coherence | data.demandYMin | col:active_power_total_kw | power | power | same |  |
+| outputs/logs/ai_r_d06f6da969.jsonl:35 | r_e02e4237bf | 59 | rule_unmapped | composite.points[*].bypassFrequencyHz | col:frequency_hz | frequency | frequency | same |  |
+| outputs/logs/ai_r_d7be9457fc.jsonl:7 | r_d7be9457fc | 56 | rule_unmapped | composite.points[*].bypassFrequencyHz | col:frequency_hz | frequency | frequency | same |  |
+| outputs/logs/ai_r_e02e4237bf.jsonl:7 | r_e02e4237bf | 59 | rule_unmapped | composite.points[*].label | col:active_power_total_kw | power | power | same |  |
+| outputs/logs/ai_r_e02e4237bf.jsonl:7 | r_e02e4237bf | 59 | rule_unmapped | composite.points[*].bypassFrequencyHz | col:frequency_hz | frequency | frequency | same |  |
 
 ## How to use (future wall changes)
 

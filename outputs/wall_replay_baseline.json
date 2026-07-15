@@ -1,0 +1,1008 @@
+{
+ "generated": "2026-07-15T10:55:44+00:00",
+ "tool": "tools/wall_corpus_replay.py",
+ "acceptance_standard": "all fabrications caught, zero legit binds harmed \u2014 diff per_rule + false_positive_suspects against this baseline after every wall change",
+ "walls_provenance": {
+  "layer2/gates.py": "31619f526e73625e",
+  "layer2/quantity_class.py": "daf40d134a6a794c"
+ },
+ "corpus": {
+  "globs": [
+   "outputs/_log_archive/**/ai_r_*.jsonl",
+   "outputs/logs/ai_r_*.jsonl"
+  ],
+  "files": 634,
+  "emit_calls": 7396,
+  "emit_duplicates": 6,
+  "emits_basket_truncated": 19,
+  "emits_replayed": 283,
+  "emits_response_unparseable": 3,
+  "emits_skipped_no_schema_block": 7104,
+  "fields_blanked": 424,
+  "fields_seen": 2189,
+  "records": 18002
+ },
+ "totals": {
+  "emits_replayed": 283,
+  "fields_seen": 2189,
+  "fields_blanked": 424,
+  "blank_rate": 0.1937,
+  "false_positive_suspects": 19,
+  "fp_replay_artifacts_basket_truncated": 0
+ },
+ "per_rule": {
+  "rule_i_membership": {
+   "fields_blanked": 8,
+   "emits_touched": 6,
+   "examples": [
+    {
+     "file": "outputs/logs/ai_r_44796d791a.jsonl",
+     "line": 7,
+     "run": "r_44796d791a",
+     "card": "73",
+     "page": "diesel-generator-asset-dashboard/operations-runtime",
+     "reason": "data.series[1].values: column 'reactive_energy_import_kvarh' not in this asset's schema \u2014 leaf honest-blanks"
+    },
+    {
+     "file": "outputs/logs/ai_r_44796d791a.jsonl",
+     "line": 9,
+     "run": "r_44796d791a",
+     "card": "72",
+     "page": "diesel-generator-asset-dashboard/operations-runtime",
+     "reason": "energyReliability.cells[1].value: derived base column(s) ['reactive_energy_import_kvarh', 'reactive_energy_export_kvarh'] not measured on this asset \u2014 leaf honest-blanks"
+    },
+    {
+     "file": "outputs/logs/ai_r_44796d791a.jsonl",
+     "line": 9,
+     "run": "r_44796d791a",
+     "card": "72",
+     "page": "diesel-generator-asset-dashboard/operations-runtime",
+     "reason": "energyReliability.reactiveMvarh: derived base column(s) ['reactive_energy_import_kvarh', 'reactive_energy_export_kvarh'] not measured on this asset \u2014 leaf honest-blanks"
+    }
+   ]
+  },
+  "rule_iii_quantity_wall": {
+   "fields_blanked": 174,
+   "emits_touched": 64,
+   "examples": [
+    {
+     "file": "outputs/logs/ai_r_1bc17049b9.jsonl",
+     "line": 5,
+     "run": "r_1bc17049b9",
+     "card": "47",
+     "page": "individual-feeder-meter-shell/power-quality",
+     "reason": "snapshot.h5.valuePct: voltage-harmonic not measured by this meter (no voltage-harmonic column) \u2014 column 'thd_current_r_pct' measures current-thd, not voltage-harmonic; leaf honest-blanks"
+    },
+    {
+     "file": "outputs/logs/ai_r_1bc17049b9.jsonl",
+     "line": 5,
+     "run": "r_1bc17049b9",
+     "card": "47",
+     "page": "individual-feeder-meter-shell/power-quality",
+     "reason": "snapshot.h7.valuePct: voltage-harmonic not measured by this meter (no voltage-harmonic column) \u2014 column 'thd_current_y_pct' measures current-thd, not voltage-harmonic; leaf honest-blanks"
+    },
+    {
+     "file": "outputs/logs/ai_r_1f97dfa47f.jsonl",
+     "line": 8,
+     "run": "r_1f97dfa47f",
+     "card": "64",
+     "page": "diesel-generator-asset-dashboard/fuel-efficiency",
+     "reason": "stats.starts: count not measured by this meter (no count column) \u2014 fn 'loadFactorPct' measures load-factor, not count; leaf honest-blanks"
+    }
+   ]
+  },
+  "rule_iiib_axis_coherence": {
+   "fields_blanked": 41,
+   "emits_touched": 22,
+   "examples": [
+    {
+     "file": "outputs/logs/ai_r_44796d791a.jsonl",
+     "line": 31,
+     "run": "r_8cfd3d6cf1",
+     "card": "53",
+     "page": "ups-asset-dashboard/battery-autonomy",
+     "reason": "backupHistory.minY: axis slot bound to fn 'loadFactorPct' (load-factor) while this card's series measure ['power'] \u2014 the axis derives from the filled series instead; leaf honest-blanks"
+    },
+    {
+     "file": "outputs/logs/ai_r_44796d791a.jsonl",
+     "line": 35,
+     "run": "r_c7938ef357",
+     "card": "67",
+     "page": "diesel-generator-asset-dashboard/voltage-current",
+     "reason": "data.maxY: axis slot bound to fn 'worstPeakKw' (power) while this card's series measure ['voltage'] \u2014 the axis derives from the filled series instead; leaf honest-blanks"
+    },
+    {
+     "file": "outputs/logs/ai_r_44796d791a.jsonl",
+     "line": 35,
+     "run": "r_c7938ef357",
+     "card": "67",
+     "page": "diesel-generator-asset-dashboard/voltage-current",
+     "reason": "data.minY: axis slot bound to fn 'worstPeakKw' (power) while this card's series measure ['voltage'] \u2014 the axis derives from the filled series instead; leaf honest-blanks"
+    }
+   ]
+  },
+  "rule_iiid_boundary": {
+   "fields_blanked": 4,
+   "emits_touched": 2,
+   "examples": [
+    {
+     "file": "outputs/logs/ai_r_99879f110d.jsonl",
+     "line": 30,
+     "run": "r_bb525a5212",
+     "card": "41",
+     "page": "individual-feeder-meter-shell/energy-power",
+     "reason": "data.hvInputKw: hv_input_kw is a topology boundary quantity (computed across meters, not measured by this one) \u2014 column 'active_power_total_kw' is this meter's own reading, not hv_input_kw; leaf honest-blanks"
+    },
+    {
+     "file": "outputs/logs/ai_r_99879f110d.jsonl",
+     "line": 30,
+     "run": "r_bb525a5212",
+     "card": "41",
+     "page": "individual-feeder-meter-shell/energy-power",
+     "reason": "data.lvOutputKw: lv_output_kw is a topology boundary quantity (computed across meters, not measured by this one) \u2014 column 'active_power_total_kw' is this meter's own reading, not lv_output_kw; leaf honest-blanks"
+    },
+    {
+     "file": "outputs/logs/ai_r_bb525a5212.jsonl",
+     "line": 6,
+     "run": "r_bb525a5212",
+     "card": "41",
+     "page": "individual-feeder-meter-shell/energy-power",
+     "reason": "data.hvInputKw: hv_input_kw is a topology boundary quantity (computed across meters, not measured by this one) \u2014 column 'active_power_total_kw' is this meter's own reading, not hv_input_kw; leaf honest-blanks"
+    }
+   ]
+  },
+  "rule_iv_const_source": {
+   "fields_blanked": 171,
+   "emits_touched": 66,
+   "examples": [
+    {
+     "file": "outputs/logs/ai_r_1bc17049b9.jsonl",
+     "line": 7,
+     "run": "r_1bc17049b9",
+     "card": "49",
+     "page": "individual-feeder-meter-shell/power-quality",
+     "reason": "loadImpact.views.pf-health.stats[3].value: const 0.95 has no real DB source (not a nameplate rating slot/metric, no matching app_config consts.* row) \u2014 a literal in a data slot must come from asset_nameplate or app_config; leaf honest-blanks"
+    },
+    {
+     "file": "outputs/logs/ai_r_1bc17049b9.jsonl",
+     "line": 7,
+     "run": "r_1bc17049b9",
+     "card": "49",
+     "page": "individual-feeder-meter-shell/power-quality",
+     "reason": "loadImpact.views.k-stress.stats[2].value: const 12.0 has no real DB source (not a nameplate rating slot/metric, no matching app_config consts.* row) \u2014 a literal in a data slot must come from asset_nameplate or app_config; leaf honest-blanks"
+    },
+    {
+     "file": "outputs/logs/ai_r_1f97dfa47f.jsonl",
+     "line": 9,
+     "run": "r_1f97dfa47f",
+     "card": "65",
+     "page": "diesel-generator-asset-dashboard/fuel-efficiency",
+     "reason": "chart.band.y1: const 20 has no real DB source (not a nameplate rating slot/metric, no matching app_config consts.* row) \u2014 a literal in a data slot must come from asset_nameplate or app_config; leaf honest-blanks"
+    }
+   ]
+  },
+  "rule_unmapped": {
+   "fields_blanked": 26,
+   "emits_touched": 15,
+   "examples": [
+    {
+     "file": "outputs/logs/ai_r_1f97dfa47f.jsonl",
+     "line": 9,
+     "run": "r_1f97dfa47f",
+     "card": "65",
+     "page": "diesel-generator-asset-dashboard/fuel-efficiency",
+     "reason": "chart.kpis[0].value: slot names the efficiency semantic family \u2014 fn 'loadFactorPct' is not a efficiency-family source (a same-dimension stand-in is a fabrication); leaf honest-blanks"
+    },
+    {
+     "file": "outputs/logs/ai_r_1f97dfa47f.jsonl",
+     "line": 9,
+     "run": "r_1f97dfa47f",
+     "card": "65",
+     "page": "diesel-generator-asset-dashboard/fuel-efficiency",
+     "reason": "chart.kpis[1].value: slot names the specific-consumption semantic family \u2014 fn 'loadFactorPct' is not a specific-consumption-family source (a same-dimension stand-in is a fabrication); leaf honest-blanks"
+    },
+    {
+     "file": "outputs/logs/ai_r_1f97dfa47f.jsonl",
+     "line": 9,
+     "run": "r_1f97dfa47f",
+     "card": "65",
+     "page": "diesel-generator-asset-dashboard/fuel-efficiency",
+     "reason": "chart.legend[0].value: slot names the fuel semantic family \u2014 column 'active_power_total_kw' is not a fuel-family source (a same-dimension stand-in is a fabrication); leaf honest-blanks"
+    }
+   ]
+  }
+ },
+ "gate_issue_classes": {
+  "event_without_edge": 1,
+  "missing_column": 8
+ },
+ "roster_issue_classes": {
+  "agg_differs_from_recipe": 2,
+  "bad_scope": 14,
+  "element_key_invented": 48,
+  "fixed_key_changed": 7,
+  "slot_not_in_recipe": 249
+ },
+ "bypass": {
+  "ctx_fields": 979,
+  "ctx_fields_blanked": 133,
+  "ctx_fields_kept": 846,
+  "ctx_fields_with_measured_bind": 787,
+  "ctx_kept_with_offbasket_column": 12,
+  "group_card_emits": 186,
+  "group_card_fields": 1476,
+  "rule_i_exempt_fields": 1196
+ },
+ "per_card": {
+  "10": {
+   "emits": 2,
+   "fields": 0,
+   "blanked": 0,
+   "fp_suspects": 0
+  },
+  "11": {
+   "emits": 2,
+   "fields": 0,
+   "blanked": 0,
+   "fp_suspects": 0
+  },
+  "12": {
+   "emits": 1,
+   "fields": 0,
+   "blanked": 0,
+   "fp_suspects": 0
+  },
+  "13": {
+   "emits": 1,
+   "fields": 0,
+   "blanked": 0,
+   "fp_suspects": 0
+  },
+  "14": {
+   "emits": 2,
+   "fields": 0,
+   "blanked": 0,
+   "fp_suspects": 0
+  },
+  "15": {
+   "emits": 2,
+   "fields": 0,
+   "blanked": 0,
+   "fp_suspects": 0
+  },
+  "16": {
+   "emits": 2,
+   "fields": 0,
+   "blanked": 0,
+   "fp_suspects": 0
+  },
+  "160": {
+   "emits": 2,
+   "fields": 0,
+   "blanked": 0,
+   "fp_suspects": 0
+  },
+  "17": {
+   "emits": 2,
+   "fields": 0,
+   "blanked": 0,
+   "fp_suspects": 0
+  },
+  "18": {
+   "emits": 2,
+   "fields": 0,
+   "blanked": 0,
+   "fp_suspects": 0
+  },
+  "19": {
+   "emits": 2,
+   "fields": 0,
+   "blanked": 0,
+   "fp_suspects": 0
+  },
+  "20": {
+   "emits": 4,
+   "fields": 0,
+   "blanked": 0,
+   "fp_suspects": 0
+  },
+  "21": {
+   "emits": 2,
+   "fields": 0,
+   "blanked": 0,
+   "fp_suspects": 0
+  },
+  "22": {
+   "emits": 2,
+   "fields": 0,
+   "blanked": 0,
+   "fp_suspects": 0
+  },
+  "23": {
+   "emits": 2,
+   "fields": 0,
+   "blanked": 0,
+   "fp_suspects": 0
+  },
+  "24": {
+   "emits": 2,
+   "fields": 0,
+   "blanked": 0,
+   "fp_suspects": 0
+  },
+  "25": {
+   "emits": 2,
+   "fields": 0,
+   "blanked": 0,
+   "fp_suspects": 0
+  },
+  "26": {
+   "emits": 2,
+   "fields": 0,
+   "blanked": 0,
+   "fp_suspects": 0
+  },
+  "27": {
+   "emits": 2,
+   "fields": 0,
+   "blanked": 0,
+   "fp_suspects": 0
+  },
+  "36": {
+   "emits": 4,
+   "fields": 72,
+   "blanked": 0,
+   "fp_suspects": 0
+  },
+  "37": {
+   "emits": 4,
+   "fields": 64,
+   "blanked": 8,
+   "fp_suspects": 0
+  },
+  "38": {
+   "emits": 4,
+   "fields": 62,
+   "blanked": 4,
+   "fp_suspects": 0
+  },
+  "39": {
+   "emits": 2,
+   "fields": 6,
+   "blanked": 0,
+   "fp_suspects": 0
+  },
+  "40": {
+   "emits": 2,
+   "fields": 26,
+   "blanked": 8,
+   "fp_suspects": 4
+  },
+  "41": {
+   "emits": 2,
+   "fields": 12,
+   "blanked": 10,
+   "fp_suspects": 4
+  },
+  "42": {
+   "emits": 2,
+   "fields": 16,
+   "blanked": 11,
+   "fp_suspects": 0
+  },
+  "43": {
+   "emits": 34,
+   "fields": 283,
+   "blanked": 2,
+   "fp_suspects": 1
+  },
+  "44": {
+   "emits": 36,
+   "fields": 388,
+   "blanked": 97,
+   "fp_suspects": 0
+  },
+  "45": {
+   "emits": 32,
+   "fields": 288,
+   "blanked": 0,
+   "fp_suspects": 0
+  },
+  "46": {
+   "emits": 32,
+   "fields": 452,
+   "blanked": 84,
+   "fp_suspects": 1
+  },
+  "47": {
+   "emits": 7,
+   "fields": 36,
+   "blanked": 17,
+   "fp_suspects": 0
+  },
+  "48": {
+   "emits": 4,
+   "fields": 22,
+   "blanked": 0,
+   "fp_suspects": 0
+  },
+  "49": {
+   "emits": 4,
+   "fields": 96,
+   "blanked": 14,
+   "fp_suspects": 0
+  },
+  "5": {
+   "emits": 2,
+   "fields": 0,
+   "blanked": 0,
+   "fp_suspects": 0
+  },
+  "50": {
+   "emits": 3,
+   "fields": 8,
+   "blanked": 1,
+   "fp_suspects": 0
+  },
+  "51": {
+   "emits": 2,
+   "fields": 13,
+   "blanked": 10,
+   "fp_suspects": 0
+  },
+  "52": {
+   "emits": 2,
+   "fields": 0,
+   "blanked": 0,
+   "fp_suspects": 0
+  },
+  "53": {
+   "emits": 2,
+   "fields": 19,
+   "blanked": 14,
+   "fp_suspects": 0
+  },
+  "54": {
+   "emits": 1,
+   "fields": 0,
+   "blanked": 0,
+   "fp_suspects": 0
+  },
+  "55": {
+   "emits": 1,
+   "fields": 0,
+   "blanked": 0,
+   "fp_suspects": 0
+  },
+  "56": {
+   "emits": 1,
+   "fields": 5,
+   "blanked": 2,
+   "fp_suspects": 1
+  },
+  "57": {
+   "emits": 2,
+   "fields": 8,
+   "blanked": 8,
+   "fp_suspects": 0
+  },
+  "58": {
+   "emits": 1,
+   "fields": 4,
+   "blanked": 1,
+   "fp_suspects": 0
+  },
+  "59": {
+   "emits": 2,
+   "fields": 15,
+   "blanked": 6,
+   "fp_suspects": 3
+  },
+  "6": {
+   "emits": 2,
+   "fields": 0,
+   "blanked": 0,
+   "fp_suspects": 0
+  },
+  "60": {
+   "emits": 2,
+   "fields": 0,
+   "blanked": 0,
+   "fp_suspects": 0
+  },
+  "61": {
+   "emits": 3,
+   "fields": 31,
+   "blanked": 25,
+   "fp_suspects": 0
+  },
+  "62": {
+   "emits": 4,
+   "fields": 31,
+   "blanked": 9,
+   "fp_suspects": 0
+  },
+  "63": {
+   "emits": 3,
+   "fields": 0,
+   "blanked": 0,
+   "fp_suspects": 0
+  },
+  "64": {
+   "emits": 3,
+   "fields": 6,
+   "blanked": 1,
+   "fp_suspects": 0
+  },
+  "65": {
+   "emits": 3,
+   "fields": 33,
+   "blanked": 28,
+   "fp_suspects": 3
+  },
+  "66": {
+   "emits": 3,
+   "fields": 21,
+   "blanked": 0,
+   "fp_suspects": 0
+  },
+  "67": {
+   "emits": 2,
+   "fields": 26,
+   "blanked": 11,
+   "fp_suspects": 0
+  },
+  "68": {
+   "emits": 3,
+   "fields": 21,
+   "blanked": 2,
+   "fp_suspects": 0
+  },
+  "69": {
+   "emits": 2,
+   "fields": 25,
+   "blanked": 9,
+   "fp_suspects": 1
+  },
+  "7": {
+   "emits": 2,
+   "fields": 0,
+   "blanked": 0,
+   "fp_suspects": 0
+  },
+  "70": {
+   "emits": 2,
+   "fields": 3,
+   "blanked": 1,
+   "fp_suspects": 0
+  },
+  "71": {
+   "emits": 2,
+   "fields": 8,
+   "blanked": 4,
+   "fp_suspects": 0
+  },
+  "72": {
+   "emits": 2,
+   "fields": 16,
+   "blanked": 4,
+   "fp_suspects": 0
+  },
+  "73": {
+   "emits": 2,
+   "fields": 8,
+   "blanked": 3,
+   "fp_suspects": 1
+  },
+  "74": {
+   "emits": 1,
+   "fields": 1,
+   "blanked": 1,
+   "fp_suspects": 0
+  },
+  "75": {
+   "emits": 1,
+   "fields": 2,
+   "blanked": 1,
+   "fp_suspects": 0
+  },
+  "76": {
+   "emits": 2,
+   "fields": 7,
+   "blanked": 5,
+   "fp_suspects": 0
+  },
+  "77": {
+   "emits": 1,
+   "fields": 3,
+   "blanked": 2,
+   "fp_suspects": 0
+  },
+  "78": {
+   "emits": 2,
+   "fields": 10,
+   "blanked": 6,
+   "fp_suspects": 0
+  },
+  "79": {
+   "emits": 2,
+   "fields": 34,
+   "blanked": 12,
+   "fp_suspects": 0
+  },
+  "8": {
+   "emits": 2,
+   "fields": 0,
+   "blanked": 0,
+   "fp_suspects": 0
+  },
+  "80": {
+   "emits": 2,
+   "fields": 6,
+   "blanked": 2,
+   "fp_suspects": 0
+  },
+  "81": {
+   "emits": 2,
+   "fields": 2,
+   "blanked": 1,
+   "fp_suspects": 0
+  },
+  "9": {
+   "emits": 2,
+   "fields": 0,
+   "blanked": 0,
+   "fp_suspects": 0
+  }
+ },
+ "skip_examples": {
+  "no_schema_block": [
+   {
+    "file": "outputs/logs/ai_r_0173578f52.jsonl",
+    "line": 8,
+    "run": "r_880ac7a381",
+    "card": "45",
+    "detail": null
+   },
+   {
+    "file": "outputs/logs/ai_r_0173578f52.jsonl",
+    "line": 9,
+    "run": "r_880ac7a381",
+    "card": "46",
+    "detail": null
+   },
+   {
+    "file": "outputs/logs/ai_r_0173578f52.jsonl",
+    "line": 10,
+    "run": "r_880ac7a381",
+    "card": "43",
+    "detail": null
+   }
+  ]
+ },
+ "false_positive_suspects": [
+  {
+   "file": "outputs/logs/ai_r_1f97dfa47f.jsonl",
+   "line": 9,
+   "run": "r_1f97dfa47f",
+   "card": "65",
+   "page": "diesel-generator-asset-dashboard/fuel-efficiency",
+   "rule": "rule_unmapped",
+   "slot": "chart.kpis[0].value",
+   "kind": "derived",
+   "source": null,
+   "bind": "fn:loadFactorPct",
+   "slot_class": "percent",
+   "source_class": "load-factor",
+   "quantity_match": "compatible",
+   "replay_artifact_basket_truncated": false,
+   "reason": "chart.kpis[0].value: slot names the efficiency semantic family \u2014 fn 'loadFactorPct' is not a efficiency-family source (a same-dimension stand-in is a fabrication); leaf honest-blanks"
+  },
+  {
+   "file": "outputs/logs/ai_r_1f97dfa47f.jsonl",
+   "line": 15,
+   "run": "r_1f97dfa47f",
+   "card": "65",
+   "page": "diesel-generator-asset-dashboard/fuel-efficiency",
+   "rule": "rule_unmapped",
+   "slot": "chart.kpis[0].value",
+   "kind": "derived",
+   "source": null,
+   "bind": "fn:loadFactorPct",
+   "slot_class": "percent",
+   "source_class": "load-factor",
+   "quantity_match": "compatible",
+   "replay_artifact_basket_truncated": false,
+   "reason": "chart.kpis[0].value: slot names the efficiency semantic family \u2014 fn 'loadFactorPct' is not a efficiency-family source (a same-dimension stand-in is a fabrication); leaf honest-blanks"
+  },
+  {
+   "file": "outputs/logs/ai_r_44796d791a.jsonl",
+   "line": 7,
+   "run": "r_44796d791a",
+   "card": "73",
+   "page": "diesel-generator-asset-dashboard/operations-runtime",
+   "rule": "rule_i_membership",
+   "slot": "data.series[1].values",
+   "kind": "bucketed",
+   "source": "live",
+   "bind": "col:reactive_energy_import_kvarh",
+   "slot_class": "energy",
+   "source_class": "energy",
+   "quantity_match": "same",
+   "replay_artifact_basket_truncated": false,
+   "reason": "data.series[1].values: column 'reactive_energy_import_kvarh' not in this asset's schema \u2014 leaf honest-blanks"
+  },
+  {
+   "file": "outputs/logs/ai_r_44796d791a.jsonl",
+   "line": 33,
+   "run": "r_c7938ef357",
+   "card": "69",
+   "page": "diesel-generator-asset-dashboard/voltage-current",
+   "rule": "rule_unmapped",
+   "slot": "data.stats[2].value",
+   "kind": "raw",
+   "source": "$ctx",
+   "bind": "col:kpi_voltage_deviation_pct",
+   "slot_class": "percent",
+   "source_class": "deviation-spread",
+   "quantity_match": "compatible",
+   "replay_artifact_basket_truncated": false,
+   "reason": "data.stats[2].value: slot names the unbalance semantic family \u2014 column 'kpi_voltage_deviation_pct' is not a unbalance-family source (a same-dimension stand-in is a fabrication); leaf honest-blanks"
+  },
+  {
+   "file": "outputs/logs/ai_r_92a2bfb0ae.jsonl",
+   "line": 152,
+   "run": "r_92a2bfb0ae",
+   "card": "43",
+   "page": "individual-feeder-meter-shell/voltage-current",
+   "rule": "rule_i_membership",
+   "slot": "health.data.metrics[1].value",
+   "kind": "raw",
+   "source": "live",
+   "bind": "col:voltage_max_spread",
+   "slot_class": "voltage",
+   "source_class": "deviation-spread",
+   "quantity_match": "compatible",
+   "replay_artifact_basket_truncated": false,
+   "reason": "health.data.metrics[1].value: column 'voltage_max_spread' not in this asset's schema \u2014 leaf honest-blanks"
+  },
+  {
+   "file": "outputs/logs/ai_r_92a2bfb0ae.jsonl",
+   "line": 163,
+   "run": "r_92a2bfb0ae",
+   "card": "46",
+   "page": "individual-feeder-meter-shell/voltage-current",
+   "rule": "rule_unmapped",
+   "slot": "history.data.stats[2].value",
+   "kind": "derived",
+   "source": null,
+   "bind": "fn:loadFactorPct",
+   "slot_class": "percent",
+   "source_class": "load-factor",
+   "quantity_match": "compatible",
+   "replay_artifact_basket_truncated": false,
+   "reason": "history.data.stats[2].value: slot names the unbalance semantic family \u2014 fn 'loadFactorPct' is not a unbalance-family source (a same-dimension stand-in is a fabrication); leaf honest-blanks"
+  },
+  {
+   "file": "outputs/logs/ai_r_99879f110d.jsonl",
+   "line": 29,
+   "run": "r_1f97dfa47f",
+   "card": "65",
+   "page": "diesel-generator-asset-dashboard/fuel-efficiency",
+   "rule": "rule_unmapped",
+   "slot": "chart.kpis[0].value",
+   "kind": "derived",
+   "source": null,
+   "bind": "fn:loadFactorPct",
+   "slot_class": "percent",
+   "source_class": "load-factor",
+   "quantity_match": "compatible",
+   "replay_artifact_basket_truncated": false,
+   "reason": "chart.kpis[0].value: slot names the efficiency semantic family \u2014 fn 'loadFactorPct' is not a efficiency-family source (a same-dimension stand-in is a fabrication); leaf honest-blanks"
+  },
+  {
+   "file": "outputs/logs/ai_r_99879f110d.jsonl",
+   "line": 30,
+   "run": "r_bb525a5212",
+   "card": "41",
+   "page": "individual-feeder-meter-shell/energy-power",
+   "rule": "rule_iiid_boundary",
+   "slot": "data.hvInputKw",
+   "kind": "raw",
+   "source": "$ctx",
+   "bind": "col:active_power_total_kw",
+   "slot_class": "power",
+   "source_class": "power",
+   "quantity_match": "same",
+   "replay_artifact_basket_truncated": false,
+   "reason": "data.hvInputKw: hv_input_kw is a topology boundary quantity (computed across meters, not measured by this one) \u2014 column 'active_power_total_kw' is this meter's own reading, not hv_input_kw; leaf honest-blanks"
+  },
+  {
+   "file": "outputs/logs/ai_r_99879f110d.jsonl",
+   "line": 30,
+   "run": "r_bb525a5212",
+   "card": "41",
+   "page": "individual-feeder-meter-shell/energy-power",
+   "rule": "rule_iiid_boundary",
+   "slot": "data.lvOutputKw",
+   "kind": "raw",
+   "source": "$ctx",
+   "bind": "col:active_power_total_kw",
+   "slot_class": "power",
+   "source_class": "power",
+   "quantity_match": "same",
+   "replay_artifact_basket_truncated": false,
+   "reason": "data.lvOutputKw: lv_output_kw is a topology boundary quantity (computed across meters, not measured by this one) \u2014 column 'active_power_total_kw' is this meter's own reading, not lv_output_kw; leaf honest-blanks"
+  },
+  {
+   "file": "outputs/logs/ai_r_bb525a5212.jsonl",
+   "line": 6,
+   "run": "r_bb525a5212",
+   "card": "41",
+   "page": "individual-feeder-meter-shell/energy-power",
+   "rule": "rule_iiid_boundary",
+   "slot": "data.hvInputKw",
+   "kind": "raw",
+   "source": "$ctx",
+   "bind": "col:active_power_total_kw",
+   "slot_class": "power",
+   "source_class": "power",
+   "quantity_match": "same",
+   "replay_artifact_basket_truncated": false,
+   "reason": "data.hvInputKw: hv_input_kw is a topology boundary quantity (computed across meters, not measured by this one) \u2014 column 'active_power_total_kw' is this meter's own reading, not hv_input_kw; leaf honest-blanks"
+  },
+  {
+   "file": "outputs/logs/ai_r_bb525a5212.jsonl",
+   "line": 6,
+   "run": "r_bb525a5212",
+   "card": "41",
+   "page": "individual-feeder-meter-shell/energy-power",
+   "rule": "rule_iiid_boundary",
+   "slot": "data.lvOutputKw",
+   "kind": "raw",
+   "source": "$ctx",
+   "bind": "col:active_power_total_kw",
+   "slot_class": "power",
+   "source_class": "power",
+   "quantity_match": "same",
+   "replay_artifact_basket_truncated": false,
+   "reason": "data.lvOutputKw: lv_output_kw is a topology boundary quantity (computed across meters, not measured by this one) \u2014 column 'active_power_total_kw' is this meter's own reading, not lv_output_kw; leaf honest-blanks"
+  },
+  {
+   "file": "outputs/logs/ai_r_bb525a5212.jsonl",
+   "line": 7,
+   "run": "r_bb525a5212",
+   "card": "40",
+   "page": "individual-feeder-meter-shell/energy-power",
+   "rule": "rule_iiib_axis_coherence",
+   "slot": "data.yMax",
+   "kind": "raw",
+   "source": "$ctx",
+   "bind": "col:active_power_total_kw",
+   "slot_class": "power",
+   "source_class": "power",
+   "quantity_match": "same",
+   "replay_artifact_basket_truncated": false,
+   "reason": "data.yMax: axis slot bound to a scalar read (column 'active_power_total_kw') \u2014 an axis bound is chart geometry derived from the filled series (post-fill yscale), never a live sample; leaf honest-blanks"
+  },
+  {
+   "file": "outputs/logs/ai_r_bb525a5212.jsonl",
+   "line": 7,
+   "run": "r_bb525a5212",
+   "card": "40",
+   "page": "individual-feeder-meter-shell/energy-power",
+   "rule": "rule_iiib_axis_coherence",
+   "slot": "data.yMin",
+   "kind": "raw",
+   "source": "$ctx",
+   "bind": "col:active_power_total_kw",
+   "slot_class": "power",
+   "source_class": "power",
+   "quantity_match": "same",
+   "replay_artifact_basket_truncated": false,
+   "reason": "data.yMin: axis slot bound to a scalar read (column 'active_power_total_kw') \u2014 an axis bound is chart geometry derived from the filled series (post-fill yscale), never a live sample; leaf honest-blanks"
+  },
+  {
+   "file": "outputs/logs/ai_r_bb525a5212.jsonl",
+   "line": 7,
+   "run": "r_bb525a5212",
+   "card": "40",
+   "page": "individual-feeder-meter-shell/energy-power",
+   "rule": "rule_iiib_axis_coherence",
+   "slot": "data.demandYMax",
+   "kind": "raw",
+   "source": "$ctx",
+   "bind": "col:active_power_total_kw",
+   "slot_class": "power",
+   "source_class": "power",
+   "quantity_match": "same",
+   "replay_artifact_basket_truncated": false,
+   "reason": "data.demandYMax: axis slot bound to a scalar read (column 'active_power_total_kw') \u2014 an axis bound is chart geometry derived from the filled series (post-fill yscale), never a live sample; leaf honest-blanks"
+  },
+  {
+   "file": "outputs/logs/ai_r_bb525a5212.jsonl",
+   "line": 7,
+   "run": "r_bb525a5212",
+   "card": "40",
+   "page": "individual-feeder-meter-shell/energy-power",
+   "rule": "rule_iiib_axis_coherence",
+   "slot": "data.demandYMin",
+   "kind": "raw",
+   "source": "$ctx",
+   "bind": "col:active_power_total_kw",
+   "slot_class": "power",
+   "source_class": "power",
+   "quantity_match": "same",
+   "replay_artifact_basket_truncated": false,
+   "reason": "data.demandYMin: axis slot bound to a scalar read (column 'active_power_total_kw') \u2014 an axis bound is chart geometry derived from the filled series (post-fill yscale), never a live sample; leaf honest-blanks"
+  },
+  {
+   "file": "outputs/logs/ai_r_d06f6da969.jsonl",
+   "line": 35,
+   "run": "r_e02e4237bf",
+   "card": "59",
+   "page": "ups-asset-dashboard/output-load-capacity",
+   "rule": "rule_unmapped",
+   "slot": "composite.points[*].bypassFrequencyHz",
+   "kind": "bucketed",
+   "source": "$ctx",
+   "bind": "col:frequency_hz",
+   "slot_class": "frequency",
+   "source_class": "frequency",
+   "quantity_match": "same",
+   "replay_artifact_basket_truncated": false,
+   "reason": "composite.points[*].bypassFrequencyHz: slot names the bypass source role \u2014 column 'frequency_hz' is this meter's input/line reading, not a bypass sensor (this meter has no bypass column); leaf honest-blanks"
+  },
+  {
+   "file": "outputs/logs/ai_r_d7be9457fc.jsonl",
+   "line": 7,
+   "run": "r_d7be9457fc",
+   "card": "56",
+   "page": "ups-asset-dashboard/source-transfer",
+   "rule": "rule_unmapped",
+   "slot": "composite.points[*].bypassFrequencyHz",
+   "kind": "bucketed",
+   "source": "live",
+   "bind": "col:frequency_hz",
+   "slot_class": "frequency",
+   "source_class": "frequency",
+   "quantity_match": "same",
+   "replay_artifact_basket_truncated": false,
+   "reason": "composite.points[*].bypassFrequencyHz: slot names the bypass source role \u2014 column 'frequency_hz' is this meter's input/line reading, not a bypass sensor (this meter has no bypass column); leaf honest-blanks"
+  },
+  {
+   "file": "outputs/logs/ai_r_e02e4237bf.jsonl",
+   "line": 7,
+   "run": "r_e02e4237bf",
+   "card": "59",
+   "page": "ups-asset-dashboard/output-load-capacity",
+   "rule": "rule_unmapped",
+   "slot": "composite.points[*].label",
+   "kind": "bucketed",
+   "source": "$ctx",
+   "bind": "col:active_power_total_kw",
+   "slot_class": "power",
+   "source_class": "power",
+   "quantity_match": "same",
+   "replay_artifact_basket_truncated": false,
+   "reason": "composite.points[*].label: time-axis label slot bound to a measured column 'active_power_total_kw' \u2014 a series time label is filled from the card's own bucket timestamps (kind=time), never a measured column; leaf honest-blanks"
+  },
+  {
+   "file": "outputs/logs/ai_r_e02e4237bf.jsonl",
+   "line": 7,
+   "run": "r_e02e4237bf",
+   "card": "59",
+   "page": "ups-asset-dashboard/output-load-capacity",
+   "rule": "rule_unmapped",
+   "slot": "composite.points[*].bypassFrequencyHz",
+   "kind": "bucketed",
+   "source": "$ctx",
+   "bind": "col:frequency_hz",
+   "slot_class": "frequency",
+   "source_class": "frequency",
+   "quantity_match": "same",
+   "replay_artifact_basket_truncated": false,
+   "reason": "composite.points[*].bypassFrequencyHz: slot names the bypass source role \u2014 column 'frequency_hz' is this meter's input/line reading, not a bypass sensor (this meter has no bypass column); leaf honest-blanks"
+  }
+ ]
+}
