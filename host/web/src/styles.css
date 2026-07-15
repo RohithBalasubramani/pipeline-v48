@@ -115,8 +115,12 @@ body {
 .cc-summary { flex: 1; min-width: 0; }
 .cc-summary-loading { font-style: italic; opacity: 0.7; animation: cc-summary-pulse 1.2s ease-in-out infinite; }
 @keyframes cc-summary-pulse { 0%,100% { opacity: 0.4; } 50% { opacity: 0.8; } }
-/* inline powered-by (footer variant) — drop the fixed-corner pinning so it rides the footer flex row on the right */
-.cc-powered-inline { position: static; right: auto; bottom: auto; z-index: auto; flex: none; }
+/* inline powered-by (footer variant) — drop the fixed-corner pinning so it rides the footer flex row on the right.
+   Scoped under .cc-footer so it OUT-SPECIFIES the base `.cc-powered { position: fixed }` (which is defined later in
+   this file); an equal-specificity override would lose to source order and leave the badge fixed → overlapping. */
+.cc-footer .cc-powered-inline {
+  position: static; right: auto; bottom: auto; z-index: auto; flex: none;
+}
 
 /* Premier Energies brand mark (far-right, left divider) — mirrors CMD_V2 HeaderBrandLogo */
 .cc-brand { flex: none; margin-left: auto; display: flex; align-items: center; padding-left: 16px; border-left: 1px solid var(--hairline); }
