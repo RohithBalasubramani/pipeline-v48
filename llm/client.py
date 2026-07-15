@@ -67,6 +67,17 @@ def _timeout_for(stage, explicit):
     return float(_cfg(f"llm.timeout.{stage}", base)) if stage else base
 
 
+def _max_tokens_for(stage):
+    """Per-stage completion cap, mirroring _timeout_for: llm.max_tokens.<stage> row wins, else the base llm.max_tokens
+    row, else 0 = UNBOUNDED (the historical behavior — byte-identical until a row lands). The cap is the RUNAWAY
+    GUILLOTINE [decode-wall root fix 2026-07-15]: post-diet a legitimate l2_emit is ~200-2,900 completion tokens, so
+    a >6K emission is by definition pathology (the 14.6K zero-filled-grid class) — better one honest-blank truncation
+    at ~85s than a 150s wall that poisons sibling decodes. finish_reason=length stays classified 'truncated' =
+    fail-fast, no-retry, honest-blank card (llm.no_retry_kinds)."""
+    base = int(_cfg("llm.max_tokens", 0) or 0)
+    return int(_cfg(f"llm.max_tokens.{stage}", base) or 0) if stage else base
+
+
 def _record(kind, stage, detail=""):
     """Failure telemetry — obs.failures, keyed by the current ai_log run id. Never raises (telemetry only).
     card_id rides the decision contextvar the emit path already sets (llm_tap.set_decision at layer2/emit) —
@@ -189,7 +200,7 @@ def _call_qwen_raw(system, user, *, timeout=None, stage=None, schema=None, json_
     provider = _providers.resolve()
     temperature = _cfg("llm.temperature", 0)
     seed = _cfg("llm.seed", 42)
-    max_tokens = int(_cfg("llm.max_tokens", 0) or 0)            # bounded runaway guard; no row → unbounded (legacy)
+    max_tokens = _max_tokens_for(stage)                          # per-stage runaway guard; no rows → unbounded (legacy)
 
     parse_retries = max(0, int(_cfg("llm.parse_retry", 1)))
     # Deterministic failure kinds NEVER retry [A3] — sourced from THE one llm.no_retry_kinds reader
