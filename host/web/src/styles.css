@@ -105,25 +105,11 @@ body {
 .cc-status-livelabel { font-family: var(--font-sans); font-size: 10px; font-weight: 600; letter-spacing: 0.08em; color: var(--sage-700); }
 .cc-status-site { font-family: var(--font-mono); font-size: 11px; color: var(--brown-600); font-weight: 700; letter-spacing: 0.02em; }
 
-/* Layer-3 AI page summary — compact card under the validation bar, above the grid */
-.cc-summary {
-  display: flex; align-items: baseline; gap: 12px; margin: 10px 14px 4px;
-  padding: 11px 15px; background: #ffffff; border: 1px solid var(--hairline);
-  border-left: 3px solid var(--teal-900); border-radius: 8px;
-  box-shadow: 0 1px 2px rgba(20,40,50,0.04);
-}
-.cc-summary-tag {
-  flex: none; font-family: var(--font-mono, ui-monospace, monospace); font-size: 10px; font-weight: 700;
-  letter-spacing: 0.1em; color: var(--teal-900); opacity: 0.7; padding-top: 1px; white-space: nowrap;
-}
-.cc-summary-text {
-  margin: 0; font-family: var(--font-sans); font-size: 13.5px; line-height: 1.5; color: var(--brown-700, #4a4034);
-}
-.cc-summary-loading {
-  font-family: var(--font-sans); font-size: 13px; color: var(--slate-500, #8a8f96); font-style: italic;
-  animation: cc-summary-pulse 1.2s ease-in-out infinite;
-}
-@keyframes cc-summary-pulse { 0%,100% { opacity: 0.45; } 50% { opacity: 0.85; } }
+/* Layer-3 AI page summary — CMD_V2 AiSummary primitive (✦ gold sparkle + teal insight text), under the
+   validation bar. The card itself carries no chrome; only the placement + a subtle loading pulse live here. */
+.cc-summary { margin: 11px 16px 5px; }
+.cc-summary-loading { font-style: italic; opacity: 0.7; animation: cc-summary-pulse 1.2s ease-in-out infinite; }
+@keyframes cc-summary-pulse { 0%,100% { opacity: 0.4; } 50% { opacity: 0.8; } }
 
 /* Premier Energies brand mark (far-right, left divider) — mirrors CMD_V2 HeaderBrandLogo */
 .cc-brand { flex: none; margin-left: auto; display: flex; align-items: center; padding-left: 16px; border-left: 1px solid var(--hairline); }
