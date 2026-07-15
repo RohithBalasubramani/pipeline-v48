@@ -451,6 +451,20 @@ def main():
         ensure_started()                                   # exist yet — guard keeps boot safe either way) [OBS-6]
     except Exception:
         pass
+    # registry-drift boot check [audit 2026-07-14, 01 F1 permanence]: an UNMARKED dangling registry row (table gone
+    # live, mirror still stamps table_exists='t') lets the resolver pin a ghost. Fail-open, off the boot path.
+    def _drift_check():
+        try:
+            from data.registry.drift import check
+            for row in (check().get("dangling_unmarked") or []):
+                from obs.failures import record
+                record("registry", "registry_drift", detail=f"UNMARKED dangling lt_mfm row {row}")
+                print(f"[host] WARN registry drift (stale sync?): {row} — re-run scripts/sync_neuract_registry.py",
+                      file=sys.stderr, flush=True)
+        except Exception:
+            pass
+    import threading
+    threading.Thread(target=_drift_check, daemon=True).start()
     srv = _Server(("0.0.0.0", PORT), Handler)
     print(f"[host] V48 preview API on http://0.0.0.0:{PORT}  (storybook={SB_BASE})  [backlog={_Server.request_queue_size}]", flush=True)
     try:

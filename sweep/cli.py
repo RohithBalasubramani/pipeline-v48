@@ -301,6 +301,19 @@ def cmd_coverage(args) -> int:
     return 0
 
 
+def cmd_registry_drift(args) -> int:
+    """registry↔information_schema drift: exit 1 iff a dangling row is UNMARKED in the mirror (stale sync)."""
+    ok, val = _call_flex("sweep.checks.registry_drift", "run_registry_drift", [()])
+    if not ok:
+        _say("registry-drift failed:", val)
+        return 1
+    try:
+        _say(json.dumps(val, sort_keys=True, indent=1, default=str).encode("ascii", "replace").decode("ascii"))
+    except (TypeError, ValueError):
+        _say("registry-drift result:", val)
+    return 0 if (isinstance(val, dict) and val.get("ok")) else 1
+
+
 def cmd_determinism(args) -> int:
     all_cases = _load_corpus()
     if not all_cases:
@@ -409,6 +422,9 @@ def main(argv: list[str] | None = None) -> int:
     rg.add_argument("--baseline", required=True)
     rg.add_argument("--session", default=None)
     rg.set_defaults(func=cmd_regress)
+
+    sub.add_parser("registry-drift", help="registry vs information_schema drift (exit 1 on unmarked danglers)"
+                   ).set_defaults(func=cmd_registry_drift)
 
     d = sub.add_parser("determinism", help="repeat-run a category-spread sample")
     d.add_argument("--session", default=None)
