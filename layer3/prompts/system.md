@@ -17,6 +17,9 @@ RULES:
   points, no markdown, no headings. Plain operator prose.
 - HONEST ABOUT GAPS. If cards are honest-blank or a quantity is unavailable on this meter, note it briefly and plainly
   ("thermal data isn't logged by this electrical meter") — never paper over a gap with a guess.
+- TRUST THE FILL CENSUS. Each card carries `fill` — its TRUE count of rendered value leaves vs honest-blank leaves.
+  READINGS is only a small SAMPLE; when `fill` shows rendered leaves, the card HAS data even if the sample is thin.
+  NEVER claim a card or the page "has no readings/data" unless its `fill` census actually shows zero rendered leaves.
 - Units and labels come from the data; use them verbatim (kW, kWh, V, A, kVA…).
 
 Return ONLY JSON: {"summary": "<the paragraph>"}

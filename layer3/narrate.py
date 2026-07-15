@@ -35,13 +35,21 @@ def _asset_name(resp):
     return None
 
 
+_SKIP_SUBTREES = {"render", "freshness"}          # host bookkeeping, not card content
+
+
 def _readings(payload):
     """[ 'Active Power · 731.3 kW', … ] — the card's real labeled scalar readings (grounding for the narrator).
-    A labeled object carrying displayValue/value IS a rendered KPI; we pass its label+shown value+unit verbatim."""
+    A labeled object carrying displayValue/value IS a rendered KPI; we pass its label+shown value+unit verbatim.
+
+    Walks the WHOLE payload from its root [narrator-false-blank fix, 2026-07-16]: a card's content root is its OWN key
+    (card 12 = rail.vm, card 13 = flow.vm, card 15 = card.view) — the old `payload['data']` walk returned [] for every
+    non-`data`-rooted card, so the narrator was handed `readings: []` for cards FULL of rendered values and truthfully
+    told the user "no rendered readings" about a page that had them."""
     out = []
 
     def walk(node, depth=0):
-        if len(out) >= _MAX_READINGS or depth > 4:
+        if len(out) >= _MAX_READINGS or depth > 6:
             return
         if isinstance(node, dict):
             label = node.get("label") or node.get("title")
@@ -51,15 +59,43 @@ def _readings(payload):
             if label and val is not None and val != "":
                 unit = node.get("unit") or ""
                 out.append(f"{label} · {val} {unit}".strip())
-            for v in node.values():
-                if isinstance(v, (dict, list)):
+            for k, v in node.items():
+                if isinstance(v, (dict, list)) and k not in _SKIP_SUBTREES:
                     walk(v, depth + 1)
         elif isinstance(node, list):
             for v in node[:6]:
                 walk(v, depth + 1)
 
-    walk((payload or {}).get("data") or {})
+    walk(payload or {})
     return out[:_MAX_READINGS]
+
+
+def _leaf_stats(payload):
+    """(filled, blank) scalar-leaf counts over the card's whole payload — the GROUND-TRUTH fill statistic the narrator
+    reasons from. A 5-reading sample cannot distinguish 'sparse card' from 'blank card'; this count can (a card with
+    189 filled numeric leaves is NOT 'no rendered readings' no matter what the sample missed). filled = numeric leaves;
+    blank = None/'—'/'' leaves; chrome strings count as neither."""
+    filled = blank = 0
+
+    def walk(node, depth=0):
+        nonlocal filled, blank
+        if depth > 8:
+            return
+        if isinstance(node, dict):
+            for k, v in node.items():
+                if k in _SKIP_SUBTREES:
+                    continue
+                walk(v, depth + 1)
+        elif isinstance(node, list):
+            for v in node[:60]:
+                walk(v, depth + 1)
+        elif isinstance(node, (int, float)) and not isinstance(node, bool):
+            filled += 1
+        elif node is None or (isinstance(node, str) and node.strip() in ("", "—", "-")):
+            blank += 1
+
+    walk(payload or {})
+    return filled, blank
 
 
 def _digest(resp):
@@ -69,6 +105,10 @@ def _digest(resp):
         st = c.get("story")
         story = st if isinstance(st, str) else (st or {}).get("analytical_story") if isinstance(st, dict) else None
         entry = {"title": c.get("title"), "story": story, "readings": _readings(c.get("payload"))}
+        # the ground-truth fill statistic (readings is a 5-item SAMPLE; this is the honest census the narrator must
+        # trust over the sample — a card with hundreds of filled leaves is rendered even if the sample missed them)
+        filled, blank = _leaf_stats(c.get("payload"))
+        entry["fill"] = f"{filled} value leaf(es) rendered · {blank} honest-blank"
         gaps = ((c.get("payload") or {}).get("render") or {}).get("gaps")
         if not c.get("has_payload"):
             entry["blank"] = "card honest-blank (no data for this card on this asset)"
