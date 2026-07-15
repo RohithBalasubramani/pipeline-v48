@@ -52,6 +52,8 @@ def _patch_build_seams(monkeypatch, assemble):
 
 def test_knob_off_never_enters_the_pool(monkeypatch):
     import lib.parallel as LP
+    # pin both knobs off — the test means "knobs at 0 ⇒ no pool", not "whatever the live DB rows say"
+    _knob(monkeypatch, MA, **{"multi_asset.lane_concurrency": 0, "multi_asset.fill_concurrency": 0})
     def boom(*a, **k):
         raise AssertionError("run_parallel must NOT be called with knobs at 0")
     monkeypatch.setattr(LP, "run_parallel", boom)
