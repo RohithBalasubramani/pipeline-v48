@@ -23,7 +23,6 @@ from layer1a.build import run_1a
 from layer1b.build import run_1b
 from validate.build import run_validate
 from config.databases import CMD_CATALOG  # canonical metadata DB name (edit in config/)
-from obs.failures import record
 from obs.notes import record as record_notes
 from obs.stage import stage          # end-to-end pipeline log → stderr (host log) + outputs/logs/pipeline_<run_id>.jsonl
 
@@ -52,8 +51,7 @@ def _validate(out, db, run_id):
               expected_gap_frac=(out["validation"] or {}).get("expected_gap_frac"))
     except Exception as e:
         out["errors"]["validation"] = _fmt_exc(e)
-        record("validation", "layer-exception", detail=str(e), run_id=run_id)
-        stage(run_id, "validate", ERROR=_fmt_exc(e))
+        stage(run_id, "validate", ERROR=_fmt_exc(e))   # THE one failure writer (stage_error mirror) [audit 01 F4]
 
 
 def _preflight_reroute(out, prompt, db, run_id):
@@ -124,8 +122,7 @@ def _reflect_loop(out, prompt, db, run_id, no_reroute=False, lane_salt=""):
             l2 = run_2_all(rid, out["layer1a"], out["layer1b"])
         except Exception as e:
             out["errors"]["layer2"] = _fmt_exc(e)
-            record("layer2", "layer-exception", detail=str(e), run_id=rid)
-            stage(rid, "layer2", ERROR=_fmt_exc(e))
+            stage(rid, "layer2", ERROR=_fmt_exc(e))    # THE one failure writer (stage_error mirror) [audit 01 F4]
             return
         out["layer2"] = l2
         gaps = [o for o in l2.values() if (o or {}).get("gap")]
@@ -265,8 +262,7 @@ def _run_pipeline_inner(prompt, *, asset_id=None, db=None, run_id=None, layer1a=
         r = results[name]
         if isinstance(r, Exception):
             out["errors"][name] = _fmt_exc(r)
-            record(name, "layer-exception", detail=str(r), run_id=run_id)
-            stage(run_id, name, ERROR=_fmt_exc(r))
+            stage(run_id, name, ERROR=_fmt_exc(r))     # THE one failure writer (stage_error mirror) [audit 01 F4]
         else:
             out[name] = r
 

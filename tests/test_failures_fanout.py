@@ -28,12 +28,19 @@ def _cleanup(run_id):
 
 
 # ── _failure_signal truth table (the data-driven stage vocabulary, no per-card logic) ───────────────────────────────
+# ONE WRITER PER FACT [audit 2026-07-14, 01 F4 / 02 F1]: llm_<kind> fails are llm/client._record's fact (with
+# card_id); the per-card bool gap is the ONLY fill_gap writer and carries the AI's note; gaps=N aggregates live in
+# pipeline_<rid>.jsonl + obs spans, never in the failures sink (they quadrupled every gap: 98 events → 371 records).
 def test_failure_signal_vocabulary():
     assert _failure_signal({"ERROR": "ValueError: boom"}) == ("stage_error", "ValueError: boom")
-    assert _failure_signal({"fail": "llm_timeout"}) == ("card_fail", "llm_timeout")
+    assert _failure_signal({"fail": "ValueError: boom"}) == ("card_fail", "ValueError: boom")
+    assert _failure_signal({"fail": "llm_timeout"}) is None        # llm/client already recorded it (one writer)
+    assert _failure_signal({"fail": "llm_http_400"}) is None
     assert _failure_signal({"ok": False, "why": "executor budget exceeded"}) == ("exec_fail", "executor budget exceeded")
-    assert _failure_signal({"gap": "missing_kpis"}) == ("fill_gap", "missing_kpis")
-    assert _failure_signal({"gaps": 3}) == ("fill_gap", "gaps=3")
+    assert _failure_signal({"gap": True, "note": "needs temperature columns"}) == \
+        ("fill_gap", "needs temperature columns")                  # detail = the AI's note, not 'True'
+    assert _failure_signal({"gap": True}) == ("fill_gap", "answerability=none")
+    assert _failure_signal({"gaps": 3}) is None                    # aggregate branch retired (quadruple-record)
 
 
 def test_failure_signal_ignores_healthy_stages():
@@ -42,6 +49,8 @@ def test_failure_signal_ignores_healthy_stages():
     assert _failure_signal({"gap": None, "fail": None}) is None
     assert _failure_signal({"page": "x/y", "cards": 4}) is None
     assert _failure_signal({"gaps": "not-a-number"}) is None       # malformed count never raises / never flags
+    assert _failure_signal({"gap": 1}) is None                     # count-shaped gap (notes) never mirrors — bool only
+    assert _failure_signal({"gap": "missing_kpis"}) is None        # string-shaped gap never mirrors — bool only
 
 
 # ── stage() → failures_<run_id>.jsonl fan-out ───────────────────────────────────────────────────────────────────────
@@ -50,12 +59,15 @@ def test_stage_fans_out_failures(capsys):
     _cleanup(rid)
     try:
         stage(rid, "exec", card=60, ok=False, why="executor budget exceeded")
-        stage(rid, "L2.card", id=24, fail="llm_timeout")
-        stage(rid, "reflect", loop=1, gaps=2)
-        stage(rid, "exec", card=61, ok=True)                        # healthy — must NOT be recorded
+        stage(rid, "L2.card", id=24, fail="ValueError: boom")
+        stage(rid, "L2.card", id=25, fail="llm_timeout")            # llm-kind — llm/client's record, NOT mirrored
+        stage(rid, "L2.card", id=61, gap=True, note="no temp columns on this meter")
+        stage(rid, "reflect", loop=1, gaps=2)                       # run-level aggregate — must NOT be recorded
+        stage(rid, "exec", card=62, ok=True)                        # healthy — must NOT be recorded
         recs = _read_failures(rid)
         assert [(r["stage"], r["reason"], r["card_id"]) for r in recs] == [
-            ("exec", "exec_fail", 60), ("L2.card", "card_fail", 24), ("reflect", "fill_gap", None)]
+            ("exec", "exec_fail", 60), ("L2.card", "card_fail", 24), ("L2.card", "fill_gap", 61)]
+        assert recs[2]["detail"] == "no temp columns on this meter"
         assert all(r["run_id"] == rid for r in recs)
     finally:
         _cleanup(rid)

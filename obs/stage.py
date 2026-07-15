@@ -3,6 +3,7 @@ in the host log — `tail -f outputs/host.log`) AND appends outputs/logs/pipelin
 watch a single prompt's whole backend flow: 1a → 1b → validate → asset-gate → Layer 2 (per card) → fill → frames."""
 import json
 import os
+import re
 import sys
 import time
 
@@ -46,25 +47,31 @@ def stage(run_id, name, **fields):
         pass
 
 
+_LLM_KIND_RE = re.compile(r"^llm_(timeout|transport|truncated|no_json|over_budget|parse|http_\d+)$")
+
+
 def _failure_signal(fields):
     """(reason, detail) when a stage's OWN fields signal a defect/degradation, else None. Data-driven over the existing
-    stage vocabulary — no new call sites, no per-card logic:
-      · ERROR=…      → any stage that caught an exception            ('stage_error')
-      · fail=…       → L2.card's llm/emit failure kind               ('card_fail')
-      · ok=False     → host exec card failure (why=…)                ('exec_fail')
-      · gap=… truthy → L2.card's per-card answerability gap          ('fill_gap')
-      · gaps=N > 0   → reflect/preflight aggregated fill-gap count   ('fill_gap')"""
+    stage vocabulary — no new call sites, no per-card logic. ONE WRITER PER FACT [audit 2026-07-14, 01 F4 / 02 F1]:
+      · ERROR=…       → any stage that caught an exception           ('stage_error' — THE one exception writer;
+                        the harness's paired record('layer-exception') twins were deleted)
+      · fail=…        → L2.card's emit failure kind                  ('card_fail'), EXCEPT llm_<kind> shapes —
+                        llm/client._record already wrote that fact (with card_id); mirroring it double-counted
+                        one timeout across two reason buckets
+      · ok=False      → host exec card failure (why=…)               ('exec_fail')
+      · gap=… is True → L2.card's per-card answerability gap         ('fill_gap', detail = the AI's note) — the
+                        ONLY gap writer. bool-gated so notes' count-shaped gap int can never slip through; the
+                        run-level gaps=N aggregates live in pipeline_<rid>.jsonl + obs spans, never here (they
+                        quadrupled every gap: 98 events → 371 records)."""
     if "ERROR" in fields:
         return "stage_error", fields.get("ERROR")
-    if fields.get("fail"):
-        return "card_fail", fields.get("fail")
+    f = fields.get("fail")
+    if f:
+        if _LLM_KIND_RE.match(str(f)):
+            return None
+        return "card_fail", f
     if fields.get("ok") is False:
         return "exec_fail", fields.get("why")
-    if fields.get("gap"):
-        return "fill_gap", fields.get("gap")
-    try:
-        if int(fields.get("gaps") or 0) > 0:
-            return "fill_gap", f"gaps={fields.get('gaps')}"
-    except (TypeError, ValueError):
-        pass
+    if fields.get("gap") is True:
+        return "fill_gap", fields.get("note") or "answerability=none"
     return None

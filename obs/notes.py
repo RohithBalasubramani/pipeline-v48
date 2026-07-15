@@ -24,9 +24,11 @@ def record(run_id, notes):
         os.makedirs(_d, exist_ok=True)
         with open(os.path.join(_d, f"{run_id}.json"), "w") as f:
             json.dump({"run_id": run_id, **notes}, f, indent=1)
+        # count vocabulary: gaps=N, never gap= — the int used to slip through _failure_signal's boolean gap
+        # branch and become a 4th fill_gap mirror per event [audit 02 F1]
         stage(run_id, "notes", loop1=len(loop1), loop2=bool(loop2),
               partial=sum(1 for n in loop1 if n.get("answerability") == "partial"),
-              gap=sum(1 for n in loop1 if n.get("answerability") == "none"))
+              gaps=sum(1 for n in loop1 if n.get("answerability") == "none"))
     except Exception:
         pass
     return notes
