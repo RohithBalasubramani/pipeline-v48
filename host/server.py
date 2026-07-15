@@ -305,10 +305,34 @@ class Handler(BaseHTTPRequestHandler):
             code, resp = _traced_captured("frame", "/api/frame", req, lambda: handle_frame(req))
             return self._send(code, resp)
 
+        # LAYER 3 — the AI page narrator (layer3/narrate.py): {run_id} → a grounded few-line story across the run's
+        # cards. Lazy (the FE calls it after the grid paints, so the page never blocks on it); honest-degrade built in.
+        if self.path.startswith("/api/layer3"):
+            return self._send(*handle_layer3(req))
+
         if not self.path.startswith("/api/run"):
             return self._send(404, {"ok": False, "error": "not found"})
         code, resp = _traced_captured("run", "/api/run", req, lambda: handle_run(req))
         return self._send(code, resp)
+
+
+def handle_layer3(req):
+    """The /api/layer3 body {run_id} → (code, {ok, summary, degraded}). Reads the run's persisted response (the
+    artifact _dump_response already wrote) and hands it to the Layer-3 AI narrator. Never raises."""
+    rid = req.get("run_id")
+    if not rid:
+        return 400, {"ok": False, "error": "run_id required"}
+    try:
+        from obs.paths import logs_dir
+        with open(os.path.join(logs_dir(), f"response_{rid}.json"), encoding="utf-8") as f:
+            resp = json.load(f)
+    except Exception:
+        return 404, {"ok": False, "error": "run not found"}
+    try:
+        from layer3.narrate import narrate
+        return 200, {"ok": True, **narrate(resp)}
+    except Exception as e:
+        return 200, {"ok": True, "summary": "", "degraded": True, "error": _fmt_exc(e)}
 
 
 def handle_frame(req):

@@ -5,6 +5,7 @@ import type { PipelineResult } from "./types";
 import { CommandHeader } from "./components/CommandHeader";
 import { SuggestedCommands } from "./components/SuggestedCommands";
 import { CardGrid } from "./components/CardGrid";
+import { PageSummaryCard } from "./components/PageSummaryCard";
 import { DateSyncProvider } from "./components/DateSync";
 import { KnowledgeAnswer, type KnowledgeTurn } from "./components/KnowledgeAnswer";
 import { AssetResolution } from "./components/AssetResolution";
@@ -138,6 +139,7 @@ export function App() {
       ) : hasCards ? (
         <div className="cc-results">
           <ValidationBar validation={result!.validation} cards={result!.cards} />
+          <PageSummaryCard runId={result!.run_id} />
           <div className="cc-grid-fill">
             {/* DateSync keyed by run: one card's date pick re-fetches EVERY is_history card; a new prompt resets it */}
             <DateSyncProvider key={result!.run_id || lastPrompt}>

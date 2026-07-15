@@ -20,6 +20,18 @@ export async function fetchSite(): Promise<SiteStatus> {
   return (await res.json()) as SiteStatus;
 }
 
+/** POST /api/layer3 — the Layer-3 AI page narrator: {run_id} → a grounded few-line story across the run's cards. */
+export type PageSummary = { ok?: boolean; summary?: string; degraded?: boolean };
+export async function fetchPageSummary(runId: string): Promise<PageSummary> {
+  const res = await fetch("/api/layer3", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ run_id: runId }),
+  });
+  if (!res.ok) throw await httpError(res);
+  return (await res.json()) as PageSummary;
+}
+
 /** GET /api/assets — the full pickable asset registry (same Candidate shape 1b serves). */
 export async function fetchAssets(): Promise<Candidate[]> {
   const res = await fetch("/api/assets");

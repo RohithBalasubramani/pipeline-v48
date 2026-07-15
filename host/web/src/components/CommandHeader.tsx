@@ -52,6 +52,12 @@ export function CommandHeader({
           </div>
         </div>
       )}
+
+      {/* Premier Energies brand mark — pinned far-right with a left divider (mirrors CMD_V2 HeaderBrandLogo).
+          Served from public/ at the site root; margin-left:auto keeps it in the corner when status is hidden. */}
+      <div className="cc-brand">
+        <img src="/premier-energies-logo.png" alt="Premier Energies" draggable={false} />
+      </div>
     </header>
   );
 }
