@@ -87,7 +87,15 @@ def test_emit_asset_3d_resolves_dg_and_degrades_others():
     obj = dg.get("object") or {}
     assert obj.get("slug") == "dg-final-v2"
     assert (obj.get("url") or "").endswith("/media/3d/glb/dg_final_v2.glb")
-    # an unseeded meter keeps the honest-degrade reason (never a wrong/guessed GLB)
+    # a panel meter with no per-MFM/type binding resolves the TIER-4 GLOBAL DEFAULT on an overview page —
+    # viewer.default_asset_3d_key='pcc1a-v1' resolves since scripts/seed_pcc1a_asset3d.py landed the catalog
+    # row (2026-07-15, audit 14 F3: the dead default key silently killed the fallback for ~189 records)
     other = emit_asset_3d({"mfm_id": 317, "name": "PCC-Panel-1"}, "panel-overview-shell/real-time-monitoring")
-    assert other.get("object") is None if "object" in other else True
-    assert "3D model" in (other.get("reason") or "")
+    oobj = other.get("object") or {}
+    assert oobj.get("slug") == "pcc1a-v1"
+    assert (oobj.get("url") or "").endswith("/media/3d/glb/PCC1A_v1.glb")
+    # tier 4 is INDIVIDUAL/OVERVIEW page-types only — elsewhere the honest degrade stands (never a guessed GLB)
+    gated = emit_asset_3d({"mfm_id": 317, "name": "PCC-Panel-1"},
+                          "panel-overview-shell/real-time-monitoring", page_type="topology")
+    assert (gated.get("object") or None) is None
+    assert "3D model" in (gated.get("reason") or "")
