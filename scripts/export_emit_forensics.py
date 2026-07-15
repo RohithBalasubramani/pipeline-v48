@@ -45,9 +45,18 @@ def main():
         rec = {"obs_id": rid, "card_id": card_id, "tag": meta["tag"], "why": meta["why"],
                "clamped": bool(meta.get("clamped")), "tokens_prompt": tp, "tokens_completion": tc,
                "finish_reason": fin, "error_kind": err, "ts": str(ts), "response": response}
-        cur.execute("SELECT payload_stripped FROM card_payloads WHERE card_id=%s LIMIT 1", (card_id,))
+        cur.execute("SELECT payload, payload_stripped FROM card_payloads WHERE card_id=%s LIMIT 1", (card_id,))
         row = cur.fetchone()
-        rec["payload_stripped"] = row[0] if row else None
+        rec["payload"] = row[0] if row else None
+        rec["payload_stripped"] = row[1] if row else None
+        # data_paths exactly as the catalog loader derives them (layer2/catalog/card_payload.py:20)
+        try:
+            from validate.leaf_classify import classify
+            rec["data_paths"] = [d["path"] for d in (classify(rec["payload"]).get("data_leaves") or [])] \
+                if rec["payload"] else []
+        except Exception as e:
+            rec["data_paths"] = []
+            print(f"  warn: data_paths derivation failed for card {card_id}: {str(e)[:80]}")
         cur.execute("SELECT roster_spec FROM card_fill_recipe WHERE card_id=%s LIMIT 1", (card_id,))
         row = cur.fetchone()
         rec["roster_spec"] = row[0] if row else None

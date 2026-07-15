@@ -150,6 +150,20 @@ def _build(card_in, *, oversize=False):
         data_paths = dp.get("data_paths") or []
         shape_note = (f"(real harvested default, pre-stripped: DATA leaves reset to typed placeholders (0/[]) and "
                       f"filled by data_instructions: {data_paths})")
+        # DATA-TIER SHAPE COLLAPSE [emit diet Stage 2, flag emit.diet.morph_shape — Mechanism-A root fix]: a
+        # morph-map card's shown skeleton carried its zero-filled DATA grids verbatim (card 24's periods×panels
+        # harmonic matrix), and the model copied+expanded them into 14K-token fabricated-data morphs the producer
+        # rejects anyway (obs row 4485). Collapse every data_paths subtree to ONE live-fill marker so the temptation
+        # never reaches the prompt. Morph-map cards only — full-author cards must keep typed placeholders to copy.
+        if data_paths:
+            from layer2.emit.diet import morph_shape as _diet_shape
+            if _diet_shape():
+                from layer2.emit.morphmap.mode import use_morphmap_metadata as _use_mm
+                if _use_mm(card_in):
+                    from layer2.emit.morphmap.shape_collapse import collapse_data_tier
+                    skeleton = collapse_data_tier(skeleton, data_paths)
+                    shape_note += (" ★ DATA-tier subtrees are shown COLLAPSED to <<DATA: N element(s)…>> markers — "
+                                   "the executor fills them LIVE; never author, morph, or re-type them")
     else:
         skeleton, data_paths = (con.get("payload_schema_json") or {}), []
         shape_note = "(contract payload_schema_json — no harvested default available)"
@@ -304,16 +318,37 @@ def _build(card_in, *, oversize=False):
             # beside a non-empty roster CONFORMS; gate_roster folds clean column choices in and backfills omitted
             # recipe slots verbatim; the fetch block feeds the consumer's window/range knobs (consumer_build
             # ai_spec) — it is NOT omitted on a roster card.
-            parts += [
-                "  ★ ROSTER CARD (member-scope, roster_spec above): this card's DATA rides data_instructions.roster — "
-                "emit `roster` (one entry per recipe slot, slot copied VERBATIM; your ONLY decision is the COLUMN "
-                "inside col/delta/phase_mean/prefer_abs bindings, from the DB SCHEMA above) AND "
-                "data_instructions.fields: [] (an EMPTY list — LEGITIMATE beside a roster, passes the gate). KEEP the "
-                "fetch block (endpoint per the hint above — it drives the member fan-out's window/range knobs); "
-                "do NOT invent per-member fields or values. Author the FULL exact_metadata per the shape below. "
-                "answerability = MEMBER COVERAGE: \"full\" when every member reports (has_data=Y in the PANEL MEMBERS "
-                "block), \"partial\" when some members are dark (they honest-blank per-leaf — name them in data_note).",
-            ]
+            from layer2.emit.diet import roster_diff as _diet_roster
+            if _diet_roster():
+                # ROSTER-DIFF CONTRACT [emit diet Stage 1, forensics 2026-07-15]: the full-retype form spent ~55% of
+                # every completion re-typing recipe truth gate_roster folds back verbatim anyway (a 110-entry roster
+                # = 6K of a 7.3K-token emit). Same decision surface, diff-shaped output; the gate's omitted-slot
+                # backfill (roster.py:163) reconstructs the identical normalized roster.
+                parts += [
+                    "  ★ ROSTER CARD (member-scope, roster_spec above): this card's DATA rides data_instructions"
+                    ".roster — emit `roster` as a DIFF against the recipe: ONLY the entries you CHANGE (a COLUMN "
+                    "choice inside col/delta/phase_mean/prefer_abs bindings, from the DB SCHEMA above, or a "
+                    "BUS-SECTION series_split), slot copied VERBATIM on each emitted entry. OMIT every slot and "
+                    "element key you keep — each omitted part ships the recipe VERBATIM automatically, and "
+                    "`roster: []` is CORRECT when the recipe already binds everything. Also emit "
+                    "data_instructions.fields: [] (an EMPTY list — LEGITIMATE beside a roster, passes the gate). "
+                    "KEEP the fetch block (endpoint per the hint above — it drives the member fan-out's window/range "
+                    "knobs); do NOT invent per-member fields or values. Author the FULL exact_metadata per the shape "
+                    "below. answerability = MEMBER COVERAGE: \"full\" when every member reports (has_data=Y in the "
+                    "PANEL MEMBERS block), \"partial\" when some members are dark (they honest-blank per-leaf — name "
+                    "them in data_note).",
+                ]
+            else:
+                parts += [
+                    "  ★ ROSTER CARD (member-scope, roster_spec above): this card's DATA rides data_instructions.roster — "
+                    "emit `roster` (one entry per recipe slot, slot copied VERBATIM; your ONLY decision is the COLUMN "
+                    "inside col/delta/phase_mean/prefer_abs bindings, from the DB SCHEMA above) AND "
+                    "data_instructions.fields: [] (an EMPTY list — LEGITIMATE beside a roster, passes the gate). KEEP the "
+                    "fetch block (endpoint per the hint above — it drives the member fan-out's window/range knobs); "
+                    "do NOT invent per-member fields or values. Author the FULL exact_metadata per the shape below. "
+                    "answerability = MEMBER COVERAGE: \"full\" when every member reports (has_data=Y in the PANEL MEMBERS "
+                    "block), \"partial\" when some members are dark (they honest-blank per-leaf — name them in data_note).",
+                ]
         elif cr.get("handling_class") == "panel_aggregate":
             parts += [
                 "  ★ PANEL-AGGREGATE CARD (handling_class=panel_aggregate, no roster_spec): this card renders ONE "

@@ -147,6 +147,22 @@ def _endpoint_sets():
 _MORPHMAP_PROMPT = os.path.join(os.path.dirname(os.path.abspath(__file__)), "morphmap", "prompt.md")
 
 
+def _variant(text, name, on):
+    """Flag-gated PROMPT VARIANT blocks [emit diet, 2026-07-15]: the .md contract keeps BOTH wordings inline,
+    wrapped in `<!--{name}:ON:BEGIN-->…END-->` / `<!--{name}:OFF:BEGIN-->…END-->` marker lines; this keeps exactly
+    one block's inner lines (markers always stripped) so a DB flag flips the contract wording with no code deploy.
+    FLAG OFF REPRODUCES THE PRE-MARKER FILE BYTES EXACTLY (goldens pin it). Absent markers → text unchanged.
+    Same family as the <!--ROSTER:BEGIN--> conditional include, but two-way."""
+    def _cut(t, tag, keep):
+        b, e = f"<!--{name}:{tag}:BEGIN-->\n", f"<!--{name}:{tag}:END-->\n"
+        while True:
+            i, j = t.find(b), t.find(e)
+            if i == -1 or j == -1 or j < i:
+                return t
+            t = (t[:i] + t[i + len(b):j] + t[j + len(e):]) if keep else (t[:i] + t[j + len(e):])
+    return _cut(_cut(text, "ON", on), "OFF", not on)
+
+
 def _system(card_in=None):
     # PROMPT COMPOSITION — the base is the rules-first data_instructions_v2.md, the SINGLE Layer-2 contract (it subsumes
     # the retired swap.md + metadata.md + data_instructions.md trio; the llm.prompt_v2 selector + those files are gone).
@@ -181,6 +197,11 @@ def _system(card_in=None):
             out = out.replace(_ROSTER_BEGIN + "\n", "").replace(_ROSTER_END + "\n", "")
         else:
             out = out[:b] + out[e + len(_ROSTER_END) + 1:]
+    # EMIT-DIET VARIANT SELECT [Stage 1+2 flags]: diet wordings live as ON/OFF marker blocks in the contract files;
+    # each flag off = the pre-marker bytes exactly (goldens pin it).
+    from layer2.emit.diet import roster_diff as _diet_roster, morph_shape as _diet_shape
+    out = _variant(out, "DIET_ROSTER", _diet_roster())
+    out = _variant(out, "DIET_MORPH_SHAPE", _diet_shape() and _mm)
     if _LIB_PLACEHOLDER in out:
         out = out.replace(_LIB_PLACEHOLDER, _recovery_library_block(card_in))
     # MORPH-MAP OUTPUT-ENVELOPE ACTIVATION [live-activation of the morphs path]: the metadata contract is morphs-only,

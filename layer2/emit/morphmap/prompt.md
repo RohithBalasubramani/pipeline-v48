@@ -73,6 +73,12 @@ by construction — you cannot omit a key, you cannot drift a byte, and there is
   If the story wants such a magnitude to change, that is a DATA request — put the column in `data_instructions.fields`
   (or honest-blank it), NEVER in `morphs`. When unsure whether a leaf is a label or a plotted number, treat it as DATA
   and DO NOT morph it.
+<!--DIET_MORPH_SHAPE:ON:BEGIN-->
+- ★ CONCRETE VIOLATION (the #1 observed failure — never do this): a morph whose VALUE is an object or array carrying
+  measured keys (`h3`/`h5`/`h7`/`kw`/`pf`/`iThd`/`vThd`/`kFactor` grids, `periods[*].panels` matrices, per-member
+  reading rows) is a wholesale DATA re-type — every such path is rejected and the tokens are pure waste. A shape shown
+  as `<<DATA: N element(s)…>>` is the executor's territory: emit NOTHING for it, in `morphs` or anywhere else.
+<!--DIET_MORPH_SHAPE:ON:END-->
 - ZERO CHROME — no pixel geometry, fonts, markup, functions, handlers, "rgba(" tokens in a morphed value. A
   chrome-bearing morph is rejected and the default ships.
 - ADDRESS LEAVES, NOT SUBTREES — one entry per changed leaf ("sections[2].label": "…"), never a whole object/array

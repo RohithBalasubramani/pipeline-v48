@@ -99,8 +99,14 @@ BEST-EFFORT + ANSWERABILITY (STANDALONE live/test-db fields only — a group ato
 
 <!--ROSTER:BEGIN-->
 ## ROSTER (member-scope) slots — panel_aggregate / topology_sld cards ONLY (this section is shown ONLY when this card is member-scope)
+<!--DIET_ROSTER:OFF:BEGIN-->
 Some cards render ONE ELEMENT PER PANEL MEMBER (feeder rosters, SLD nodes, heatmap cells, sankey values). For those your context contains a verbatim `roster_spec` — the card's fixed recipe. Emit `data_instructions.roster` (a TOP-LEVEL key beside fields[]): one entry per recipe slot, copying `slot` EXACTLY.
 - You may ONLY change the COLUMN inside a `col`/`delta`/`phase_mean`/`prefer_abs` binding, and only to a column present in the DB SCHEMA block. Everything else (slot paths, element keys, role_filter, group_by, reducers, floors, caps, order) is FIXED by the recipe — repeat it or omit it (omitted parts are backfilled from the recipe).
+<!--DIET_ROSTER:OFF:END-->
+<!--DIET_ROSTER:ON:BEGIN-->
+Some cards render ONE ELEMENT PER PANEL MEMBER (feeder rosters, SLD nodes, heatmap cells, sankey values). For those your context contains a verbatim `roster_spec` — the card's fixed recipe. Emit `data_instructions.roster` (a TOP-LEVEL key beside fields[]) as a DIFF against that recipe: ONLY the entries you CHANGE, copying `slot` EXACTLY on each emitted entry.
+- You may ONLY change the COLUMN inside a `col`/`delta`/`phase_mean`/`prefer_abs` binding, and only to a column present in the DB SCHEMA block. Everything else (slot paths, element keys, role_filter, group_by, reducers, floors, caps, order) is FIXED by the recipe — DO NOT retype it: OMIT every slot and element key you keep (each omitted part ships the recipe VERBATIM automatically), and `roster: []` is the CORRECT emission when the recipe already binds everything. Retyping recipe truth wastes your output budget and changes nothing.
+<!--DIET_ROSTER:ON:END-->
 - A recipe binding of {"b":"null"} is an HONEST-NULL key (the dataset has no such column). NEVER bind a column to it. NEVER invent element keys. NEVER emit roster for a card whose context has no roster_spec.
 - A panel-aggregate / member card with NO roster_spec still fills ONE element per member — but its per-member DATA rides its backend_strategy consumer's panel fan-out, NOT fields[] and NOT a roster. For such a card emit `data_instructions.fields: []` (LEGITIMATE, passes the gate) and NO roster (a roster with no roster_spec is rejected); a member with no data honest-blanks per-leaf. Do NOT invent per-member fields/values — that fabricates.
 - The executor iterates the panel's members itself (supply = role=='incoming', load = everything else). You never enumerate members, tables, or per-member values.
@@ -137,6 +143,9 @@ RECOVERY LIBRARY (the closed fn set for kind=derived, per R14 — generated LIVE
 
 OUTPUT — STRICT valid JSON only, matching the Layer2CardOutput schema. Escape inner quotes; no literal newlines in strings. Emit exactly:
 {"card_id":0,"$ctx":null,"render_slot":"","analytical_story":"","swap_decision":{"action":"keep","origin":"kept","swap_to_id":null,"swap_to_title":null,"confidence":0.0,"criterion":null,"reason":null,"cascade":[]},"exact_metadata":{"_morphed":[]},"data_instructions":{"payload_shape":"","orientation":"","entity_dim":"","selection_dim":null,"selection_role":null,"binding":null,"window":null,"fetch":{"endpoint":"","window_seconds":30,"interval_seconds":2,"sample_count":12,"range":null,"start":null,"end":null,"sampling":null,"metrics":[],"selection":null},"fields":[]},"controls":null,"answerability":"full","data_note":null,"conforms":true,"failure":null}
+<!--DIET_ROSTER:ON:BEGIN-->
+★ CODE-OWNED SCAFFOLD — `card_id`, `$ctx`, `render_slot`, `analytical_story`, `conforms`, `failure` are stamped by the pipeline from its own records: emit them EXACTLY as the template above shows (0 / null / "" / "" / true / null). Anything you type there is overwritten — spend your output on the DECISIONS: swap_decision, morphs, data_instructions bindings, answerability, data_note.
+<!--DIET_ROSTER:ON:END-->
 
 ★ COMPLIANCE CHECKLIST — verify EVERY line immediately before you emit:
 1. Every `slot` copied VERBATIM from FILLABLE DATA-LEAF SLOTS — no invented tokens, one field per leaf. [R1]

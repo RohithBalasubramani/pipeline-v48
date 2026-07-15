@@ -1,9 +1,331 @@
 {
  "card_id": 22,
  "clamped": false,
+ "data_paths": [
+  "table.period.panels"
+ ],
  "error_kind": null,
  "finish_reason": "stop",
  "obs_id": 1372,
+ "payload": {
+  "table": {
+   "mode": null,
+   "period": {
+    "label": "18:00",
+    "panels": [
+     {
+      "amps": 249.6,
+      "cause": "",
+      "causeKey": "capacitorStep",
+      "current": 0,
+      "iUnbalance": 6,
+      "id": "ups-01",
+      "neutral": 0,
+      "neutralA": 12.8,
+      "panel": "UPS-01",
+      "sag": 0,
+      "status": "warning",
+      "swell": 1,
+      "table": "MFM_025",
+      "vAvg": 416.6,
+      "vDeviation": 0.39,
+      "vMax": 420.2,
+      "vMin": 412.8
+     },
+     {
+      "amps": 309.3,
+      "cause": "",
+      "causeKey": "capacitorStep",
+      "current": 0,
+      "iUnbalance": 6.5,
+      "id": "ups-02",
+      "neutral": 0,
+      "neutralA": 16.3,
+      "panel": "UPS-02",
+      "sag": 0,
+      "status": "success",
+      "swell": 1,
+      "table": "MFM_026",
+      "vAvg": 418.7,
+      "vDeviation": 0.9,
+      "vMax": 422.9,
+      "vMin": 414.4
+     },
+     {
+      "amps": 258.2,
+      "cause": "",
+      "causeKey": "normal",
+      "current": 0,
+      "iUnbalance": 6.9,
+      "id": "ups-03",
+      "neutral": 0,
+      "neutralA": 14.2,
+      "panel": "UPS-03",
+      "sag": 0,
+      "status": "warning",
+      "swell": 0,
+      "table": "MFM_027",
+      "vAvg": 410.6,
+      "vDeviation": -1.05,
+      "vMax": 414.2,
+      "vMin": 405.8
+     },
+     {
+      "amps": 322.3,
+      "cause": "",
+      "causeKey": "normal",
+      "current": 0,
+      "iUnbalance": 7.5,
+      "id": "ups-04",
+      "neutral": 0,
+      "neutralA": 18.2,
+      "panel": "UPS-04",
+      "sag": 0,
+      "status": "warning",
+      "swell": 0,
+      "table": "MFM_033",
+      "vAvg": 415.6,
+      "vDeviation": 0.16,
+      "vMax": 419.8,
+      "vMin": 411.8
+     },
+     {
+      "amps": 265.9,
+      "cause": "",
+      "causeKey": "upsInrush",
+      "current": 0,
+      "iUnbalance": 6.3,
+      "id": "ups-05",
+      "neutral": 0,
+      "neutralA": 26.1,
+      "panel": "UPS-05",
+      "sag": 2,
+      "status": "danger",
+      "swell": 0,
+      "table": "MFM_034",
+      "vAvg": 403.2,
+      "vDeviation": -2.84,
+      "vMax": 406.8,
+      "vMin": 394.7
+     },
+     {
+      "amps": 342.7,
+      "cause": "",
+      "causeKey": "upsInrush",
+      "current": 0,
+      "iUnbalance": 6.6,
+      "id": "ups-06",
+      "neutral": 0,
+      "neutralA": 18.1,
+      "panel": "UPS-06",
+      "sag": 1,
+      "status": "warning",
+      "swell": 0,
+      "table": "MFM_035",
+      "vAvg": 409.2,
+      "vDeviation": -1.4,
+      "vMax": 413.4,
+      "vMin": 400.7
+     },
+     {
+      "amps": 140.3,
+      "cause": "",
+      "causeKey": "normal",
+      "current": 0,
+      "iUnbalance": 6.1,
+      "id": "bpdb-01",
+      "neutral": 0,
+      "neutralA": 6.9,
+      "panel": "BPDB-01",
+      "sag": 0,
+      "status": "success",
+      "swell": 0,
+      "table": "MFM_023",
+      "vAvg": 416,
+      "vDeviation": 0.23,
+      "vMax": 419.6,
+      "vMin": 412.2
+     },
+     {
+      "amps": 81,
+      "cause": "",
+      "causeKey": "capacitorStep",
+      "current": 0,
+      "iUnbalance": 5.4,
+      "id": "bpdb-02",
+      "neutral": 0,
+      "neutralA": 3.8,
+      "panel": "BPDB-02",
+      "sag": 0,
+      "status": "success",
+      "swell": 1,
+      "table": "MFM_061",
+      "vAvg": 417.2,
+      "vDeviation": 0.53,
+      "vMax": 421.4,
+      "vMin": 412.9
+     },
+     {
+      "amps": 110.9,
+      "cause": "",
+      "causeKey": "capacitorStep",
+      "current": 0,
+      "iUnbalance": 6.4,
+      "id": "hhf-01",
+      "neutral": 0,
+      "neutralA": 5.5,
+      "panel": "HHF-01",
+      "sag": 0,
+      "status": "warning",
+      "swell": 1,
+      "table": "MFM_024",
+      "vAvg": 418.1,
+      "vDeviation": 0.74,
+      "vMax": 421.7,
+      "vMin": 413.3
+     },
+     {
+      "amps": 91.4,
+      "cause": "",
+      "causeKey": "normal",
+      "current": 0,
+      "iUnbalance": 6.6,
+      "id": "hhf-02",
+      "neutral": 0,
+      "neutralA": 4.6,
+      "panel": "HHF-02",
+      "sag": 0,
+      "status": "success",
+      "swell": 0,
+      "table": "MFM_032",
+      "vAvg": 411.8,
+      "vDeviation": -0.78,
+      "vMax": 416,
+      "vMin": 408
+     }
+    ]
+   },
+   "pres": {
+    "ariaLabel": "Other panels events",
+    "causeVocab": {
+     "capacitorStep": "light-load or capacitor step",
+     "inrushSag": "inrush sag with phase load shift",
+     "loadRedistribution": "phase load redistribution",
+     "neutralStress": "nonlinear load neutral stress",
+     "normal": "normal",
+     "upsInrush": "UPS inrush / bus dip",
+     "upstreamDip": "upstream voltage dip"
+    },
+    "columnOrder": [
+     "panel",
+     "events",
+     "voltage",
+     "vDeviation",
+     "current",
+     "iUnbalance",
+     "cause"
+    ],
+    "columns": [
+     {
+      "fit": {
+       "fit": true,
+       "fitMax": 280,
+       "fitMin": 120
+      },
+      "header": {
+       "label": "Panel Name"
+      },
+      "id": "panel"
+     },
+     {
+      "align": "center",
+      "header": {
+       "label": "Voltage",
+       "unit": "V"
+      },
+      "id": "voltage",
+      "unit": "V"
+     },
+     {
+      "align": "center",
+      "decimals": 1,
+      "header": {
+       "label": "V- Deviation"
+      },
+      "id": "vDeviation",
+      "percentUnit": "%"
+     },
+     {
+      "align": "center",
+      "header": {
+       "label": "Current",
+       "unit": "A"
+      },
+      "id": "current",
+      "unit": "A"
+     },
+     {
+      "align": "center",
+      "decimals": 1,
+      "header": {
+       "label": "I- Unbalance"
+      },
+      "id": "iUnbalance",
+      "percentUnit": "%"
+     },
+     {
+      "fit": {
+       "fit": true,
+       "fitMax": 200,
+       "fitMin": 110
+      },
+      "header": {
+       "label": "Causes"
+      },
+      "id": "cause"
+     }
+    ],
+    "eventColumn": {
+     "align": "center",
+     "descriptor": "event",
+     "shortByMode": {
+      "current": "Current",
+      "neutral": "Neutral",
+      "sag": "Sag",
+      "swell": "Swell"
+     }
+    },
+    "eventModeOrder": [
+     "sag",
+     "swell",
+     "current"
+    ],
+    "layout": {
+     "headerHeight": 28,
+     "maxRowHeight": 28,
+     "rowHeight": 20
+    },
+    "minWidth": 1240,
+    "palette": {
+     "rowHoverBg": "#fefefb",
+     "rowSelectedBg": "#f5e6c8",
+     "rowSelectedBorder": "#7a4e13",
+     "rowSelectedText": "#5e3a0d"
+    },
+    "panelLabelReplacements": [
+     {
+      "from": "-0",
+      "to": "-"
+     }
+    ],
+    "singleModeMinWidth": 900,
+    "titleConnector": " at ",
+    "titlePrefix": "Other Panels Event"
+   },
+   "selectedPanelId": "ups-01"
+  },
+  "variant": "baseline"
+ },
  "payload_stripped": {
   "table": {
    "mode": null,

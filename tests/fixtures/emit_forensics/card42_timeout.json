@@ -1,9 +1,479 @@
 {
  "card_id": 42,
  "clamped": false,
+ "data_paths": [
+  "data.yMax",
+  "data.yMin",
+  "data.anomalies",
+  "data.dipEvents",
+  "data.actualLoad",
+  "data.surgeEvents",
+  "data.expectedLoad",
+  "data.expectedRange",
+  "data.loadFactorPct",
+  "data.maxThresholdPct",
+  "data.presentValuePct"
+ ],
  "error_kind": "timeout",
  "finish_reason": null,
  "obs_id": 5296,
+ "payload": {
+  "data": {
+   "actualLoad": [
+    {
+     "time": "00:00",
+     "value": 68
+    },
+    {
+     "time": "01:00",
+     "value": 67
+    },
+    {
+     "time": "02:00",
+     "value": 68
+    },
+    {
+     "time": "03:00",
+     "value": 78
+    },
+    {
+     "time": "04:00",
+     "value": 68
+    },
+    {
+     "time": "05:00",
+     "value": 69
+    },
+    {
+     "time": "06:00",
+     "value": 68
+    },
+    {
+     "time": "07:00",
+     "value": 67
+    },
+    {
+     "time": "08:00",
+     "value": 78
+    },
+    {
+     "time": "09:00",
+     "value": 68
+    },
+    {
+     "time": "10:00",
+     "value": 63
+    },
+    {
+     "time": "11:00",
+     "value": 69
+    },
+    {
+     "time": "12:00",
+     "value": 70
+    },
+    {
+     "time": "13:00",
+     "value": 74
+    },
+    {
+     "time": "14:00",
+     "value": 70
+    },
+    {
+     "time": "15:00",
+     "value": 69
+    },
+    {
+     "time": "16:00",
+     "value": 60
+    },
+    {
+     "time": "17:00",
+     "value": 69
+    },
+    {
+     "time": "18:00",
+     "value": 68
+    },
+    {
+     "time": "19:00",
+     "value": 68
+    },
+    {
+     "time": "20:00",
+     "value": 68
+    },
+    {
+     "time": "21:00",
+     "value": 68
+    },
+    {
+     "time": "22:00",
+     "value": 69
+    }
+   ],
+   "anomalies": [
+    {
+     "afterPct": 71,
+     "beforePct": 69,
+     "detail": "Welding bay overlapped the press line \u2014 demand surged +25% above the expected band, peaking at 85% of capacity before recovering.",
+     "deviationPct": 25,
+     "durationMs": 180,
+     "eventPct": 85,
+     "expectedPct": 68,
+     "label": "Welding\nOverlap (+25%)",
+     "occurredAtDate": "15 Apr, 2025",
+     "occurredAtTime": "02:30:12",
+     "peakLoadPct": 85,
+     "time": "03:00",
+     "title": "Welding Overlap",
+     "type": "surge",
+     "value": 78
+    },
+    {
+     "afterPct": 69,
+     "beforePct": 68,
+     "detail": "Motor start created a short surge above the expected demand band.",
+     "deviationPct": 12,
+     "durationMs": 140,
+     "eventPct": 78,
+     "expectedPct": 67,
+     "label": "Motor start\n(+12)",
+     "occurredAtDate": "15 Apr, 2025",
+     "occurredAtTime": "08:10:44",
+     "peakLoadPct": 78,
+     "time": "08:00",
+     "title": "Motor start",
+     "type": "surge",
+     "value": 78
+    },
+    {
+     "afterPct": 70,
+     "beforePct": 70,
+     "detail": "Repeated compressor cycling pushed load briefly above the expected range.",
+     "deviationPct": 12,
+     "durationMs": 160,
+     "eventPct": 74,
+     "expectedPct": 68,
+     "label": "Compressor\ncycling (+12)",
+     "occurredAtDate": "15 Apr, 2025",
+     "occurredAtTime": "13:14:02",
+     "peakLoadPct": 74,
+     "time": "13:00",
+     "title": "Compressor cycling",
+     "type": "surge",
+     "value": 74
+    },
+    {
+     "afterPct": 69,
+     "beforePct": 68,
+     "detail": "Early shutdown caused a load dip below the expected operating range.",
+     "deviationPct": -25,
+     "durationMs": 220,
+     "eventPct": 63,
+     "expectedPct": 67,
+     "label": "Early Shut\ndown (+25%)",
+     "occurredAtDate": "15 Apr, 2025",
+     "occurredAtTime": "10:24:18",
+     "peakLoadPct": 63,
+     "time": "10:00",
+     "title": "Early Shut down",
+     "type": "dip",
+     "value": 63
+    },
+    {
+     "afterPct": 69,
+     "beforePct": 69,
+     "detail": "Compressor trip created a visible dip and widened variance from expected load.",
+     "deviationPct": -25,
+     "durationMs": 260,
+     "eventPct": 60,
+     "expectedPct": 67,
+     "label": "Compressor\ntrip (+25%)",
+     "occurredAtDate": "15 Apr, 2025",
+     "occurredAtTime": "16:18:30",
+     "peakLoadPct": 60,
+     "time": "16:00",
+     "title": "Compressor trip",
+     "type": "dip",
+     "value": 60
+    }
+   ],
+   "colors": {
+    "actual": "#4A7494",
+    "dip": "#D6EBF3",
+    "expected": "#D8A04D",
+    "maxThreshold": "#ef4444",
+    "rangeFill": "#D8A04D99",
+    "surge": "#C13A38"
+   },
+   "dipEvents": 2,
+   "expectedLoad": [
+    {
+     "time": "00:00",
+     "value": 67
+    },
+    {
+     "time": "01:00",
+     "value": 67
+    },
+    {
+     "time": "02:00",
+     "value": 67
+    },
+    {
+     "time": "03:00",
+     "value": 68
+    },
+    {
+     "time": "04:00",
+     "value": 68
+    },
+    {
+     "time": "05:00",
+     "value": 68
+    },
+    {
+     "time": "06:00",
+     "value": 69
+    },
+    {
+     "time": "07:00",
+     "value": 69
+    },
+    {
+     "time": "08:00",
+     "value": 69
+    },
+    {
+     "time": "09:00",
+     "value": 70
+    },
+    {
+     "time": "10:00",
+     "value": 70
+    },
+    {
+     "time": "11:00",
+     "value": 70
+    },
+    {
+     "time": "12:00",
+     "value": 69
+    },
+    {
+     "time": "13:00",
+     "value": 69
+    },
+    {
+     "time": "14:00",
+     "value": 68
+    },
+    {
+     "time": "15:00",
+     "value": 68
+    },
+    {
+     "time": "16:00",
+     "value": 68
+    },
+    {
+     "time": "17:00",
+     "value": 68
+    },
+    {
+     "time": "18:00",
+     "value": 68
+    },
+    {
+     "time": "19:00",
+     "value": 67
+    },
+    {
+     "time": "20:00",
+     "value": 67
+    },
+    {
+     "time": "21:00",
+     "value": 67
+    },
+    {
+     "time": "22:00",
+     "value": 67
+    }
+   ],
+   "expectedRange": [
+    {
+     "max": 70.5,
+     "min": 63.5,
+     "time": "00:00"
+    },
+    {
+     "max": 70.5,
+     "min": 63.5,
+     "time": "01:00"
+    },
+    {
+     "max": 70.5,
+     "min": 63.5,
+     "time": "02:00"
+    },
+    {
+     "max": 71.5,
+     "min": 64.5,
+     "time": "03:00"
+    },
+    {
+     "max": 71.5,
+     "min": 64.5,
+     "time": "04:00"
+    },
+    {
+     "max": 71.5,
+     "min": 64.5,
+     "time": "05:00"
+    },
+    {
+     "max": 72.5,
+     "min": 65.5,
+     "time": "06:00"
+    },
+    {
+     "max": 72.5,
+     "min": 65.5,
+     "time": "07:00"
+    },
+    {
+     "max": 72.5,
+     "min": 65.5,
+     "time": "08:00"
+    },
+    {
+     "max": 73.5,
+     "min": 66.5,
+     "time": "09:00"
+    },
+    {
+     "max": 73.5,
+     "min": 66.5,
+     "time": "10:00"
+    },
+    {
+     "max": 73.5,
+     "min": 66.5,
+     "time": "11:00"
+    },
+    {
+     "max": 72.5,
+     "min": 65.5,
+     "time": "12:00"
+    },
+    {
+     "max": 72.5,
+     "min": 65.5,
+     "time": "13:00"
+    },
+    {
+     "max": 71.5,
+     "min": 64.5,
+     "time": "14:00"
+    },
+    {
+     "max": 71.5,
+     "min": 64.5,
+     "time": "15:00"
+    },
+    {
+     "max": 71.5,
+     "min": 64.5,
+     "time": "16:00"
+    },
+    {
+     "max": 71.5,
+     "min": 64.5,
+     "time": "17:00"
+    },
+    {
+     "max": 71.5,
+     "min": 64.5,
+     "time": "18:00"
+    },
+    {
+     "max": 70.5,
+     "min": 63.5,
+     "time": "19:00"
+    },
+    {
+     "max": 70.5,
+     "min": 63.5,
+     "time": "20:00"
+    },
+    {
+     "max": 70.5,
+     "min": 63.5,
+     "time": "21:00"
+    },
+    {
+     "max": 70.5,
+     "min": 63.5,
+     "time": "22:00"
+    }
+   ],
+   "insight": "Three load surges and two dips today \u2014 peak 85% of capacity, load factor 76%; the largest a +25% welding overlap at 03:00.",
+   "labels": {
+    "aboveLabel": "Above",
+    "afterLabel": "After",
+    "beforeLabel": "Before",
+    "belowLabel": "Below",
+    "closeAriaLabel": "Close event details",
+    "deviationLabel": "Deviation",
+    "dipTypeLabel": "Dip Event",
+    "durationLabel": "Duration",
+    "durationUnit": "ms",
+    "eventFallbackText": "Event detail is not available for this anomaly.",
+    "eventStatLabel": "Event",
+    "expectedLabel": "Expected",
+    "legendActualLabel": "Actual Load",
+    "legendDipLabel": "Dip events",
+    "legendExpectedLabel": "Expected load",
+    "legendRangeLabel": "Expected Range",
+    "legendSurgeLabel": "Surge events",
+    "loadFactorLabel": "Load Factor",
+    "maxLabel": "Max",
+    "pctUnit": "%",
+    "peakLoadLabel": "Peak Load",
+    "presentAriaPrefix": "Present load ",
+    "presentLabel": "Present",
+    "surgeTypeLabel": "Surge Event",
+    "title": "Load Anomalies",
+    "tooltipDipLabel": "Dip event",
+    "tooltipSurgeLabel": "Surge event",
+    "yAxisUnit": "%"
+   },
+   "loadFactorPct": 76,
+   "maxThresholdPct": 85,
+   "period": "Today",
+   "periodOptions": [
+    "Today",
+    "Weekly",
+    "Monthly",
+    "Quarterly"
+   ],
+   "presentValuePct": 70,
+   "surgeEvents": 3,
+   "yMax": 90,
+   "yMin": 55
+  },
+  "focused": {
+   "Actual Load": false,
+   "Dip events": false,
+   "Expected Range": false,
+   "Expected load": false,
+   "Surge events": false
+  },
+  "variant": "baseline"
+ },
  "payload_stripped": {
   "data": {
    "actualLoad": [

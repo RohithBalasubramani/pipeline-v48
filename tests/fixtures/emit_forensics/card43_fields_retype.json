@@ -1,9 +1,36 @@
 {
  "card_id": 43,
  "clamped": false,
+ "data_paths": [
+  "metrics[0].value",
+  "metrics[1].value",
+  "metrics[2].value"
+ ],
  "error_kind": null,
  "finish_reason": "stop",
  "obs_id": 2590,
+ "payload": {
+  "hasSummary": true,
+  "metrics": [
+   {
+    "label": "Unbalanced",
+    "unit": "%",
+    "value": "2.3"
+   },
+   {
+    "label": "Max gap",
+    "note": "(B-Y)",
+    "unit": "V",
+    "value": "9"
+   },
+   {
+    "label": "Rate Change",
+    "unit": "V/min",
+    "value": "+2.4"
+   }
+  ],
+  "variant": "baseline"
+ },
  "payload_stripped": {
   "hasSummary": true,
   "metrics": [
