@@ -278,6 +278,15 @@ def _run_pipeline_inner(prompt, *, asset_id=None, db=None, run_id=None, layer1a=
     if out.get("data_unavailable"):
         stage(run_id, "degrade", kind="data_unavailable", layer=(out.get("degrade") or {}).get("layer"))
         obs_trace.set_degradation(data_unavailable=True, degrade=out.get("degrade"))
+    else:
+        # PIPELINE-ERROR honest terminal [audit 2026-07-14, 01 F1]: a NON-outage 1a/1b exception left the layer None —
+        # without this the run ships ok=True with 0 cards and no machine reason (the silent-empty-page hole). The flag
+        # rides the existing data_unavailable wire; kind="pipeline_error" keeps it distinct from an outage.
+        from run.error_terminal import apply as _apply_error_terminal
+        _apply_error_terminal(out)
+        if out.get("data_unavailable"):
+            stage(run_id, "degrade", kind="pipeline_error", layer=(out.get("degrade") or {}).get("layer"))
+            obs_trace.set_degradation(data_unavailable=True, degrade=out.get("degrade"))
 
     l1a, l1b = out["layer1a"] or {}, out["layer1b"] or {}
     if out["layer1a"] is not None:
@@ -405,6 +414,13 @@ def _run_pipeline_inner(prompt, *, asset_id=None, db=None, run_id=None, layer1a=
                 out["notes"]["loop2"] = (f"{_a.get('name') or 'the resolved asset'} has no logged data — every card "
                                          f"renders its real component with per-leaf-null leaves (honest empty). "
                                          f"{_alts} data-bearing alternative(s) offered in the picker.")
+
+    # PIPELINE-ERROR terminal, layer2 leg: _reflect_loop's except leaves layer2=None with errors.layer2 set — without
+    # this the response ships ok=True with unfilled cards and no machine reason. [audit 2026-07-14, 01 F1]
+    from run.error_terminal import apply as _apply_error_terminal
+    if not out.get("data_unavailable") and _apply_error_terminal(out).get("data_unavailable"):
+        stage(run_id, "degrade", kind="pipeline_error", layer=(out.get("degrade") or {}).get("layer"))
+        obs_trace.set_degradation(data_unavailable=True, degrade=out.get("degrade"))
 
     record_notes(run_id, out["notes"])                          # persist loop1/loop2 notes for later user-facing explain
     _replay_pipeline_out(out)                                   # replay artifact: the lane's full stage-level out dict
