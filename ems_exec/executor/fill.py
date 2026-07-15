@@ -38,7 +38,7 @@ from config import derivation_binding as _deriv
 # ── the atomic executor seams, re-exported byte-compatibly (the facade contract) ──────────────────────────────────────
 from ems_exec.executor.paths import (                                                        # noqa: F401
     _toks, _leaf_at, _set_path, _has_path, _set_leaf_typed, _leaf_path_for)
-from ems_exec.executor.verify import _verify, _quantity_of, _polarity_conflict                # noqa: F401
+from ems_exec.executor.verify import _verify, _quantity_of, _polarity_conflict, polarity_sibling_fn  # noqa: F401
 from ems_exec.executor.derived import (                                                       # noqa: F401
     _INTEGRATION_POWER_COLS, _PERIOD_COUNTER_COLS, _site_calendar_start, _period_starts, _period_deltas,
     _derived_key, _run_derived)
@@ -155,6 +155,21 @@ def _field_value(field, asset_table, present_cols, *, latest_row, ratings, windo
         # MEASURES; the slot's unit/label declares what it MEANS. When they disagree the leaf honest-blanks rather than
         # rendering the real active delta under an MVARh label. Same-polarity / undisambiguated slots pass through.
         if _polarity_conflict(field, fn_key):
+            # POLARITY SUBSTITUTE [audit 13 F2, knob fill.polarity_fn_substitute]: ~55% of quantity_mismatch blanks
+            # were UPS-class meters that DO log the right register — grounding just bound the wrong-polarity energy
+            # fn. Swap in the explicit registry sibling that computes the slot's OWN quantity (honest: the slot's
+            # unit/label is the contract; the fn was the mislabel). No sibling / knob off → honest blank as today.
+            _sub = None
+            try:
+                from config.app_config import flag_on
+                if flag_on("fill.polarity_fn_substitute", True):
+                    _sub = polarity_sibling_fn(field, fn_key, asset_table)
+            except Exception:
+                _sub = None
+            if _sub:
+                _degrade.note("polarity_substitute", f"{fn_key} -> {_sub} (slot={field.get('slot')})")
+                raw, _fid = _run_derived(_sub, asset_table, window)
+                return _verify(raw, quantity=quantity)
             return None
         raw, _fid = _run_derived(fn_key, asset_table, window)
         return _verify(raw, quantity=quantity)

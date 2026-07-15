@@ -250,6 +250,30 @@ _QUANTITY = {
     "breakerOverloadPct": "load-percent-of-rated",
 }
 
+# POLARITY SIBLINGS [audit 2026-07-14, 13 F2 quantity_mismatch]: for an fn the polarity guard refuses on a slot,
+# the SAME-MEANING registry fn of the slot's polarity (active↔reactive↔apparent). EXPLICIT rows, never inferred —
+# temporal variants make generic polarity matching ambiguous (windowEnergyKwh's reactive twin is the cumulative
+# reactiveEnergyMvarh, NOT one of the Today/Week/Month deltas). Substitution is honest by construction: the sibling
+# computes exactly the quantity the slot's own unit/label names; the emitted fn was the mislabel. Editable table —
+# adding a pair is one row; an fn absent here (or a missing polarity) keeps today's honest blank.
+_POLARITY_SIBLINGS = {
+    "windowEnergyKwh":            {"reactive": "reactiveEnergyMvarh", "apparent": "cumulativeApparentMvah"},
+    "activeEnergyMvah":           {"reactive": "reactiveEnergyMvarh", "apparent": "cumulativeApparentMvah"},
+    "reactiveEnergyMvarh":        {"active": "activeEnergyMvah", "apparent": "cumulativeApparentMvah"},
+    "cumulativeApparentMvah":     {"active": "activeEnergyMvah", "reactive": "reactiveEnergyMvarh"},
+    "activeEnergyTodayKwh":       {"reactive": "reactiveEnergyTodayKvarh", "apparent": "apparentEnergyTodayKvah"},
+    "activeEnergyThisWeekKwh":    {"reactive": "reactiveEnergyThisWeekKvarh", "apparent": "apparentEnergyThisWeekKvah"},
+    "activeEnergyThisMonthKwh":   {"reactive": "reactiveEnergyThisMonthKvarh", "apparent": "apparentEnergyThisMonthKvah"},
+    "reactiveEnergyTodayKvarh":   {"active": "activeEnergyTodayKwh", "apparent": "apparentEnergyTodayKvah"},
+    "reactiveEnergyThisWeekKvarh": {"active": "activeEnergyThisWeekKwh", "apparent": "apparentEnergyThisWeekKvah"},
+    "reactiveEnergyThisMonthKvarh": {"active": "activeEnergyThisMonthKwh", "apparent": "apparentEnergyThisMonthKvah"},
+    "apparentEnergyTodayKvah":    {"active": "activeEnergyTodayKwh", "reactive": "reactiveEnergyTodayKvarh"},
+    "apparentEnergyThisWeekKvah": {"active": "activeEnergyThisWeekKwh", "reactive": "reactiveEnergyThisWeekKvarh"},
+    "apparentEnergyThisMonthKvah": {"active": "activeEnergyThisMonthKwh", "reactive": "reactiveEnergyThisMonthKvarh"},
+    "energyFromPowerKwh":         {"reactive": "reactiveEnergyFromPowerKvarh"},
+    "reactiveEnergyFromPowerKvarh": {"active": "energyFromPowerKwh"},
+}
+
 
 # SOURCE-GATED equipment fns [fatal R2-2]: while equipment.derivations.enabled is off these are ABSENT from every
 # catalog() rendering — no new library line, no hidden-count drift, no new trailer on certified cards — and each fn

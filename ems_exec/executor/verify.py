@@ -97,6 +97,39 @@ def _fn_output_polarity(fn_key):
         return None
 
 
+def polarity_sibling_fn(field, fn_key, asset_table=None):
+    """The registry fn to SUBSTITUTE when _polarity_conflict refused `fn_key` on this slot: the explicit
+    _POLARITY_SIBLINGS row for (fn, slot-polarity), verified computable on this asset (its derivation_binding base
+    columns present when the table is known). None → keep today's honest blank (never guess).
+
+    Honesty note [audit 13 F2]: substitution computes exactly the quantity the slot's OWN unit/label names — the
+    emitted fn was the mislabel (grounding kept proposing active-energy fns for reactive/apparent slots; the guard
+    then blanked real UPS data the meter measures). Same deterministic-rescue class as scalar_mean_fill; the
+    decision is recorded via _degrade.note at the call site."""
+    try:
+        metric = field.get("metric")
+        metric_signal = None if (metric and fn_key and str(metric) == str(fn_key)) else metric
+        slot_pol = _quantity_polarity(field.get("quantity")) or _polarity_of_token(
+            field.get("unit"), field.get("label"), field.get("quantity"), metric_signal)
+        if not slot_pol:
+            return None
+        from ems_exec.derivations import registry as _reg
+        sib = (getattr(_reg, "_POLARITY_SIBLINGS", {}).get(fn_key) or {}).get(slot_pol)
+        if not sib:
+            return None
+        if asset_table:
+            from config.derivation_binding import binding
+            b = binding(sib)
+            if b and b.get("base_columns"):
+                from ems_exec.data.neuract import present_columns
+                present = present_columns(asset_table) or frozenset()
+                if not set(b["base_columns"]) - {"ts"} <= set(present):
+                    return None                    # the sibling can't compute on this meter — honest blank stands
+        return sib
+    except Exception:
+        return None
+
+
 def _polarity_conflict(field, fn_key):
     """True when the SLOT's declared polarity (unit/label/quantity token) and the bound FN's output polarity are BOTH
     known and DISAGREE — a fab-by-mislabel binding (active-energy fn → reactive-energy slot). Both unknown / either
