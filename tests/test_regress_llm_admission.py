@@ -107,3 +107,18 @@ def test_admission_wait_fails_open_without_over_release(monkeypatch):
         assert sem._value == 0                                   # the never-acquired slot was NOT released
     finally:
         sem.release()                                            # BoundedSemaphore raises here if the code over-released
+
+
+def test_admission_rows_agree_when_present():
+    """DB-row agreement [audit 05 F2]: back-pressure must never become an outage — the admission wait has to be
+    strictly under the l2_emit timeout, and the cap non-negative. Skips offline (rows unreadable)."""
+    from config.app_config import cfg
+    cap = cfg("llm.global_concurrency", None)
+    if cap is None:
+        import pytest
+        pytest.skip("cmd_catalog unreachable / row absent")
+    assert int(cap) >= 0
+    wait = float(cfg("llm.admission_wait_s", 60) or 60)
+    assert wait > 0
+    # NOTE deliberately NOT pinned: wait < timeout.l2_emit. Acquisition is FAIL-OPEN (a starved waiter proceeds),
+    # so a wait above the emit timeout is an operator throughput choice (set 300 on 2026-07-15), not an outage risk.

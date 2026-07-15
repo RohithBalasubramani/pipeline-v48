@@ -51,7 +51,8 @@ def _new(readonly):
     """A fresh autocommit psycopg2 connection to neuract (readonly session when asked); None on any connect failure."""
     import psycopg2
     try:
-        c = psycopg2.connect(**_dsn.conn_kwargs())
+        from data.connect_retry import with_retry              # bounded outage-retry (db.connect_retry_s) [audit 01 F3]
+        c = with_retry(lambda: psycopg2.connect(**_dsn.conn_kwargs()), "neuract")
         c.autocommit = True
         if readonly:
             try:

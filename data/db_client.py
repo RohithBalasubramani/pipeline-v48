@@ -64,7 +64,8 @@ def _checkout(db):
         idle = _POOL.get(db)
         if idle:
             return idle.pop(), False
-    return pg_connect(db), True
+    from data.connect_retry import with_retry                  # bounded outage-retry (db.connect_retry_s) [audit 01 F3]
+    return with_retry(lambda: pg_connect(db), db), True
 
 
 def _checkin(db, conn):
@@ -164,7 +165,8 @@ def _q_pool(db, sql):
             # stale pooled connection (tunnel flap while idle) — one retry on a genuinely fresh connect; a failure
             # THERE is the honest outage and raises below.
             try:
-                conn2 = pg_connect(db)
+                from data.connect_retry import with_retry      # bounded outage-retry [audit 01 F3]
+                conn2 = with_retry(lambda: pg_connect(db), db)
             except Exception as e2:
                 return _q_fail(db, sql, t0, e2)
             try:
