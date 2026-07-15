@@ -464,6 +464,13 @@ def main():
                       file=sys.stderr, flush=True)
         except Exception:
             pass
+        # config-defaults net [audit 14 F3]: a default key pointing at no catalog row silently kills its fallback
+        try:
+            from validate.config_defaults_check import check as _defaults_check
+            for issue in _defaults_check():
+                print(f"[host] WARN config default: {issue}", file=sys.stderr, flush=True)
+        except Exception:
+            pass
     import threading
     threading.Thread(target=_drift_check, daemon=True).start()
     srv = _Server(("0.0.0.0", PORT), Handler)
