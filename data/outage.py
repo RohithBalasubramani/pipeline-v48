@@ -23,6 +23,11 @@ _OUTAGE_FINGERPRINTS = (
     "terminating connection",
     "the database system is",          # starting up / shutting down / in recovery
     "llm transport/parse failure",     # layer1a route fail-closed raise (vLLM :8200 outage / unparseable completion)
+    # libpq wire-desync family: the tunnel died MID-QUERY, so libpq mis-parses the truncated response stream.
+    # Engine-independent (seen on both the psql subprocess and psycopg2/pandas paths). [audit 2026-07-14, 01 F2]
+    "lost synchronization with server",
+    "unexpected field count",
+    'insufficient data in "d" message',
 )
 
 

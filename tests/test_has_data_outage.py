@@ -90,3 +90,27 @@ def test_runtime_relation_missing_stays_non_outage_fail_open(monkeypatch):
     counts = H.value_counts(_fresh(["t_rel_a"]))
     assert counts == {"t_rel_a": H.VALUE_MIN}
     assert H.tables_with_data(_fresh(["t_rel_b"])) == {"t_rel_b"}
+
+
+# --- libpq wire-desync family (audit 2026-07-14, 01 F2): the tunnel died MID-QUERY, so libpq mis-parses the ---------
+# truncated response stream. These wordings are transport failures (engine-independent) and MUST fingerprint as
+# outages so the degrade gate fires the honest data_unavailable terminal instead of a fail-open zero-validation run.
+
+def test_libpq_desync_wordings_are_outages():
+    from data.outage import is_outage_error
+    assert is_outage_error("lost synchronization with server: got message type Z, length 847842554")
+    assert is_outage_error('unexpected field count in "D" message')
+    assert is_outage_error('Execution failed on sql \'SELECT "timestamp_utc" ... LIMIT 500\': '
+                           'insufficient data in "D" message')
+    # the logic-error split stays intact: missing relation is NOT an outage
+    assert not is_outage_error('relation "neuract.t_ghost" does not exist')
+
+
+def test_desync_wording_raises_out_of_value_counts(monkeypatch):
+    def desync_q(db, sql):
+        raise RuntimeError("DB error (target_version1): lost synchronization with server: got message type Z")
+    monkeypatch.setattr(H, "q", desync_q)
+    with pytest.raises(RuntimeError, match="lost synchronization"):
+        H.value_counts(_fresh(["t_desync_a"]))
+    with pytest.raises(RuntimeError, match="lost synchronization"):
+        H.tables_with_data(_fresh(["t_desync_b"]))
