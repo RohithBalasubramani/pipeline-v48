@@ -42,6 +42,26 @@ def _title(l1a, cid):
     return None
 
 
+def _gap_frac(trigger, l2):
+    """The reflect-floor trigger fraction (DB knob reflect.gap_weight) [T1-6]. 'count' (default) = len(trigger)/len(l2),
+    byte-identical to before. 'area' weights each card by its card_grid_size grid AREA (missing size / DB outage →
+    weight 1.0, degrading toward the count fraction) so ONE huge failed card can cross the floor a 1-of-N count never
+    would. Keys the trigger set by object identity so the existing (list-of-l2-values, dict-of-cid→value) call shape is
+    untouched. reflect.min_gap_frac unchanged."""
+    if str(cfg("reflect.gap_weight", "count")).strip().lower() != "area":
+        return len(trigger) / max(len(l2), 1)
+    def _area(cid):
+        try:
+            from layer2.catalog.card_grid_size import read as _sz
+            s = _sz(cid) or {}
+            return float((s.get("width_px") or 0) * (s.get("height_px") or 0)) or 1.0
+        except Exception:
+            return 1.0
+    total = sum(_area(cid) for cid in l2) or 1.0
+    trig_ids = {id(o) for o in trigger}
+    return sum(_area(cid) for cid, o in l2.items() if id(o) in trig_ids) / total
+
+
 def _validate(out, db, run_id):
     """THE pre-Layer-2 validation pass (PASS 1 of the two-pass contract — see validate/build.py). Annotate-only on a
     NON-outage exception; an outage-shaped failure is re-inspected by the degrade gate (fail-open hole closed)."""
@@ -163,7 +183,7 @@ def _reflect_loop(out, prompt, db, run_id, no_reroute=False, lane_salt=""):
         # TRIGGER-FRACTION GATE (DB knob reflect.min_gap_frac): ONE spurious trigger card must not re-route a whole
         # healthy page — below the threshold the affected cards honest-blank PER-LEAF (per-leaf degradation mandate) and
         # the run records why, instead of the historical 1-of-N whole-page re-route. [hardening: reflect loop trigger]
-        gap_frac = len(trigger) / max(len(l2), 1)
+        gap_frac = _gap_frac(trigger, l2)                       # T1-6: count (default) or area-weighted
         min_frac = float(cfg("reflect.min_gap_frac", 0.34))
         if gap_frac < min_frac:
             out["notes"]["loop2"] = (f"{len(trigger)} of {len(l2)} cards "
@@ -373,6 +393,27 @@ def _run_pipeline_inner(prompt, *, asset_id=None, db=None, run_id=None, layer1a=
         # TRUE in `out` (honest telemetry); it just no longer outranks the more specific no_data explanation.
         asset_pinned = (asset_resolved and (not out["validation_blocked"] or out["asset_no_data"]))
         out["asset_pending"] = (not asset_resolved and not out["validation_blocked"])
+        # R9 [T1-7]: a CONFIDENTLY resolved asset (how in RESOLVED_WITH_DATA, i.e. asset_resolved ∧ not no_data) whose
+        # basket validation failed WHOLESALE (n_columns>0 ∧ n_pass==0) is NOT a "which asset?" question — the user
+        # named it; re-picking cannot repair failing columns, so the picker is a dead end. Route to the honest
+        # data_unavailable terminal (the same lane as an infra outage) instead. no_data keeps its own skeleton lane.
+        if asset_resolved and out["validation_blocked"] and not out["asset_no_data"] and not asset_pinned:
+            out["data_unavailable"] = True
+            out["degrade"] = {"kind": "data_unavailable", "layer": "validation",
+                              "detail": "asset resolved by name; every basket column failed validation"}
+            try:
+                from config.reason_templates import reason as _reason
+                out["degrade"]["reason"] = _reason("data_unavailable", layer="validation")
+            except Exception:
+                out["degrade"]["reason"] = "data_unavailable"
+            out["asset_pending"] = False
+            stage(run_id, "asset_gate", pinned=False, how=how, no_data=False, validation_blocked=True,
+                  decision="VALIDATION-FAIL → data_unavailable terminal (resolved asset, no repairable columns)")
+            stage(run_id, "degrade", kind="data_unavailable", layer="validation", how=how)
+            obs_trace.set_degradation(data_unavailable=True, validation_blocked=True)
+            record_notes(run_id, out["notes"])
+            _replay_pipeline_out(out)
+            return out
         stage(run_id, "asset_gate", pinned=asset_pinned, how=how, no_data=out["asset_no_data"],
               validation_blocked=out["validation_blocked"], verdict=(out["validation"] or {}).get("verdict"),
               decision=("→ Layer 2 (no-data skeleton)" if (asset_pinned and out["asset_no_data"]) else
