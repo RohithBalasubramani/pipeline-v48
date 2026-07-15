@@ -105,11 +105,18 @@ body {
 .cc-status-livelabel { font-family: var(--font-sans); font-size: 10px; font-weight: 600; letter-spacing: 0.08em; color: var(--sage-700); }
 .cc-status-site { font-family: var(--font-mono); font-size: 11px; color: var(--brown-600); font-weight: 700; letter-spacing: 0.02em; }
 
-/* Layer-3 AI page summary — CMD_V2 AiSummary primitive (✦ gold sparkle + teal insight text), under the
-   validation bar. The card itself carries no chrome; only the placement + a subtle loading pulse live here. */
-.cc-summary { margin: 11px 16px 5px; }
+/* Footer row (bottom of the results view): the Layer-3 AI summary on the LEFT, powered-by mark on the RIGHT. */
+.cc-footer {
+  flex: none; display: flex; align-items: center; justify-content: space-between; gap: 20px;
+  padding: 9px 16px 11px; border-top: 1px solid var(--hairline); background: #f8f6f0;
+}
+/* Layer-3 AI page summary — CMD_V2 AiSummary primitive (✦ gold sparkle + teal insight text). No chrome; it just
+   fills the left of the footer, leaving the powered-by mark on the right. */
+.cc-summary { flex: 1; min-width: 0; }
 .cc-summary-loading { font-style: italic; opacity: 0.7; animation: cc-summary-pulse 1.2s ease-in-out infinite; }
 @keyframes cc-summary-pulse { 0%,100% { opacity: 0.4; } 50% { opacity: 0.8; } }
+/* inline powered-by (footer variant) — drop the fixed-corner pinning so it rides the footer flex row on the right */
+.cc-powered-inline { position: static; right: auto; bottom: auto; z-index: auto; flex: none; }
 
 /* Premier Energies brand mark (far-right, left divider) — mirrors CMD_V2 HeaderBrandLogo */
 .cc-brand { flex: none; margin-left: auto; display: flex; align-items: center; padding-left: 16px; border-left: 1px solid var(--hairline); }
