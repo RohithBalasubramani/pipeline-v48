@@ -12,16 +12,45 @@ def _fn_quantity_map():
         return {}
 
 
+def _token_exact_on():
+    """quantity.family_token_exact [T2.2-S2, default off]: classify the cross-domain sides with domain.quantity_class's
+    TOKEN-EXACT slot_class/name_class + the weak/dimensional compatible() grants, instead of config.metrics
+    .quantity_family's longest-STEM SUBSTRING scan (which false-positives — 'boiler' -> temperature via the 'oil' stem
+    inside b-OIL-er). Off = the verbatim substring path (byte-identical). Never raises."""
+    try:
+        from config.app_config import flag_on
+        return flag_on("quantity.family_token_exact")
+    except Exception:
+        return False
+
+
 def _cross_domain_fields(di):
     """Data fields whose bound column/fn measures a DIFFERENT physical DOMAIN than the field's own slot — a wrong-KIND
     stand-in that must never claim "full" (E: a current column under a voltage-THD leaf; G: an energy fn in a 'years'
-    leaf). Generic + DB-driven: config.metrics.quantity_family over the SLOT PATH's own semantic (not the AI-authored
-    metric label, which the AI can bend to match its wrong pick) vs the bound column / fn quantity. A None family on
-    EITHER side → NOT flagged (no false positive on a legitimate same-quantity bind). Returns
-    [(slot, slot_family, source, source_family)]."""
-    from config.metrics import quantity_family, slot_semantic_label
+    leaf). Classifies the SLOT PATH's own semantic (not the AI-authored metric label, which the AI can bend to match its
+    wrong pick) vs the bound column / fn quantity. A None class on EITHER side → NOT flagged (no false positive on a
+    legitimate same-quantity bind). Returns [(slot, slot_class, source, source_class)].
+
+    [T2.2-S2] quantity.family_token_exact ON → domain.quantity_class token-exact classifiers + compatible() (no
+    substring false-positives); OFF → the verbatim config.metrics.quantity_family substring path (byte-identical)."""
     fn_q = _fn_quantity_map()
     out = []
+    if _token_exact_on():
+        from domain.quantity_class import slot_class, name_class, compatible
+        for f in (di.get("fields") or []):
+            if f.get("kind") in ("time", "const", "event"):
+                continue
+            slot = f.get("slot") or ""
+            scls = slot_class(slot)
+            if not scls:
+                continue
+            src = (f.get("fn") or "") if f.get("kind") == "derived" else (f.get("column") or "")
+            csrc = (fn_q.get(src) or src) if f.get("kind") == "derived" else src
+            ccls = name_class(csrc)
+            if ccls and not compatible(scls, ccls):        # weak/dimensional grants, not exact inequality
+                out.append((slot, scls, src, ccls))
+        return out
+    from config.metrics import quantity_family, slot_semantic_label
     for f in (di.get("fields") or []):
         if f.get("kind") in ("time", "const", "event"):
             continue

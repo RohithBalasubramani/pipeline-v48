@@ -178,7 +178,12 @@ def slot_semantic_label(slot):
 def quantity_family(text):
     """The mutually-exclusive physical DOMAIN of a slot label / column name / fn-quantity string, or None if
     unrecognized. Generic + DB-driven (DOMAIN_STEMS). None = unknown → callers MUST NOT flag a mismatch (no false
-    positive on a legitimate same-quantity bind whose name simply isn't in the stem map)."""
+    positive on a legitimate same-quantity bind whose name simply isn't in the stem map).
+
+    DEPRECATED [T2.2-S2]: this is a longest-STEM SUBSTRING scan and false-positives ('boiler' → temperature via the
+    'oil' stem inside b-OIL-er). layer2/cross_domain now prefers domain.quantity_class's TOKEN-EXACT slot_class/
+    name_class + compatible() behind quantity.family_token_exact. Retained only for the legacy flag-off path + the
+    outputs/emit_correctness_battery diagnostic; physical removal is deferred to T2.2-S5."""
     t = _re.sub(r"[^a-z0-9]+", "", (text or "").lower())
     if not t:
         return None
