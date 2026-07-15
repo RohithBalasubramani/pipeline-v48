@@ -56,3 +56,32 @@ def test_regulation_points_expands():
     assert "regulation.points" not in slots
     assert any(s.endswith("].voltageKv") for s in slots)
     assert any(s.endswith("].tap") for s in slots)
+
+
+# ── derived-sibling prune (vocab.derived_sibling_keys; audit 2026-07-14, 10 F2) ─────────────────────────────────────
+
+def test_derived_sibling_pruned_when_source_enumerated(monkeypatch):
+    """{label, value, displayValue} yields ONE bindable slot (…value) — the executor derives displayValue post-fill
+    (display.py fmt(value)), so enumerating it only manufactured unbound_by_emit noise."""
+    import layer2.emit.slot_catalog as SC
+    monkeypatch.setattr(SC, "vocab", lambda name, db_link=None: (
+        {"displayValue": "value"} if name == "derived_sibling_keys" else vocab_real(name, db_link)))
+    payload = {"reading": {"label": "Apparent Power", "unit": "kVA", "value": 12.5, "displayValue": "12.5"}}
+    slots = [e["slot"] for e in SC.build_slot_catalog(payload, None)]
+    assert "reading.value" in slots
+    assert "reading.displayValue" not in slots
+
+
+def test_derived_sibling_without_source_stays(monkeypatch):
+    """A displayValue with NO value sibling stays enumerable — nothing derives it."""
+    import layer2.emit.slot_catalog as SC
+    monkeypatch.setattr(SC, "vocab", lambda name, db_link=None: (
+        {"displayValue": "value"} if name == "derived_sibling_keys" else vocab_real(name, db_link)))
+    payload = {"reading": {"label": "Apparent Power", "displayValue": "12.5"}}
+    slots = [e["slot"] for e in SC.build_slot_catalog(payload, None)]
+    assert "reading.displayValue" in slots
+
+
+def vocab_real(name, db_link=None):
+    from config.vocab import vocab as _v
+    return _v(name, db_link)

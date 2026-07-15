@@ -212,6 +212,19 @@ def build_slot_catalog(default_payload, basket):
             if k == "bucket_series":
                 entry["n"] = _hint                              # element count (time buckets) — the executor distributes
             cat.append(entry)
+    # DERIVED-SIBLING PRUNE [audit 2026-07-14, 10 F2]: a leaf the executor derives post-fill from a sibling
+    # (display.py: displayValue = fmt(value)) must not be a bindable slot when its SOURCE sibling is also in the
+    # catalog — the AI can't bind it and reconcile stamped it unbound every run (~2.9% of all blank telemetry).
+    # DB-vocab-driven (vocab.derived_sibling_keys, {"derived": "source"}); a derived leaf with NO source sibling
+    # stays (nothing derives it). Post-pass so enumeration order can't matter.
+    sib = vocab("derived_sibling_keys") or {}
+    if isinstance(sib, dict) and sib:
+        sibmap = {str(k): str(v) for k, v in sib.items()}
+        def _derived_dup(slot):
+            last = _leaf_last_key(slot)
+            src = sibmap.get(last)
+            return bool(src) and slot.endswith(last) and (slot[: -len(last)] + src) in seen
+        cat = [e for e in cat if not _derived_dup(e["slot"])]
     return cat
 
 

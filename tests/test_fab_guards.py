@@ -71,6 +71,11 @@ def test_class2_all_null_column_blanks_logged_column_stays(monkeypatch):
     assert out["snapshot"]["vThd"]["valuePct"] is None             # all-null column → not a reading → blank
     assert out["snapshot"]["iThd"]["valuePct"] == 0.0             # logged column's real 0.0 stays
     assert any(g["cause"] == "null_column_reading" and g["column"] == "thd_compliance_v_avg" for g in gaps)
+    # the served SENTENCE names the real column, never the literal '{column}' placeholder [audit 11 F4]
+    g2 = next(g for g in gaps if g["cause"] == "null_column_reading")
+    assert "{column}" not in (g2.get("reason") or "")
+    if "thd" in (g2.get("reason") or ""):                          # DB template reachable → real column rendered
+        assert "thd_compliance_v_avg" in g2["reason"]
 
 
 def test_class2_db_outage_does_not_over_reach(monkeypatch):
@@ -637,7 +642,8 @@ def test_knob_trivial_int_magnitude_db_driven(monkeypatch):
 def test_knob_magnitude_units_db_driven_seeded(monkeypatch):
     # the magnitude-label carve-out reads its unit vocab from fab_guards.magnitude_units (now seeded). Code default
     # strips 'Rated: 131A' → 'Rated: —'. A DB row WITHOUT 'A' leaves the same label untouched (no unit match → pure
-    # chrome). Proves the unit set is DB-driven. NB: _mag_re()/_MAGNITUDE_RE are module-level — rebuild via reload.
+    # chrome). Proves the unit set is DB-driven. NB: the regex is now a vocab-keyed per-call cache (no module-level
+    # _MAGNITUDE_RE anymore); the reload is kept only to isolate this test's cfg stub from module state.
     import importlib
     import config.app_config as ac
     monkeypatch.setattr(ac, "cfg", _cfg_stub({"fab_guards.magnitude_units": ["kWh", "kW"]}))  # no bare 'A'

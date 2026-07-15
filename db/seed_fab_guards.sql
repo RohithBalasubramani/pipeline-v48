@@ -127,6 +127,10 @@ ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value, data_type = EXCLUDED.dat
 INSERT INTO reason_template (cause, template) VALUES
   ('epoch_ms_leak',
    '{metric}: a timestamp value leaked into a data/scale slot (epoch-millis magnitude) — not a measurement; blanked'),
+  -- TAXONOMY NOTE [audit 2026-07-14, 11 F4]: null_column_reading shares the DB predicate with the fill-time
+  -- structurally_null (column present, 100% NULL) but fires at a DIFFERENT stage — CLASS-2 over a WRITTEN leaf
+  -- (a seed/fabricated value survived on a dead column) vs fill-time classification of a never-bound leaf. Both
+  -- keys are load-bearing console history; deliberately NOT merged.
   ('null_column_reading',
    '{metric}: bound column {column} is 100% empty on this asset''s table — not measured, no reading to show; blanked'),
   ('no_source_value',

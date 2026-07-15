@@ -77,18 +77,20 @@ def _is_time_axis_key(key):
     return k in keys
 
 
-def _reason(cause, metric):
-    """The editable cmd_catalog.reason_template sentence for a machine cause; code-default to the cause key on outage."""
+def _reason(cause, metric, **kw):
+    """The editable cmd_catalog.reason_template sentence for a machine cause; code-default to the cause key on outage.
+    Extra kwargs pass through to the template — null_column_reading's {column} placeholder rendered LITERALLY in
+    every served sentence because the column never reached the formatter [audit 2026-07-14, 11 F4]."""
     try:
         from config.reason_templates import reason as _r
-        return _r(cause, metric=metric)
+        return _r(cause, metric=metric, **kw)
     except Exception:
         return cause
 
 
 def _add_gap(gaps, slot, cause, metric, column=None):
-    gaps.append({"slot": slot, "cause": cause, "metric": str(metric),
-                 "column": column, "fn": None, "reason": _reason(cause, metric)})
+    gaps.append({"slot": slot, "cause": cause, "metric": str(metric), "column": column, "fn": None,
+                 "reason": _reason(cause, metric, **({"column": column} if column is not None else {}))})
 
 
 def _is_num(v):
