@@ -60,13 +60,37 @@ def _panel_id(panel_ref):
         return None
 
 
+def _twin_redirect_on():
+    """topology.data_bearing_twin [default off]: redirect a member/incomer whose registry meter is a DEAD twin to its
+    live sibling's neuract table (data/neuract_live/twin.py). Fail-open to OFF (byte-identical)."""
+    try:
+        from config.app_config import flag_on
+        return flag_on("topology.data_bearing_twin", False)
+    except Exception:
+        return False
+
+
 def _member_row(mfm_id, role):
-    """Shape one member: {mfm_id, name, neuract_table, role} from the meter registry (honest-degrade on a stale id)."""
+    """Shape one member: {mfm_id, name, neuract_table, role} from the meter registry (honest-degrade on a stale id).
+
+    DEAD-TWIN REDIRECT [topology.data_bearing_twin]: a topology edge that points at a dead `_sch` stub (0 columns,
+    never_wired) reads an empty table → the whole supply side blanks. When the flag is on, the member's DATA table is
+    redirected to its live twin (same physical asset; twin.live_twin_table), while the display id/name stay the
+    topology's. Only fires for a dead meter with exactly one live twin; live members and no-twin cases are untouched."""
     m = _meters.meter_by(mfm_id)
+    tbl = _meters.table_for(m) if m else None
+    if _twin_redirect_on():
+        try:
+            from data.neuract_live import twin as _twin
+            twin_tbl = _twin.live_twin_table(mfm_id)
+            if twin_tbl:
+                tbl = twin_tbl
+        except Exception:
+            pass
     return {
         "mfm_id": int(mfm_id),
         "name": (m.get("name") if m else None),
-        "neuract_table": _meters.table_for(m) if m else None,
+        "neuract_table": tbl,
         "role": role,
     }
 
