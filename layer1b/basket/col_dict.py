@@ -12,6 +12,7 @@ from config.validation import PLUMBING_COLUMNS
 from layer1b.basket.describe import describe
 
 _SKIP = set(PLUMBING_COLUMNS)                   # contract plumbing, not metric columns (ONE shared home w/ has_data)
+_DANGLING_NOTED = set()                         # once-per-table dangling-registry telemetry throttle (process life)
 
 
 def real_table_cols(table):
@@ -60,7 +61,25 @@ def latest_nonnull(table):
     # chronological only within one offset (the latent sibling of the stale-'ts' bug). Guard: only order if the
     # column exists on this table.
     ob = f'ORDER BY {ts_order_expr(DATA_TS_COL)} DESC' if DATA_TS_COL in real_table_cols(table) else ""
-    rows = q(DATA_DB, f'SELECT to_jsonb(t) FROM {CONSUMER_SCHEMA}."{table}" t {ob} LIMIT 1')
+    try:
+        rows = q(DATA_DB, f'SELECT to_jsonb(t) FROM {CONSUMER_SCHEMA}."{table}" t {ob} LIMIT 1')
+    except Exception as e:
+        from data.outage import is_outage_exc
+        if is_outage_exc(e):
+            raise                               # tunnel cut mid-sample must reach the degrade gate, never absorb
+        if "does not exist" in str(e).lower():
+            # dangling registry row (lt_mfm.table_name points at no physical relation): the table is DARK, not an
+            # error — same answer window_nonnull's fallback intends. Uncaught, this shipped a silent ok=True 0-card
+            # page [audit 2026-07-14, 01 F1]. Telemetry once per table so the drift is visible in the console.
+            if table not in _DANGLING_NOTED:
+                _DANGLING_NOTED.add(table)
+                try:
+                    from obs.failures import record
+                    record("layer1b", "dangling_registry_table", detail=str(table))
+                except Exception:
+                    pass
+            return set()
+        raise                                   # any other SQL/logic bug stays loud (data/outage.py mandate)
     if not rows or not rows[0] or not rows[0][0]:
         return set()
     try:

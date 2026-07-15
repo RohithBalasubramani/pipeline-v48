@@ -38,6 +38,12 @@ def build_basket(prompt, asset, intent="snapshot"):
     # the live app_devices registry leaves mfm_type_id=None (class carries the type), so requiring it emptied every basket.
     if not asset or not asset.get("table"):
         return {"tables": [], "columns": [], "probable": [], "n_columns": 0, "llm_failed": False}
+    # GHOST short-circuit: a row the registry sync has already proven table-less (table_exists stamped False) can
+    # never have columns — skip the doomed sample AND the pointless basket LLM call. Only an EXPLICIT False
+    # short-circuits (legacy asset dicts without the key are unaffected); latest_nonnull's dark-table degrade stays
+    # the generic backstop for the stale-true case (table dropped after the last sync). [audit 2026-07-14, 01 F1]
+    if asset.get("table_exists") is False:
+        return {"tables": [], "columns": [], "probable": [], "n_columns": 0, "llm_failed": False}
     table = asset["table"]
     # WINDOWED has_data [hardening]: the per-column Y/N shown to the basket AI covers the last N rows (DB knob
     # layer1b.has_data_window_rows), so an intermittent column that is merely null at the single latest sample isn't
