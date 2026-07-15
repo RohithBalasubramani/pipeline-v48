@@ -158,3 +158,64 @@ def test_f7_derivations_compute_mean_and_unbalance():
     assert CUR.phase_current_avg(ctx) == 45.0
     assert CUR.phase_current_unbalance_pct(ctx) == round((46.0 - 44.0) / 45.0 * 100, 1)
     assert CUR.phase_current_avg({"row": {}}) is None
+
+
+# ── F6: statutory-band geometry on sibling voltage cards ─────────────────────────────────────────────────────────────
+
+def _history_skeleton():
+    """The real Voltage History (card-44) shape — root key 'history' (NOT 'data'); maxLine/minLine bound to the meter's
+    data extent, only expectedMax/expectedMin unbound; a structured maxLine.label object."""
+    return {"history": {"data": {
+        "yAxisLabel": "Voltage",
+        "series": [{"data": [1, 2, 3]}],
+        "maxLine": {"value": 0, "label": {"prefix": "Max: ", "value": "—", "unit": "V"}},
+        "minLine": {"value": 0, "label": {"prefix": "Min: ", "value": "—", "unit": "V"}},
+        "expectedMax": None, "expectedMin": None,
+    }}}
+
+
+def _history_di():
+    # maxLine/minLine are the DATA extent (bound to voltage_max/min); expected* is the statutory band (unbound)
+    return {"fields": [
+        {"slot": "history.data.series[0].data", "kind": "bucketed", "column": "voltage_r_n"},
+        {"slot": "history.data.maxLine.value", "kind": "raw", "column": "voltage_max"},
+        {"slot": "history.data.minLine.value", "kind": "raw", "column": "voltage_min"},
+    ]}
+
+
+def test_f6_fills_expected_band_from_nameplate_band_root_history():
+    with patch.object(C, "_band_geo_on", lambda: True), patch.object(C, "_statutory_band", _band_ok):
+        out = C.inject(_history_skeleton(), _history_di(), "gic_x")
+    s = _slots(out)
+    assert s["history.data.expectedMax"]["value"] == 6986.0                # unbound → statutory band
+    assert s["history.data.expectedMin"]["value"] == 5716.0
+    # maxLine/minLine were AI-bound to the data extent → NOT overridden (still the raw voltage_max/min bind)
+    assert s["history.data.maxLine.value"].get("column") == "voltage_max" and s["history.data.maxLine.value"].get("_canonical") is None
+    assert not any(f["slot"] == "history.data.maxLine.label" for f in out["fields"])   # structured label left alone
+
+
+def test_f6_dg_shape_unbound_lines_fill_with_scalar_label():
+    # card-67 DG shape: root-level maxLine/minLine with a SCALAR label, all unbound → fill value + label from band
+    sk = {"yAxisLabel": "Voltage", "series": [{"data": [1]}],
+          "maxLine": {"value": 0, "label": ""}, "minLine": {"value": 0, "label": ""}}
+    di = {"fields": [{"slot": "series[0].data", "kind": "bucketed", "column": "voltage_r_n"}]}
+    with patch.object(C, "_band_geo_on", lambda: True), patch.object(C, "_statutory_band", _band_ok):
+        out = C.inject(sk, di, "gic_x")
+    s = _slots(out)
+    assert s["maxLine.value"]["value"] == 6986.0 and s["minLine.value"]["value"] == 5716.0
+    assert s["maxLine.label"]["value"] == "Max: 6986V"
+
+
+def test_f6_flag_off_noop():
+    with patch.object(C, "_band_geo_on", lambda: False), patch.object(C, "_on", lambda: False), \
+         patch.object(C, "_agg_on", lambda: False):
+        di = _history_di()
+        out = C.inject(_history_skeleton(), di, "gic_x")
+    assert out is di
+
+
+def test_f6_no_band_recovered_is_honest_blank():
+    with patch.object(C, "_band_geo_on", lambda: True), patch.object(C, "_statutory_band", lambda a: None):
+        di = _history_di()
+        out = C.inject(_history_skeleton(), di, "gic_x")
+    assert out is di                                                       # no band → nothing filled

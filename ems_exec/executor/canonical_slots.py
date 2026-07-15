@@ -131,6 +131,92 @@ def _swap_aggregate_from_phases(fields, asset_table):
         return 0
 
 
+# ── F6 statutory-band geometry (sibling voltage cards: history maxLine/minLine + expected range) ──────────────────────
+# The Voltage History / DG-voltage cards draw the SAME IS-12360 band as the Voltage Monitor, but on differently-named
+# slots (…maxLine.value / …minLine.value / …expectedMax / …expectedMin) at card-specific depths. Fill them from the same
+# nameplate-first statutory band, matched by the leaf's OWN key suffix (no per-card paths). const value + a "Max/Min"
+# label sibling where present.
+_BAND_GEO = {"maxline.value": "max", "minline.value": "min", "expectedmax": "max", "expectedmin": "min"}
+
+
+def _band_geo_on():
+    """fill.canonical_band_geometry [F6, default off]: fill unbound statutory-band geometry leaves (maxLine/minLine/
+    expectedMax/expectedMin) on sibling voltage cards from the nameplate band. Fail-open to OFF."""
+    try:
+        from config.app_config import flag_on
+        return flag_on("fill.canonical_band_geometry", False)
+    except Exception:
+        return False
+
+
+def _walk_scalar_leaves(node, prefix=""):
+    """Yield (slot_path_from_ROOT, key_lastsegment_lower, value) for every scalar leaf. The path uses the payload's OWN
+    root keys (card 37 → 'data.thresholds[0].value'; card 44 → 'history.data.expectedMax') so it matches the di slot
+    convention regardless of whether the card nests its chart under 'data' or another root key."""
+    if isinstance(node, dict):
+        for k, v in node.items():
+            p = f"{prefix}.{k}" if prefix else str(k)
+            if isinstance(v, (dict, list)):
+                yield from _walk_scalar_leaves(v, p)
+            else:
+                yield (p, str(k).lower(), v)
+    elif isinstance(node, list):
+        for i, v in enumerate(node):
+            p = f"{prefix}[{i}]" if prefix else f"[{i}]"
+            if isinstance(v, (dict, list)):
+                yield from _walk_scalar_leaves(v, p)
+            else:
+                yield (p, "", v)
+
+
+def _skeleton_is_voltage(exact_metadata, bound_cols):
+    """A voltage card, detected robustly for ARBITRARY nesting: a bound voltage_* column, or a 'Voltage' y-axis anywhere
+    in the skeleton (the chart may sit under history.data / health.data, not the top-level data)."""
+    if any(str(c or "").startswith("voltage") for c in bound_cols):
+        return True
+    for _p, key, val in _walk_scalar_leaves(exact_metadata):
+        if key in ("yaxislabel", "unit") and isinstance(val, str) and "voltage" in val.lower():
+            return True
+    return False
+
+
+def _band_geometry_add(exact_metadata, di, asset_table):
+    """const fills for UNBOUND statutory-band geometry leaves on a voltage card, from the nameplate band. [] otherwise.
+    Walks from the payload ROOT (not exact_metadata['data']) — the Voltage History / DG-voltage charts nest under
+    history.data / their own root key, so a 'data'-rooted walk would miss every band leaf."""
+    if not isinstance(exact_metadata, dict):
+        return []
+    fields = [f for f in (di.get("fields") or []) if isinstance(f, dict)]
+    bound = {str(f.get("slot") or "") for f in fields}
+    if not _skeleton_is_voltage(exact_metadata, [f.get("column") for f in fields if f.get("column")]):
+        return []
+    # collect candidate band-geometry leaves first (cheap) before paying for the band read
+    cands = []
+    for path, _key, _val in _walk_scalar_leaves(exact_metadata):
+        tail2 = ".".join(path.lower().split(".")[-2:])       # e.g. 'maxline.value'
+        tail1 = path.lower().split(".")[-1]                  # e.g. 'expectedmax'
+        which = _BAND_GEO.get(tail2) or _BAND_GEO.get(tail1)
+        if which and path not in bound:
+            cands.append((path, which))
+    if not cands:
+        return []
+    band = _statutory_band(asset_table)
+    if not band or band.get("max") is None or band.get("min") is None:
+        return []
+    add = [{"slot": path, "kind": "const", "value": band[which], "_canonical": "band_geometry"}
+           for (path, which) in cands]
+    # fill a sibling *Line.label ONLY when it is a bare SCALAR leaf (card-67 shape 'Max: +5%'); a structured label object
+    # (card-44 {prefix,value,unit}) is not a scalar leaf here, so it is left for its own value leaf to drive.
+    scalar_paths = {p for p, _k, _v in _walk_scalar_leaves(exact_metadata)}
+    for path, which in cands:
+        if path.lower().endswith("line.value"):
+            lbl = path[: -len(".value")] + ".label"
+            if lbl not in bound and lbl in scalar_paths:
+                tag = "Max" if which == "max" else "Min"
+                add.append({"slot": lbl, "kind": "const", "value": f"{tag}: {band[which]:g}V", "_canonical": "band_geometry"})
+    return add
+
+
 def _voltage_canonical_add(data, di, asset_table):
     """The UNBOUND voltage-monitor contract binds to APPEND (phase legend, avg/max/min rail, statutory ±band). [] when
     the card isn't a voltage-monitor shape or nothing is missing. Never touches an AI-bound slot."""
@@ -199,6 +285,13 @@ def inject(exact_metadata, data_instructions, asset_table):
             probe = out if out is not None else (copy.deepcopy(di) if di else {"fields": []})
             if _swap_aggregate_from_phases(probe.get("fields") or [], asset_table):
                 out = probe
+
+        # PASS 3 — statutory-band geometry fill on sibling voltage cards (maxLine/minLine/expected range)
+        if _band_geo_on() and isinstance(exact_metadata, dict):
+            add = _band_geometry_add(exact_metadata, (out or di), asset_table)
+            if add:
+                out = out if out is not None else (copy.deepcopy(di) if di else {"fields": []})
+                out["fields"] = list(out.get("fields") or []) + add
 
         return out if out is not None else data_instructions
     except Exception:
