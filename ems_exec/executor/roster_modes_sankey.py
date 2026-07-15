@@ -349,6 +349,16 @@ def _sankey_rebuild(payload, spec, state, default_payload):
                 items = [{"color": c, "label": m.get("name")} for (m, _r), (_nid, _v, c) in zip(supply, sup_ids)]
             elif (g.get("by") or "").strip().lower() == "load_group":
                 items = [{"color": group_color[grp], "label": str(grp)} for grp in groups_order]
+            elif (g.get("by") or "").strip().lower() == "feeder_class":
+                # T2.1-3: fold the LOAD roster into one legend item per feeder_class (the token-derived class), each
+                # taking the node color of its FIRST load member — mirrors the load_group fold, keyed on the new fact.
+                fc_order, fc_color = [], {}
+                for (m, _r), (_nid, _v, c) in zip(load, load_ids):
+                    fc = m.get("feeder_class") or "member"
+                    if fc not in fc_color:
+                        fc_color[fc] = c
+                        fc_order.append(fc)
+                items = [{"color": fc_color[fc], "label": str(fc)} for fc in fc_order]
             else:
                 items = [{"color": c, "label": m.get("name")} for (m, _r), (_nid, _v, c) in zip(load, load_ids)]
             if items:

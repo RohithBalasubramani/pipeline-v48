@@ -62,6 +62,11 @@ def resolve(mfm_id, section_token=None):
             _sec = _section_of(m.get("neuract_table"))
         except Exception:
             _sec = None
+        try:
+            from data.registry.feeder_class import feeder_class_of as _feeder_class_of
+            _fc = _feeder_class_of(m.get("neuract_table"))
+        except Exception:
+            _fc = None
         members.append({
             "mfm_id": mid,
             "name": m.get("name"),
@@ -70,6 +75,7 @@ def resolve(mfm_id, section_token=None):
             "type": reg.get("type_code"),
             "load_group": reg.get("load_group"),
             "section": _sec,                              # bus-section token ('1A'/'1B'/…) — element-bindable [sections]
+            "feeder_class": _fc,                          # token-derived feeder class (registry_feeder_class) [T2.1-3]
         })
     if section_token:
         from data.equipment.sections import section_of
@@ -267,6 +273,12 @@ def _spec_match(member, match):
     if mtype and mtype in {str(x).strip().lower() for x in (match.get("types") or [])}:
         return True
     if lg and lg in {str(x).strip().lower() for x in (match.get("load_groups") or [])}:
+        return True
+    # T2.1-3: feeder_class fact any-of — the token-derived class (registry_feeder_class) the historical name_contains
+    # only approximated. A member with no feeder_class never matches; a match with no feeder_classes key is unaffected
+    # (the asymmetric no-key contract above stands). Alongside the type/load_group exact-token checks.
+    fc = str(member.get("feeder_class") or "").strip().lower()
+    if fc and fc in {str(x).strip().lower() for x in (match.get("feeder_classes") or [])}:
         return True
     # BUS-SECTION match [sections overlay]: `sections: ["1A"]` scopes a key to the members of ONE bus section
     # (equipment.mfm token via data/equipment/sections — dictionary lookup, zero card knowledge). Mirrors

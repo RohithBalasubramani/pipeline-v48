@@ -256,6 +256,11 @@ def _member_match(member, match):
         return True
     if lg and lg in {str(x).strip().lower() for x in (match.get("load_groups") or [])}:
         return True
+    # T2.1-3: feeder_class fact any-of — the token-derived class (registry_feeder_class). A member with no
+    # feeder_class never matches; a match with no feeder_classes key is unaffected (the no-selector contract stands).
+    fc = str(member.get("feeder_class") or "").strip().lower()
+    if fc and fc in {str(x).strip().lower() for x in (match.get("feeder_classes") or [])}:
+        return True
     # BUS-SECTION match [sections overlay]: `sections: ["1A"]` selects members by their equipment.mfm section token
     # (data/equipment/sections) — the dimension a section-compare prompt splits series/elements by. AI-drivable: the
     # L2 roster emission names the sections; this stays a dictionary lookup, zero card knowledge.

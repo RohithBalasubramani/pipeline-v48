@@ -176,6 +176,7 @@ def _match_def(member, defs):
     role = str(member.get("role") or "").strip().lower()
     mtype = str(member.get("type") or "").strip().lower()
     lg = str(member.get("load_group") or "").strip().lower()
+    fc = str(member.get("feeder_class") or "").strip().lower()
     name = str(member.get("name") or "").strip().lower()
     hardened = enabled()
     for d in defs:
@@ -184,6 +185,10 @@ def _match_def(member, defs):
         if mtype and mtype in {str(x).lower() for x in (d.get("types") or [])}:
             return d
         if lg and lg in {str(x).lower() for x in (d.get("load_groups") or [])}:
+            return d
+        # T2.1-3: feeder_class fact any-of — the token-derived class (registry_feeder_class). No feeder_class /
+        # no feeder_classes key on the def → this leg never fires (the member derives its own section as before).
+        if fc and fc in {str(x).lower() for x in (d.get("feeder_classes") or [])}:
             return d
         # T2.1-2: name_prefixes is already left-anchored (startswith); when hardened, also require a right boundary
         # after the prefix (uniform with contains_bounded) so 'gic-2' no longer prefixes 'gic-20'. Flag off = verbatim.
