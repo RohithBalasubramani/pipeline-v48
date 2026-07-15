@@ -84,6 +84,21 @@ def test_reducers_vocabulary():
     assert n == 1                                              # 'danger' folds into critical via the synonym row
 
 
+def test_reducers_honest_difference_and_plausible_range():
+    """nonneg_null + plausible_range [card-13 Energy Flow kpis fix]: a NEGATIVE loss (feeders sum HIGHER than the
+    source — mismatched metering bases) and a >100% efficiency are UNKNOWN, not numbers — honest-null, never a
+    fabricated 0.0 loss or a raw 224% ratio."""
+    c = {"src": 1393.5, "out": 3132.3}
+    # nonneg_null: negative difference → None; legacy clamp_nonneg keeps its 0.0 (byte-compatible); positive computes
+    assert RD.reduce({"agg": "difference", "of": "src", "by": "out", "nonneg_null": True}, [], computed=c) is None
+    assert RD.reduce({"agg": "difference", "of": "src", "by": "out", "clamp_nonneg": True}, [], computed=c) == 0.0
+    assert RD.reduce({"agg": "difference", "of": "out", "by": "src", "nonneg_null": True}, [], computed=c) == 1738.8
+    # plausible_range gates ANY numeric reducer result; in-band passes; non-numeric results untouched
+    assert RD.reduce({"agg": "ratio_pct", "of": "out", "by": "src", "plausible_range": [0, 100]}, [], computed=c) is None
+    assert RD.reduce({"agg": "ratio_pct", "of": "src", "by": "out", "plausible_range": [0, 100]}, [], computed=c) == 44.49
+    assert RD.reduce({"agg": "const", "v": "chrome", "plausible_range": [0, 100]}, []) == "chrome"
+
+
 # ── recipe: $same_as_slot expansion + the AI-emission fold (recipe wins; honest-null uncolonizable) ────────────────
 _SPEC = {"slots": [
     {"slot": "a[]", "mode": "elements", "role_filter": "load", "cap": 10,

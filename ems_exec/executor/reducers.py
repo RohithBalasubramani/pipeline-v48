@@ -44,7 +44,26 @@ def _status_keys(element_spec):
 def reduce(spec, elements, *, computed=None, context=None, element_spec=None, policy=None):
     """ONE aggregate KPI from the evaluated `elements` per the closed vocabulary above. `computed` = the sibling agg
     values already produced (for alias / sum_of); `context` = run-level values (e.g. {'panel_kwh': …}). Honest-null on
-    empty / unknown. Never raises."""
+    empty / unknown. Never raises.
+
+    plausible_range [lo, hi] (optional, ANY reducer): a numeric result OUTSIDE the physically-plausible band → None
+    (honest-null). The recipe states the physics (e.g. efficiencyPct [0,100] — feeder output cannot exceed source
+    input; outside means the two sides are on mismatched metering bases, so the true value is UNKNOWN, not the raw
+    ratio). A non-numeric result (argmax's element dict, const strings) passes through untouched."""
+    out = _reduce_raw(spec, elements, computed=computed, context=context, element_spec=element_spec, policy=policy)
+    try:
+        rng = spec.get("plausible_range") if isinstance(spec, dict) else None
+        if (isinstance(rng, (list, tuple)) and len(rng) == 2
+                and isinstance(out, (int, float)) and not isinstance(out, bool)):
+            lo, hi = _num(rng[0]), _num(rng[1])
+            if lo is not None and hi is not None and not (lo <= float(out) <= hi):
+                return None
+    except Exception:
+        return None
+    return out
+
+
+def _reduce_raw(spec, elements, *, computed=None, context=None, element_spec=None, policy=None):
     if not isinstance(spec, dict):
         return None
     op = (spec.get("agg") or "").strip().lower()
@@ -95,8 +114,15 @@ def reduce(spec, elements, *, computed=None, context=None, element_spec=None, po
             if a is None or b is None:
                 return None                                    # an unknown side → honest-null (never a fabricated delta)
             d = a - b
-            if spec.get("clamp_nonneg") and d < 0:
-                d = 0.0
+            if d < 0:
+                # a NEGATIVE physical difference (e.g. loss = source − feeders when the feeders sum HIGHER than the
+                # source) means the two sides are on MISMATCHED metering bases — the true value is UNKNOWN:
+                #   nonneg_null  → honest-null (the loss cannot be computed on this pairing; FE display-dashes)
+                #   clamp_nonneg → 0.0 (legacy; reads as "zero loss", a fabricated number — prefer nonneg_null)
+                if spec.get("nonneg_null"):
+                    return None
+                if spec.get("clamp_nonneg"):
+                    d = 0.0
             return round(d, spec.get("r", 2))
         if op == "ratio_pct":
             a = _num((computed or {}).get(spec.get("of")))
