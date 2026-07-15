@@ -10,16 +10,70 @@ from data.db_client import q
 _COLS = ["metric", "fn", "base_columns", "fidelity", "scope"]
 
 
-def binding(metric):
-    """{fn, base_columns:[...], fidelity, scope} for a derived metric, or None if it isn't a registered derivation.
-    `scope` ('row'|'window'|'series'|'topology') tells the executor which ctx to build — a series/window-scoped fn needs
-    the windowed time-series (∫power, load-factor, peaks), not just the latest row. Defaults to 'row' (a NULL cell)."""
+_UNIT_SUFFIX = None      # lazy-compiled unit-token stripper (normalize layer)
+_norm_cache = {}         # normalized-form → canonical metric key (per-process; DB edits need a restart like cfg)
+
+
+def _normalize(key):
+    """Fold the spelling axes emit invents on: case, -/_ separators, and a trailing DIMENSIONLESS token
+    (pct/percent). 'Load_Factor_PCT' → 'loadfactor'; 'active_energy_kwh' → 'activeenergykwh'. MAGNITUDE unit
+    tokens (kwh/mvarh/kva…) are deliberately KEPT — folding them could silently alias across a ×1000 unit
+    mismatch (reactiveEnergyKvarh onto an MVARh-outputting fn). [audit 14: ~56% of derivation_unbound named a
+    computable quantity under an invented spelling]"""
+    global _UNIT_SUFFIX
+    if _UNIT_SUFFIX is None:
+        import re
+        _UNIT_SUFFIX = re.compile(r"(pct|percent)$")
+    k = "".join(c for c in str(key or "").lower() if c.isalnum())
+    return _UNIT_SUFFIX.sub("", k)
+
+
+def _exact(metric):
     rows = q("cmd_catalog",
              "SELECT " + ",".join(_COLS) + f" FROM derivation_binding WHERE metric='{_esc(metric)}'")
     if not rows:
         return None
     _, fn, base, fidelity, scope = (list(rows[0]) + ["row"])[:5]
     return {"fn": fn, "base_columns": _split(base), "fidelity": fidelity, "scope": (scope or "row").strip() or "row"}
+
+
+def binding(metric):
+    """{fn, base_columns:[...], fidelity, scope} for a derived metric, or None if it isn't a registered derivation.
+    `scope` ('row'|'window'|'series'|'topology') tells the executor which ctx to build — a series/window-scoped fn needs
+    the windowed time-series (∫power, load-factor, peaks), not just the latest row. Defaults to 'row' (a NULL cell).
+
+    RESOLUTION ORDER [audit 2026-07-14, 14 F1 — emit invents free-form keys; ~56% named a computable quantity]:
+      1. exact match (byte-identical to the historical behavior);
+      2. NORMALIZED match — case/-/_/trailing-unit-token folded against the registered metric keys, accepted only
+         when it lands on exactly ONE canonical key (an ambiguous fold stays honest-unbound);
+      3. the cmd_catalog.derivation_alias table (alias → canonical metric, seeded quantity-verified only), one hop.
+    A miss everywhere → None → the honest derivation_unbound reason, exactly as before."""
+    b = _exact(metric)
+    if b is not None:
+        return b
+    norm = _normalize(metric)
+    if not norm:
+        return None
+    try:
+        if norm not in _norm_cache:
+            rows = q("cmd_catalog", "SELECT metric FROM derivation_binding")
+            folds = {}
+            for r in rows or []:
+                folds.setdefault(_normalize(r[0]), []).append(r[0])
+            _norm_cache.update({k: (v[0] if len(v) == 1 else None) for k, v in folds.items()})
+        canon = _norm_cache.get(norm)
+        if canon and canon != metric:
+            return _exact(canon)
+    except Exception:
+        pass
+    try:
+        # alias keys are stored in NORMALIZED form (one row covers every case/separator/unit spelling variant)
+        rows = q("cmd_catalog", f"SELECT metric FROM derivation_alias WHERE alias='{_esc(norm)}'")
+        if rows and rows[0] and rows[0][0]:
+            return _exact(rows[0][0])
+    except Exception:
+        pass
+    return None
 
 
 def base_columns(metric):
