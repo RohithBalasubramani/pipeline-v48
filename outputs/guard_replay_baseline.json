@@ -1,0 +1,669 @@
+{
+ "acceptance_standard": "all fabrications caught, zero legit values harmed \u2014 diff fixtures + knob_matrix vs this committed baseline after every fab_guards change; a new blank must be a real fabrication, a vanished blank an intended release",
+ "fixtures": {
+  "class1_epoch_scalar_array_time_axis_exempt": {
+   "expected_gaps": [
+    [
+     "epoch_ms_leak",
+     "data.expectedMax"
+    ],
+    [
+     "epoch_ms_leak",
+     "data.maxLine.value"
+    ]
+   ],
+   "expected_match": true,
+   "gaps": [
+    [
+     "epoch_ms_leak",
+     "data.expectedMax"
+    ],
+    [
+     "epoch_ms_leak",
+     "data.maxLine.value"
+    ]
+   ],
+   "out_mutated": true
+  },
+  "class1_epoch_series_object_value_key": {
+   "expected_gaps": [
+    [
+     "epoch_ms_leak",
+     "series[0].value"
+    ],
+    [
+     "epoch_ms_leak",
+     "series[1].value"
+    ]
+   ],
+   "expected_match": true,
+   "gaps": [
+    [
+     "epoch_ms_leak",
+     "series[0].value"
+    ],
+    [
+     "epoch_ms_leak",
+     "series[1].value"
+    ]
+   ],
+   "out_mutated": true
+  },
+  "class2_db_outage_no_over_reach": {
+   "expected_gaps": [],
+   "expected_match": true,
+   "gaps": [],
+   "out_mutated": false
+  },
+  "class2_null_column_present_logged_exempt": {
+   "expected_gaps": [
+    [
+     "null_column_reading",
+     "snapshot.vThd.valuePct"
+    ]
+   ],
+   "expected_match": true,
+   "gaps": [
+    [
+     "null_column_reading",
+     "snapshot.vThd.valuePct"
+    ]
+   ],
+   "out_mutated": true
+  },
+  "class2_writer_aware_agg_row_skips": {
+   "expected_gaps": [],
+   "expected_match": true,
+   "gaps": [],
+   "out_mutated": false
+  },
+  "class3_const_literal_chrome_preserved": {
+   "expected_gaps": [],
+   "expected_match": true,
+   "gaps": [],
+   "out_mutated": false
+  },
+  "class3_no_source_numeric": {
+   "expected_gaps": [
+    [
+     "no_source_value",
+     "snapshot.iThdPk"
+    ]
+   ],
+   "expected_match": true,
+   "gaps": [
+    [
+     "no_source_value",
+     "snapshot.iThdPk"
+    ]
+   ],
+   "out_mutated": true
+  },
+  "class4_legendvalue_seed_blanks_chrome_survives": {
+   "expected_gaps": [
+    [
+     "unstripped_seed",
+     "backupHistory.series[0].legendValue"
+    ],
+    [
+     "unstripped_seed",
+     "backupHistory.series[1].legendValue"
+    ],
+    [
+     "unstripped_seed",
+     "backupHistory.series[2].legendValue"
+    ],
+    [
+     "unstripped_seed",
+     "backupHistory.series[3].legendValue"
+    ]
+   ],
+   "expected_match": true,
+   "gaps": [
+    [
+     "unstripped_seed",
+     "backupHistory.series[0].legendValue"
+    ],
+    [
+     "unstripped_seed",
+     "backupHistory.series[1].legendValue"
+    ],
+    [
+     "unstripped_seed",
+     "backupHistory.series[2].legendValue"
+    ],
+    [
+     "unstripped_seed",
+     "backupHistory.series[3].legendValue"
+    ]
+   ],
+   "out_mutated": true
+  },
+  "class4_raw_equals_stripped_metadata_kept": {
+   "expected_gaps": [],
+   "expected_match": true,
+   "gaps": [],
+   "out_mutated": false
+  },
+  "live_literal_nameplate_rating_exempt": {
+   "expected_gaps": [],
+   "expected_match": true,
+   "gaps": [],
+   "out_mutated": false
+  },
+  "live_literal_string_blanks": {
+   "expected_gaps": [
+    [
+     "no_source_value",
+     "panel.tapPosition"
+    ]
+   ],
+   "expected_match": true,
+   "gaps": [
+    [
+     "no_source_value",
+     "panel.tapPosition"
+    ]
+   ],
+   "out_mutated": true
+  },
+  "roster_slot_exemption": {
+   "expected_gaps": [
+    [
+     "no_source_value",
+     "stray.leaf"
+    ]
+   ],
+   "expected_match": true,
+   "gaps": [
+    [
+     "no_source_value",
+     "stray.leaf"
+    ]
+   ],
+   "out_mutated": true
+  }
+ },
+ "generated": "2026-07-16T00:44:05+00:00",
+ "guards_provenance": {
+  "ems_exec/executor/fab_guards": "27daf7fe961849f0"
+ },
+ "knob_matrix": {
+  "guard_off:epoch_ms": {
+   "class1_epoch_scalar_array_time_axis_exempt": {
+    "gaps": [],
+    "out_mutated": false
+   },
+   "class1_epoch_series_object_value_key": {
+    "gaps": [],
+    "out_mutated": false
+   },
+   "class2_db_outage_no_over_reach": {
+    "gaps": [],
+    "out_mutated": false
+   },
+   "class2_null_column_present_logged_exempt": {
+    "gaps": [
+     [
+      "null_column_reading",
+      "snapshot.vThd.valuePct"
+     ]
+    ],
+    "out_mutated": true
+   },
+   "class2_writer_aware_agg_row_skips": {
+    "gaps": [],
+    "out_mutated": false
+   },
+   "class3_const_literal_chrome_preserved": {
+    "gaps": [],
+    "out_mutated": false
+   },
+   "class3_no_source_numeric": {
+    "gaps": [
+     [
+      "no_source_value",
+      "snapshot.iThdPk"
+     ]
+    ],
+    "out_mutated": true
+   },
+   "class4_legendvalue_seed_blanks_chrome_survives": {
+    "gaps": [
+     [
+      "unstripped_seed",
+      "backupHistory.series[0].legendValue"
+     ],
+     [
+      "unstripped_seed",
+      "backupHistory.series[1].legendValue"
+     ],
+     [
+      "unstripped_seed",
+      "backupHistory.series[2].legendValue"
+     ],
+     [
+      "unstripped_seed",
+      "backupHistory.series[3].legendValue"
+     ]
+    ],
+    "out_mutated": true
+   },
+   "class4_raw_equals_stripped_metadata_kept": {
+    "gaps": [],
+    "out_mutated": false
+   },
+   "live_literal_nameplate_rating_exempt": {
+    "gaps": [],
+    "out_mutated": false
+   },
+   "live_literal_string_blanks": {
+    "gaps": [
+     [
+      "no_source_value",
+      "panel.tapPosition"
+     ]
+    ],
+    "out_mutated": true
+   },
+   "roster_slot_exemption": {
+    "gaps": [
+     [
+      "no_source_value",
+      "stray.leaf"
+     ]
+    ],
+    "out_mutated": true
+   }
+  },
+  "guard_off:no_source": {
+   "class1_epoch_scalar_array_time_axis_exempt": {
+    "gaps": [
+     [
+      "epoch_ms_leak",
+      "data.expectedMax"
+     ],
+     [
+      "epoch_ms_leak",
+      "data.maxLine.value"
+     ]
+    ],
+    "out_mutated": true
+   },
+   "class1_epoch_series_object_value_key": {
+    "gaps": [
+     [
+      "epoch_ms_leak",
+      "series[0].value"
+     ],
+     [
+      "epoch_ms_leak",
+      "series[1].value"
+     ]
+    ],
+    "out_mutated": true
+   },
+   "class2_db_outage_no_over_reach": {
+    "gaps": [],
+    "out_mutated": false
+   },
+   "class2_null_column_present_logged_exempt": {
+    "gaps": [
+     [
+      "null_column_reading",
+      "snapshot.vThd.valuePct"
+     ]
+    ],
+    "out_mutated": true
+   },
+   "class2_writer_aware_agg_row_skips": {
+    "gaps": [],
+    "out_mutated": false
+   },
+   "class3_const_literal_chrome_preserved": {
+    "gaps": [],
+    "out_mutated": false
+   },
+   "class3_no_source_numeric": {
+    "gaps": [],
+    "out_mutated": false
+   },
+   "class4_legendvalue_seed_blanks_chrome_survives": {
+    "gaps": [
+     [
+      "unstripped_seed",
+      "backupHistory.series[0].legendValue"
+     ],
+     [
+      "unstripped_seed",
+      "backupHistory.series[1].legendValue"
+     ],
+     [
+      "unstripped_seed",
+      "backupHistory.series[2].legendValue"
+     ],
+     [
+      "unstripped_seed",
+      "backupHistory.series[3].legendValue"
+     ]
+    ],
+    "out_mutated": true
+   },
+   "class4_raw_equals_stripped_metadata_kept": {
+    "gaps": [],
+    "out_mutated": false
+   },
+   "live_literal_nameplate_rating_exempt": {
+    "gaps": [],
+    "out_mutated": false
+   },
+   "live_literal_string_blanks": {
+    "gaps": [
+     [
+      "no_source_value",
+      "panel.tapPosition"
+     ]
+    ],
+    "out_mutated": true
+   },
+   "roster_slot_exemption": {
+    "gaps": [],
+    "out_mutated": false
+   }
+  },
+  "guard_off:null_column": {
+   "class1_epoch_scalar_array_time_axis_exempt": {
+    "gaps": [
+     [
+      "epoch_ms_leak",
+      "data.expectedMax"
+     ],
+     [
+      "epoch_ms_leak",
+      "data.maxLine.value"
+     ]
+    ],
+    "out_mutated": true
+   },
+   "class1_epoch_series_object_value_key": {
+    "gaps": [
+     [
+      "epoch_ms_leak",
+      "series[0].value"
+     ],
+     [
+      "epoch_ms_leak",
+      "series[1].value"
+     ]
+    ],
+    "out_mutated": true
+   },
+   "class2_db_outage_no_over_reach": {
+    "gaps": [],
+    "out_mutated": false
+   },
+   "class2_null_column_present_logged_exempt": {
+    "gaps": [],
+    "out_mutated": false
+   },
+   "class2_writer_aware_agg_row_skips": {
+    "gaps": [],
+    "out_mutated": false
+   },
+   "class3_const_literal_chrome_preserved": {
+    "gaps": [],
+    "out_mutated": false
+   },
+   "class3_no_source_numeric": {
+    "gaps": [
+     [
+      "no_source_value",
+      "snapshot.iThdPk"
+     ]
+    ],
+    "out_mutated": true
+   },
+   "class4_legendvalue_seed_blanks_chrome_survives": {
+    "gaps": [
+     [
+      "unstripped_seed",
+      "backupHistory.series[0].legendValue"
+     ],
+     [
+      "unstripped_seed",
+      "backupHistory.series[1].legendValue"
+     ],
+     [
+      "unstripped_seed",
+      "backupHistory.series[2].legendValue"
+     ],
+     [
+      "unstripped_seed",
+      "backupHistory.series[3].legendValue"
+     ]
+    ],
+    "out_mutated": true
+   },
+   "class4_raw_equals_stripped_metadata_kept": {
+    "gaps": [],
+    "out_mutated": false
+   },
+   "live_literal_nameplate_rating_exempt": {
+    "gaps": [],
+    "out_mutated": false
+   },
+   "live_literal_string_blanks": {
+    "gaps": [
+     [
+      "no_source_value",
+      "panel.tapPosition"
+     ]
+    ],
+    "out_mutated": true
+   },
+   "roster_slot_exemption": {
+    "gaps": [
+     [
+      "no_source_value",
+      "stray.leaf"
+     ]
+    ],
+    "out_mutated": true
+   }
+  },
+  "guard_off:seed_leak": {
+   "class1_epoch_scalar_array_time_axis_exempt": {
+    "gaps": [
+     [
+      "epoch_ms_leak",
+      "data.expectedMax"
+     ],
+     [
+      "epoch_ms_leak",
+      "data.maxLine.value"
+     ]
+    ],
+    "out_mutated": true
+   },
+   "class1_epoch_series_object_value_key": {
+    "gaps": [
+     [
+      "epoch_ms_leak",
+      "series[0].value"
+     ],
+     [
+      "epoch_ms_leak",
+      "series[1].value"
+     ]
+    ],
+    "out_mutated": true
+   },
+   "class2_db_outage_no_over_reach": {
+    "gaps": [],
+    "out_mutated": false
+   },
+   "class2_null_column_present_logged_exempt": {
+    "gaps": [
+     [
+      "null_column_reading",
+      "snapshot.vThd.valuePct"
+     ]
+    ],
+    "out_mutated": true
+   },
+   "class2_writer_aware_agg_row_skips": {
+    "gaps": [],
+    "out_mutated": false
+   },
+   "class3_const_literal_chrome_preserved": {
+    "gaps": [],
+    "out_mutated": false
+   },
+   "class3_no_source_numeric": {
+    "gaps": [
+     [
+      "no_source_value",
+      "snapshot.iThdPk"
+     ]
+    ],
+    "out_mutated": true
+   },
+   "class4_legendvalue_seed_blanks_chrome_survives": {
+    "gaps": [],
+    "out_mutated": false
+   },
+   "class4_raw_equals_stripped_metadata_kept": {
+    "gaps": [],
+    "out_mutated": false
+   },
+   "live_literal_nameplate_rating_exempt": {
+    "gaps": [],
+    "out_mutated": false
+   },
+   "live_literal_string_blanks": {
+    "gaps": [
+     [
+      "no_source_value",
+      "panel.tapPosition"
+     ]
+    ],
+    "out_mutated": true
+   },
+   "roster_slot_exemption": {
+    "gaps": [
+     [
+      "no_source_value",
+      "stray.leaf"
+     ]
+    ],
+    "out_mutated": true
+   }
+  },
+  "mode:report": {
+   "class1_epoch_scalar_array_time_axis_exempt": {
+    "gaps": [
+     [
+      "epoch_ms_leak",
+      "data.expectedMax"
+     ],
+     [
+      "epoch_ms_leak",
+      "data.maxLine.value"
+     ]
+    ],
+    "out_mutated": false
+   },
+   "class1_epoch_series_object_value_key": {
+    "gaps": [
+     [
+      "epoch_ms_leak",
+      "series[0].value"
+     ],
+     [
+      "epoch_ms_leak",
+      "series[1].value"
+     ]
+    ],
+    "out_mutated": false
+   },
+   "class2_db_outage_no_over_reach": {
+    "gaps": [],
+    "out_mutated": false
+   },
+   "class2_null_column_present_logged_exempt": {
+    "gaps": [
+     [
+      "null_column_reading",
+      "snapshot.vThd.valuePct"
+     ]
+    ],
+    "out_mutated": false
+   },
+   "class2_writer_aware_agg_row_skips": {
+    "gaps": [],
+    "out_mutated": false
+   },
+   "class3_const_literal_chrome_preserved": {
+    "gaps": [],
+    "out_mutated": false
+   },
+   "class3_no_source_numeric": {
+    "gaps": [
+     [
+      "no_source_value",
+      "snapshot.iThdPk"
+     ]
+    ],
+    "out_mutated": false
+   },
+   "class4_legendvalue_seed_blanks_chrome_survives": {
+    "gaps": [
+     [
+      "unstripped_seed",
+      "backupHistory.series[0].legendValue"
+     ],
+     [
+      "unstripped_seed",
+      "backupHistory.series[1].legendValue"
+     ],
+     [
+      "unstripped_seed",
+      "backupHistory.series[2].legendValue"
+     ],
+     [
+      "unstripped_seed",
+      "backupHistory.series[3].legendValue"
+     ]
+    ],
+    "out_mutated": false
+   },
+   "class4_raw_equals_stripped_metadata_kept": {
+    "gaps": [],
+    "out_mutated": false
+   },
+   "live_literal_nameplate_rating_exempt": {
+    "gaps": [],
+    "out_mutated": false
+   },
+   "live_literal_string_blanks": {
+    "gaps": [
+     [
+      "no_source_value",
+      "panel.tapPosition"
+     ]
+    ],
+    "out_mutated": false
+   },
+   "roster_slot_exemption": {
+    "gaps": [
+     [
+      "no_source_value",
+      "stray.leaf"
+     ]
+    ],
+    "out_mutated": false
+   }
+  }
+ },
+ "tool": "tools/guard_corpus_replay.py"
+}

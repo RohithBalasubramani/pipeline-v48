@@ -7,12 +7,22 @@ import importlib
 
 from unittest.mock import patch
 
+import pytest
+
 import ems_exec.data.neuract as nx
 
 A = importlib.import_module("ems_exec.executor.fab_guards.apply")
 C = importlib.import_module("ems_exec.executor.fab_guards.class23_source")
 C1 = importlib.import_module("ems_exec.executor.fab_guards.class1_epoch")
 G = importlib.import_module("ems_exec.executor.fab_guards")   # the facade (apply)
+
+
+@pytest.fixture(autouse=True)
+def _pin_enforce_mode():
+    """Default every test to ENFORCE mode (isolated from the live fab_guards.mode knob, which an operator may leave at
+    'report' during a fleet audit). The report-mode tests below override this with their own inner patch."""
+    with patch.object(A, "_mode", lambda: "enforce"):
+        yield
 
 
 # ── S0 shadow mode ────────────────────────────────────────────────────────────────────────────────────────────────

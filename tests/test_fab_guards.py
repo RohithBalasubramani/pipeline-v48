@@ -16,9 +16,25 @@ Pure unit tests: neuract reads + nameplate + slot map are monkeypatched (no data
 """
 from __future__ import annotations
 
+import importlib
+
+import pytest
+from unittest.mock import patch
+
 import ems_exec.data.neuract as nx
 from ems_exec.executor import fab_guards as G
 from ems_exec.executor import fill as F
+
+
+@pytest.fixture(autouse=True)
+def _pin_enforce_mode():
+    """These guards' unit tests assert ENFORCE-mode blanking; pin fab_guards.mode='enforce' so the suite is isolated
+    from the live app_config knob (an operator may leave mode='report' during a fleet audit — report mode never
+    mutates, which would legitimately fail every blank assertion here). The report-mode contract is pinned separately
+    in tests/test_fab_guards_rework.py."""
+    A = importlib.import_module("ems_exec.executor.fab_guards.apply")
+    with patch.object(A, "_mode", lambda: "enforce"):
+        yield
 
 
 # ── CLASS 1 — epoch-ms time-leak ────────────────────────────────────────────────────────────────────────────────────

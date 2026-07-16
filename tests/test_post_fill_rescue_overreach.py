@@ -21,6 +21,11 @@ Pure unit tests — neuract reads monkeypatched (no live DB, no LLM).
 """
 from __future__ import annotations
 
+import importlib
+
+import pytest
+from unittest.mock import patch
+
 import ems_exec.data.neuract as nx
 from ems_exec.executor import fill as F
 from ems_exec.executor import scalar_tile_fill as STF
@@ -28,6 +33,15 @@ from ems_exec.executor import scalar_mean_fill as SMF
 from ems_exec.executor import load_factor_fill as LFF
 from ems_exec.executor import measurable_resolve as MR
 from ems_exec.executor import fab_guards as G
+
+
+@pytest.fixture(autouse=True)
+def _pin_enforce_mode():
+    """Pin fab_guards.mode='enforce' so the CLASS-4 blank assertions here are isolated from the live app_config knob
+    (an operator may leave mode='report' during a fleet audit — report mode never mutates)."""
+    A = importlib.import_module("ems_exec.executor.fab_guards.apply")
+    with patch.object(A, "_mode", lambda: "enforce"):
+        yield
 
 
 # ── fill._honest_blank_paths: parse the AI's declared honest-blank set ───────────────────────────────────────────────
@@ -90,10 +104,23 @@ def _patch_cfg(monkeypatch, overrides):
 
 
 def test_measured_source_roles_is_db_driven(monkeypatch):
-    # add 'bypass' to measurable.measured_source_roles → the wall LIFTS for 'Bypass Voltage' (now a measured terminal).
-    _patch_cfg(monkeypatch, {"measurable.measured_source_roles": ["output", "bypass"]})
+    # THE consolidated role-vocab home [F10, 2026-07-12]: quantity.source_role_wall steers the wall — add 'bypass'
+    # to its measured markers → the wall LIFTS for 'Bypass Voltage' (now a measured terminal). No code literal.
+    _patch_cfg(monkeypatch, {"quantity.source_role_wall": {
+        "measured": ["output", "bypass"],
+        "dedicated": ["utility", "grid", "source", "incoming", "line side", "line-side", "lineside"],
+        "nondedicated": ["input", "line", "mains"]}})
     assert MR.candidate_columns("Bypass Voltage") == ["voltage_avg"]    # DB row steers the wall, not a code literal
     assert MR.candidate_columns("Output Voltage") == ["voltage_avg"]
+
+
+def test_legacy_measurable_alias_steers_when_new_row_absent(monkeypatch):
+    # ALIAS CHAIN [F10]: with quantity.source_role_wall absent, the legacy measurable.* rows still steer (they are
+    # documented aliases, not dead keys) — the same 'bypass becomes measured' edit through the OLD key.
+    _patch_cfg(monkeypatch, {"quantity.source_role_wall": None,
+                             "measurable.measured_source_roles": ["output", "bypass"]})
+    assert MR.candidate_columns("Bypass Voltage") == ["voltage_avg"]
+    assert MR.candidate_columns("Utility Voltage") == []                # dedicated rail still walls via the alias
 
 
 def test_derived_quantity_classes_is_db_driven(monkeypatch):

@@ -605,7 +605,14 @@ def fill(payload, data_instructions, ctx, default_payload=None, shape_ref=None):
                                          shape_ref=shape_ref, roster_slot_prefixes=_roster_slots,
                                          card_id=ctx.get("card_id"), agg_row_present=(agg_row is not None))
             if _fab_gaps:
-                gaps.extend(_fab_gaps)
+                # SHADOW (report mode): the payload was NOT mutated, so these leaves still hold real values — the
+                # downstream _prune_stale_gaps would drop every shadow gap as 'stale'. Route them to a DEDICATED,
+                # un-pruned channel so the fleet-audit sees the would-blanks. Enforce-mode gaps flow normally.
+                if any(isinstance(g, dict) and g.get("shadow") for g in _fab_gaps):
+                    if isinstance(out, dict):
+                        out.setdefault("_shadow_gaps", []).extend(_fab_gaps)
+                else:
+                    gaps.extend(_fab_gaps)
         except Exception as e:
             _degrade.note("fill_pass", e)   # telemetry-only; fail-open contract unchanged [EH F3]
 
