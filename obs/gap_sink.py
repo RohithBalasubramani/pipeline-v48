@@ -25,6 +25,9 @@ def record_gaps(gaps, run_id=None):
             if key in seen:
                 continue
             seen.add(key)
-            failures.record("reason", g["cause"], detail=str(g.get("reason") or g["cause"]), run_id=rid)
+            # [S0] carry card_id (fab_guards.apply stamps it) so the failures JSONL is card-attributed — the audit
+            # instrument no longer depends on response_*.json being the only card-attributed source of guard causes.
+            failures.record("reason", g["cause"], detail=str(g.get("reason") or g["cause"]),
+                            card_id=g.get("card_id"), run_id=rid)
     except Exception:
         pass

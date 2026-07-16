@@ -9,7 +9,23 @@ from ems_exec.executor.paths import _leaf_at, _set_path, _leaf_path_for
 from ems_exec.executor.series_fill import _element_value_key
 from ems_exec.executor.fab_guards.knobs import _guard_on, _is_num, _add_gap
 
-_ROWS_CACHE: dict = {}
+# [S2] TTL cache (was a plain dict that NEVER invalidated): a table probed during a tunnel flap (latest_ts→None→False)
+# used to hold that stale False for the whole process life, biasing CLASS 2 to stand down forever on a since-recovered
+# table. TTLCache self-heals after cache.resolution_ttl_s (or fab_guards.logged_cache_ttl_s if pinned). Tests still
+# .clear() it by reference (dict semantics preserved).
+try:
+    from data.ttl_cache import TTLCache as _TTLCache
+
+    def _rows_ttl():
+        try:
+            from config.app_config import cfg
+            v = cfg("fab_guards.logged_cache_ttl_s", None)
+            return int(v) if v is not None else None
+        except Exception:
+            return None
+    _ROWS_CACHE = _TTLCache(ttl=_rows_ttl())
+except Exception:
+    _ROWS_CACHE = {}
 
 
 def _table_has_rows(asset_table):
@@ -73,28 +89,56 @@ def _field_has_source(field, present_cols):
     return False
 
 
-def _apply_class2_class3(out, fields, present_cols, asset_table, gaps, skip_paths):
+def _live_literal_on():
+    """fab_guards.live_literal [S1a, default on]: the STRING-only guard that blanks a const/text leaf CLAIMING
+    source='live' with no column and no rating source (card-78 tapPosition 'AUTO' / status.tone 'Nominal') — a literal
+    DRESSED as a live reading. Split off its own valve from `no_source` (whose NUMERIC branch is retired) because this
+    string charter never fought a legitimate writer and stays. Fail-open to ON."""
+    try:
+        from config.app_config import flag_on
+        return flag_on("fab_guards.live_literal", True)
+    except Exception:
+        return True
+
+
+def _writer_aware_on():
+    """fab_guards.null_column_writer_aware [S2, default off]: on a PANEL-AGGREGATE fill the raw values came from the
+    member ROLL-UP (ctx['_agg_row']), NOT from asset_table — so CLASS 2's column_logged(asset_table, col) audit is
+    invalid (asset_table is the panel's control table; the real source is the members). When on + agg_row present,
+    CLASS 2 stands down for that card (the roll-up reducers already honest-null when no member reports; this is the
+    generalization of the card-15 roster-slot exemption to the whole panel fill). Fail-open to OFF (byte-identical)."""
+    try:
+        from config.app_config import flag_on
+        return flag_on("fab_guards.null_column_writer_aware", False)
+    except Exception:
+        return False
+
+
+def _apply_class2_class3(out, fields, present_cols, asset_table, gaps, skip_paths, agg_row_present=False):
     """For every field the executor filled, audit its leaf's SOURCE:
 
       CLASS 2 — the field binds a PRESENT column that is 100% NULL on the table (neuract.column_logged == False): a
                 written numeric leaf is 0.0/placeholder posing as a reading → blank it ('not measured — column
-                all-null'). Present-and-logged columns (a real 0.0) are exempt.
+                all-null'). Present-and-logged columns (a real 0.0) are exempt. WRITER-AWARE [S2]: skipped for a
+                panel-aggregate fill (`agg_row_present`) — those values came from the member roll-up, not asset_table.
 
-      CLASS 3 — the field has NO resolved source (no present column, no fn, no nameplate) yet a NUMERIC value survives
-                on its leaf → blank it ('no source — value has no measuring column'). const/text literals (chrome) and
-                already-blank leaves are exempt; a genuine literal string label is never policed.
+      LIVE-LITERAL — a const/text leaf CLAIMING source='live' with no column/rating (a string literal dressed as a live
+                reading) is blanked. Own valve fab_guards.live_literal (STRING-only charter).
+
+      CLASS 3 (no_source, NUMERIC) — DEPRECATED/RETIRING: the field has NO resolved source yet a numeric value survives
+                → blank it. Its true positives are already caught PRE-FILL by the layer2 honest-blank walls
+                (walls.py _blankable_field/_quantity_mismatch/_const_without_source), cross_domain and column_override
+                (all cert-covered by wall_corpus_replay), and its only distinct surface (post-fill strays) produced 100%
+                false positives in a week of served traffic (the card-15 panel family). Gated by fab_guards.no_source;
+                retire by flipping that valve off after the shadow-fleet baseline confirms zero true-positive fires.
 
     Only WRITTEN numeric MEASUREMENT leaves are touched (scalar, or a numeric array / series-of-objects value key).
-    `skip_paths` = the CLASS-1-blanked paths (already handled, don't double-report). Never raises."""
+    `skip_paths` = the CLASS-1-blanked (+ roster-exempt) paths. Never raises."""
     for field in fields:
         kind = (field.get("kind") or "raw").lower()
         if kind in ("const", "text"):
-            # a const/text nameplate slot with a rating source is real; a bare literal is AI-authored chrome, not a
-            # measurement — CLASS 3 does NOT police literal strings (labels/axis chrome). Skip entirely.
-            # EXCEPT: a const/text that CLAIMS source='live' yet has NO column and NO rating source is a LITERAL DRESSED
-            # AS A LIVE READING (card 78 tapPosition kpis 'AUTO' / status.tone 'Nominal', column:None) — a fabricated
-            # live-state, not chrome. Blank that string leaf; a genuine static label (source != 'live') stays untouched.
-            if _guard_on("no_source") and str(field.get("source") or "").lower() == "live":
+            # LIVE-LITERAL (string charter, own valve). A genuine static label (source != 'live') stays untouched.
+            if _live_literal_on() and str(field.get("source") or "").lower() == "live":
                 _rk = _slot_map.rating_key_for(field.get("slot")) or _slot_map.rating_key_for(field.get("metric"))
                 _c0 = field.get("column")
                 if not _rk and not (_c0 and _c0 in present_cols):
@@ -115,16 +159,19 @@ def _apply_class2_class3(out, fields, present_cols, asset_table, gaps, skip_path
         # CONCLUSIVENESS GATE (never over-reach on a DB outage): column_logged() returns False BOTH for a genuinely
         # all-null column AND for an unreachable/errored read — so we only trust the all-null verdict when the table is
         # demonstrably REACHABLE and has rows (_table_has_rows via latest_ts). DB down / empty table → inconclusive →
-        # leave the real reading alone (the honest fill stands; a guard never blanks what it cannot prove fabricated).
-        if _guard_on("null_column") and has_col and _table_has_rows(asset_table) \
-                and not _nx.column_logged(asset_table, col):
+        # leave the real reading alone. WRITER-AWARE [S2]: on a panel-aggregate fill the value came from the member
+        # roll-up (agg_row), not asset_table, so probing asset_table's column is meaningless → stand down.
+        if _guard_on("null_column") and not (agg_row_present and _writer_aware_on()) \
+                and has_col and _table_has_rows(asset_table) and not _nx.column_logged(asset_table, col):
             if _blank_numeric_leaf(out, path, cur):
                 metric = field.get("label") or field.get("metric") or col
                 _add_gap(gaps, path, "null_column_reading", metric, column=col)
             continue
 
-        # CLASS 3 — no resolved source at all, yet a numeric value survived → stray, blank it.
-        if _guard_on("no_source") and not _field_has_source(field, present_cols):
+        # CLASS 3 (numeric no-source) — retiring; gated by fab_guards.no_source (flip off to retire). Also stands down
+        # on a writer-aware panel fill (the value came from the roll-up, not the declared field's dead column).
+        if _guard_on("no_source") and not (agg_row_present and _writer_aware_on()) \
+                and not _field_has_source(field, present_cols):
             if _blank_numeric_leaf(out, path, cur):
                 metric = field.get("label") or field.get("metric") or field.get("slot") or "value"
                 _add_gap(gaps, path, "no_source_value", metric, column=col)

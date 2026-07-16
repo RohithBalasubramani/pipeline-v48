@@ -65,6 +65,32 @@ def _fields_of(data_instructions):
     return [f for f in (di.get("fields") or []) if isinstance(f, dict)]
 
 
+def _numeric_leaf_snapshot(node, path="", out=None):
+    """{dotted_path: value} for every NUMERIC scalar leaf (int/float, not bool) under `node` — a cheap before-image the
+    axis passes diff against. [S3] Never raises."""
+    if out is None:
+        out = {}
+    try:
+        if isinstance(node, dict):
+            for k, v in node.items():
+                _numeric_leaf_snapshot(v, f"{path}.{k}" if path else str(k), out)
+        elif isinstance(node, list):
+            for i, v in enumerate(node):
+                _numeric_leaf_snapshot(v, f"{path}[{i}]", out)
+        elif isinstance(node, (int, float)) and not isinstance(node, bool):
+            out[path] = node
+    except Exception:
+        pass
+    return out
+
+
+def _changed_numeric_leaves(node, before):
+    """The dotted paths whose NUMERIC value is NEW or CHANGED vs the `before` snapshot — the leaves the axis passes
+    (yscale/norm/xaxis) computed. [S3] Never raises."""
+    after = _numeric_leaf_snapshot(node)
+    return [p for p, v in after.items() if before.get(p) != v]
+
+
 def _honest_blank_paths(data_instructions):
     """The set of slot-paths (as _toks tuples, address-normalized both ways) the AI EXPLICITLY honest-blanked for this
     card — parsed from di._honest_blanked (each a '{slot}: {reason}' string; the slot is the prefix before the first
@@ -390,6 +416,7 @@ def fill(payload, data_instructions, ctx, default_payload=None, shape_ref=None):
                            window=window, leaf_is_array=leaf_is_array, agg_row=agg_row, element_skeleton=_elem)
         _set_leaf_typed(out, leaf_path, val)                    # real number/array OR None ('—') — never array→null
         written_value_paths.add(leaf_path)                     # F2: track written value leaves for display-sibling reconcile
+        written_value_paths.add(leaf_path[5:] if leaf_path.startswith("data.") else "data." + leaf_path)   # [S3] both address forms — fab_guards _is_written token-compare must not miss a 'data.'-twin
         if _blank_val(val):
             _note_gap(gaps, f, asset_table, present_cols, latest_row, asset_name=asset_name)  # WHY it blanked
 
@@ -435,6 +462,10 @@ def fill(payload, data_instructions, ctx, default_payload=None, shape_ref=None):
     # its sibling series' OWN min/max AFTER the series are filled (and after the roster may have filled member series).
     # `shape_ref` (the RAW default) proves tick element TYPE (string labels vs numbers), tick count and the zero-floor
     # convention. Never fabricates a scale for absent data (an empty series leaves the honest-blank axis).
+    # [S3] snapshot numeric value-leaves BEFORE yscale/norm/xaxis so their post-fill computed writes (scale bounds,
+    # normalized series, clock/index axis positions) can be added to written_value_paths after — otherwise CLASS 4
+    # sees them as UNWRITTEN and could blank a legit computed leaf that byte-matches the raw seed.
+    _pre_axis_nums = _numeric_leaf_snapshot(out) if isinstance(out, dict) else {}
     if isinstance(out, dict):
         try:
             from ems_exec.executor import yscale as _yscale
@@ -475,6 +506,17 @@ def fill(payload, data_instructions, ctx, default_payload=None, shape_ref=None):
                                ts_provider=_bucket_axis)
         except Exception as e:
             _degrade.note("xaxis", e)   # telemetry-only; fail-open contract unchanged [EH F3]
+
+    # [S3] record yscale/norm/xaxis's computed numeric writes into written_value_paths (both address forms) so CLASS 4
+    # protects them like any real fill. A leaf whose numeric value CHANGED (or a NEW numeric leaf) since the pre-axis
+    # snapshot was produced by these passes, not left as a seed.
+    if isinstance(out, dict):
+        try:
+            for _p in _changed_numeric_leaves(out, _pre_axis_nums):
+                written_value_paths.add(_p)
+                written_value_paths.add(_p[5:] if _p.startswith("data.") else "data." + _p)
+        except Exception as e:
+            _degrade.note("axis_write_track", e)   # telemetry-only; fail-open contract unchanged [EH F3]
 
     # POST-FILL CHROME RESTORE [family H render-safety, cards 7/10/18/23/47/49]: a PRESENTATION-CONFIG leaf the emit /
     # honest-blank / seed-leak pass stripped to null/0/'' — the active-VIEW selector (loadImpact.view), an enum
@@ -560,7 +602,8 @@ def fill(payload, data_instructions, ctx, default_payload=None, shape_ref=None):
                              if isinstance(s, dict) and s.get("slot")]
             out, _fab_gaps = _fabg.apply(out, fields, present_cols, asset_table,
                                          default_payload=default_payload, written_paths=written_value_paths,
-                                         shape_ref=shape_ref, roster_slot_prefixes=_roster_slots)
+                                         shape_ref=shape_ref, roster_slot_prefixes=_roster_slots,
+                                         card_id=ctx.get("card_id"), agg_row_present=(agg_row is not None))
             if _fab_gaps:
                 gaps.extend(_fab_gaps)
         except Exception as e:
