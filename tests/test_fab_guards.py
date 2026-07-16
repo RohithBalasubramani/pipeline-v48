@@ -670,3 +670,32 @@ def test_knob_scale_selector_keys_db_driven(monkeypatch):
     out2 = {"h5": {"scaleMaxPct": 0.0}}
     G.restore_chrome(out2, {"h5": {"scaleMaxPct": 16}}, written=[])
     assert out2["h5"]["scaleMaxPct"] == 0.0                                  # no longer a scale key → 0 not treated blank
+
+
+def test_class23_roster_slot_exemption(monkeypatch):
+    """[fab_guards.exempt_roster_slots, card-15 defect] a ROSTER-written member-rolled value inside a recipe slot
+    survives CLASS 3 even though the AI's FIELD for that leaf declared an absent control-table column; a stray OUTSIDE
+    the roster slots is still blanked; flag off = today's blanking (byte-identical)."""
+    import importlib
+    FA = importlib.import_module("ems_exec.executor.fab_guards.apply")
+    monkeypatch.setattr(nx, "column_logged", lambda t, c: True)
+    fields = [{"slot": "card.view.value", "kind": "raw", "column": "apparent_power_total_kva", "label": "Live kVA"},
+              {"slot": "stray.leaf", "kind": "raw", "column": None, "label": "stray"}]
+
+    def _payload():
+        return {"card": {"view": {"value": 3270.0, "metrics": [{"id": "active", "value": 3037.3}]}},
+                "stray": {"leaf": 265.0}}
+
+    # flag ON + the recipe's slot list → the roster-written subtree survives; the stray still blanks
+    monkeypatch.setattr(FA, "_roster_exempt_on", lambda: True)
+    out, gaps = G.apply(_payload(), fields, frozenset(), "tbl",
+                        roster_slot_prefixes=["card.view.value", "card.view.metrics"])
+    assert out["card"]["view"]["value"] == 3270.0                       # roster value survives the mis-declared field
+    assert out["card"]["view"]["metrics"][0]["value"] == 3037.3
+    assert out["stray"]["leaf"] is None                                 # non-roster stray still killed
+
+    # flag OFF = byte-identical legacy: the mis-declared field blanks the roster's value too
+    monkeypatch.setattr(FA, "_roster_exempt_on", lambda: False)
+    out2, _ = G.apply(_payload(), fields, frozenset(), "tbl",
+                      roster_slot_prefixes=["card.view.value", "card.view.metrics"])
+    assert out2["card"]["view"]["value"] is None

@@ -7,7 +7,55 @@ from ems_exec.executor.fab_guards.class1_epoch import _apply_class1
 from ems_exec.executor.fab_guards.class23_source import _apply_class2_class3
 from ems_exec.executor.fab_guards.class4_seed import _apply_class4_seed_leak, _written_toks
 
-def apply(out, fields, present_cols, asset_table, default_payload=None, written_paths=None, shape_ref=None):
+def _roster_exempt_on():
+    """fab_guards.exempt_roster_slots [default off]: CLASS 2/3 must not second-guess the roster interpreter INSIDE its
+    own recipe slots. The guards audit by the AI's declared FIELDS — but on a panel-aggregate card the AI's field often
+    binds the panel's own control-table column (absent/dead), while the RECIPE writes the real member-rolled value to
+    the SAME leaf; the field-keyed guard then blanks that real value as a 'no-source stray' (card 15: the roster wrote
+    3270 kVA, CLASS 2/3 nulled it → the whole card rendered blank). Per-leaf honesty inside a recipe slot is the
+    ROSTER's job — it writes its own honest nulls with per-leaf gap reasons (roster_gaps). Fail-open to OFF."""
+    try:
+        from config.app_config import flag_on
+        return flag_on("fab_guards.exempt_roster_slots", False)
+    except Exception:
+        return False
+
+
+def _roster_slot_paths(roster_slot_prefixes, out):
+    """Expand the recipe slot strings ('card.view.value', 'card.view.metrics', 'flow.vm.kpis', 'a[]') into the concrete
+    LEAF paths currently under them in `out` — the same dotted/indexed path vocabulary CLASS 2/3's skip set speaks
+    (both with and without the 'data.' twin either address form resolves). '[]' suffixes are normalized away; a slot
+    prefix covers its whole subtree."""
+    prefixes = []
+    for s in (roster_slot_prefixes or []):
+        s = str(s or "").strip()
+        if s.endswith("[]"):
+            s = s[:-2]
+        if s:
+            prefixes.append(s)
+            prefixes.append(s[5:] if s.startswith("data.") else "data." + s)
+
+    paths = set()
+
+    def walk(node, path):
+        if isinstance(node, dict):
+            for k, v in node.items():
+                walk(v, f"{path}.{k}" if path else str(k))
+        elif isinstance(node, list):
+            for i, v in enumerate(node):
+                walk(v, f"{path}[{i}]")
+        else:
+            if any(path == p or path.startswith(p + ".") or path.startswith(p + "[") for p in prefixes):
+                paths.add(path)
+                paths.add("data." + path)
+
+    if prefixes:
+        walk(out, "")
+    return paths
+
+
+def apply(out, fields, present_cols, asset_table, default_payload=None, written_paths=None, shape_ref=None,
+          roster_slot_prefixes=None):
     """Scan the FINISHED payload and blank the four fabrication CLASSES slot-independently. Returns (out, gaps): the
     (mutated) payload and the per-leaf gap records the caller MERGES into its gaps channel. Never raises — a guard that
     throws leaves the payload as it found it (fail-open on the honest fill, never fabricates).
@@ -16,7 +64,11 @@ def apply(out, fields, present_cols, asset_table, default_payload=None, written_
     (optional) = the card's RAW harvested default (card_payloads.payload); `written_paths` = the leaf paths fill() wrote
     real. Together they drive CLASS 4 (seed-leak): a DATA leaf (raw != stripped) that is UNWRITTEN and byte-identical to
     its RAW default is an unstripped seed → blanked; a METADATA leaf (raw == stripped) is exempt whatever its key. When
-    `shape_ref` is absent CLASS 4 falls back to the legacy chrome-vocab wall (under-blank preference)."""
+    `shape_ref` is absent CLASS 4 falls back to the legacy chrome-vocab wall (under-blank preference).
+
+    `roster_slot_prefixes` (optional; flag fab_guards.exempt_roster_slots) = the card's recipe slot paths. Leaves under
+    them are ROSTER-written (fact-gated member reads with their own per-leaf honesty) and exempt from the field-keyed
+    CLASS 2/3 audit — the AI's mis-declared field must not blank the recipe's real value."""
     gaps = []
     if not isinstance(out, dict):
         return out, gaps
@@ -24,6 +76,11 @@ def apply(out, fields, present_cols, asset_table, default_payload=None, written_
         skip = _apply_class1(out, gaps) if _guard_on("epoch_ms") else set()
     except Exception:
         skip = set()
+    try:
+        if roster_slot_prefixes and _roster_exempt_on():
+            skip = set(skip) | _roster_slot_paths(roster_slot_prefixes, out)
+    except Exception:
+        pass
     try:
         _apply_class2_class3(out, fields or [], present_cols or frozenset(), asset_table, gaps, skip)
     except Exception:

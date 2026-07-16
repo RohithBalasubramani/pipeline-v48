@@ -553,9 +553,14 @@ def fill(payload, data_instructions, ctx, default_payload=None, shape_ref=None):
     if isinstance(out, dict):
         try:
             from ems_exec.executor import fab_guards as _fabg
+            # ROSTER-SLOT EXEMPTION [fab_guards.exempt_roster_slots]: the recipe slots run_roster just filled are
+            # fact-gated member reads with their OWN per-leaf honesty (roster_gaps) — the field-keyed CLASS 2/3 audit
+            # must not blank them because the AI's field mis-declared a dead control-table column for the same leaf.
+            _roster_slots = [s.get("slot") for s in ((ctx.get("_roster_state") or {}).get("roster") or [])
+                             if isinstance(s, dict) and s.get("slot")]
             out, _fab_gaps = _fabg.apply(out, fields, present_cols, asset_table,
                                          default_payload=default_payload, written_paths=written_value_paths,
-                                         shape_ref=shape_ref)
+                                         shape_ref=shape_ref, roster_slot_prefixes=_roster_slots)
             if _fab_gaps:
                 gaps.extend(_fab_gaps)
         except Exception as e:
